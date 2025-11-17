@@ -1,18 +1,58 @@
 'use client'
 
-import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, Play, CheckCircle, Clock, ArrowRight, Video, Sparkles } from 'lucide-react'
+import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, Play, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ModeSwitcher } from "@/components/mode-switcher"
 import { useMode } from "@/contexts/mode-context"
+import { useEffect, useState } from 'react'
+import { getStarSignEmoji } from '@/lib/horoscope-utils'
 
 // Force dynamic rendering to avoid SSR issues with context
 export const dynamic = 'force-dynamic'
 
 export default function TeamDashboard() {
   const { mode } = useMode()
+  const [horoscope, setHoroscope] = useState<{
+    star_sign: string
+    horoscope_text: string
+    image_url: string
+  } | null>(null)
+  const [horoscopeLoading, setHoroscopeLoading] = useState(true)
+  const [horoscopeError, setHoroscopeError] = useState<string | null>(null)
+
+  // Fetch horoscope on mount
+  useEffect(() => {
+    async function fetchHoroscope() {
+      try {
+        setHoroscopeLoading(true)
+        setHoroscopeError(null)
+        const response = await fetch('/api/horoscope')
+        const data = await response.json()
+        
+        if (!response.ok) {
+          console.error('Horoscope API error:', response.status, data)
+          if (response.status === 401) {
+            setHoroscopeError('Please log in to view your horoscope')
+          } else {
+            setHoroscopeError(data.error || 'Failed to load horoscope')
+          }
+          return
+        }
+        
+        console.log('Horoscope data received:', data)
+        setHoroscope(data)
+      } catch (error: any) {
+        console.error('Error fetching horoscope:', error)
+        setHoroscopeError('Failed to load horoscope: ' + (error.message || 'Unknown error'))
+      } finally {
+        setHoroscopeLoading(false)
+      }
+    }
+    fetchHoroscope()
+  }, [])
 
   // Comprehensive mode-aware card styling
   type CardSection = 'hero' | 'recognition' | 'work' | 'team' | 'vibes' | 'community' | 'default'
@@ -299,15 +339,49 @@ export default function TeamDashboard() {
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
                 <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
-              <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-4 h-4" />
                   <span className="uppercase tracking-wider font-black text-xs">Totally Real</span>
-            </div>
+                </div>
                 <h2 className={`text-4xl font-black mb-6 uppercase`} style={{ color: style.accent }}>YOUR<br/>HOROSCOPE</h2>
-                <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-2xl p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
-                  <p className="text-sm font-black mb-2" style={{ color: style.accent }}>CANCER</p>
-                  <p className={`text-sm leading-relaxed ${style.text}`}>Mars aligns with your keyboard. Expect typos. So many typos. Idk stars have speelin.</p>
-            </div>
-          </Card>
+                
+                {horoscopeLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className={`w-6 h-6 animate-spin ${style.text}`} />
+                  </div>
+                ) : horoscopeError ? (
+                  <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
+                    <p className={`text-sm ${style.text}`}>{horoscopeError}</p>
+                  </div>
+                ) : horoscope ? (
+                  <div className="space-y-4">
+                    {/* Tarot Card Image */}
+                    {horoscope.image_url && (
+                      <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-3 border-2 overflow-hidden`} style={{ borderColor: `${style.accent}40` }}>
+                        <div className="aspect-[2/3] relative rounded-lg overflow-hidden" style={{ borderColor: style.accent, borderWidth: '2px' }}>
+                          <img 
+                            src={horoscope.image_url} 
+                            alt={`${horoscope.star_sign} horoscope tarot card`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Horoscope Text */}
+                    <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
+                      <p className="text-sm font-black mb-2 flex items-center gap-2" style={{ color: style.accent }}>
+                        <span>{getStarSignEmoji(horoscope.star_sign)}</span>
+                        <span>{horoscope.star_sign.toUpperCase()}</span>
+                      </p>
+                      <p className={`text-sm leading-relaxed ${style.text}`}>{horoscope.horoscope_text}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
+                    <p className={`text-sm ${style.text}`}>No horoscope available</p>
+                  </div>
+                )}
+              </Card>
             )
           })()}
 
