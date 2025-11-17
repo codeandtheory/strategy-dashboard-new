@@ -16,9 +16,17 @@ import {
 // This bypasses RLS so the API can insert/update horoscopes
 async function getSupabaseAdminClient() {
   const { createClient } = await import('@supabase/supabase-js')
+  
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set')
+  }
+  
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    supabaseUrl,
+    supabaseServiceKey,
     {
       auth: {
         autoRefreshToken: false,
@@ -244,6 +252,14 @@ export async function GET(request: NextRequest) {
     // Step 5: Fetch active styles
     const styles = await fetchActiveStyles(supabase)
     console.log(`Found ${styles.length} active styles`)
+    
+    // If no styles found, return error (database not seeded)
+    if (styles.length === 0) {
+      return NextResponse.json(
+        { error: 'Horoscope configuration not initialized. Please run the seed script to populate styles, segments, and rules.' },
+        { status: 500 }
+      )
+    }
     
     // Step 6: Resolve config from database rules and themes
     const resolvedConfig = resolveConfig(rules, themes, allThemeRules, styles)
