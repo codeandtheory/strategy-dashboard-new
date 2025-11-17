@@ -1,78 +1,161 @@
+'use client'
+
 import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, Play, CheckCircle, Clock, ArrowRight, Video, Sparkles } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { ModeSwitcher } from "@/components/mode-switcher"
+import { useMode } from "@/contexts/mode-context"
 
 export default function TeamDashboard() {
+  const { mode } = useMode()
+
+  // Mode-aware class helpers
+  const getBgClass = () => {
+    switch (mode) {
+      case 'chaos': return 'bg-black'
+      case 'chill': return 'bg-[#F5E6D3]'
+      case 'dark-grey': return 'bg-[#0a0a0a]'
+      case 'light-grey': return 'bg-[#fafafa]'
+      default: return 'bg-black'
+    }
+  }
+
+  const getTextClass = () => {
+    switch (mode) {
+      case 'chaos': return 'text-white'
+      case 'chill': return 'text-[#4A1818]'
+      case 'dark-grey': return 'text-[#fafafa]'
+      case 'light-grey': return 'text-[#0a0a0a]'
+      default: return 'text-white'
+    }
+  }
+
+  const getBorderClass = () => {
+    switch (mode) {
+      case 'chaos': return 'border-zinc-800/50'
+      case 'chill': return 'border-[#4A1818]/20'
+      case 'dark-grey': return 'border-[#2a2a2a]'
+      case 'light-grey': return 'border-[#e5e5e5]'
+      default: return 'border-zinc-800/50'
+    }
+  }
+
+  const getNavLinkClass = (isActive = false) => {
+    const base = 'transition-colors text-sm font-bold'
+    if (isActive) {
+      switch (mode) {
+        case 'chaos': return `${base} text-white hover:text-[#E8FF00]`
+        case 'chill': return `${base} text-[#4A1818] hover:text-[#FFC043]`
+        case 'dark-grey': return `${base} text-[#fafafa] hover:text-white`
+        case 'light-grey': return `${base} text-[#0a0a0a] hover:text-[#525252]`
+        default: return `${base} text-white hover:text-[#E8FF00]`
+      }
+    } else {
+      switch (mode) {
+        case 'chaos': return `${base} text-zinc-500 hover:text-white`
+        case 'chill': return `${base} text-[#8B4444] hover:text-[#4A1818]`
+        case 'dark-grey': return `${base} text-[#737373] hover:text-[#fafafa]`
+        case 'light-grey': return `${base} text-[#a3a3a3] hover:text-[#0a0a0a]`
+        default: return `${base} text-zinc-500 hover:text-white`
+      }
+    }
+  }
+
+  const getLogoBg = () => {
+    switch (mode) {
+      case 'chaos': return 'bg-[#E8FF00]'
+      case 'chill': return 'bg-[#FFC043]'
+      case 'dark-grey': return 'bg-white'
+      case 'light-grey': return 'bg-[#0a0a0a]'
+      default: return 'bg-[#E8FF00]'
+    }
+  }
+
+  const getLogoText = () => {
+    switch (mode) {
+      case 'chaos': return 'text-black'
+      case 'chill': return 'text-[#4A1818]'
+      case 'dark-grey': return 'text-[#0a0a0a]'
+      case 'light-grey': return 'text-[#fafafa]'
+      default: return 'text-black'
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-black text-white font-[family-name:var(--font-raleway)]">
-      <header className="border-b border-zinc-800/50 px-6 py-4">
+    <div className={`min-h-screen ${getBgClass()} ${getTextClass()} font-[family-name:var(--font-raleway)]`}>
+      <header className={`border-b ${getBorderClass()} px-6 py-4`}>
         <div className="max-w-[1600px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <div className="w-10 h-10 bg-[#E8FF00] rounded-xl flex items-center justify-center font-black text-black text-lg">
+            <div className={`w-10 h-10 ${getLogoBg()} ${getLogoText()} rounded-xl flex items-center justify-center font-black text-lg`}>
               D
             </div>
-            <nav className="flex items-center gap-6 text-sm font-bold">
-              <a href="#" className="text-white hover:text-[#E8FF00] transition-colors">HOME</a>
-              <a href="#" className="text-zinc-500 hover:text-white transition-colors">SNAPS</a>
-              <a href="#" className="text-zinc-500 hover:text-white transition-colors">RESOURCES</a>
-              <a href="#" className="text-zinc-500 hover:text-white transition-colors">WORK</a>
-              <a href="#" className="text-zinc-500 hover:text-white transition-colors">TEAM</a>
-              <a href="#" className="text-zinc-500 hover:text-white transition-colors">VIBES</a>
+            <nav className="flex items-center gap-6">
+              <a href="#" className={getNavLinkClass(true)}>HOME</a>
+              <a href="#" className={getNavLinkClass()}>SNAPS</a>
+              <a href="#" className={getNavLinkClass()}>RESOURCES</a>
+              <a href="#" className={getNavLinkClass()}>WORK</a>
+              <a href="#" className={getNavLinkClass()}>TEAM</a>
+              <a href="#" className={getNavLinkClass()}>VIBES</a>
             </nav>
           </div>
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full border-2 border-purple-400/30" />
+          <div className="flex items-center gap-4">
+            <ModeSwitcher />
+            <div className={`w-10 h-10 rounded-full border-2 ${
+              mode === 'chaos' ? 'bg-gradient-to-br from-purple-500 to-pink-500 border-purple-400/30' :
+              mode === 'chill' ? 'bg-gradient-to-br from-[#FFB5D8] to-[#FFC043] border-[#4A1818]/20' :
+              mode === 'dark-grey' ? 'bg-[#2a2a2a] border-[#404040]' :
+              'bg-[#e5e5e5] border-[#d4d4d4]'
+            }`} />
+          </div>
         </div>
       </header>
 
       <main className="max-w-[1600px] mx-auto px-6 py-10">
-        <section className="mb-12">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="bg-gradient-to-br from-[#FFB84D] via-[#FF8A5C] to-[#FF6B9D] text-black p-0 rounded-3xl col-span-1 lg:col-span-2 border-0 relative overflow-hidden group hover:scale-[1.02] transition-all">
-              <div className="absolute top-0 right-0 w-[55%] h-full bg-black" 
-                   style={{
-                     clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)'
-                   }} 
-              />
-              <div className="relative z-10 p-8">
+        {/* True Bento Grid - Asymmetrical Layout */}
+        <div className="bento-grid">
+          {/* Large Hero Card - spans 7 cols, 3 rows */}
+          <Card className="bg-gradient-to-br from-[#FFB84D] via-[#FF8A5C] to-[#FF6B9D] text-black p-0 rounded-3xl border-0 relative overflow-hidden group hover:scale-[1.02] transition-all col-span-12 md:col-span-7 row-span-3">
+            <div className="absolute top-0 right-0 w-[55%] h-full bg-black" 
+                 style={{
+                   clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)'
+                 }} 
+            />
+            <div className="relative z-10 p-8 h-full flex flex-col justify-between">
+              <div>
                 <Badge className="bg-black text-white hover:bg-black border-0 font-bold mb-4 text-xs uppercase tracking-wide">Quick Actions</Badge>
                 <h1 className="text-7xl md:text-8xl font-black mb-4 leading-none tracking-tight">READY!</h1>
                 <p className="text-xl font-semibold max-w-md text-black">
                   Let's ship something amazing today
                 </p>
                 <p className="text-sm font-medium text-black/70 mt-3">Friday, November 14</p>
-                <div className="flex items-center gap-3 mt-6 flex-wrap">
-                  <Button className="bg-black hover:bg-zinc-900 text-white font-bold rounded-2xl h-12 px-6">
-                    Give Snap <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                  <Button className="bg-black hover:bg-zinc-900 text-white font-bold rounded-2xl h-12 px-6">
-                    Need Help <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                  <Button className="bg-black hover:bg-zinc-900 text-white font-bold rounded-2xl h-12 px-6">
-                    Add Win <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </div>
               </div>
-            </Card>
-
-            <Card className="bg-zinc-900 border border-zinc-700 p-8 rounded-3xl flex flex-col justify-center hover:scale-[1.02] transition-all">
-              <div className="w-12 h-12 bg-[#E8FF00] rounded-2xl flex items-center justify-center mb-4">
-                <Zap className="w-6 h-6 text-black" />
+              <div className="flex items-center gap-3 mt-6 flex-wrap">
+                <Button className="bg-black hover:bg-zinc-900 text-white font-bold rounded-2xl h-12 px-6">
+                  Give Snap <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+                <Button className="bg-black hover:bg-zinc-900 text-white font-bold rounded-2xl h-12 px-6">
+                  Need Help <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+                <Button className="bg-black hover:bg-zinc-900 text-white font-bold rounded-2xl h-12 px-6">
+                  Add Win <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
               </div>
-              <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-2">Launch Pad</p>
-              <h2 className="text-4xl font-black text-white leading-tight">Quick Actions</h2>
-            </Card>
-          </div>
-        </section>
+            </div>
+          </Card>
 
-        <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold mb-6 flex items-center gap-2">
-          <span className="w-8 h-px bg-zinc-800"></span>
-          Personalized Information
-        </p>
+          {/* Small Launch Pad - spans 5 cols, 1 row */}
+          <Card className="bg-zinc-900 border border-zinc-700 p-8 rounded-3xl flex flex-col justify-center hover:scale-[1.02] transition-all col-span-12 md:col-span-5 row-span-1">
+            <div className="w-12 h-12 bg-[#E8FF00] rounded-2xl flex items-center justify-center mb-4">
+              <Zap className="w-6 h-6 text-black" />
+            </div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-2">Launch Pad</p>
+            <h2 className="text-4xl font-black text-white leading-tight">Quick Actions</h2>
+          </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <Card className="bg-gradient-to-br from-purple-600 to-purple-700 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Horoscope - spans 3 cols, 2 rows */}
+          <Card className="bg-gradient-to-br from-purple-600 to-purple-700 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-3 row-span-2">
             <div className="flex items-center gap-2 text-sm mb-3 text-[#E8FF00]">
               <Sparkles className="w-4 h-4" />
               <span className="uppercase tracking-wide font-bold text-xs">Totally Real</span>
@@ -84,7 +167,8 @@ export default function TeamDashboard() {
             </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-sky-400 to-blue-500 border-0 p-6 rounded-3xl relative overflow-hidden hover:scale-[1.02] transition-all">
+          {/* Weather - spans 4 cols, 2 rows */}
+          <Card className="bg-gradient-to-br from-sky-400 to-blue-500 border-0 p-6 rounded-3xl relative overflow-hidden hover:scale-[1.02] transition-all col-span-12 md:col-span-4 row-span-2">
             <div className="flex items-center gap-2 text-sm mb-3 text-white/90 relative z-10">
               <span className="uppercase tracking-wide font-bold text-xs">Right Now</span>
             </div>
@@ -107,7 +191,8 @@ export default function TeamDashboard() {
             </div>
           </Card>
 
-          <Card className="bg-zinc-900 border border-sky-500 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Time Zones - spans 5 cols, 2 rows */}
+          <Card className="bg-zinc-900 border border-sky-500 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-5 row-span-2">
             <div className="flex items-center gap-2 text-sm mb-3 text-sky-400">
               <Clock className="w-4 h-4" />
               <span className="uppercase tracking-wide font-bold text-xs">Global Team</span>
@@ -154,27 +239,11 @@ export default function TeamDashboard() {
                 </div>
                 <span className="text-white font-black text-sm">05:50 PM</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-orange-600 rounded-xl hover:bg-orange-700 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-base">🌏</div>
-                  <div>
-                    <p className="text-white font-bold text-sm">Sydney</p>
-                    <p className="text-xs text-white/70 font-medium">4 people</p>
-                  </div>
-                </div>
-                <span className="text-white font-black text-sm">07:50 PM</span>
-              </div>
             </div>
           </Card>
-        </div>
 
-        <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold mb-6 flex items-center gap-2">
-          <span className="w-8 h-px bg-zinc-800"></span>
-          Work Updates
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Playlist - spans 3 cols, 2 rows */}
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-3 row-span-2">
             <div className="flex items-center gap-2 text-sm mb-3 text-black">
               <Music className="w-4 h-4" />
               <span className="uppercase tracking-wide font-bold text-xs">Weekly</span>
@@ -192,7 +261,8 @@ export default function TeamDashboard() {
             </Button>
           </Card>
 
-          <Card className="bg-gradient-to-br from-teal-500 to-cyan-600 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Friday Drop - spans 4 cols, 2 rows */}
+          <Card className="bg-gradient-to-br from-teal-500 to-cyan-600 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-4 row-span-2">
             <div className="flex items-center gap-2 text-sm mb-3 text-black">
               <FileText className="w-4 h-4" />
               <span className="uppercase tracking-wide font-bold text-xs">Weekly Report</span>
@@ -214,7 +284,8 @@ export default function TeamDashboard() {
             </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-pink-400 to-pink-500 border-0 p-6 rounded-3xl relative overflow-hidden hover:scale-[1.02] transition-all">
+          {/* Brand Redesign - spans 2 cols, 1 row */}
+          <Card className="bg-gradient-to-br from-pink-400 to-pink-500 border-0 p-6 rounded-3xl relative overflow-hidden hover:scale-[1.02] transition-all col-span-12 md:col-span-2 row-span-1">
             <Badge className="bg-black text-white border-0 font-bold mb-3 text-xs uppercase tracking-wide">Featured</Badge>
             <div className="mb-4">
               <p className="text-sm text-black/70 font-medium mb-1">Active Drop</p>
@@ -225,7 +296,8 @@ export default function TeamDashboard() {
             <ChevronRight className="absolute bottom-4 right-4 w-6 h-6 text-black" />
           </Card>
 
-          <Card className="bg-white border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Stats - spans 3 cols, 1 row */}
+          <Card className="bg-white border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-3 row-span-1">
             <p className="text-xs uppercase tracking-wide text-zinc-600 mb-2 font-bold">This Month</p>
             <h2 className="text-3xl font-black text-black mb-6">STATS</h2>
             <div className="space-y-4">
@@ -243,15 +315,9 @@ export default function TeamDashboard() {
               </div>
             </div>
           </Card>
-        </div>
 
-        <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold mb-6 flex items-center gap-2">
-          <span className="w-8 h-px bg-zinc-800"></span>
-          Work Updates Continued
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <Card className="bg-zinc-900 border border-teal-500 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Events - spans 3 cols, 2 rows */}
+          <Card className="bg-zinc-900 border border-teal-500 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-3 row-span-2">
             <div className="flex items-center gap-2 text-sm mb-3 text-teal-400">
               <Calendar className="w-4 h-4" />
               <span className="uppercase tracking-wide font-bold text-xs">Today</span>
@@ -273,7 +339,8 @@ export default function TeamDashboard() {
             </div>
           </Card>
 
-          <Card className="bg-[#6FD89C] border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Pipeline - spans 4 cols, 2 rows */}
+          <Card className="bg-[#6FD89C] border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-4 row-span-2">
             <p className="text-xs uppercase tracking-wide text-black/70 mb-2 font-bold">Work</p>
             <h2 className="text-4xl font-black text-black mb-6">PIPELINE</h2>
             <div className="space-y-3">
@@ -307,7 +374,8 @@ export default function TeamDashboard() {
             </div>
           </Card>
 
-          <Card className="bg-[#E8FF00] border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Who Needs What - spans 5 cols, 2 rows */}
+          <Card className="bg-[#E8FF00] border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-5 row-span-2">
             <Badge className="bg-black text-[#E8FF00] border-0 font-bold mb-3 text-xs uppercase tracking-wide">Recent Requests</Badge>
             <h2 className="text-4xl font-black text-black mb-6">WHO<br/>NEEDS<br/>WHAT</h2>
             <div className="space-y-3 mb-4">
@@ -334,15 +402,9 @@ export default function TeamDashboard() {
               CLAIM REQUEST
             </Button>
           </Card>
-        </div>
 
-        <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold mb-6 flex items-center gap-2">
-          <span className="w-8 h-px bg-zinc-800"></span>
-          Recognition & Culture
-        </p>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-          <Card className="lg:col-span-2 bg-zinc-900 border border-purple-500 p-8 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Snaps - spans 7 cols, 3 rows */}
+          <Card className="bg-zinc-900 border border-purple-500 p-8 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-7 row-span-3">
             <div className="flex items-center gap-2 text-sm mb-3 text-purple-400">
               <Sparkles className="w-4 h-4" />
               <span className="uppercase tracking-wide font-bold text-xs">Recent Recognition</span>
@@ -388,62 +450,56 @@ export default function TeamDashboard() {
             </Button>
           </Card>
 
-          <div className="space-y-6">
-            <Card className="bg-gradient-to-br from-red-500 to-pink-600 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
-              <p className="text-xs uppercase tracking-wide text-white/80 mb-2 font-bold">This Week's</p>
-              <h2 className="text-4xl font-black text-white mb-6">BEAST<br/>BABE</h2>
-              <div className="flex items-center justify-center mb-4">
-                <div className="w-20 h-20 bg-[#E8FF00] rounded-full flex items-center justify-center">
-                  <Trophy className="w-10 h-10 text-black" />
-                </div>
+          {/* Beast Babe - spans 5 cols, 1 row */}
+          <Card className="bg-gradient-to-br from-red-500 to-pink-600 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-5 row-span-1">
+            <p className="text-xs uppercase tracking-wide text-white/80 mb-2 font-bold">This Week's</p>
+            <h2 className="text-4xl font-black text-white mb-6">BEAST<br/>BABE</h2>
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-20 h-20 bg-[#E8FF00] rounded-full flex items-center justify-center">
+                <Trophy className="w-10 h-10 text-black" />
               </div>
-              <p className="text-2xl font-black text-white text-center">Sarah J.</p>
-              <p className="text-sm text-white/90 text-center font-medium">42 Snaps Received</p>
-            </Card>
+            </div>
+            <p className="text-2xl font-black text-white text-center">Sarah J.</p>
+            <p className="text-sm text-white/90 text-center font-medium">42 Snaps Received</p>
+          </Card>
 
-            <Card className="bg-white border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
-              <div className="flex items-center gap-2 text-sm mb-2 text-black">
-                <Trophy className="w-4 h-4" />
-                <span className="uppercase tracking-wide font-bold text-xs">Celebrate</span>
+          {/* Wins Wall - spans 5 cols, 2 rows */}
+          <Card className="bg-white border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-5 row-span-2">
+            <div className="flex items-center gap-2 text-sm mb-2 text-black">
+              <Trophy className="w-4 h-4" />
+              <span className="uppercase tracking-wide font-bold text-xs">Celebrate</span>
+            </div>
+            <h2 className="text-4xl font-black text-black mb-4">WINS<br/>WALL</h2>
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
+                <div>
+                  <p className="text-sm font-black text-black">Alex Chen</p>
+                  <p className="text-xs text-zinc-700 font-medium">Closed $50k deal!</p>
+                </div>
+                <span className="text-2xl">🎉</span>
               </div>
-              <h2 className="text-4xl font-black text-black mb-4">WINS<br/>WALL</h2>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
-                  <div>
-                    <p className="text-sm font-black text-black">Alex Chen</p>
-                    <p className="text-xs text-zinc-700 font-medium">Closed $50k deal!</p>
-                  </div>
-                  <span className="text-2xl">🎉</span>
+              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
+                <div>
+                  <p className="text-sm font-black text-black">Jamie Park</p>
+                  <p className="text-xs text-zinc-700 font-medium">Shipped v2.0!</p>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
-                  <div>
-                    <p className="text-sm font-black text-black">Jamie Park</p>
-                    <p className="text-xs text-zinc-700 font-medium">Shipped v2.0!</p>
-                  </div>
-                  <span className="text-2xl">🚀</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
-                  <div>
-                    <p className="text-sm font-black text-black">Alex Chen</p>
-                    <p className="text-xs text-zinc-700 font-medium">Closed $50k deal!</p>
-                  </div>
-                  <span className="text-2xl">⭐</span>
-                </div>
+                <span className="text-2xl">🚀</span>
               </div>
-              <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl h-12">
-                Share Win
-              </Button>
-            </Card>
-          </div>
-        </div>
+              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
+                <div>
+                  <p className="text-sm font-black text-black">Alex Chen</p>
+                  <p className="text-xs text-zinc-700 font-medium">Closed $50k deal!</p>
+                </div>
+                <span className="text-2xl">⭐</span>
+              </div>
+            </div>
+            <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl h-12">
+              Share Win
+            </Button>
+          </Card>
 
-        <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold mb-6 flex items-center gap-2">
-          <span className="w-8 h-px bg-zinc-800"></span>
-          More Modules
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <Card className="bg-gradient-to-br from-pink-300 to-pink-400 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Must Reads - spans 3 cols, 2 rows */}
+          <Card className="bg-gradient-to-br from-pink-300 to-pink-400 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-3 row-span-2">
             <div className="flex items-center gap-2 text-sm mb-3 text-black">
               <FileText className="w-4 h-4" />
               <span className="uppercase tracking-wide font-bold text-xs">Weekly</span>
@@ -461,7 +517,8 @@ export default function TeamDashboard() {
             </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-300 to-purple-400 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Ask The Hive - spans 4 cols, 2 rows */}
+          <Card className="bg-gradient-to-br from-purple-300 to-purple-400 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-4 row-span-2">
             <div className="flex items-center gap-2 text-sm mb-3 text-black">
               <MessageCircle className="w-4 h-4" />
               <span className="uppercase tracking-wide font-bold text-xs">Community</span>
@@ -482,7 +539,8 @@ export default function TeamDashboard() {
             </Button>
           </Card>
 
-          <Card className="bg-white border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Team Pulse - spans 5 cols, 2 rows */}
+          <Card className="bg-white border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-5 row-span-2">
             <Badge className="bg-emerald-500 text-white border-0 font-bold mb-4 text-xs">+85%</Badge>
             <h2 className="text-3xl font-black text-black mb-6">Team Pulse</h2>
             <div className="space-y-4 mb-6">
@@ -522,10 +580,9 @@ export default function TeamDashboard() {
               </div>
             </div>
           </Card>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          <Card className="bg-gradient-to-br from-blue-500 to-purple-600 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Loom Standup - spans 7 cols, 2 rows */}
+          <Card className="bg-gradient-to-br from-blue-500 to-purple-600 border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-7 row-span-2">
             <div className="flex items-center gap-2 text-sm mb-3 text-white">
               <Video className="w-4 h-4" />
               <span className="uppercase tracking-wide font-bold text-xs">Daily</span>
@@ -563,7 +620,8 @@ export default function TeamDashboard() {
             </div>
           </Card>
 
-          <Card className="bg-[#E8FF00] border-0 p-8 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Inspiration War - spans 5 cols, 2 rows */}
+          <Card className="bg-[#E8FF00] border-0 p-8 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-5 row-span-2">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <div className="flex items-center gap-2 text-sm mb-2 text-black">
@@ -592,15 +650,9 @@ export default function TeamDashboard() {
               <p className="text-black font-bold">8h to vote</p>
             </div>
           </Card>
-        </div>
 
-        <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold mb-6 flex items-center gap-2">
-          <span className="w-8 h-px bg-zinc-800"></span>
-          Browse Categories
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          <Card className="bg-white border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Categories - spans 7 cols, 2 rows */}
+          <Card className="bg-white border-0 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-7 row-span-2">
             <p className="text-xs uppercase tracking-wide text-zinc-600 mb-2 font-bold">Browse</p>
             <h2 className="text-4xl font-black text-black mb-6">CATEGORIES</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -631,7 +683,8 @@ export default function TeamDashboard() {
             </div>
           </Card>
 
-          <Card className="bg-zinc-900 border border-zinc-700 p-6 rounded-3xl hover:scale-[1.02] transition-all">
+          {/* Search - spans 5 cols, 2 rows */}
+          <Card className="bg-zinc-900 border border-zinc-700 p-6 rounded-3xl hover:scale-[1.02] transition-all col-span-12 md:col-span-5 row-span-2">
             <div className="flex items-center gap-2 text-sm mb-3 text-zinc-500">
               <Search className="w-4 h-4" />
               <span className="uppercase tracking-wide font-bold text-xs">Find Anything</span>

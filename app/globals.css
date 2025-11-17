@@ -140,3 +140,127 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Mode-specific CSS Variables */
+/* CHAOS MODE (default - current dark design) */
+[data-mode="chaos"] {
+  --mode-bg: #000000;
+  --mode-text: #ffffff;
+  --mode-card-bg: #18181b;
+  --mode-card-border: #3f3f46;
+  --mode-primary: #E8FF00;
+  --mode-primary-text: #000000;
+  --mode-accent-1: #FFB84D;
+  --mode-accent-2: #FF8A5C;
+  --mode-accent-3: #FF6B9D;
+  --mode-accent-4: #4A9BFF;
+  --mode-accent-5: #C8D961;
+  --mode-muted: #71717a;
+  --mode-border: #3f3f46;
+}
+
+/* CHILL MODE (brand guidelines) */
+[data-mode="chill"] {
+  --mode-bg: #F5E6D3; /* Warm Cream */
+  --mode-text: #4A1818; /* Deep Maroon */
+  --mode-card-bg: #FFFFFF; /* Pure White */
+  --mode-card-border: rgba(74, 24, 24, 0.1); /* Deep Maroon 10% */
+  --mode-primary: #FFC043; /* Golden Yellow */
+  --mode-primary-text: #4A1818; /* Deep Maroon */
+  --mode-accent-1: #FFB5D8; /* Soft Pink */
+  --mode-accent-2: #4A9BFF; /* Sky Blue */
+  --mode-accent-3: #C8D961; /* Lime Green */
+  --mode-accent-4: #FF6B35; /* Bright Orange */
+  --mode-accent-5: #8B4444; /* Light Maroon */
+  --mode-muted: #8B4444; /* Light Maroon */
+  --mode-border: rgba(74, 24, 24, 0.2); /* Deep Maroon 20% */
+}
+
+/* DARK GREYSCALE MODE */
+[data-mode="dark-grey"] {
+  --mode-bg: #0a0a0a;
+  --mode-text: #fafafa;
+  --mode-card-bg: #1a1a1a;
+  --mode-card-border: #2a2a2a;
+  --mode-primary: #ffffff;
+  --mode-primary-text: #0a0a0a;
+  --mode-accent-1: #d4d4d4;
+  --mode-accent-2: #a3a3a3;
+  --mode-accent-3: #737373;
+  --mode-accent-4: #525252;
+  --mode-accent-5: #404040;
+  --mode-muted: #737373;
+  --mode-border: #2a2a2a;
+}
+
+/* LIGHT GREYSCALE MODE */
+[data-mode="light-grey"] {
+  --mode-bg: #fafafa;
+  --mode-text: #0a0a0a;
+  --mode-card-bg: #ffffff;
+  --mode-card-border: #e5e5e5;
+  --mode-primary: #0a0a0a;
+  --mode-primary-text: #fafafa;
+  --mode-accent-1: #525252;
+  --mode-accent-2: #737373;
+  --mode-accent-3: #a3a3a3;
+  --mode-accent-4: #d4d4d4;
+  --mode-accent-5: #e5e5e5;
+  --mode-muted: #a3a3a3;
+  --mode-border: #e5e5e5;
+}
+
+/* Apply mode colors to body */
+[data-mode="chaos"] body,
+[data-mode="chill"] body,
+[data-mode="dark-grey"] body,
+[data-mode="light-grey"] body {
+  background-color: var(--mode-bg);
+  color: var(--mode-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Mode switcher styling */
+.mode-switcher {
+  transition: all 0.2s ease;
+}
+
+[data-mode="chaos"] .mode-switcher {
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+[data-mode="chill"] .mode-switcher {
+  border-color: rgba(74, 24, 24, 0.2);
+  color: #4A1818;
+}
+
+[data-mode="dark-grey"] .mode-switcher {
+  border-color: #2a2a2a;
+  color: #fafafa;
+}
+
+[data-mode="light-grey"] .mode-switcher {
+  border-color: #e5e5e5;
+  color: #0a0a0a;
+}
+
+/* Bento Grid Layout */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: minmax(200px, auto);
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .bento-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+}
