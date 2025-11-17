@@ -51,7 +51,6 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
       response_format: { type: 'json_object' },
       max_tokens: 500,
       temperature: 0.9,
-      timeout: 30000,
     })
 
     const responseText = completion.choices[0]?.message?.content?.trim()
@@ -106,7 +105,6 @@ export async function generateHoroscopeImage(
       size: '1024x1024', // Square format for portrait/avatar use
       quality: 'standard',
       n: 1,
-      timeout: 60000, // 60 second timeout for image generation
     })
 
     const imageUrl = response.data[0]?.url
