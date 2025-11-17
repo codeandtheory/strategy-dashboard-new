@@ -18,6 +18,8 @@ export default function TeamDashboard() {
   const [horoscope, setHoroscope] = useState<{
     star_sign: string
     horoscope_text: string
+    horoscope_dos?: string[]
+    horoscope_donts?: string[]
     image_url: string
   } | null>(null)
   const [horoscopeLoading, setHoroscopeLoading] = useState(true)
@@ -354,13 +356,13 @@ export default function TeamDashboard() {
                   </div>
                 ) : horoscope ? (
                   <div className="space-y-4">
-                    {/* Tarot Card Image */}
+                    {/* Portrait Image */}
                     {horoscope.image_url && (
                       <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-3 border-2 overflow-hidden`} style={{ borderColor: `${style.accent}40` }}>
-                        <div className="aspect-[2/3] relative rounded-lg overflow-hidden" style={{ borderColor: style.accent, borderWidth: '2px' }}>
+                        <div className="aspect-square relative overflow-hidden" style={{ borderColor: style.accent, borderWidth: '2px' }}>
                           <img 
                             src={horoscope.image_url} 
-                            alt={`${horoscope.star_sign} horoscope tarot card`}
+                            alt={`${horoscope.star_sign} horoscope portrait`}
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -373,7 +375,40 @@ export default function TeamDashboard() {
                         <span>{getStarSignEmoji(horoscope.star_sign)}</span>
                         <span>{horoscope.star_sign.toUpperCase()}</span>
                       </p>
-                      <p className={`text-sm leading-relaxed ${style.text}`}>{horoscope.horoscope_text}</p>
+                      <p className={`text-sm leading-relaxed mb-4 ${style.text}`}>{horoscope.horoscope_text}</p>
+                      
+                      {/* Do's and Don'ts */}
+                      {(horoscope.horoscope_dos?.length || horoscope.horoscope_donts?.length) && (
+                        <div className="space-y-3 mt-4 pt-4 border-t-2" style={{ borderColor: `${style.accent}30` }}>
+                          {horoscope.horoscope_dos && horoscope.horoscope_dos.length > 0 && (
+                            <div>
+                              <p className="text-xs font-black mb-2 uppercase tracking-wider" style={{ color: style.accent }}>Do</p>
+                              <ul className="space-y-1">
+                                {horoscope.horoscope_dos.map((item, idx) => (
+                                  <li key={idx} className={`text-xs ${style.text} flex items-start gap-2`}>
+                                    <span style={{ color: style.accent }}>✓</span>
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
+                          {horoscope.horoscope_donts && horoscope.horoscope_donts.length > 0 && (
+                            <div>
+                              <p className="text-xs font-black mb-2 uppercase tracking-wider" style={{ color: style.accent }}>Don't</p>
+                              <ul className="space-y-1">
+                                {horoscope.horoscope_donts.map((item, idx) => (
+                                  <li key={idx} className={`text-xs ${style.text} flex items-start gap-2`}>
+                                    <span style={{ color: style.accent }}>✗</span>
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (

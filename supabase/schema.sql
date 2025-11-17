@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS public.horoscopes (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   star_sign TEXT NOT NULL,
   horoscope_text TEXT NOT NULL,
+  horoscope_dos JSONB NOT NULL DEFAULT '[]'::jsonb,
+  horoscope_donts JSONB NOT NULL DEFAULT '[]'::jsonb,
   image_url TEXT NOT NULL,
   generated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL,
   date DATE NOT NULL DEFAULT CURRENT_DATE,

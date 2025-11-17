@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { calculateStarSign } from '@/lib/horoscope-utils'
-import { generateHoroscope, generateHoroscopeImage } from '@/lib/openai'
+import { transformHoroscopeToCoStarStyle, generateHoroscopeImage } from '@/lib/openai'
+import { fetchCafeAstrologyHoroscope } from '@/lib/cafe-astrology'
 
 // Supabase client setup - uses service role for database operations
 // This bypasses RLS so the API can insert/update horoscopes
@@ -122,6 +123,8 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({
             star_sign: cachedHoroscope.star_sign,
             horoscope_text: cachedHoroscope.horoscope_text,
+            horoscope_dos: cachedHoroscope.horoscope_dos || [],
+            horoscope_donts: cachedHoroscope.horoscope_donts || [],
             image_url: cachedHoroscope.image_url,
             cached: true,
           })
@@ -201,17 +204,56 @@ export async function GET(request: NextRequest) {
     const department = profile.discipline || null
     const title = profile.role || null
     
-    // Generate horoscope text and image
+    // Fetch from Cafe Astrology and transform to Co-Star style
     console.log('Generating horoscope for:', { starSign, department, title })
     let horoscopeText: string
+    let horoscopeDos: string[]
+    let horoscopeDonts: string[]
     let imageUrl: string
     
     try {
-      [horoscopeText, imageUrl] = await Promise.all([
-        generateHoroscope(starSign, department, title),
+      console.log('Fetching horoscope from Cafe Astrology...')
+      const startTime = Date.now()
+      
+      // Step 1: Fetch from Cafe Astrology
+      const cafeAstrologyText = await fetchCafeAstrologyHoroscope(starSign)
+      console.log('Fetched horoscope from Cafe Astrology')
+      
+      // Step 2: Transform to Co-Star style and generate image in parallel
+      const [transformResult, imageResult] = await Promise.allSettled([
+        transformHoroscopeToCoStarStyle(cafeAstrologyText, starSign),
         generateHoroscopeImage(starSign, department, title),
       ])
-      console.log('Horoscope generated successfully')
+      
+      const elapsedTime = Date.now() - startTime
+      console.log(`Horoscope generation completed in ${elapsedTime}ms`)
+      
+      // Check transformation result
+      if (transformResult.status === 'fulfilled') {
+        horoscopeText = transformResult.value.horoscope
+        horoscopeDos = transformResult.value.dos
+        horoscopeDonts = transformResult.value.donts
+        console.log('Horoscope transformed to Co-Star style successfully')
+      } else {
+        console.error('Error transforming horoscope:', transformResult.reason)
+        throw new Error(`Failed to transform horoscope: ${transformResult.reason?.message || 'Unknown error'}`)
+      }
+      
+      // Check image result
+      if (imageResult.status === 'fulfilled') {
+        imageUrl = imageResult.value
+        console.log('Horoscope image generated successfully')
+      } else {
+        console.error('Error generating horoscope image:', imageResult.reason)
+        throw new Error(`Failed to generate horoscope image: ${imageResult.reason?.message || 'Unknown error'}`)
+      }
+      
+      console.log('Horoscope generated successfully:', { 
+        horoscopeText: horoscopeText.substring(0, 50) + '...', 
+        dosCount: horoscopeDos.length,
+        dontsCount: horoscopeDonts.length,
+        imageUrl 
+      })
     } catch (error: any) {
       console.error('Error generating horoscope or image:', error)
       return NextResponse.json(
@@ -229,6 +271,8 @@ export async function GET(request: NextRequest) {
           user_id: userId,
           star_sign: starSign,
           horoscope_text: horoscopeText,
+          horoscope_dos: horoscopeDos,
+          horoscope_donts: horoscopeDonts,
           image_url: imageUrl,
           date: todayDate,
           generated_at: new Date().toISOString(),
@@ -247,6 +291,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       star_sign: starSign,
       horoscope_text: horoscopeText,
+      horoscope_dos: horoscopeDos,
+      horoscope_donts: horoscopeDonts,
       image_url: imageUrl,
       cached: false,
     })
