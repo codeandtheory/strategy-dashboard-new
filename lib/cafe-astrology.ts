@@ -27,9 +27,11 @@ export async function fetchCafeAstrologyHoroscope(starSign: string): Promise<str
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
       },
-      next: { revalidate: 3600 }, // Cache for 1 hour
+      cache: 'no-store', // Don't cache in API routes
     })
     
     if (!response.ok) {
@@ -77,7 +79,40 @@ export async function fetchCafeAstrologyHoroscope(starSign: string): Promise<str
     
     // Method 2: Look for paragraph tags with substantial content
     if (!horoscopeText || horoscopeText.length < 200) {
-      const paragraphMatches = html.match(/<p[^>]*>([^<]+(?:<[^>]+>[^<]+<\/[^>]+>[^<]+)*)<\/p>/gi)
+      // Try to find all paragraph content
+      const allText = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+                          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+                          .replace(/<[^>]+>/g, ' ')
+                          .replace(/\s+/g, ' ')
+                          .trim()
+      
+      // Look for the horoscope text after the date
+      if (dateMatch) {
+        const dateText = dateMatch[0]
+        const dateIndex = allText.indexOf(dateText)
+        if (dateIndex !== -1) {
+          const afterDate = allText.substring(dateIndex + dateText.length)
+          // Find text until we hit keywords that indicate the end
+          const endMarkers = ['Creativity:', 'Love:', 'Business:', 'Yesterday', 'Tomorrow', 'Choose Another Sign']
+          let endIndex = afterDate.length
+          for (const marker of endMarkers) {
+            const markerIndex = afterDate.indexOf(marker)
+            if (markerIndex !== -1 && markerIndex < endIndex) {
+              endIndex = markerIndex
+            }
+          }
+          
+          const extracted = afterDate.substring(0, endIndex).trim()
+          if (extracted.length > 200) {
+            horoscopeText = extracted
+          }
+        }
+      }
+    }
+    
+    // Method 3: Look for paragraph tags with substantial content
+    if (!horoscopeText || horoscopeText.length < 200) {
+      const paragraphMatches = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi)
       if (paragraphMatches) {
         for (const match of paragraphMatches) {
           let text = match.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
@@ -88,7 +123,8 @@ export async function fetchCafeAstrologyHoroscope(starSign: string): Promise<str
               !text.includes('Choose Another Sign') &&
               !text.includes('More') &&
               !text.match(/^Creativity:|^Love:|^Business:/i) &&
-              !text.includes('Aries Sun Dates')) {
+              !text.includes('Aries Sun Dates') &&
+              !text.includes('Sun Dates:')) {
             horoscopeText = text
             break
           }
@@ -96,8 +132,9 @@ export async function fetchCafeAstrologyHoroscope(starSign: string): Promise<str
       }
     }
     
-    if (!horoscopeText) {
-      throw new Error('Could not extract horoscope text from Cafe Astrology page')
+    if (!horoscopeText || horoscopeText.length < 100) {
+      console.error('Failed to extract horoscope. HTML length:', html.length)
+      throw new Error(`Could not extract horoscope text from Cafe Astrology page. Found text length: ${horoscopeText?.length || 0}`)
     }
     
     console.log('Successfully fetched horoscope from Cafe Astrology')
