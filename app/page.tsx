@@ -63,7 +63,7 @@ export default function TeamDashboard() {
   const getSpecificCardStyle = (cardName: SpecificCard): { bg: string; border: string; glow: string; text: string; accent: string } => {
     if (mode === 'chaos') {
       const chaosCardStyles: Record<SpecificCard, { bg: string; border: string; glow: string; text: string; accent: string }> = {
-        'hero-large': { bg: 'bg-gradient-to-r from-[#FFE500] via-[#FFB84D] to-[#FF6B35]', border: 'border-0', glow: '', text: 'text-black', accent: '#000000' },
+        'hero-large': { bg: 'bg-gradient-to-r from-[#FFC700] via-[#FF7A00] to-[#FF3D00]', border: 'border-0', glow: '', text: 'text-black', accent: '#000000' },
         'launch-pad': { bg: 'bg-gradient-to-br from-[#9D4EFF] to-[#6B2C91]', border: 'border-0', glow: '', text: 'text-white', accent: '#C4F500' },
         'horoscope': { bg: 'bg-[#6B2C91]', border: 'border-0', glow: '', text: 'text-white', accent: '#FFE500' },
         'weather': { bg: 'bg-gradient-to-br from-[#00B8D4] to-[#0066CC]', border: 'border-0', glow: '', text: 'text-white', accent: '#00D4FF' },
@@ -259,9 +259,9 @@ export default function TeamDashboard() {
               <Card className={`${style.bg} ${style.border} p-0 ${mode === 'chaos' ? 'rounded-tl-[2.5rem] rounded-bl-[2.5rem]' : getRoundedClass('rounded-[2.5rem]')} relative overflow-hidden group`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
-                {/* Black masked section on the right with angular cut-off */}
-                <div className={`absolute top-0 right-0 w-[50%] h-full ${getBgClass()}`} 
-                     style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0 100%)' }} 
+                {/* Black masked section on the right with skewed/angled cut-off - more pronounced skew */}
+                <div className={`absolute top-0 right-0 w-[60%] h-full ${getBgClass()}`} 
+                     style={{ clipPath: 'polygon(12% 0, 100% 0, 100% 100%, 0% 100%)' }} 
                 />
                 <div className="relative z-10 p-8 md:p-12 h-full flex flex-col justify-between">
                   <div>
