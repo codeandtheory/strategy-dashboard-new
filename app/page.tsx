@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, Play, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot } from 'lucide-react'
+import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, Play, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,6 +9,7 @@ import { ModeSwitcher } from "@/components/mode-switcher"
 import { useMode } from "@/contexts/mode-context"
 import { useEffect, useState } from 'react'
 import { getStarSignEmoji } from '@/lib/horoscope-utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Force dynamic rendering to avoid SSR issues with context
 export const dynamic = 'force-dynamic'
@@ -20,12 +21,15 @@ export default function TeamDashboard() {
     horoscope_text: string
     horoscope_dos?: string[]
     horoscope_donts?: string[]
-    image_url: string
   } | null>(null)
+  const [horoscopeImage, setHoroscopeImage] = useState<string | null>(null)
+  const [horoscopeImagePrompt, setHoroscopeImagePrompt] = useState<string | null>(null)
   const [horoscopeLoading, setHoroscopeLoading] = useState(true)
+  const [horoscopeImageLoading, setHoroscopeImageLoading] = useState(true)
   const [horoscopeError, setHoroscopeError] = useState<string | null>(null)
+  const [horoscopeImageError, setHoroscopeImageError] = useState<string | null>(null)
 
-  // Fetch horoscope on mount
+  // Fetch horoscope text on mount
   useEffect(() => {
     async function fetchHoroscope() {
       try {
@@ -54,6 +58,34 @@ export default function TeamDashboard() {
       }
     }
     fetchHoroscope()
+  }, [])
+
+  // Fetch horoscope image separately on mount
+  useEffect(() => {
+    async function fetchHoroscopeImage() {
+      try {
+        setHoroscopeImageLoading(true)
+        setHoroscopeImageError(null)
+        const response = await fetch('/api/horoscope/image')
+        const data = await response.json()
+        
+        if (!response.ok) {
+          console.error('Horoscope image API error:', response.status, data)
+          setHoroscopeImageError(data.error || 'Failed to load horoscope image')
+          return
+        }
+        
+        console.log('Horoscope image received:', data)
+        setHoroscopeImage(data.image_url)
+        setHoroscopeImagePrompt(data.image_prompt || null)
+      } catch (error: any) {
+        console.error('Error fetching horoscope image:', error)
+        setHoroscopeImageError('Failed to load horoscope image: ' + (error.message || 'Unknown error'))
+      } finally {
+        setHoroscopeImageLoading(false)
+      }
+    }
+    fetchHoroscopeImage()
   }, [])
 
   // Comprehensive mode-aware card styling
@@ -259,14 +291,103 @@ export default function TeamDashboard() {
               <Card className={`${style.bg} ${style.border} p-0 ${mode === 'chaos' ? getRoundedClass('rounded-[2.5rem]') : getRoundedClass('rounded-[2.5rem]')} relative overflow-hidden group min-h-[500px] flex flex-col justify-between`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
-                {/* Black masked section on the right with transform/rotation */}
+                {/* Black masked section on the right with transform/rotation - contains horoscope image */}
                 {mode === 'chaos' && (
-                  <div className={`absolute top-0 right-0 w-1/2 h-full ${getBgClass()} ${getRoundedClass('rounded-[2.5rem]')} transform translate-x-1/4 -rotate-12`}></div>
+                  <div className={`absolute top-0 right-0 w-1/2 h-full ${getBgClass()} ${getRoundedClass('rounded-[2.5rem]')} transform translate-x-1/4 -rotate-12 flex flex-col items-center justify-center p-8`}>
+                    {horoscopeImageLoading ? (
+                      <Loader2 className="w-8 h-8 animate-spin text-white" />
+                    ) : horoscopeImageError ? (
+                      <p className="text-white text-sm text-center">{horoscopeImageError}</p>
+                    ) : horoscopeImage ? (
+                      <div className="flex flex-col items-center gap-4 w-full">
+                        <div className="relative w-full">
+                          <img 
+                            src={horoscopeImage} 
+                            alt="Horoscope portrait"
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                          {horoscopeImagePrompt && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full transition-colors">
+                                    <Info className="w-4 h-4 text-white" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-md p-4 bg-black/90 text-white text-xs whitespace-pre-wrap">
+                                  <p className="font-bold mb-2">Image Generation Prompt:</p>
+                                  <p>{horoscopeImagePrompt}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(horoscopeImage)
+                              const blob = await response.blob()
+                              const url = window.URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url
+                              a.download = `horoscope-${new Date().toISOString().split('T')[0]}.png`
+                              document.body.appendChild(a)
+                              a.click()
+                              window.URL.revokeObjectURL(url)
+                              document.body.removeChild(a)
+                            } catch (error) {
+                              console.error('Error downloading image:', error)
+                            }
+                          }}
+                          className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-black rounded-lg font-black text-xs uppercase tracking-wider hover:opacity-80 transition-opacity"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 )}
                 {mode !== 'chaos' && (
-                  <div className={`absolute top-0 right-0 w-[60%] h-full ${getBgClass()}`} 
+                  <div className={`absolute top-0 right-0 w-[60%] h-full ${getBgClass()} flex flex-col items-center justify-center p-8`} 
                        style={{ clipPath: 'polygon(12% 0, 100% 0, 100% 100%, 0% 100%)' }} 
-                  />
+                  >
+                    {horoscopeImageLoading ? (
+                      <Loader2 className="w-8 h-8 animate-spin text-white" />
+                    ) : horoscopeImageError ? (
+                      <p className="text-white text-sm text-center">{horoscopeImageError}</p>
+                    ) : horoscopeImage ? (
+                      <div className="flex flex-col items-center gap-4">
+                        <img 
+                          src={horoscopeImage} 
+                          alt="Horoscope portrait"
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(horoscopeImage)
+                              const blob = await response.blob()
+                              const url = window.URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url
+                              a.download = `horoscope-${new Date().toISOString().split('T')[0]}.png`
+                              document.body.appendChild(a)
+                              a.click()
+                              window.URL.revokeObjectURL(url)
+                              document.body.removeChild(a)
+                            } catch (error) {
+                              console.error('Error downloading image:', error)
+                            }
+                          }}
+                          className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-black rounded-lg font-black text-xs uppercase tracking-wider hover:opacity-80 transition-opacity"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 )}
                 <div className="relative z-10 p-8 md:p-12 h-full flex flex-col justify-between">
                   <div>

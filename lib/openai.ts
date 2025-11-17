@@ -81,6 +81,7 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
 
 /**
  * Generate a fun, illustrative portrait for the horoscope using resolved choices
+ * Returns both the image URL and the prompt used
  */
 export async function generateHoroscopeImage(
   starSign: string,
@@ -90,7 +91,7 @@ export async function generateHoroscopeImage(
     promptTags?: string[]
     themeSnippet?: string | null
   }
-): Promise<string> {
+): Promise<{ imageUrl: string; prompt: string }> {
   const { characterType, styleLabel, promptTags = [], themeSnippet } = resolvedChoices
   
   // Build character description based on type
@@ -153,7 +154,7 @@ The illustration should be creative, fun, and capture the essence of ${starSign}
     }
 
     console.log('OpenAI DALL-E API call successful')
-    return imageUrl
+    return { imageUrl, prompt }
   } catch (error: any) {
     console.error('Error generating horoscope image:', error)
     if (error.response) {
