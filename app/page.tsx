@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, Play, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2 } from 'lucide-react'
+import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, Play, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -356,28 +356,62 @@ export default function TeamDashboard() {
                   </div>
                 ) : horoscope ? (
                   <div className="space-y-6">
-                    {/* Top Row: Image and Horoscope Text */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Portrait Image - Left Half */}
-                      {horoscope.image_url && (
-                        <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-3 border-2 overflow-hidden`} style={{ borderColor: `${style.accent}40` }}>
-                          <div className="aspect-square relative overflow-hidden" style={{ borderColor: style.accent, borderWidth: '2px' }}>
-                            <img 
-                              src={horoscope.image_url} 
-                              alt={`${horoscope.star_sign} horoscope portrait`}
-                              className="w-full h-full object-cover"
-                            />
+                    {/* Combined Image and Horoscope Text Container */}
+                    <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-6 border-2`} style={{ borderColor: `${style.accent}40` }}>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Portrait Image - Left Half */}
+                        {horoscope.image_url && (
+                          <div className="relative">
+                            <div className="aspect-square relative overflow-hidden" style={{ borderColor: style.accent, borderWidth: '2px' }}>
+                              <img 
+                                src={horoscope.image_url} 
+                                alt={`${horoscope.star_sign} horoscope portrait`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            {/* Download Button */}
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(horoscope.image_url)
+                                  const blob = await response.blob()
+                                  const url = window.URL.createObjectURL(blob)
+                                  const a = document.createElement('a')
+                                  a.href = url
+                                  a.download = `${horoscope.star_sign}-horoscope-${new Date().toISOString().split('T')[0]}.png`
+                                  document.body.appendChild(a)
+                                  a.click()
+                                  window.URL.revokeObjectURL(url)
+                                  document.body.removeChild(a)
+                                } catch (error) {
+                                  console.error('Error downloading image:', error)
+                                }
+                              }}
+                              className={`mt-3 flex items-center gap-2 px-4 py-2 ${getRoundedClass('rounded-lg')} border-2 transition-opacity hover:opacity-80`}
+                              style={{ 
+                                borderColor: style.accent,
+                                backgroundColor: `${style.accent}20`,
+                                color: style.accent
+                              }}
+                            >
+                              <Download className="w-4 h-4" />
+                              <span className="text-xs font-black uppercase tracking-wider">Download</span>
+                            </button>
+                          </div>
+                        )}
+                        
+                        {/* Horoscope Text - Right Half */}
+                        <div className="flex flex-col">
+                          <p className="text-base font-black mb-3 flex items-center gap-2" style={{ color: style.accent }}>
+                            <span>{getStarSignEmoji(horoscope.star_sign)}</span>
+                            <span>{horoscope.star_sign.toUpperCase()}</span>
+                          </p>
+                          <div className={`text-base leading-relaxed ${style.text} flex-1 space-y-3`}>
+                            {horoscope.horoscope_text.split('\n\n').map((paragraph, idx) => (
+                              <p key={idx}>{paragraph}</p>
+                            ))}
                           </div>
                         </div>
-                      )}
-                      
-                      {/* Horoscope Text - Right Half */}
-                      <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
-                        <p className="text-sm font-black mb-2 flex items-center gap-2" style={{ color: style.accent }}>
-                          <span>{getStarSignEmoji(horoscope.star_sign)}</span>
-                          <span>{horoscope.star_sign.toUpperCase()}</span>
-                        </p>
-                        <p className={`text-sm leading-relaxed ${style.text}`}>{horoscope.horoscope_text}</p>
                       </div>
                     </div>
                     

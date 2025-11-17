@@ -29,7 +29,7 @@ ${cafeAstrologyText}
 
 Return a JSON object with this exact structure:
 {
-  "horoscope": "A short, irreverent version of the horoscope in Co-Star's style (2-3 sentences, witty and casual)",
+  "horoscope": "An irreverent, expanded version of the horoscope in Co-Star's style. Make it approximately 350 words. Keep it witty, casual, and entertaining while expanding on the themes from the original. Break it into multiple paragraphs for readability.",
   "dos": ["Do thing 1", "Do thing 2", "Do thing 3"],
   "donts": ["Don't thing 1", "Don't thing 2", "Don't thing 3"]
 }
@@ -49,7 +49,7 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
         },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 500,
+      max_tokens: 1200,
       temperature: 0.9,
     })
 
