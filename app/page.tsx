@@ -365,37 +365,49 @@ export default function TeamDashboard() {
                   <div className={`absolute top-0 right-0 w-[60%] h-full ${getBgClass()} overflow-hidden`} 
                        style={{ clipPath: 'polygon(12% 0, 100% 0, 100% 100%, 0% 100%)' }} 
                   >
-                    <div className="w-full h-full flex flex-col items-center justify-center p-8">
-                      {horoscopeImageLoading ? (
+                    {horoscopeImageLoading ? (
+                      <div className="w-full h-full flex items-center justify-center">
                         <Loader2 className="w-8 h-8 animate-spin text-white" />
-                      ) : horoscopeImageError ? (
+                      </div>
+                    ) : horoscopeImageError ? (
+                      <div className="w-full h-full flex items-center justify-center p-8">
                         <p className="text-white text-sm text-center">{horoscopeImageError}</p>
-                      ) : horoscopeImage ? (
-                        <div className="flex flex-col items-center gap-4 w-full max-w-[300px]">
-                          <div className="relative w-full aspect-square rounded-lg overflow-hidden border-4 border-white/20">
-                            <img 
-                              src={horoscopeImage} 
-                              alt="Horoscope portrait"
-                              className="w-full h-full object-cover"
-                            />
-                            {horoscopeImagePrompt && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <button className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-black/90 rounded-full transition-colors z-10">
-                                      <Info className="w-4 h-4 text-white" />
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent className="max-w-md p-4 bg-black/95 text-white text-xs whitespace-pre-wrap border border-white/20">
-                                    <p className="font-bold mb-2">Image Generation Prompt:</p>
-                                    <p>{horoscopeImagePrompt}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </div>
+                      </div>
+                    ) : horoscopeImage ? (
+                      <div className="relative w-full h-full">
+                        <img 
+                          src={horoscopeImage} 
+                          alt="Horoscope portrait"
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Tooltip and Download Icons - Absolute positioned */}
+                        <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+                          {horoscopeImagePrompt && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button 
+                                    type="button"
+                                    className="p-2 bg-black/70 hover:bg-black/90 rounded-full transition-colors backdrop-blur-sm"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Info className="w-4 h-4 text-white" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent 
+                                  side="left"
+                                  className="max-w-md p-4 bg-black/95 text-white text-xs whitespace-pre-wrap border border-white/20 z-50"
+                                >
+                                  <p className="font-bold mb-2">Image Generation Prompt:</p>
+                                  <p>{horoscopeImagePrompt}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           <button
-                            onClick={async () => {
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation()
                               try {
                                 const response = await fetch(horoscopeImage)
                                 const blob = await response.blob()
@@ -411,14 +423,13 @@ export default function TeamDashboard() {
                                 console.error('Error downloading image:', error)
                               }
                             }}
-                            className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-black rounded-lg font-black text-xs uppercase tracking-wider hover:opacity-80 transition-opacity shadow-lg"
+                            className="p-2 bg-black/70 hover:bg-black/90 rounded-full transition-colors backdrop-blur-sm"
                           >
-                            <Download className="w-4 h-4" />
-                            Download
+                            <Download className="w-4 h-4 text-white" />
                           </button>
                         </div>
-                      ) : null}
-                    </div>
+                      </div>
+                    ) : null}
                   </div>
                 )}
                 <div className="relative z-10 p-8 md:p-12 h-full flex flex-col justify-between">
