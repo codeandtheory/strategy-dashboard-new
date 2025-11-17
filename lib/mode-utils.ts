@@ -34,7 +34,7 @@ export function getModeColors(mode: Mode) {
         muted: '#8B4444',
         border: 'rgba(74, 24, 24, 0.2)',
       }
-    case 'dark-grey':
+    case 'code':
       return {
         bg: '#000000',
         text: '#ffffff',
@@ -50,22 +50,6 @@ export function getModeColors(mode: Mode) {
         muted: '#808080',
         border: '#333333',
       }
-    case 'light-grey':
-      return {
-        bg: '#ffffff',
-        text: '#000000',
-        cardBg: '#f5f5f5',
-        cardBorder: '#e0e0e0',
-        primary: '#000000',
-        primaryText: '#ffffff',
-        accent1: '#4d4d4d',
-        accent2: '#666666',
-        accent3: '#999999',
-        accent4: '#cccccc',
-        accent5: '#e5e5e5',
-        muted: '#808080',
-        border: '#e0e0e0',
-      }
   }
 }
 
@@ -78,7 +62,7 @@ export function getModeCardClasses(mode: Mode, variant: 'default' | 'colored' | 
         className: '',
         style: {
           backgroundColor: colors.accent1,
-          color: mode === 'chaos' || mode === 'dark-grey' ? colors.text : colors.text,
+          color: mode === 'chaos' || mode === 'code' ? colors.text : colors.text,
         }
       }
     case 'outlined':

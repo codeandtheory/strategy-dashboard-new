@@ -180,65 +180,88 @@ body {
   --mode-border: #333333;
 }
 
-/* CHILL MODE (brand guidelines) */
+/* CHILL MODE (brand guidelines) - Warm, soft colors, no glows */
 [data-mode="chill"] {
+  /* Foundation Colors */
   --mode-bg: #F5E6D3; /* Warm Cream */
   --mode-text: #4A1818; /* Deep Maroon */
   --mode-card-bg: #FFFFFF; /* Pure White */
   --mode-card-border: rgba(74, 24, 24, 0.1); /* Deep Maroon 10% */
+  
+  /* Primary Colors */
   --mode-primary: #FFC043; /* Golden Yellow */
   --mode-primary-text: #4A1818; /* Deep Maroon */
+  
+  /* Accent Colors */
   --mode-accent-1: #FFB5D8; /* Soft Pink */
   --mode-accent-2: #4A9BFF; /* Sky Blue */
   --mode-accent-3: #C8D961; /* Lime Green */
   --mode-accent-4: #FF6B35; /* Bright Orange */
   --mode-accent-5: #8B4444; /* Light Maroon */
+  
+  /* Section-specific accents for chill mode */
+  --mode-hero-accent: #FFC043; /* Golden Yellow */
+  --mode-recognition-accent: #C8D961; /* Lime Green */
+  --mode-work-accent: #FF6B35; /* Bright Orange */
+  --mode-team-accent: #4A9BFF; /* Sky Blue */
+  --mode-vibes-accent: #FFB5D8; /* Soft Pink */
+  --mode-community-accent: #8B4444; /* Light Maroon */
+  
   --mode-muted: #8B4444; /* Light Maroon */
   --mode-border: rgba(74, 24, 24, 0.2); /* Deep Maroon 20% */
 }
 
-/* DARK GREYSCALE MODE - Pure greyscale, black background, no color */
-[data-mode="dark-grey"] {
-  --mode-bg: #000000;
-  --mode-text: #ffffff;
-  --mode-card-bg: #1a1a1a;
-  --mode-card-border: #333333;
-  --mode-primary: #ffffff;
-  --mode-primary-text: #000000;
-  --mode-accent-1: #e5e5e5;
-  --mode-accent-2: #cccccc;
-  --mode-accent-3: #999999;
-  --mode-accent-4: #666666;
-  --mode-accent-5: #4d4d4d;
-  --mode-muted: #808080;
-  --mode-border: #333333;
-}
-
-/* LIGHT GREYSCALE MODE - Pure greyscale, white background, no color */
-[data-mode="light-grey"] {
-  --mode-bg: #ffffff;
-  --mode-text: #000000;
-  --mode-card-bg: #f5f5f5;
-  --mode-card-border: #e0e0e0;
-  --mode-primary: #000000;
-  --mode-primary-text: #ffffff;
-  --mode-accent-1: #4d4d4d;
-  --mode-accent-2: #666666;
-  --mode-accent-3: #999999;
-  --mode-accent-4: #cccccc;
-  --mode-accent-5: #e5e5e5;
-  --mode-muted: #808080;
-  --mode-border: #e0e0e0;
+/* CODE MODE - DOS/Terminal Aesthetic */
+[data-mode="code"] {
+  /* Terminal Colors */
+  --mode-bg: #000000; /* Pure Black - CRT screen */
+  --mode-text: #00FF00; /* DOS Green - Primary text */
+  --mode-text-secondary: rgba(255, 255, 255, 0.7); /* White at 70% opacity */
+  --mode-card-bg: #000000; /* Pure Black */
+  --mode-card-border: #00FF00; /* DOS Green borders */
+  --mode-primary: #00FF00; /* DOS Green */
+  --mode-primary-text: #000000; /* Black text on green */
+  --mode-muted: #808080; /* Gray for inactive */
+  --mode-border: #00FF00; /* DOS Green */
+  
+  /* Section accents - all DOS Green */
+  --mode-hero-accent: #00FF00;
+  --mode-recognition-accent: #00FF00;
+  --mode-work-accent: #00FF00;
+  --mode-team-accent: #00FF00;
+  --mode-vibes-accent: #00FF00;
+  --mode-community-accent: #00FF00;
+  
+  /* Font family - Monospace only */
+  --font-mono: "Courier New", "Monaco", "Consolas", monospace;
 }
 
 /* Apply mode colors to body */
 [data-mode="chaos"] body,
 [data-mode="chill"] body,
-[data-mode="dark-grey"] body,
-[data-mode="light-grey"] body {
+[data-mode="code"] body {
   background-color: var(--mode-bg);
   color: var(--mode-text);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Code mode specific styles */
+[data-mode="code"] {
+  font-family: var(--font-mono, "Courier New", "Monaco", "Consolas", monospace);
+}
+
+[data-mode="code"] * {
+  font-family: inherit;
+}
+
+[data-mode="code"] .rounded-3xl,
+[data-mode="code"] .rounded-2xl,
+[data-mode="code"] .rounded-xl,
+[data-mode="code"] .rounded-lg,
+[data-mode="code"] .rounded-md,
+[data-mode="code"] .rounded-full,
+[data-mode="code"] .rounded {
+  border-radius: 0 !important;
 }
 
 /* Mode switcher styling */

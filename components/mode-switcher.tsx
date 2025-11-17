@@ -13,10 +13,8 @@ export function ModeSwitcher() {
         return <Zap className="w-4 h-4" />
       case 'chill':
         return <Sparkles className="w-4 h-4" />
-      case 'dark-grey':
+      case 'code':
         return <Moon className="w-4 h-4" />
-      case 'light-grey':
-        return <Sun className="w-4 h-4" />
       default:
         return <Zap className="w-4 h-4" />
     }
@@ -28,10 +26,8 @@ export function ModeSwitcher() {
         return 'CHAOS'
       case 'chill':
         return 'CHILL'
-      case 'dark-grey':
-        return 'DARK'
-      case 'light-grey':
-        return 'LIGHT'
+      case 'code':
+        return 'CODE'
       default:
         return 'CHAOS'
     }

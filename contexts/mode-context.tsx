@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 
-type Mode = 'chaos' | 'chill' | 'dark-grey' | 'light-grey'
+type Mode = 'chaos' | 'chill' | 'code'
 
 interface ModeContextType {
   mode: Mode
@@ -13,7 +13,7 @@ interface ModeContextType {
 
 const ModeContext = createContext<ModeContextType | undefined>(undefined)
 
-const MODE_ORDER: Mode[] = ['chaos', 'chill', 'dark-grey', 'light-grey']
+const MODE_ORDER: Mode[] = ['chaos', 'chill', 'code']
 
 export function ModeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<Mode>('chaos')
