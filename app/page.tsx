@@ -355,61 +355,66 @@ export default function TeamDashboard() {
                     <p className={`text-sm ${style.text}`}>{horoscopeError}</p>
                   </div>
                 ) : horoscope ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Portrait Image - Left Half */}
-                    {horoscope.image_url && (
-                      <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-3 border-2 overflow-hidden`} style={{ borderColor: `${style.accent}40` }}>
-                        <div className="aspect-square relative overflow-hidden" style={{ borderColor: style.accent, borderWidth: '2px' }}>
-                          <img 
-                            src={horoscope.image_url} 
-                            alt={`${horoscope.star_sign} horoscope portrait`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Horoscope Text and Do's/Don'ts - Right Half */}
-                    <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2 flex flex-col`} style={{ borderColor: `${style.accent}40` }}>
-                      <p className="text-sm font-black mb-2 flex items-center gap-2" style={{ color: style.accent }}>
-                        <span>{getStarSignEmoji(horoscope.star_sign)}</span>
-                        <span>{horoscope.star_sign.toUpperCase()}</span>
-                      </p>
-                      <p className={`text-sm leading-relaxed mb-4 ${style.text}`}>{horoscope.horoscope_text}</p>
-                      
-                      {/* Do's and Don'ts */}
-                      {(horoscope.horoscope_dos?.length || horoscope.horoscope_donts?.length) && (
-                        <div className="space-y-3 mt-auto pt-4 border-t-2" style={{ borderColor: `${style.accent}30` }}>
-                          {horoscope.horoscope_dos && horoscope.horoscope_dos.length > 0 && (
-                            <div>
-                              <p className="text-xs font-black mb-2 uppercase tracking-wider" style={{ color: style.accent }}>Do</p>
-                              <ul className="space-y-1">
-                                {horoscope.horoscope_dos.map((item, idx) => (
-                                  <li key={idx} className={`text-xs ${style.text} flex items-start gap-2`}>
-                                    <span style={{ color: style.accent }}>✓</span>
-                                    <span>{item}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          
-                          {horoscope.horoscope_donts && horoscope.horoscope_donts.length > 0 && (
-                            <div>
-                              <p className="text-xs font-black mb-2 uppercase tracking-wider" style={{ color: style.accent }}>Don't</p>
-                              <ul className="space-y-1">
-                                {horoscope.horoscope_donts.map((item, idx) => (
-                                  <li key={idx} className={`text-xs ${style.text} flex items-start gap-2`}>
-                                    <span style={{ color: style.accent }}>✗</span>
-                                    <span>{item}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                  <div className="space-y-6">
+                    {/* Top Row: Image and Horoscope Text */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Portrait Image - Left Half */}
+                      {horoscope.image_url && (
+                        <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-3 border-2 overflow-hidden`} style={{ borderColor: `${style.accent}40` }}>
+                          <div className="aspect-square relative overflow-hidden" style={{ borderColor: style.accent, borderWidth: '2px' }}>
+                            <img 
+                              src={horoscope.image_url} 
+                              alt={`${horoscope.star_sign} horoscope portrait`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
                         </div>
                       )}
+                      
+                      {/* Horoscope Text - Right Half */}
+                      <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
+                        <p className="text-sm font-black mb-2 flex items-center gap-2" style={{ color: style.accent }}>
+                          <span>{getStarSignEmoji(horoscope.star_sign)}</span>
+                          <span>{horoscope.star_sign.toUpperCase()}</span>
+                        </p>
+                        <p className={`text-sm leading-relaxed ${style.text}`}>{horoscope.horoscope_text}</p>
+                      </div>
                     </div>
+                    
+                    {/* Bottom Row: Do's and Don'ts - Half Width Each */}
+                    {(horoscope.horoscope_dos?.length || horoscope.horoscope_donts?.length) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Do's - Left Half */}
+                        {horoscope.horoscope_dos && horoscope.horoscope_dos.length > 0 && (
+                          <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
+                            <p className="text-xs font-black mb-3 uppercase tracking-wider" style={{ color: style.accent }}>Do</p>
+                            <ul className="space-y-2">
+                              {horoscope.horoscope_dos.map((item, idx) => (
+                                <li key={idx} className={`text-xs ${style.text} flex items-start gap-2`}>
+                                  <span style={{ color: style.accent }}>✓</span>
+                                  <span>{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {/* Don'ts - Right Half */}
+                        {horoscope.horoscope_donts && horoscope.horoscope_donts.length > 0 && (
+                          <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
+                            <p className="text-xs font-black mb-3 uppercase tracking-wider" style={{ color: style.accent }}>Don't</p>
+                            <ul className="space-y-2">
+                              {horoscope.horoscope_donts.map((item, idx) => (
+                                <li key={idx} className={`text-xs ${style.text} flex items-start gap-2`}>
+                                  <span style={{ color: style.accent }}>✗</span>
+                                  <span>{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>

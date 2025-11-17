@@ -80,17 +80,52 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
 }
 
 /**
- * Generate a portrait illustration for the horoscope
+ * Get illustration style for zodiac sign
+ */
+function getZodiacStyle(starSign: string): string {
+  const styles: Record<string, string> = {
+    'Aries': 'bold, energetic, dynamic illustration with fiery reds and oranges, action-oriented, confident character with ram symbolism',
+    'Taurus': 'grounded, earthy illustration with rich greens and browns, serene and stable, bull symbolism with natural elements',
+    'Gemini': 'playful, dual-natured illustration with bright yellows and blues, twin figures, communicative and curious, airy and light',
+    'Cancer': 'emotional, nurturing illustration with soft blues and silvers, moon symbolism, water elements, cozy and protective',
+    'Leo': 'dramatic, regal illustration with golds and warm oranges, lion symbolism, confident and theatrical, sun motifs',
+    'Virgo': 'detailed, refined illustration with earth tones and greens, organized and precise, harvest symbolism, clean lines',
+    'Libra': 'balanced, harmonious illustration with pastels and soft pinks, scales symbolism, elegant and diplomatic, aesthetic beauty',
+    'Scorpio': 'intense, mysterious illustration with deep purples and reds, scorpion symbolism, transformative and powerful, water elements',
+    'Sagittarius': 'adventurous, free-spirited illustration with vibrant purples and blues, archer symbolism, travel and exploration themes',
+    'Capricorn': 'ambitious, structured illustration with dark greens and browns, mountain goat symbolism, disciplined and goal-oriented',
+    'Aquarius': 'innovative, unique illustration with electric blues and silvers, water bearer symbolism, futuristic and humanitarian',
+    'Pisces': 'dreamy, flowing illustration with sea greens and purples, fish symbolism, mystical and intuitive, water and cosmic elements',
+  }
+  return styles[starSign] || 'mystical, colorful illustration with cosmic elements'
+}
+
+/**
+ * Generate a fun, illustrative portrait for the horoscope
  */
 export async function generateHoroscopeImage(
   starSign: string,
   department: string | null,
   title: string | null
 ): Promise<string> {
-  const departmentText = department ? ` with subtle ${department.toLowerCase()} aesthetic elements` : ''
-  const titleText = title ? ` reflecting a ${title.toLowerCase()} persona` : ''
+  const styleDescription = getZodiacStyle(starSign)
+  const departmentText = department ? `, incorporating subtle ${department.toLowerCase()} design elements` : ''
+  const titleText = title ? `, reflecting a ${title.toLowerCase()} aesthetic` : ''
   
-  const prompt = `A beautiful portrait illustration of a figure representing ${starSign} energy${departmentText}${titleText}. Full body or three-quarter portrait, artistic illustration style, no text, no borders, clean background. The figure should embody ${starSign} characteristics and symbolism. Professional digital art, vibrant colors, detailed illustration, portrait orientation. Suitable for use as a profile picture or avatar.`
+  const prompt = `A fun, vibrant, and whimsical illustration portrait representing ${starSign} energy. ${styleDescription}${departmentText}${titleText}. 
+
+Style requirements:
+- Playful, illustrative art style (like modern digital illustration, whimsical character art, or stylized fantasy illustration)
+- Absolutely NO text, NO words, NO letters, NO numbers anywhere in the image
+- No borders, clean background or subtle abstract background
+- Full body or three-quarter portrait of a character or figure
+- Vibrant, saturated colors
+- Fun, expressive, and engaging
+- Square format, portrait orientation
+- Professional digital art quality
+- Suitable for use as a profile picture or avatar
+
+The illustration should be creative, fun, and capture the essence of ${starSign} in an entertaining and visually appealing way.`
 
   console.log('Calling OpenAI DALL-E API...')
   
