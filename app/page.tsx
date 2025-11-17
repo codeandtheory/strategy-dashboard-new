@@ -357,12 +357,29 @@ export default function TeamDashboard() {
                     ) : horoscopeImageError ? (
                       <p className="text-white text-sm text-center">{horoscopeImageError}</p>
                     ) : horoscopeImage ? (
-                      <div className="flex flex-col items-center gap-4">
-                        <img 
-                          src={horoscopeImage} 
-                          alt="Horoscope portrait"
-                          className="w-full h-full object-cover rounded-lg"
-                        />
+                      <div className="flex flex-col items-center gap-4 w-full">
+                        <div className="relative w-full">
+                          <img 
+                            src={horoscopeImage} 
+                            alt="Horoscope portrait"
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                          {horoscopeImagePrompt && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full transition-colors">
+                                    <Info className="w-4 h-4 text-white" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-md p-4 bg-black/90 text-white text-xs whitespace-pre-wrap">
+                                  <p className="font-bold mb-2">Image Generation Prompt:</p>
+                                  <p>{horoscopeImagePrompt}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
                         <button
                           onClick={async () => {
                             try {

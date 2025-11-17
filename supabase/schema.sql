@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.horoscopes (
   horoscope_dos JSONB NOT NULL DEFAULT '[]'::jsonb,
   horoscope_donts JSONB NOT NULL DEFAULT '[]'::jsonb,
   image_url TEXT NOT NULL,
+  image_prompt TEXT, -- The full prompt used to generate the image
   style_family TEXT,
   style_key TEXT,
   style_label TEXT,
