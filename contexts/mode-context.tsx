@@ -67,6 +67,16 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 export function useMode() {
   const context = useContext(ModeContext)
   if (context === undefined) {
+    // During SSR or if provider isn't available, return default values
+    // This prevents build errors while still allowing the component to render
+    if (typeof window === 'undefined') {
+      return {
+        mode: 'chaos' as Mode,
+        setMode: () => {},
+        toggleMode: () => {},
+        cycleMode: () => {},
+      }
+    }
     throw new Error('useMode must be used within a ModeProvider')
   }
   return context

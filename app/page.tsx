@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { ModeSwitcher } from "@/components/mode-switcher"
 import { useMode } from "@/contexts/mode-context"
 
+// Force dynamic rendering to avoid SSR issues with context
+export const dynamic = 'force-dynamic'
+
 export default function TeamDashboard() {
   const { mode } = useMode()
 
