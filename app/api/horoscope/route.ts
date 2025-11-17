@@ -3,8 +3,14 @@ import { transformHoroscopeToCoStarStyle, generateHoroscopeImage } from '@/lib/o
 import { fetchCafeAstrologyHoroscope } from '@/lib/cafe-astrology'
 import {
   buildUserProfile,
-  resolveChoices,
-} from '@/lib/horoscope-engine-simple'
+  fetchSegmentsForProfile,
+  fetchRulesForSegments,
+  fetchCurrentThemes,
+  fetchThemeRules,
+  fetchActiveStyles,
+  resolveConfig,
+  makeResolvedChoices,
+} from '@/lib/horoscope-engine'
 
 // Supabase client setup - uses service role for database operations
 // This bypasses RLS so the API can insert/update horoscopes
@@ -210,8 +216,46 @@ export async function GET(request: NextRequest) {
     
     const starSign = userProfile.sign
     
-    // Resolve choices using decision trees (logic in code)
-    const resolvedChoices = resolveChoices(userProfile)
+    // Use admin client for all database operations
+    const supabase = await getSupabaseAdminClient()
+    
+    // Step 1: Fetch segments for profile
+    console.log('Fetching segments for profile...')
+    const segments = await fetchSegmentsForProfile(supabase, userProfile)
+    console.log(`Found ${segments.length} matching segments`)
+    
+    // Step 2: Fetch rules for segments
+    const segmentIds = segments.map(s => s.id)
+    const rules = await fetchRulesForSegments(supabase, segmentIds)
+    console.log(`Found ${rules.length} matching rules`)
+    
+    // Step 3: Fetch current themes
+    const themes = await fetchCurrentThemes(supabase, userProfile.today)
+    console.log(`Found ${themes.length} active themes`)
+    
+    // Step 4: Fetch theme rules for themes and segments
+    let allThemeRules: any[] = []
+    for (const theme of themes) {
+      const themeRules = await fetchThemeRules(supabase, theme.id, segmentIds)
+      allThemeRules.push(...themeRules)
+    }
+    console.log(`Found ${allThemeRules.length} theme rules`)
+    
+    // Step 5: Fetch active styles
+    const styles = await fetchActiveStyles(supabase)
+    console.log(`Found ${styles.length} active styles`)
+    
+    // Step 6: Resolve config from database rules and themes
+    const resolvedConfig = resolveConfig(rules, themes, allThemeRules, styles)
+    console.log('Resolved config:', {
+      styleCount: Object.keys(resolvedConfig.styleWeights).length,
+      characterWeights: resolvedConfig.characterTypeWeights,
+      tagCount: resolvedConfig.extraPromptTags.length,
+      hasTheme: !!resolvedConfig.themeSnippet,
+    })
+    
+    // Step 7: Make resolved choices from config
+    const resolvedChoices = makeResolvedChoices(resolvedConfig, styles)
     console.log('Resolved choices:', resolvedChoices)
     
     // Fetch from Cafe Astrology and transform to Co-Star style
@@ -232,7 +276,12 @@ export async function GET(request: NextRequest) {
       // Transform to Co-Star style and generate image in parallel
       const [transformResult, imageResult] = await Promise.allSettled([
         transformHoroscopeToCoStarStyle(cafeAstrologyText, starSign),
-        generateHoroscopeImage(starSign, resolvedChoices),
+        generateHoroscopeImage(starSign, {
+          characterType: resolvedChoices.characterType,
+          styleLabel: resolvedChoices.styleLabel,
+          promptTags: resolvedChoices.promptTags,
+          themeSnippet: resolvedChoices.themeSnippet,
+        }),
       ])
       
       const elapsedTime = Date.now() - startTime
@@ -284,11 +333,9 @@ export async function GET(request: NextRequest) {
           horoscope_dos: horoscopeDos,
           horoscope_donts: horoscopeDonts,
           image_url: imageUrl,
-          style_family: resolvedChoices.styleFamily,
           style_key: resolvedChoices.styleKey,
           style_label: resolvedChoices.styleLabel,
           character_type: resolvedChoices.characterType,
-          setting_hint: resolvedChoices.settingHint || null,
           date: todayDate,
           generated_at: new Date().toISOString(),
         }, {

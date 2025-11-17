@@ -87,10 +87,11 @@ export async function generateHoroscopeImage(
   resolvedChoices: {
     characterType: 'human' | 'animal' | 'object' | 'hybrid'
     styleLabel: string
-    settingHint?: string
+    promptTags?: string[]
+    themeSnippet?: string | null
   }
 ): Promise<string> {
-  const { characterType, styleLabel, settingHint } = resolvedChoices
+  const { characterType, styleLabel, promptTags = [], themeSnippet } = resolvedChoices
   
   // Build character description based on type
   let characterDescription = ''
@@ -109,12 +110,15 @@ export async function generateHoroscopeImage(
       break
   }
   
-  // Build setting hint text
-  const settingText = settingHint ? ` Setting context: ${settingHint}.` : ''
+  // Build prompt tags text
+  const tagsText = promptTags.length > 0 ? ` Incorporate these mood and style elements: ${promptTags.join(', ')}.` : ''
+  
+  // Build theme snippet text
+  const themeText = themeSnippet ? ` Theme context: ${themeSnippet}.` : ''
   
   const prompt = `A fun, vibrant, and whimsical illustration portrait representing ${starSign} energy, featuring ${characterDescription}.
 
-Illustration style: ${styleLabel}.${settingText}
+Illustration style: ${styleLabel}.${tagsText}${themeText}
 
 Style requirements:
 - Absolutely NO text, NO words, NO letters, NO numbers anywhere in the image
