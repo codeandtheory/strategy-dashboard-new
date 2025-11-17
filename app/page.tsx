@@ -461,37 +461,44 @@ export default function TeamDashboard() {
               )
             })()}
 
-            {/* Weather - Ultra Compact Card */}
+            {/* Weather - Redesigned Compact Card */}
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('weather') : getCardStyle('team')
               return (
-                <Card className={`${style.bg} ${style.border} p-2.5 ${getRoundedClass('rounded-[2.5rem]')} relative overflow-hidden`}
+                <Card className={`${style.bg} ${style.border} p-4 ${getRoundedClass('rounded-[2.5rem]')} relative overflow-hidden`}
                       style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
                 >
-                  <div className="flex items-center justify-between mb-1 relative z-10">
-                    <span className={`text-[10px] uppercase tracking-wider font-black ${style.text}/90`}>Right Now</span>
-                    <span className="text-lg">☁️</span>
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-3 relative z-10">
+                    <span className={`text-xs uppercase tracking-wider font-black ${style.text}/90`}>Right Now</span>
+                    <span className="text-2xl">☁️</span>
                   </div>
-                  <h2 className={`text-sm font-black mb-1.5 relative z-10 uppercase ${style.text}`}>WEATHER</h2>
-                  <div className="mb-1.5 relative z-10">
-                    <p className={`text-2xl font-black leading-none mb-0.5 ${style.text}`}>72°</p>
-                    <p className={`${style.text} text-xs font-bold`}>Partly Cloudy</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1 relative z-10">
-                    <div className={`${mode === 'chaos' ? 'bg-white/20 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-white/20'} ${getRoundedClass('rounded-md')} p-1 border`} style={{ borderColor: `${style.accent}30` }}>
-                      <p className={`text-[9px] ${style.text}/90 font-bold uppercase tracking-wide leading-tight`}>Humidity</p>
-                      <p className={`text-sm font-black leading-none ${style.text}`}>65%</p>
+                  
+                  {/* Main Weather Info */}
+                  <div className="mb-4 relative z-10">
+                    <h2 className={`text-base font-black mb-2 uppercase ${style.text}`}>WEATHER</h2>
+                    <div className="flex items-baseline gap-2">
+                      <p className={`text-4xl font-black leading-none ${style.text}`}>72°</p>
+                      <p className={`${style.text} text-sm font-bold`}>Partly Cloudy</p>
                     </div>
-                    <div className={`${mode === 'chaos' ? 'bg-white/20 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-white/20'} ${getRoundedClass('rounded-md')} p-1 border`} style={{ borderColor: `${style.accent}30` }}>
-                      <p className={`text-[9px] ${style.text}/90 font-bold uppercase tracking-wide leading-tight`}>Wind</p>
-                      <p className={`text-sm font-black leading-none ${style.text}`}>8 mph</p>
+                  </div>
+                  
+                  {/* Stats Row */}
+                  <div className="flex gap-2 relative z-10">
+                    <div className="flex-1">
+                      <p className={`text-[10px] ${style.text}/80 font-bold uppercase tracking-wide mb-0.5`}>HUMIDITY</p>
+                      <p className={`text-base font-black ${style.text}`}>65%</p>
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-[10px] ${style.text}/80 font-bold uppercase tracking-wide mb-0.5`}>WIND</p>
+                      <p className={`text-base font-black ${style.text}`}>8 mph</p>
                     </div>
                   </div>
                 </Card>
               )
             })()}
 
-            {/* Time Zones - Ultra Compact */}
+            {/* Time Zones - Redesigned Compact */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('timezones') : getCardStyle('team')
             const timeZoneColors = mode === 'chaos' 
@@ -500,34 +507,39 @@ export default function TeamDashboard() {
               ? ['#4A9BFF', '#C8D961', '#8B4444', '#FFB5D8']
               : ['#cccccc', '#e5e5e5', '#999999', '#cccccc']
             return (
-              <Card className={`${style.bg} ${style.border} p-2.5 ${getRoundedClass('rounded-[2.5rem]')}`}
+              <Card className={`${style.bg} ${style.border} p-4 ${getRoundedClass('rounded-[2.5rem]')}`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
-                <div className="flex items-center gap-1 text-xs mb-1.5" style={{ color: style.accent }}>
-                  <Clock className="w-2.5 h-2.5" />
-                  <span className="uppercase tracking-wider font-black text-[9px]">Global Team</span>
+                {/* Header */}
+                <div className="flex items-center gap-2 mb-3" style={{ color: style.accent }}>
+                  <Clock className="w-3 h-3" />
+                  <span className="uppercase tracking-wider font-black text-xs">Global Team</span>
                 </div>
-                <h2 className={`text-base font-black mb-2 uppercase leading-tight ${style.text}`}>TIME<br/>ZONES</h2>
-                <div className="space-y-1">
+                
+                {/* Title */}
+                <h2 className={`text-lg font-black mb-3 uppercase ${style.text}`}>TIME<br/>ZONES</h2>
+                
+                {/* Timezone List */}
+                <div className="space-y-2">
                   {[
                     { city: 'San Francisco', time: '12:50 AM', people: '2', emoji: '🌉' },
                     { city: 'New York', time: '03:50 AM', people: '5', emoji: '🗽' },
                     { city: 'London', time: '08:50 AM', people: '3', emoji: '🏰' },
                     { city: 'Tokyo', time: '05:50 PM', people: '1', emoji: '🗼' },
                   ].map((tz, idx) => (
-                    <div key={tz.city} className="flex items-center justify-between p-1.5 rounded-md transition-colors hover:opacity-80" 
+                    <div key={tz.city} className="flex items-center justify-between p-2 rounded-lg transition-colors hover:opacity-80" 
                          style={{ 
-                           backgroundColor: `${timeZoneColors[idx]}${mode === 'chaos' ? '33' : mode === 'chill' ? '20' : '33'}`,
-                           border: `1px solid ${timeZoneColors[idx]}${mode === 'chaos' ? '66' : mode === 'chill' ? '40' : '66'}`
+                           backgroundColor: `${timeZoneColors[idx]}${mode === 'chaos' ? '40' : mode === 'chill' ? '25' : '40'}`,
+                           border: `1px solid ${timeZoneColors[idx]}${mode === 'chaos' ? '80' : mode === 'chill' ? '50' : '80'}`
                          }}>
-                      <div className="flex items-center gap-1.5">
-                        <div className={`w-5 h-5 rounded flex items-center justify-center text-xs ${mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-white/20'}`}>{tz.emoji}</div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-6 h-6 rounded-md flex items-center justify-center text-sm ${mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-white/20'}`}>{tz.emoji}</div>
                         <div>
-                          <p className={`font-black text-[10px] leading-tight ${style.text}`}>{tz.city}</p>
-                          <p className={`text-[9px] font-medium leading-tight ${style.text}/70`}>{tz.people} people</p>
+                          <p className={`font-black text-xs ${style.text}`}>{tz.city}</p>
+                          <p className={`text-[10px] font-medium ${style.text}/70`}>{tz.people} people</p>
                         </div>
                       </div>
-                      <span className={`font-black text-[10px] ${style.text}`}>{tz.time}</span>
+                      <span className={`font-black text-xs ${style.text}`}>{tz.time}</span>
                     </div>
                   ))}
                 </div>
