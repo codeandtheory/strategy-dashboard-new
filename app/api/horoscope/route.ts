@@ -20,8 +20,15 @@ async function getSupabaseAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set')
+  // Check if environment variables are set and not empty
+  if (!supabaseUrl || supabaseUrl.trim() === '') {
+    console.error('NEXT_PUBLIC_SUPABASE_URL is missing or empty')
+    throw new Error('Missing Supabase URL: NEXT_PUBLIC_SUPABASE_URL must be set in environment variables')
+  }
+  
+  if (!supabaseServiceKey || supabaseServiceKey.trim() === '') {
+    console.error('SUPABASE_SERVICE_ROLE_KEY is missing or empty')
+    throw new Error('Missing Supabase Service Role Key: SUPABASE_SERVICE_ROLE_KEY must be set in Vercel environment variables. Go to your Vercel project settings > Environment Variables and add SUPABASE_SERVICE_ROLE_KEY with your service role key from Supabase Dashboard > Settings > API')
   }
   
   return createClient(
@@ -38,6 +45,13 @@ async function getSupabaseAdminClient() {
 
 // Supabase client for user authentication (uses anon key)
 async function getSupabaseAuthClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set')
+  }
+  
   // Try to use @supabase/ssr if available, otherwise use @supabase/supabase-js
   try {
     const { createServerClient } = await import('@supabase/ssr')
@@ -45,8 +59,8 @@ async function getSupabaseAuthClient() {
     const cookieStore = await cookies()
     
     return createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         cookies: {
           getAll() {
@@ -69,15 +83,15 @@ async function getSupabaseAuthClient() {
         },
       }
     )
-  } catch {
-    // Fallback to basic Supabase client if @supabase/ssr is not available
-    const { createClient } = await import('@supabase/supabase-js')
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-  }
-}
+        } catch {
+          // Fallback to basic Supabase client if @supabase/ssr is not available
+          const { createClient } = await import('@supabase/supabase-js')
+          return createClient(
+            supabaseUrl,
+            supabaseAnonKey
+          )
+        }
+      }
 
 export async function GET(request: NextRequest) {
   try {
