@@ -456,64 +456,17 @@ export default function TeamDashboard() {
                   </div>
                 ) : horoscope ? (
                   <div className="space-y-6">
-                    {/* Combined Image and Horoscope Text Container */}
+                    {/* Horoscope Text Container */}
                     <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-6 border-2`} style={{ borderColor: `${style.accent}40` }}>
-                      {/* Portrait Image - Floating Left */}
-                      {horoscope.image_url && (
-                        <div className="float-left mr-6 mb-4 relative">
-                          <div className="w-48 md:w-64 aspect-square relative overflow-hidden" style={{ borderColor: style.accent, borderWidth: '2px' }}>
-                            <img 
-                              src={horoscope.image_url} 
-                              alt={`${horoscope.star_sign} horoscope portrait`}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          {/* Download Button */}
-                          <button
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(horoscope.image_url)
-                                const blob = await response.blob()
-                                const url = window.URL.createObjectURL(blob)
-                                const a = document.createElement('a')
-                                a.href = url
-                                a.download = `${horoscope.star_sign}-horoscope-${new Date().toISOString().split('T')[0]}.png`
-                                document.body.appendChild(a)
-                                a.click()
-                                window.URL.revokeObjectURL(url)
-                                document.body.removeChild(a)
-                              } catch (error) {
-                                console.error('Error downloading image:', error)
-                              }
-                            }}
-                            className={`mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 ${getRoundedClass('rounded-lg')} border-2 transition-opacity hover:opacity-80`}
-                            style={{ 
-                              borderColor: style.accent,
-                              backgroundColor: `${style.accent}20`,
-                              color: style.accent
-                            }}
-                          >
-                            <Download className="w-4 h-4" />
-                            <span className="text-xs font-black uppercase tracking-wider">Download</span>
-                          </button>
-                        </div>
-                      )}
-                      
-                      {/* Horoscope Text - Flowing Around Image */}
-                      <div className="overflow-hidden">
-                        <p className="text-base font-black mb-3 flex items-center gap-2" style={{ color: style.accent }}>
-                          <span>{getStarSignEmoji(horoscope.star_sign)}</span>
-                          <span>{horoscope.star_sign.toUpperCase()}</span>
-                        </p>
-                        <div className={`text-base leading-relaxed ${style.text} space-y-3`}>
-                          {horoscope.horoscope_text.split('\n\n').map((paragraph, idx) => (
-                            <p key={idx}>{paragraph}</p>
-                          ))}
-                        </div>
+                      <p className="text-base font-black mb-3 flex items-center gap-2" style={{ color: style.accent }}>
+                        <span>{getStarSignEmoji(horoscope.star_sign)}</span>
+                        <span>{horoscope.star_sign.toUpperCase()}</span>
+                      </p>
+                      <div className={`text-base leading-relaxed ${style.text} space-y-3`}>
+                        {horoscope.horoscope_text.split('\n\n').map((paragraph, idx) => (
+                          <p key={idx}>{paragraph}</p>
+                        ))}
                       </div>
-                      
-                      {/* Clear float */}
-                      <div className="clear-both"></div>
                     </div>
                     
                     {/* Bottom Row: Do's and Don'ts - Half Width Each */}
