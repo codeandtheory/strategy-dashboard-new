@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -128,7 +127,7 @@
     @apply bg-background text-foreground font-sans;
   }
   
-  /* Updated animations for brand guidelines */
+  /* Custom animations to replace tw-animate-css */
   @keyframes slide-up {
     from {
       opacity: 0;
@@ -149,11 +148,24 @@
     }
   }
   
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(255, 192, 67, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(255, 192, 67, 0.6);
+    }
+  }
+  
   .animate-slide-up {
     animation: slide-up 0.6s ease-out forwards;
   }
   
   .animate-float {
     animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
   }
 }
