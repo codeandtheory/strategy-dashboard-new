@@ -1285,30 +1285,25 @@ export default function TeamDashboard() {
               <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
-                <Badge className={`${mode === 'chaos' ? 'bg-black text-[#FF6B00]' : mode === 'chill' ? 'bg-[#4A1818] text-[#FF6B35]' : 'bg-white text-black'} border-0 font-black mb-3 text-xs uppercase tracking-wider`}>Recent Requests</Badge>
-                <h2 className={`text-4xl font-black mb-6 uppercase ${style.text}`}>WHO<br/>NEEDS<br/>WHAT</h2>
-            <div className="space-y-3 mb-4">
+                <p className={`text-xs uppercase tracking-wider mb-4 font-black ${style.text}/80`}>RECENT REQUESTS</p>
+                <h2 className={`text-3xl font-black mb-6 uppercase leading-tight ${style.text}`}>WHO NEEDS WHAT</h2>
+                <div className="space-y-2 mb-4">
                   {[
-                    { name: 'Alex', task: 'Design Review', emoji: '👀' },
+                    { name: 'Alex', task: 'Design Review', emoji: '😊' },
                     { name: 'Sarah', task: 'Code Help', emoji: '💻' },
                   ].map((request) => (
-                    <div key={request.name} className={`${mode === 'chaos' ? 'bg-black/40' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/40'} rounded-xl p-3 border-2`} style={{ borderColor: `${style.accent}66` }}>
-                      <div className="flex items-center justify-between">
-                <div>
-                          <p className={`text-sm font-black ${style.text}`}>{request.name}</p>
-                          <p className={`text-xs ${style.text}/60`}>{request.task}</p>
-                </div>
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: style.accent }}>
-                          <span className="text-lg">{request.emoji}</span>
-                </div>
-              </div>
-                </div>
+                    <div key={request.name} className={`${mode === 'chaos' ? 'bg-black/30' : mode === 'chill' ? 'bg-white/10' : 'bg-black/30'} ${getRoundedClass('rounded-lg')} p-3 flex items-center justify-between`}>
+                      <div>
+                        <p className={`text-sm font-black ${style.text}`}>{request.name} {request.task}</p>
+                      </div>
+                      <span className="text-xl">{request.emoji}</span>
+                    </div>
                   ))}
                 </div>
-                <Button className={`w-full ${mode === 'chaos' ? 'bg-black text-[#FF6B00] hover:bg-[#0F0F0F]' : mode === 'chill' ? 'bg-[#4A1818] text-[#FF6B35] hover:bg-[#3A1414]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black rounded-full h-12 uppercase`}>
-              CLAIM REQUEST
-            </Button>
-          </Card>
+                <Button className={`w-full ${mode === 'chaos' ? 'bg-black text-white hover:bg-[#0F0F0F]' : mode === 'chill' ? 'bg-[#4A1818] text-white hover:bg-[#3A1414]' : mode === 'code' ? 'bg-black text-[#00FF00] border border-[#00FF00] hover:bg-[#0F0F0F]' : 'bg-black text-white hover:bg-[#0F0F0F]'} font-black ${getRoundedClass('rounded-lg')} h-10 text-sm uppercase ${mode === 'code' ? 'font-mono' : ''}`}>
+                  {mode === 'code' ? '[CLAIM REQUEST]' : 'CLAIM REQUEST'}
+                </Button>
+              </Card>
             )
           })()}
         </div>
