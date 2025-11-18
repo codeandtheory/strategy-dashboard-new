@@ -89,18 +89,24 @@ export async function GET(request: NextRequest) {
     )
     const { userProfile, resolvedChoices, starSign } = config
     
-    // Check for cached image
+    // Check for cached image - only generate once per user per day
     const today = new Date()
-    const todayDate = today.toISOString().split('T')[0]
+    const todayDate = today.toISOString().split('T')[0] // YYYY-MM-DD format
     
-    const { data: cachedHoroscope } = await supabase
+    const { data: cachedHoroscope, error: cacheError } = await supabase
       .from('horoscopes')
-      .select('image_url, image_prompt')
+      .select('image_url, image_prompt, style_key, style_label, character_type, setting_hint, date, generated_at')
       .eq('user_id', userId)
       .eq('date', todayDate)
       .maybeSingle()
     
-    if (cachedHoroscope?.image_url) {
+    if (cacheError) {
+      console.error('Error checking cache:', cacheError)
+    }
+    
+    // If we have a cached image for today, return it immediately (don't regenerate)
+    if (cachedHoroscope?.image_url && cachedHoroscope.date === todayDate) {
+      console.log('Returning cached image for user', userId, 'on date', todayDate)
       // For cached horoscopes, rebuild the config to get all the data (prompt tags, theme, etc.)
       // This ensures we have complete information even for cached images
       const config = await fetchHoroscopeConfig(
@@ -141,6 +147,9 @@ export async function GET(request: NextRequest) {
       })
     }
     
+    // Only generate new image if we don't have one cached for today
+    console.log('No cached image found for user', userId, 'on date', todayDate, '- generating new image')
+    
     // Generate new image with full user profile context
     const { imageUrl, prompt } = await generateHoroscopeImage(
       starSign,
@@ -161,7 +170,8 @@ export async function GET(request: NextRequest) {
     )
     
     // Save image URL and prompt to database (upsert horoscope record)
-    await supabase
+    // This ensures we only generate once per user per day
+    const { error: saveError } = await supabase
       .from('horoscopes')
       .upsert({
         user_id: userId,
@@ -171,11 +181,18 @@ export async function GET(request: NextRequest) {
         style_key: resolvedChoices.styleKey,
         style_label: resolvedChoices.styleLabel,
         character_type: resolvedChoices.characterType,
-        date: todayDate,
+        date: todayDate, // Use today's date as the cache key
         generated_at: new Date().toISOString(),
       }, {
-        onConflict: 'user_id,date',
+        onConflict: 'user_id,date', // Unique constraint ensures one image per user per day
       })
+    
+    if (saveError) {
+      console.error('Error saving horoscope image:', saveError)
+      // Continue anyway - we still return the generated image
+    } else {
+      console.log('Successfully saved horoscope image for user', userId, 'on date', todayDate)
+    }
     
     // Get additional config data for display
     const fullConfig = await fetchHoroscopeConfig(
