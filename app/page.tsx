@@ -66,6 +66,7 @@ export default function TeamDashboard() {
   const [characterName, setCharacterName] = useState<string | null>(null)
   const [userTimeZone, setUserTimeZone] = useState<string | null>(null)
   const [timeZones, setTimeZones] = useState<Array<{ label: string; city: string; time: string; offset: number }>>([])
+  const [todayDate, setTodayDate] = useState<string>('')
 
   // Detect user timezone and calculate timezone times
   useEffect(() => {
@@ -593,7 +594,7 @@ export default function TeamDashboard() {
                       </p>
                     )}
                     <p className={`text-base md:text-lg lg:text-xl font-bold mt-4 text-black/70 ${mode === 'code' ? 'font-mono' : ''}`}>
-                      {mode === 'code' ? 'C:\\> date: Friday, November 14' : 'Friday, November 14'}
+                      {mode === 'code' ? `C:\\> date: ${todayDate || 'Loading...'}` : todayDate || 'Loading...'}
                     </p>
                   </div>
                   <div className="relative z-10 flex items-center gap-3 md:gap-4 flex-wrap">
