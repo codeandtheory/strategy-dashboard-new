@@ -1109,7 +1109,7 @@ export default function TeamDashboard() {
             }
             
             return (
-              <div className="col-span-1 md:col-span-2 lg:col-span-4">
+              <div className="col-span-1">
                 <SpotifyPlayer
                   playlist={playlistData}
                   isPlaying={isPlaying}
