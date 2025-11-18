@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
       windSpeed,
       emoji: getWeatherEmoji(description, isDay),
       workReport,
-      location,
+      location: locationName,
       cached: false,
     })
   } catch (error: any) {
