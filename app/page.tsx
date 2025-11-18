@@ -25,6 +25,25 @@ export default function TeamDashboard() {
   } | null>(null)
   const [horoscopeImage, setHoroscopeImage] = useState<string | null>(null)
   const [horoscopeImagePrompt, setHoroscopeImagePrompt] = useState<string | null>(null)
+  const [horoscopeImageConfig, setHoroscopeImageConfig] = useState<{
+    userProfile?: {
+      sign: string
+      element: string
+      modality: string
+      discipline: string | null
+      roleLevel: string | null
+      weekday: string
+      season: string
+    }
+    resolvedChoices?: {
+      styleKey: string | null
+      styleLabel: string | null
+      characterType: string | null
+      promptTags?: string[]
+      themeSnippet?: string | null
+      settingHint?: string | null
+    }
+  } | null>(null)
   const [horoscopeLoading, setHoroscopeLoading] = useState(true)
   const [horoscopeImageLoading, setHoroscopeImageLoading] = useState(true)
   const [horoscopeError, setHoroscopeError] = useState<string | null>(null)
@@ -358,7 +377,7 @@ export default function TeamDashboard() {
             {horoscopeImage && (
               <TooltipProvider>
                 <div className="flex items-center gap-2">
-                  {horoscopeImagePrompt && (
+                  {horoscopeImageConfig && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button 
@@ -378,10 +397,63 @@ export default function TeamDashboard() {
                       </TooltipTrigger>
                       <TooltipContent 
                         side="bottom"
-                        className="max-w-md p-4 bg-black/95 text-white text-xs whitespace-pre-wrap border border-white/20 z-[10000]"
+                        className="max-w-lg p-4 bg-black/95 text-white text-xs border border-white/20 z-[10000]"
                       >
-                        <p className="font-bold mb-2">Image Generation Prompt:</p>
-                        <p>{horoscopeImagePrompt}</p>
+                        <p className="font-bold mb-3 text-sm">Image Generation Factors</p>
+                        <div className="space-y-3">
+                          {/* User Profile Section */}
+                          {horoscopeImageConfig.userProfile && (
+                            <div>
+                              <p className="font-semibold mb-1 text-[#C4F500]">User Profile:</p>
+                              <div className="space-y-1 pl-2">
+                                <p><span className="text-gray-400">Sign:</span> {horoscopeImageConfig.userProfile.sign}</p>
+                                <p><span className="text-gray-400">Element:</span> {horoscopeImageConfig.userProfile.element}</p>
+                                <p><span className="text-gray-400">Modality:</span> {horoscopeImageConfig.userProfile.modality}</p>
+                                {horoscopeImageConfig.userProfile.discipline && (
+                                  <p><span className="text-gray-400">Discipline:</span> {horoscopeImageConfig.userProfile.discipline}</p>
+                                )}
+                                {horoscopeImageConfig.userProfile.roleLevel && (
+                                  <p><span className="text-gray-400">Role Level:</span> {horoscopeImageConfig.userProfile.roleLevel}</p>
+                                )}
+                                <p><span className="text-gray-400">Weekday:</span> {horoscopeImageConfig.userProfile.weekday}</p>
+                                <p><span className="text-gray-400">Season:</span> {horoscopeImageConfig.userProfile.season}</p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Resolved Choices Section */}
+                          {horoscopeImageConfig.resolvedChoices && (
+                            <div>
+                              <p className="font-semibold mb-1 text-[#C4F500]">Resolved Choices:</p>
+                              <div className="space-y-1 pl-2">
+                                {horoscopeImageConfig.resolvedChoices.styleLabel && (
+                                  <p><span className="text-gray-400">Style:</span> {horoscopeImageConfig.resolvedChoices.styleLabel}</p>
+                                )}
+                                {horoscopeImageConfig.resolvedChoices.characterType && (
+                                  <p><span className="text-gray-400">Character Type:</span> {horoscopeImageConfig.resolvedChoices.characterType}</p>
+                                )}
+                                {horoscopeImageConfig.resolvedChoices.promptTags && horoscopeImageConfig.resolvedChoices.promptTags.length > 0 && (
+                                  <p>
+                                    <span className="text-gray-400">Prompt Tags:</span>{' '}
+                                    {horoscopeImageConfig.resolvedChoices.promptTags.join(', ')}
+                                  </p>
+                                )}
+                                {horoscopeImageConfig.resolvedChoices.themeSnippet && (
+                                  <p>
+                                    <span className="text-gray-400">Theme:</span>{' '}
+                                    {horoscopeImageConfig.resolvedChoices.themeSnippet}
+                                  </p>
+                                )}
+                                {horoscopeImageConfig.resolvedChoices.settingHint && (
+                                  <p>
+                                    <span className="text-gray-400">Setting:</span>{' '}
+                                    {horoscopeImageConfig.resolvedChoices.settingHint}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </TooltipContent>
                     </Tooltip>
                   )}

@@ -101,10 +101,32 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
     
     if (cachedHoroscope?.image_url) {
+      // For cached horoscopes, we need to rebuild the config to get prompt tags and theme
+      // But we can use the stored metadata as a fallback
       return NextResponse.json({
         image_url: cachedHoroscope.image_url,
         image_prompt: cachedHoroscope.image_prompt || null,
         cached: true,
+        config: {
+          userProfile: {
+            sign: starSign,
+            element: userProfile.element,
+            modality: userProfile.modality,
+            discipline: profile.discipline || null,
+            roleLevel: userProfile.roleLevel || null,
+            weekday: userProfile.weekday,
+            season: userProfile.season,
+          },
+          resolvedChoices: {
+            styleKey: cachedHoroscope.style_key || null,
+            styleLabel: cachedHoroscope.style_label || null,
+            characterType: cachedHoroscope.character_type || null,
+            settingHint: cachedHoroscope.setting_hint || null,
+            // For cached, we don't have prompt tags/theme stored, so we'll rebuild config
+            promptTags: resolvedChoices.promptTags || [],
+            themeSnippet: resolvedChoices.themeSnippet || null,
+          },
+        },
       })
     }
     
@@ -148,6 +170,25 @@ export async function GET(request: NextRequest) {
       image_url: imageUrl,
       image_prompt: prompt,
       cached: false,
+      config: {
+        userProfile: {
+          sign: starSign,
+          element: userProfile.element,
+          modality: userProfile.modality,
+          discipline: profile.discipline || null,
+          roleLevel: userProfile.roleLevel || null,
+          weekday: userProfile.weekday,
+          season: userProfile.season,
+        },
+        resolvedChoices: {
+          styleKey: resolvedChoices.styleKey,
+          styleLabel: resolvedChoices.styleLabel,
+          characterType: resolvedChoices.characterType,
+          promptTags: resolvedChoices.promptTags || [],
+          themeSnippet: resolvedChoices.themeSnippet || null,
+          settingHint: resolvedChoices.settingHint || null,
+        },
+      },
     })
   } catch (error: any) {
     console.error('Error in horoscope image API:', error)
