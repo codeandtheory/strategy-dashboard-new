@@ -349,26 +349,26 @@ export default function TeamDashboard() {
                           className="w-full h-full object-cover"
                           style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                         />
-                        {/* Tooltip and Download Icons - Absolute positioned */}
+                        {/* Tooltip and Download Icons - Absolute positioned, white background for visibility */}
                         <TooltipProvider>
-                          <div className="absolute top-4 right-4 flex items-center gap-2 z-50 pointer-events-auto">
+                          <div className="absolute top-2 right-2 flex items-center gap-2 z-[9999] pointer-events-auto">
                             {horoscopeImagePrompt && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <button 
                                     type="button"
-                                    className="p-2 bg-black/80 hover:bg-black rounded-full transition-colors backdrop-blur-sm shadow-lg"
+                                    className="p-2 bg-white/90 hover:bg-white rounded-full transition-colors shadow-xl border-2 border-black/20"
                                     onClick={(e) => {
                                       e.preventDefault()
                                       e.stopPropagation()
                                     }}
                                   >
-                                    <Info className="w-4 h-4 text-white" />
+                                    <Info className="w-4 h-4 text-black" />
                                   </button>
                                 </TooltipTrigger>
                                 <TooltipContent 
                                   side="left"
-                                  className="max-w-md p-4 bg-black/95 text-white text-xs whitespace-pre-wrap border border-white/20 z-[100]"
+                                  className="max-w-md p-4 bg-black/95 text-white text-xs whitespace-pre-wrap border border-white/20 z-[10000]"
                                 >
                                   <p className="font-bold mb-2">Image Generation Prompt:</p>
                                   <p>{horoscopeImagePrompt}</p>
@@ -395,9 +395,9 @@ export default function TeamDashboard() {
                                   console.error('Error downloading image:', error)
                                 }
                               }}
-                              className="p-2 bg-black/80 hover:bg-black rounded-full transition-colors backdrop-blur-sm shadow-lg"
+                              className="p-2 bg-white/90 hover:bg-white rounded-full transition-colors shadow-xl border-2 border-black/20"
                             >
-                              <Download className="w-4 h-4 text-white" />
+                              <Download className="w-4 h-4 text-black" />
                             </button>
                           </div>
                         </TooltipProvider>
@@ -425,26 +425,26 @@ export default function TeamDashboard() {
                           className="w-full h-full object-cover"
                           style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                         />
-                        {/* Tooltip and Download Icons - Absolute positioned */}
+                        {/* Tooltip and Download Icons - Absolute positioned, white background for visibility */}
                         <TooltipProvider>
-                          <div className="absolute top-4 right-4 flex items-center gap-2 z-50 pointer-events-auto">
+                          <div className="absolute top-2 right-2 flex items-center gap-2 z-[9999] pointer-events-auto">
                             {horoscopeImagePrompt && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <button 
                                     type="button"
-                                    className="p-2 bg-black/80 hover:bg-black rounded-full transition-colors backdrop-blur-sm shadow-lg"
+                                    className="p-2 bg-white/90 hover:bg-white rounded-full transition-colors shadow-xl border-2 border-black/20"
                                     onClick={(e) => {
                                       e.preventDefault()
                                       e.stopPropagation()
                                     }}
                                   >
-                                    <Info className="w-4 h-4 text-white" />
+                                    <Info className="w-4 h-4 text-black" />
                                   </button>
                                 </TooltipTrigger>
                                 <TooltipContent 
                                   side="left"
-                                  className="max-w-md p-4 bg-black/95 text-white text-xs whitespace-pre-wrap border border-white/20 z-[100]"
+                                  className="max-w-md p-4 bg-black/95 text-white text-xs whitespace-pre-wrap border border-white/20 z-[10000]"
                                 >
                                   <p className="font-bold mb-2">Image Generation Prompt:</p>
                                   <p>{horoscopeImagePrompt}</p>
@@ -471,9 +471,9 @@ export default function TeamDashboard() {
                                   console.error('Error downloading image:', error)
                                 }
                               }}
-                              className="p-2 bg-black/80 hover:bg-black rounded-full transition-colors backdrop-blur-sm shadow-lg"
+                              className="p-2 bg-white/90 hover:bg-white rounded-full transition-colors shadow-xl border-2 border-black/20"
                             >
-                              <Download className="w-4 h-4 text-white" />
+                              <Download className="w-4 h-4 text-black" />
                             </button>
                           </div>
                         </TooltipProvider>
