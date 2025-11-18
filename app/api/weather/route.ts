@@ -5,8 +5,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-// NWS API base URL (no API key required!)
-const NWS_API_BASE = 'https://api.weather.gov'
+// WeatherAPI.com base URL
+const WEATHERAPI_BASE = 'https://api.weatherapi.com/v1'
 
 /**
  * Get weather emoji based on weather condition
@@ -89,137 +89,86 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('Fetching weather from National Weather Service API...')
-    
-    // NWS API requires a User-Agent header
-    const headers = {
-      'User-Agent': 'strategy-dashboard/1.0 (contact: your-email@example.com)',
-      'Accept': 'application/json',
-    }
-
-    // Step 1: Get grid point from lat/lon
-    // NWS API only works for US locations
-    const pointsUrl = `${NWS_API_BASE}/points/${lat},${lon}`
-    console.log('Fetching grid point from NWS...')
-    const pointsResponse = await fetch(pointsUrl, { headers })
-
-    if (!pointsResponse.ok) {
-      if (pointsResponse.status === 404) {
-        return NextResponse.json(
-          { error: 'Location not found. NWS API only supports US locations.' },
-          { status: 404 }
-        )
-      }
-      const errorText = await pointsResponse.text()
-      console.error('NWS points API error:', pointsResponse.status, errorText)
+    // Get WeatherAPI.com API key from environment variables
+    const apiKey = process.env.WEATHERAPI_KEY || process.env.NEXT_PUBLIC_WEATHERAPI_KEY
+    if (!apiKey) {
+      console.error('WEATHERAPI_KEY is not set')
       return NextResponse.json(
-        { error: `Failed to get location data: ${pointsResponse.statusText}`, details: errorText },
-        { status: pointsResponse.status }
+        { error: 'Weather service not configured. Please set WEATHERAPI_KEY in Vercel environment variables. Get a free API key from https://www.weatherapi.com/' },
+        { status: 500 }
       )
     }
 
-    const pointsData = await pointsResponse.json()
-    const { gridId, gridX, gridY, properties } = pointsData
-    const forecastOffice = properties?.forecastOffice?.replace(NWS_API_BASE, '') || ''
-    const locationName = properties?.relativeLocation?.properties?.city || 
-                        properties?.relativeLocation?.properties?.areaDescription || 
-                        'your location'
+    console.log('Fetching weather from WeatherAPI.com...')
+    console.log('WeatherAPI key status:', apiKey ? `${apiKey.substring(0, 4)}...` : 'NOT SET')
 
-    console.log(`NWS grid point: ${gridId} ${gridX},${gridY}`)
+    // WeatherAPI.com current weather endpoint
+    // q parameter can be lat,lon or city name
+    const weatherUrl = `${WEATHERAPI_BASE}/current.json?key=${apiKey}&q=${lat},${lon}&aqi=no`
+    console.log('Fetching weather from WeatherAPI.com...')
+    const weatherResponse = await fetch(weatherUrl)
 
-    // Step 2: Get current conditions from the grid point
-    // We'll use the forecast endpoint which includes current conditions
-    const forecastUrl = `${NWS_API_BASE}/gridpoints/${gridId}/${gridX},${gridY}/forecast`
-    console.log('Fetching forecast from NWS...')
-    const forecastResponse = await fetch(forecastUrl, { headers })
-
-    if (!forecastResponse.ok) {
-      const errorText = await forecastResponse.text()
-      console.error('NWS forecast API error:', forecastResponse.status, errorText)
-      return NextResponse.json(
-        { error: `Failed to get weather forecast: ${forecastResponse.statusText}`, details: errorText },
-        { status: forecastResponse.status }
-      )
-    }
-
-    const forecastData = await forecastResponse.json()
-    
-    // Get current conditions from the first period (usually "Tonight" or "Today")
-    const currentPeriod = forecastData.properties?.periods?.[0]
-    if (!currentPeriod) {
-      return NextResponse.json(
-        { error: 'No weather data available for this location' },
-        { status: 404 }
-      )
-    }
-
-    // Step 3: Get detailed observations if available
-    let temperature = currentPeriod.temperature
-    let condition = currentPeriod.shortForecast || 'Unknown'
-    let description = currentPeriod.detailedForecast || condition
-    let windSpeed = 0
-    let humidity = null
-    let isDay = currentPeriod.isDaytime
-
-    // Try to get more detailed observations from the station
-    try {
-      const stationsUrl = `${NWS_API_BASE}/gridpoints/${gridId}/${gridX},${gridY}/stations`
-      const stationsResponse = await fetch(stationsUrl, { headers })
+    if (!weatherResponse.ok) {
+      const errorText = await weatherResponse.text()
+      console.error('WeatherAPI.com API error:', weatherResponse.status, errorText)
       
-      if (stationsResponse.ok) {
-        const stationsData = await stationsResponse.json()
-        const observationStations = stationsData.features || []
-        
-        // Get the closest station's observations
-        if (observationStations.length > 0) {
-          const stationId = observationStations[0].properties?.stationIdentifier
-          if (stationId) {
-            const observationsUrl = `${NWS_API_BASE}/stations/${stationId}/observations/latest`
-            const obsResponse = await fetch(observationsUrl, { headers })
-            
-            if (obsResponse.ok) {
-              const obsData = await obsResponse.json()
-              const observation = obsData.properties
-              
-              // Convert temperature from Celsius to Fahrenheit if needed
-              if (observation.temperature?.value !== null) {
-                temperature = Math.round((observation.temperature.value * 9/5) + 32)
-              }
-              
-              // Get wind speed (convert from m/s to mph)
-              if (observation.windSpeed?.value !== null) {
-                windSpeed = Math.round(observation.windSpeed.value * 2.237) // m/s to mph
-              }
-              
-              // Get relative humidity
-              if (observation.relativeHumidity?.value !== null) {
-                humidity = Math.round(observation.relativeHumidity.value)
-              }
-              
-              // Get condition from observation
-              if (observation.textDescription) {
-                description = observation.textDescription
-                condition = observation.textDescription.split(' ')[0] // First word
-              }
-            }
-          }
+      let errorDetails = 'Failed to fetch weather data'
+      try {
+        const errorJson = JSON.parse(errorText)
+        if (errorJson.error?.message) {
+          errorDetails = errorJson.error.message
+        }
+      } catch {
+        if (errorText) {
+          errorDetails = errorText
         }
       }
-    } catch (e) {
-      console.warn('Could not fetch detailed observations, using forecast data:', e)
-      // Continue with forecast data
+
+      if (weatherResponse.status === 401) {
+        return NextResponse.json(
+          { 
+            error: 'Invalid API key. Please check that WEATHERAPI_KEY is correct in Vercel environment variables.',
+            details: errorDetails,
+            troubleshooting: [
+              '1. Verify the API key is correct in your WeatherAPI.com account dashboard',
+              '2. Make sure you copied the entire key (no spaces)',
+              '3. Ensure the environment variable is set in Vercel (not just locally)',
+              '4. Redeploy your Vercel project after adding/updating the environment variable',
+              '5. Check your WeatherAPI.com account status and API limits'
+            ]
+          },
+          { status: 401 }
+        )
+      }
+
+      return NextResponse.json(
+        { error: `Failed to fetch weather data: ${weatherResponse.statusText}`, details: errorDetails },
+        { status: weatherResponse.status }
+      )
     }
 
-    // Ensure temperature is a number
-    if (typeof temperature !== 'number') {
-      temperature = currentPeriod.temperature || 0
-    }
+    const weatherData = await weatherResponse.json()
+    const current = weatherData.current
+    const location = weatherData.location
+
+    // Extract weather data
+    const temperature = Math.round(current.temp_f) // Already in Fahrenheit
+    const condition = current.condition?.text || 'Unknown'
+    const description = current.condition?.text || condition
+    const humidity = current.humidity
+    const windSpeed = Math.round(current.wind_mph) // Already in mph
+    const isDay = current.is_day === 1
+
+    // Get location name
+    const locationName = location?.name || 
+                        `${location?.region || ''}, ${location?.country || ''}`.trim() ||
+                        'your location'
 
     // Generate work-related weather report
     const workReport = await generateWorkWeatherReport(
       temperature,
       description,
-      humidity || 50, // Default to 50% if not available
+      humidity,
       windSpeed,
       locationName
     )
@@ -228,7 +177,7 @@ export async function GET(request: NextRequest) {
       temperature,
       condition,
       description,
-      humidity: humidity || null,
+      humidity,
       windSpeed,
       emoji: getWeatherEmoji(description, isDay),
       workReport,
