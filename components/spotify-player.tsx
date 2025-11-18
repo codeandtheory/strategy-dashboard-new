@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Play, Pause } from 'lucide-react'
-import { motion } from 'motion/react'
+import { motion } from 'framer-motion'
 import { useMode } from '@/contexts/mode-context'
 
 interface SpotifyPlayerProps {

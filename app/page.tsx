@@ -12,6 +12,7 @@ import { getStarSignEmoji } from '@/lib/horoscope-utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { generateSillyCharacterName } from '@/lib/silly-names'
 import { SpotifyPlayer } from '@/components/spotify-player'
+import { AudioEQ } from '@/components/audio-eq'
 
 // Force dynamic rendering to avoid SSR issues with context
 export const dynamic = 'force-dynamic'
