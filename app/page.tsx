@@ -389,18 +389,32 @@ export default function TeamDashboard() {
                     type="button"
                     onClick={async () => {
                       try {
-                        const response = await fetch(horoscopeImage)
+                        // Fetch the image with CORS support
+                        const response = await fetch(horoscopeImage, {
+                          mode: 'cors',
+                          credentials: 'omit',
+                        })
+                        
+                        if (!response.ok) {
+                          throw new Error(`Failed to fetch image: ${response.statusText}`)
+                        }
+                        
                         const blob = await response.blob()
                         const url = window.URL.createObjectURL(blob)
                         const a = document.createElement('a')
                         a.href = url
-                        a.download = `horoscope-${new Date().toISOString().split('T')[0]}.png`
+                        a.download = `horoscope-${horoscope?.star_sign || 'daily'}-${new Date().toISOString().split('T')[0]}.png`
                         document.body.appendChild(a)
                         a.click()
-                        window.URL.revokeObjectURL(url)
-                        document.body.removeChild(a)
+                        // Clean up after a short delay
+                        setTimeout(() => {
+                          window.URL.revokeObjectURL(url)
+                          document.body.removeChild(a)
+                        }, 100)
                       } catch (error) {
-                        console.error('Error downloading image:', error)
+                        console.error('Error downloading horoscope image:', error)
+                        // Fallback: open image in new tab if download fails
+                        window.open(horoscopeImage, '_blank')
                       }
                     }}
                     className={`p-2 ${getRoundedClass('rounded-full')} border-2 transition-all hover:opacity-80 ${
