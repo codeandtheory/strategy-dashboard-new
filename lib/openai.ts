@@ -192,28 +192,109 @@ export async function generateHoroscopeImage(
     professionalContext = `\n\nCharacter context: ${contextDetails.join(', ')}.`
   }
   
+  // Build specific visual details based on character type
+  let visualDetails = ''
+  if (characterType === 'object') {
+    const objectExamples: Record<string, string> = {
+      'Design': 'a personified design tool like a stylized pen, paintbrush, or computer mouse with expressive eyes and limbs',
+      'Engineering': 'a personified tech object like a keyboard, circuit board, or code symbol with animated features',
+      'Marketing': 'a personified marketing object like a megaphone, chart, or social media icon with personality',
+    }
+    const objectBase = discipline && objectExamples[discipline] 
+      ? objectExamples[discipline]
+      : 'a personified everyday object with exaggerated facial features, expressive eyes, and comical limbs'
+    visualDetails = `${objectBase}, positioned in a dynamic pose with exaggerated gestures`
+  } else if (characterType === 'hybrid') {
+    const hybridCombos = [
+      'combining human torso with animal features like wings, tails, or animal heads',
+      'merging object elements with living creature characteristics',
+      'blending multiple species or forms in unexpected ways',
+    ]
+    visualDetails = `a fantastical hybrid creature ${hybridCombos[Math.floor(Math.random() * hybridCombos.length)]}, with exaggerated proportions and whimsical details`
+  } else if (characterType === 'animal') {
+    const animalPoses = [
+      'standing upright in a confident, anthropomorphic pose',
+      'in a playful, dynamic action pose',
+      'with exaggerated facial expressions and human-like gestures',
+    ]
+    visualDetails = `an anthropomorphic animal character ${animalPoses[Math.floor(Math.random() * animalPoses.length)]}, with expressive eyes and exaggerated features`
+  } else {
+    const humanPoses = [
+      'in an exaggerated, theatrical pose with dramatic gestures',
+      'with an over-the-top expression and dynamic body language',
+      'striking a comically confident or silly pose',
+    ]
+    visualDetails = `a human character ${humanPoses[Math.floor(Math.random() * humanPoses.length)]}, with exaggerated facial features and expressive body language`
+  }
+  
+  // Build specific accessory/prop suggestions
+  const accessoryIdeas: string[] = []
+  if (element === 'fire') {
+    accessoryIdeas.push('flames, sparks, or fiery elements', 'warm, glowing accessories', 'energetic motion lines')
+  } else if (element === 'water') {
+    accessoryIdeas.push('water droplets, waves, or fluid elements', 'flowing, liquid-like accessories', 'bubbles or mist')
+  } else if (element === 'earth') {
+    accessoryIdeas.push('rocks, plants, or earthy elements', 'grounded, natural accessories', 'crystals or minerals')
+  } else if (element === 'air') {
+    accessoryIdeas.push('wind, clouds, or airy elements', 'floating, light accessories', 'feathers or breezy details')
+  }
+  
+  if (discipline === 'Design') {
+    accessoryIdeas.push('art supplies, color swatches, or design tools')
+  } else if (discipline === 'Engineering') {
+    accessoryIdeas.push('tech gadgets, code symbols, or digital elements')
+  } else if (discipline === 'Marketing') {
+    accessoryIdeas.push('charts, graphs, or communication symbols')
+  }
+  
+  if (season === 'winter') {
+    accessoryIdeas.push('snowflakes, icicles, or winter elements')
+  } else if (season === 'spring') {
+    accessoryIdeas.push('flowers, buds, or spring growth')
+  } else if (season === 'summer') {
+    accessoryIdeas.push('sun rays, beach elements, or summer vibes')
+  } else if (season === 'fall') {
+    accessoryIdeas.push('autumn leaves, pumpkins, or fall colors')
+  }
+  
+  const accessoriesText = accessoryIdeas.length > 0 
+    ? `\n- Include specific visual elements: ${accessoryIdeas.slice(0, 3).join(', ')}`
+    : ''
+  
+  // Build specific expression/pose details
+  const expressionDetails = modality === 'cardinal' 
+    ? 'bold, action-oriented expression with forward-leaning, initiating energy'
+    : modality === 'fixed' 
+    ? 'steady, determined expression with stable, unwavering posture'
+    : 'flexible, adaptable expression with dynamic, changeable energy'
+  
   const prompt = `An absolutely absurd, hilariously silly, and delightfully ridiculous illustration portrait representing ${starSign} energy, featuring ${characterDescription}.${zodiacContext}${professionalContext}
 
 Illustration style: ${styleLabel}.${tagsText}${themeText}
 
-Character details:
-- The character should embody the essence of ${starSign} in an absurd and hilarious way
-- ${characterType === 'object' ? 'The object should be personified with exaggerated personality and expression' : characterType === 'hybrid' ? 'The hybrid creature should combine elements in unexpected and silly ways' : characterType === 'animal' ? 'The animal should have exaggerated, cartoon-like expressions and poses' : 'The human should have over-the-top, exaggerated expressions and poses'}
-- Include playfully absurd accessories, props, or elements that relate to the character's energy
-- Maximum silliness and humor - think cartoon absurdity and delightful nonsense
-- Completely unserious and laugh-out-loud funny
+Character description:
+- ${visualDetails}
+- The character should have ${expressionDetails}
+- Facial expression: exaggerated, comical, with wide eyes and an absurdly expressive face
+- Body language: dynamic, over-the-top, with exaggerated gestures and poses
+- Clothing/accessories: ${characterType === 'object' ? 'personified elements that give the object personality' : 'whimsical, absurd clothing or accessories that enhance the character\'s energy'}${accessoriesText}
+- Color palette: ${element === 'fire' ? 'warm oranges, reds, and yellows with vibrant energy' : element === 'water' ? 'cool blues, teals, and aquas with fluid movement' : element === 'earth' ? 'earthy browns, greens, and terracottas with grounded tones' : element === 'air' ? 'light blues, whites, and pastels with airy lightness' : 'vibrant, saturated colors that pop'}
+- Composition: character should fill most of the frame, centered or slightly off-center, with clear focus on their absurd personality
 
-Style requirements:
+Visual style details:
 - Absolutely NO text, NO words, NO letters, NO numbers anywhere in the image
-- No borders, clean background or subtle abstract background
-- Full body or three-quarter portrait
-- Vibrant, saturated, eye-popping colors
-- Fun, expressive, and engaging
-- Square format, portrait orientation
-- Professional digital art quality
-- Suitable for use as a profile picture or avatar
+- Background: clean, simple, or subtle abstract pattern that doesn't distract from the character
+- Lighting: ${element === 'fire' ? 'warm, glowing light' : element === 'water' ? 'soft, fluid lighting' : element === 'earth' ? 'natural, grounded lighting' : element === 'air' ? 'bright, airy lighting' : 'vibrant, dynamic lighting'} that enhances the character
+- Texture: ${styleLabel.toLowerCase().includes('watercolor') ? 'soft, flowing watercolor textures' : styleLabel.toLowerCase().includes('oil') ? 'rich, painterly textures' : styleLabel.toLowerCase().includes('pixel') ? 'pixelated, retro game textures' : styleLabel.toLowerCase().includes('3d') ? 'smooth, rendered 3D textures' : 'clean, polished digital art textures'}
+- Details: include small, whimsical details that add to the absurdity - unexpected elements, playful interactions, or silly visual gags
 
-The illustration should be creatively absurd, hilariously silly, and capture the essence of ${starSign} combined with all the contextual elements in the most ridiculous and entertaining way possible. Think maximum absurdity, complete silliness, and delightful nonsense.`
+Format requirements:
+- Square format (1:1 aspect ratio), portrait orientation
+- Full body or three-quarter portrait view
+- Professional digital art quality suitable for use as a profile picture or avatar
+- High resolution, crisp details, vibrant colors
+
+The illustration should be creatively absurd, hilariously silly, and capture the essence of ${starSign} combined with ${element || 'its'} element energy, ${modality || 'its'} modality, ${discipline ? discipline + ' discipline' : 'professional energy'}, and ${season || 'seasonal'} vibes in the most ridiculous and entertaining way possible. Think maximum absurdity, complete silliness, and delightful nonsense.`
 
   console.log('Calling OpenAI DALL-E API...')
   
