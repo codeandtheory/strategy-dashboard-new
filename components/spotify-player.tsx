@@ -87,7 +87,7 @@ export function SpotifyPlayer({
   return (
     <div className={`relative ${className}`}>
       {/* Spinning Record Container */}
-      <div className="relative w-full aspect-square max-w-[200px] mx-auto mb-4">
+      <div className={`relative w-full aspect-square ${hideText ? '' : 'max-w-[200px] mx-auto mb-4'}`}>
         {/* Vinyl Record with Spinning Animation */}
         <motion.div
           className={`w-full h-full ${getRoundedClass('rounded-full')} relative overflow-hidden shadow-2xl`}
