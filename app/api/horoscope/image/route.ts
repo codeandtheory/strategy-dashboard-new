@@ -108,13 +108,24 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    // Generate new image
-    const { imageUrl, prompt } = await generateHoroscopeImage(starSign, {
-      characterType: resolvedChoices.characterType,
-      styleLabel: resolvedChoices.styleLabel,
-      promptTags: resolvedChoices.promptTags,
-      themeSnippet: resolvedChoices.themeSnippet,
-    })
+    // Generate new image with full user profile context
+    const { imageUrl, prompt } = await generateHoroscopeImage(
+      starSign,
+      {
+        characterType: resolvedChoices.characterType,
+        styleLabel: resolvedChoices.styleLabel,
+        promptTags: resolvedChoices.promptTags,
+        themeSnippet: resolvedChoices.themeSnippet,
+      },
+      {
+        element: userProfile.element,
+        modality: userProfile.modality,
+        discipline: profile.discipline || null,
+        roleLevel: userProfile.roleLevel || null,
+        weekday: userProfile.weekday,
+        season: userProfile.season,
+      }
+    )
     
     // Save image URL and prompt to database (upsert horoscope record)
     await supabase
