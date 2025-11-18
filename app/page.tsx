@@ -31,7 +31,89 @@ export default function TeamDashboard() {
   const [horoscopeImageError, setHoroscopeImageError] = useState<string | null>(null)
   const [userName, setUserName] = useState<string>('Friend')
   const [characterName, setCharacterName] = useState<string | null>(null)
+  const [userTimeZone, setUserTimeZone] = useState<string | null>(null)
+  const [timeZones, setTimeZones] = useState<Array<{ label: string; city: string; time: string; offset: number }>>([])
 
+  // Detect user timezone and calculate timezone times
+  useEffect(() => {
+    // Detect user's timezone
+    try {
+      const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone
+      // Map common timezone names to our timezone labels
+      const tzMap: Record<string, string> = {
+        'America/Los_Angeles': 'PST',
+        'America/Denver': 'MST',
+        'America/Chicago': 'CST',
+        'America/New_York': 'EST',
+        'Europe/London': 'GMT',
+        'Asia/Kolkata': 'IST',
+        'Asia/Manila': 'PHT',
+      }
+      
+      // Find matching timezone
+      for (const [tz, label] of Object.entries(tzMap)) {
+        if (userTz.includes(tz.split('/')[1]) || userTz === tz) {
+          setUserTimeZone(label)
+          break
+        }
+      }
+      
+      // If no exact match, try to infer from offset
+      const now = new Date()
+      const userOffset = -now.getTimezoneOffset() / 60 // Convert to hours
+      const offsetMap: Record<string, string> = {
+        '-8': 'PST', '-7': 'MST', '-6': 'CST', '-5': 'EST', '0': 'GMT', '5.5': 'IST', '8': 'PHT'
+      }
+      // Find closest match
+      const closest = Object.entries(offsetMap).reduce((prev, [offset, label]) => {
+        const diff = Math.abs(parseFloat(offset) - userOffset)
+        const prevDiff = Math.abs(parseFloat(prev[0]) - userOffset)
+        return diff < prevDiff ? [offset, label] : prev
+      }, ['0', 'GMT'])
+      if (!userTimeZone) {
+        setUserTimeZone(closest[1])
+      }
+    } catch (error) {
+      console.error('Error detecting timezone:', error)
+    }
+    
+    // Calculate times for each timezone
+    const timeZonesData = [
+      { label: 'PST', city: 'Los Angeles', offset: -8 },
+      { label: 'MST', city: 'Colorado', offset: -7 },
+      { label: 'CST', city: 'Chicago', offset: -6 },
+      { label: 'EST', city: 'NYC', offset: -5 },
+      { label: 'GMT', city: 'London', offset: 0 },
+      { label: 'IST', city: 'India', offset: 5.5 },
+      { label: 'PHT', city: 'Manila', offset: 8 },
+    ]
+    
+    const updateTimes = () => {
+      const now = new Date()
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000)
+      
+      const times = timeZonesData.map(tz => {
+        const localTime = new Date(utc + (tz.offset * 3600000))
+        const hours = localTime.getHours()
+        const minutes = localTime.getMinutes()
+        const ampm = hours >= 12 ? 'PM' : 'AM'
+        const displayHours = hours % 12 || 12
+        const displayMinutes = minutes.toString().padStart(2, '0')
+        return {
+          ...tz,
+          time: `${displayHours}:${displayMinutes} ${ampm}`,
+        }
+      })
+      
+      setTimeZones(times)
+    }
+    
+    updateTimes()
+    const interval = setInterval(updateTimes, 60000) // Update every minute
+    
+    return () => clearInterval(interval)
+  }, [userTimeZone])
+  
   // Fetch horoscope text and image in parallel on mount
   useEffect(() => {
     async function fetchHoroscopeData() {
@@ -442,34 +524,74 @@ export default function TeamDashboard() {
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('timezones') : getCardStyle('team')
             const timeZoneColors = mode === 'chaos' 
-              ? ['#00FF87', '#4A9BFF', '#00D4FF', '#9D4EFF']
+              ? ['#00FF87', '#4A9BFF', '#00D4FF', '#9D4EFF', '#FF6B6B', '#FFD93D', '#6BCF7F']
               : mode === 'chill'
-              ? ['#C8D961', '#4A9BFF', '#00D4FF', '#9D4EFF']
-              : ['#cccccc', '#e5e5e5', '#999999', '#cccccc']
+              ? ['#C8D961', '#4A9BFF', '#00D4FF', '#9D4EFF', '#FFB84D', '#FFD93D', '#A8E6CF']
+              : ['#cccccc', '#e5e5e5', '#999999', '#cccccc', '#b3b3b3', '#d9d9d9', '#e5e5e5']
+            
+            const emojiMap: Record<string, string> = {
+              'PST': '🌉',
+              'MST': '🏔️',
+              'CST': '🏙️',
+              'EST': '🗽',
+              'GMT': '🏰',
+              'IST': '🕌',
+              'PHT': '🏝️',
+            }
+            
             return (
               <Card className={`${style.bg} ${style.border} p-3 ${getRoundedClass('rounded-xl')}`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
-                <div className="flex items-center justify-between gap-4">
-                  {[
-                    { city: 'San Francisco', time: '12:50 AM', people: '2', emoji: '🌉' },
-                    { city: 'New York', time: '03:50 AM', people: '5', emoji: '🗽' },
-                    { city: 'London', time: '08:50 AM', people: '3', emoji: '🏰' },
-                    { city: 'Tokyo', time: '05:50 PM', people: '1', emoji: '🗼' },
-                  ].map((tz, idx) => (
-                    <div key={tz.city} 
-                         className="flex items-center gap-2 flex-1 p-2 rounded-lg transition-opacity hover:opacity-90" 
-                   style={{
-                           backgroundColor: timeZoneColors[idx],
-                         }}>
-                      <span className="text-base">{tz.emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className={`font-black text-xs truncate ${mode === 'chaos' ? 'text-black' : 'text-white'}`}>{tz.city}</p>
-                        <p className={`text-xs font-medium ${mode === 'chaos' ? 'text-black/70' : 'text-white/80'}`}>{tz.time}</p>
-              </div>
-                      <span className={`font-black text-xs ${mode === 'chaos' ? 'text-black' : 'text-white'}`}>{tz.people}</span>
-          </div>
-                  ))}
+                <div className="flex items-center justify-between gap-2 md:gap-4 overflow-x-auto">
+                  {timeZones.length > 0 ? timeZones.map((tz, idx) => {
+                    const isUserTz = userTimeZone === tz.label
+                    return (
+                      <div 
+                        key={tz.label} 
+                        className={`flex items-center gap-2 flex-1 min-w-[100px] p-2 ${getRoundedClass('rounded-lg')} transition-all ${
+                          isUserTz 
+                            ? mode === 'chaos' 
+                              ? 'ring-2 ring-[#C4F500] ring-offset-2 ring-offset-black' 
+                              : mode === 'chill'
+                              ? 'ring-2 ring-[#FFC043] ring-offset-2 ring-offset-[#F5E6D3]'
+                              : 'ring-2 ring-[#00FF00] ring-offset-2 ring-offset-black'
+                            : ''
+                        }`}
+                        style={{
+                          backgroundColor: timeZoneColors[idx],
+                          transform: isUserTz ? 'scale(1.05)' : 'scale(1)',
+                          boxShadow: isUserTz 
+                            ? mode === 'chaos' 
+                              ? '0 0 10px rgba(196, 245, 0, 0.5)' 
+                              : mode === 'chill'
+                              ? '0 0 10px rgba(255, 192, 67, 0.5)'
+                              : '0 0 10px rgba(0, 255, 0, 0.5)'
+                            : 'none',
+                        } as React.CSSProperties}
+                      >
+                        <span className="text-base flex-shrink-0">{emojiMap[tz.label] || '🌍'}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-black text-xs truncate ${mode === 'chaos' ? 'text-black' : 'text-white'}`}>
+                            {tz.label}
+                          </p>
+                          <p className={`text-xs font-medium truncate ${mode === 'chaos' ? 'text-black/70' : 'text-white/80'}`}>
+                            {tz.time}
+                          </p>
+                          {isUserTz && (
+                            <p className={`text-[10px] font-bold mt-0.5 ${mode === 'chaos' ? 'text-black/80' : 'text-white/90'}`}>
+                              YOU
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  }) : (
+                    // Loading state
+                    <div className="flex items-center gap-2 flex-1">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    </div>
+                  )}
                 </div>
               </Card>
             )
@@ -496,37 +618,56 @@ export default function TeamDashboard() {
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('horoscope') : getCardStyle('vibes')
             return (
-              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} md:col-span-2`}
+              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} md:col-span-2 relative overflow-visible`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
-                <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
-              <Sparkles className="w-4 h-4" />
-                  <span className="uppercase tracking-wider font-black text-xs">Totally Real</span>
-            </div>
-                <h2 className={`text-4xl font-black mb-6 uppercase`} style={{ color: style.accent }}>YOUR<br/>HOROSCOPE</h2>
+                {/* Playful background image - extends beyond card */}
+                <div 
+                  className="absolute -top-8 -left-8 md:-top-12 md:-left-12 w-48 md:w-64 h-48 md:h-64 opacity-20 md:opacity-30 pointer-events-none z-0"
+                  style={{
+                    transform: 'rotate(-8deg)',
+                    filter: mode === 'chaos' ? 'sepia(0.3) saturate(1.2)' : mode === 'chill' ? 'sepia(0.2) saturate(0.9)' : 'grayscale(0.3)',
+                  }}
+                >
+                  <img 
+                    src="/tarot-portrait.png" 
+                    alt="Mystical tarot portrait" 
+                    className="w-full h-full object-cover"
+                    style={{
+                      mixBlendMode: mode === 'chaos' ? 'multiply' : mode === 'chill' ? 'soft-light' : 'normal',
+                    }}
+                  />
+                </div>
                 
-                {horoscopeLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className={`w-6 h-6 animate-spin ${style.text}`} />
-            </div>
-                ) : horoscopeError ? (
-                  <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
-                    <p className={`text-sm ${style.text}`}>{horoscopeError}</p>
-            </div>
-                ) : horoscope ? (
-                  <div className="space-y-6">
-                    {/* Horoscope Text Container */}
-                    <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-6 border-2`} style={{ borderColor: `${style.accent}40` }}>
-                      <p className="text-base font-black mb-3 flex items-center gap-2" style={{ color: style.accent }}>
-                        <span>{getStarSignEmoji(horoscope.star_sign)}</span>
-                        <span>{horoscope.star_sign.toUpperCase()}</span>
-                      </p>
-                      <div className={`text-base leading-relaxed ${style.text} space-y-3`}>
-                        {horoscope.horoscope_text.split('\n\n').map((paragraph, idx) => (
-                          <p key={idx}>{paragraph}</p>
-                        ))}
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
+                <Sparkles className="w-4 h-4" />
+                    <span className="uppercase tracking-wider font-black text-xs">Totally Real</span>
               </div>
+                  <h2 className={`text-4xl font-black mb-6 uppercase`} style={{ color: style.accent }}>YOUR<br/>HOROSCOPE</h2>
+                  
+                  {horoscopeLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className={`w-6 h-6 animate-spin ${style.text}`} />
               </div>
+                  ) : horoscopeError ? (
+                    <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
+                      <p className={`text-sm ${style.text}`}>{horoscopeError}</p>
+              </div>
+                  ) : horoscope ? (
+                    <div className="space-y-6">
+                      {/* Horoscope Text Container */}
+                      <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-6 border-2 relative z-10`} style={{ borderColor: `${style.accent}40` }}>
+                        <p className="text-base font-black mb-3 flex items-center gap-2" style={{ color: style.accent }}>
+                          <span>{getStarSignEmoji(horoscope.star_sign)}</span>
+                          <span>{horoscope.star_sign.toUpperCase()}</span>
+                        </p>
+                        <div className={`text-base leading-relaxed ${style.text} space-y-3 relative z-10`}>
+                          {horoscope.horoscope_text.split('\n\n').map((paragraph, idx) => (
+                            <p key={idx}>{paragraph}</p>
+                          ))}
+                </div>
+                </div>
                     
                     {/* Bottom Row: Do's and Don'ts - Half Width Each */}
                     {(horoscope.horoscope_dos?.length || horoscope.horoscope_donts?.length) && (
@@ -562,12 +703,13 @@ export default function TeamDashboard() {
                         )}
                   </div>
                     )}
+                  </div>
+                  ) : (
+                    <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2 relative z-10`} style={{ borderColor: `${style.accent}40` }}>
+                      <p className={`text-sm ${style.text}`}>No horoscope available</p>
                 </div>
-                ) : (
-                  <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
-                    <p className={`text-sm ${style.text}`}>No horoscope available</p>
-              </div>
-                )}
+                  )}
+                </div>
               </Card>
             )
           })()}
