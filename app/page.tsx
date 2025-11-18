@@ -1132,24 +1132,24 @@ export default function TeamDashboard() {
               <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
-                <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
-              <FileText className="w-4 h-4" />
-                  <span className="uppercase tracking-wider font-black text-xs">Weekly Report</span>
-            </div>
-                <h2 className={`text-3xl font-black mb-6 uppercase ${style.text}`}>THE<br/>FRIDAY<br/>DROP</h2>
-            <div className="grid grid-cols-3 gap-3">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText className="w-4 h-4" style={{ color: style.accent }} />
+                  <span className={`text-xs uppercase tracking-wider font-black ${style.text}/90`}>WEEKLY REPORT</span>
+                </div>
+                <h2 className={`text-3xl font-black mb-6 uppercase leading-tight ${style.text}`}>THE FRIDAY DROP</h2>
+                <div className="grid grid-cols-3 gap-2">
                   {[
-                    { value: '5', label: 'New' },
-                    { value: '8', label: 'Shipped' },
-                    { value: '12', label: 'In QA' },
+                    { value: '5', label: 'NEW' },
+                    { value: '8', label: 'SHIPPED' },
+                    { value: '12', label: 'IN QA' },
                   ].map((stat) => (
-                    <div key={stat.label} className={`${mode === 'chaos' ? 'bg-black/10 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/10'} rounded-xl p-3 border text-center`} style={{ borderColor: `${style.accent}20` }}>
-                      <p className={`text-3xl font-black ${style.text}`}>{stat.value}</p>
-                      <p className={`text-xs font-bold uppercase tracking-wide ${style.text}/70`}>{stat.label}</p>
-              </div>
+                    <div key={stat.label} className={`${mode === 'chaos' ? 'bg-black/20' : mode === 'chill' ? 'bg-white/10' : 'bg-black/20'} ${getRoundedClass('rounded-lg')} p-3 text-center`}>
+                      <p className={`text-2xl font-black mb-1 ${style.text}`}>{stat.value}</p>
+                      <p className={`text-xs font-bold uppercase tracking-wide ${style.text}/80`}>{stat.label}</p>
+                    </div>
                   ))}
-            </div>
-          </Card>
+                </div>
+              </Card>
             )
           })()}
 
@@ -1160,43 +1160,42 @@ export default function TeamDashboard() {
               <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} relative overflow-hidden`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
-                <Badge className={`${mode === 'chaos' ? 'bg-black text-[#FF00FF]' : mode === 'chill' ? 'bg-[#4A1818] text-[#FFB5D8]' : 'bg-white text-black'} border-0 font-black mb-3 text-xs uppercase tracking-wider`}>Featured</Badge>
-            <div className="mb-4">
-                  <p className={`text-sm font-medium mb-1 ${style.text}/70`}>Active Drop</p>
-                  <h3 className={`text-2xl font-black uppercase ${style.text}`}>Brand Redesign</h3>
-                  <Badge className={`${mode === 'chaos' ? 'bg-black/40' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} border-0 font-black mt-2 text-xs`} style={{ color: style.accent }}>Branding</Badge>
-            </div>
-                <div className={`absolute bottom-4 right-4 text-8xl ${mode === 'chaos' ? 'opacity-10' : mode === 'chill' ? 'opacity-20' : 'opacity-10'}`}>🎨</div>
-                <ChevronRight className={`absolute bottom-4 right-4 w-6 h-6 ${style.text}`} />
-          </Card>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs uppercase tracking-wider font-black ${style.text}/90`}>FEATURED</span>
+                  <span className={`text-xs uppercase tracking-wider font-black ${style.text}/70`}>ACTIVE DROP</span>
+                </div>
+                <h2 className={`text-3xl font-black mb-3 uppercase leading-tight ${style.text}`}>BRAND REDESIGN</h2>
+                <p className={`text-sm font-medium mb-4 ${style.text}/70`}>Branding</p>
+                <div className="absolute bottom-4 right-4 text-4xl">🎨</div>
+              </Card>
             )
           })()}
 
           {/* Stats */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('stats') : getCardStyle('team')
-            const growthColor = mode === 'chaos' ? '#00FF87' : mode === 'chill' ? '#C8D961' : '#cccccc'
+            const growthColor = mode === 'chaos' ? '#00FF87' : mode === 'chill' ? '#C8D961' : '#00FF00'
             return (
               <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
-                <p className="text-xs uppercase tracking-wider mb-2 font-black" style={{ color: style.accent }}>This Month</p>
+                <p className={`text-xs uppercase tracking-wider mb-4 font-black ${style.text}/80`}>THIS MONTH</p>
                 <h2 className={`text-3xl font-black mb-6 uppercase ${style.text}`}>STATS</h2>
-            <div className="space-y-4">
-              <div>
-                    <p className={`text-5xl font-black ${style.text}`}>24</p>
-                    <p className={`text-sm font-black ${style.text}/70`}>Team</p>
-              </div>
-              <div>
-                    <p className={`text-5xl font-black ${style.text}`}>247</p>
-                    <p className={`text-sm font-black ${style.text}/70`}>Snaps</p>
-              </div>
-              <div>
-                    <p className="text-5xl font-black" style={{ color: growthColor }}>+15%</p>
-                    <p className={`text-sm font-black ${style.text}/70`}>Growth</p>
-              </div>
-            </div>
-          </Card>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className={`text-sm font-black uppercase ${style.text}`}>TEAM</p>
+                    <p className={`text-2xl font-black ${style.text}`}>24</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className={`text-sm font-black uppercase ${style.text}`}>SNAPS</p>
+                    <p className={`text-2xl font-black ${style.text}`}>247</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className={`text-sm font-black uppercase ${style.text}`}>GROWTH</p>
+                    <p className="text-2xl font-black" style={{ color: growthColor }}>+15%</p>
+                  </div>
+                </div>
+              </Card>
             )
           })()}
         </div>
@@ -1224,77 +1223,58 @@ export default function TeamDashboard() {
               <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
-                <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
-              <Calendar className="w-4 h-4" />
-                  <span className="uppercase tracking-wider font-black text-xs">Today</span>
-            </div>
-                <h2 className={`text-4xl font-black mb-6 uppercase ${style.text}`}>EVENTS</h2>
-            <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-4">
+                  <Calendar className="w-4 h-4" style={{ color: style.accent }} />
+                  <span className={`text-xs uppercase tracking-wider font-black ${style.text}/90`}>TODAY</span>
+                </div>
+                <h2 className={`text-3xl font-black mb-6 uppercase ${style.text}`}>EVENTS</h2>
+                <div className="space-y-2">
                   {[
                     { time: '10:30 Team Standup' },
                     { time: '14:00 Design Review' },
                   ].map((event) => (
-                    <div key={event.time} className="flex items-center gap-3 p-3 rounded-xl" 
-                         style={{ 
-                           backgroundColor: `${style.accent}${mode === 'chaos' ? '33' : mode === 'chill' ? '20' : '33'}`,
-                           border: `2px solid ${style.accent}${mode === 'chaos' ? '66' : mode === 'chill' ? '40' : '66'}`
-                         }}>
+                    <div key={event.time} className={`${mode === 'chaos' ? 'bg-black/30' : mode === 'chill' ? 'bg-white/10' : 'bg-black/30'} ${getRoundedClass('rounded-lg')} p-3 flex items-center gap-2`}>
                       <Clock className="w-4 h-4" style={{ color: style.accent }} />
-                <div className="flex-1">
-                        <p className={`text-sm font-black ${style.text}`}>{event.time}</p>
-                </div>
-              </div>
+                      <p className={`text-sm font-black ${style.text}`}>{event.time}</p>
+                    </div>
                   ))}
-            </div>
-          </Card>
+                </div>
+              </Card>
             )
           })()}
 
           {/* Pipeline */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('pipeline') : getCardStyle('work')
-            const pipelineItems = mode === 'chaos'
-              ? [
-                  { label: 'New Business', count: '12', iconColor: '#FFE500', icon: FileText },
-                  { label: 'In Progress', count: '8', iconColor: '#9D4EFF', icon: TrendingUp },
-                  { label: 'Completed', count: '24', iconColor: '#00FF87', icon: CheckCircle },
-                ]
-              : mode === 'chill'
-              ? [
-                  { label: 'New Business', count: '12', iconColor: '#FFC043', icon: FileText },
-                  { label: 'In Progress', count: '8', iconColor: '#8B4444', icon: TrendingUp },
-                  { label: 'Completed', count: '24', iconColor: '#C8D961', icon: CheckCircle },
-                ]
-              : [
-                  { label: 'New Business', count: '12', iconColor: '#ffffff', icon: FileText },
-                  { label: 'In Progress', count: '8', iconColor: '#cccccc', icon: TrendingUp },
-                  { label: 'Completed', count: '24', iconColor: '#e5e5e5', icon: CheckCircle },
-                ]
+            const pipelineItems = [
+              { label: 'New Business', count: '12', icon: FileText },
+              { label: 'In Progress', count: '8', icon: Zap },
+              { label: 'Completed', count: '24', icon: CheckCircle },
+            ]
             return (
               <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
-                <p className="text-xs uppercase tracking-wider mb-2 font-black" style={{ color: style.accent }}>Work</p>
-                <h2 className={`text-4xl font-black mb-6 uppercase ${style.text}`}>PIPELINE</h2>
-            <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText className="w-4 h-4" style={{ color: style.accent }} />
+                  <span className={`text-xs uppercase tracking-wider font-black ${style.text}/90`}>WORK</span>
+                </div>
+                <h2 className={`text-3xl font-black mb-6 uppercase ${style.text}`}>PIPELINE</h2>
+                <div className="space-y-2">
                   {pipelineItems.map((item) => {
                     const IconComponent = item.icon
                     return (
-                      <div key={item.label} className={`${mode === 'chaos' ? 'bg-black/40' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/40'} rounded-xl p-4 border-2`} style={{ borderColor: `${item.iconColor}66` }}>
-                        <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: item.iconColor }}>
-                              <IconComponent className={`w-4 h-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`} />
-                  </div>
-                            <span className={`font-black text-sm ${style.text}`}>{item.label}</span>
-                </div>
-                          <span className="text-2xl font-black" style={{ color: item.iconColor }}>{item.count}</span>
-              </div>
-                  </div>
+                      <div key={item.label} className={`${mode === 'chaos' ? 'bg-black/30' : mode === 'chill' ? 'bg-white/10' : 'bg-black/30'} ${getRoundedClass('rounded-lg')} p-3 flex items-center justify-between`}>
+                        <div className="flex items-center gap-2">
+                          <IconComponent className="w-4 h-4" style={{ color: style.accent }} />
+                          <span className={`text-sm font-black ${style.text}`}>{item.label}</span>
+                        </div>
+                        <span className={`text-lg font-black ${style.text}`}>{item.count}</span>
+                      </div>
                     )
                   })}
-            </div>
-          </Card>
+                </div>
+              </Card>
             )
           })()}
 
