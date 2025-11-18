@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Play, Pause } from 'lucide-react'
+import { motion } from 'motion/react'
 import { useMode } from '@/contexts/mode-context'
 
 interface SpotifyPlayerProps {
@@ -11,6 +12,45 @@ interface SpotifyPlayerProps {
   isPlaying?: boolean
   onPlayPause?: () => void
   className?: string
+}
+
+// Image with fallback component
+function ImageWithFallback({ 
+  src, 
+  alt, 
+  className = '',
+  onError 
+}: { 
+  src: string
+  alt: string
+  className?: string
+  onError?: () => void
+}) {
+  const [didError, setDidError] = useState(false)
+
+  const handleError = () => {
+    setDidError(true)
+    if (onError) onError()
+  }
+
+  if (didError) {
+    return (
+      <div className={`inline-block bg-gray-100 text-center align-middle ${className}`}>
+        <div className="flex items-center justify-center w-full h-full">
+          <span className="text-gray-400 text-xs">♪</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <img 
+      src={src} 
+      alt={alt} 
+      className={className}
+      onError={handleError}
+    />
+  )
 }
 
 export function SpotifyPlayer({
@@ -44,65 +84,104 @@ export function SpotifyPlayer({
     <div className={`relative ${className}`}>
       {/* Spinning Record Container */}
       <div className="relative w-full aspect-square max-w-[200px] mx-auto mb-4">
-        {/* Outer ring (record edge) */}
-        <div className={`absolute inset-0 ${getRoundedClass('rounded-full')} bg-gradient-to-br from-gray-800 via-gray-900 to-black border-4 ${
-          mode === 'chaos' ? 'border-[#FF00FF]/30' : 
-          mode === 'chill' ? 'border-[#FFB5D8]/30' : 
-          'border-white/20'
-        } shadow-2xl`} />
-        
-        {/* Album Cover - Spinning */}
-        <div className={`absolute inset-2 ${getRoundedClass('rounded-full')} overflow-hidden ${
-          isSpinning ? 'animate-spin' : ''
-        }`} style={{ animationDuration: '8s' }}>
-          <img
-            src={albumCoverUrl}
-            alt={trackName}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              // Fallback to placeholder if image fails to load
-              e.currentTarget.src = 'https://via.placeholder.com/300/1DB954/FFFFFF?text=Album'
-            }}
-          />
-        </div>
-
-        {/* Center label (record center) */}
-        <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 ${getRoundedClass('rounded-full')} ${
-          mode === 'chaos' ? 'bg-black' : 
-          mode === 'chill' ? 'bg-[#4A1818]' : 
-          'bg-black'
-        } border-2 ${
-          mode === 'chaos' ? 'border-[#FF00FF]' : 
-          mode === 'chill' ? 'border-[#FFB5D8]' : 
-          'border-white/40'
-        } flex items-center justify-center shadow-lg z-10`}>
-          <div className={`w-2 h-2 ${getRoundedClass('rounded-full')} ${
-            mode === 'chaos' ? 'bg-[#FF00FF]' : 
-            mode === 'chill' ? 'bg-[#FFB5D8]' : 
-            'bg-white/60'
-          }`} />
-        </div>
-
-        {/* Play/Pause Button Overlay */}
-        <button
-          onClick={handlePlayPause}
-          className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-14 h-14 ${getRoundedClass('rounded-full')} ${
-            mode === 'chaos' ? 'bg-[#FF00FF] hover:bg-[#FF00FF]/80' : 
-            mode === 'chill' ? 'bg-[#FFB5D8] hover:bg-[#FFB5D8]/80' : 
-            'bg-white/90 hover:bg-white'
-          } flex items-center justify-center shadow-xl transition-all z-20 opacity-0 hover:opacity-100 group-hover:opacity-100`}
-          aria-label={isSpinning ? 'Pause' : 'Play'}
+        {/* Vinyl Record with Spinning Animation */}
+        <motion.div
+          className={`w-full h-full ${getRoundedClass('rounded-full')} relative overflow-hidden shadow-2xl`}
+          animate={isSpinning ? { rotate: 360 } : { rotate: 0 }}
+          transition={{ 
+            duration: 8, 
+            repeat: isSpinning ? Infinity : 0, 
+            ease: "linear" 
+          }}
+          style={{
+            background: 'radial-gradient(circle at center, #1a1a1a 15%, #000000 30%, #1a1a1a 45%, #000000 60%, #1a1a1a 75%, #000000 90%)'
+          }}
         >
-          {isSpinning ? (
-            <Pause className={`w-6 h-6 ${
-              mode === 'chaos' || mode === 'code' ? 'text-black' : 'text-[#4A1818]'
-            }`} />
-          ) : (
-            <Play className={`w-6 h-6 ${
-              mode === 'chaos' || mode === 'code' ? 'text-black' : 'text-[#4A1818]'
-            } ml-1`} />
-          )}
-        </button>
+          {/* Vinyl grooves - concentric circles for detail */}
+          <div className={`absolute inset-0 ${getRoundedClass('rounded-full')} border-2 ${
+            mode === 'chaos' ? 'border-[#FF00FF]/20' : 
+            mode === 'chill' ? 'border-[#FFB5D8]/20' : 
+            'border-gray-700/30'
+          }`}></div>
+          <div className={`absolute inset-3 ${getRoundedClass('rounded-full')} border ${
+            mode === 'chaos' ? 'border-[#FF00FF]/15' : 
+            mode === 'chill' ? 'border-[#FFB5D8]/15' : 
+            'border-gray-700/25'
+          }`}></div>
+          <div className={`absolute inset-6 ${getRoundedClass('rounded-full')} border ${
+            mode === 'chaos' ? 'border-[#FF00FF]/10' : 
+            mode === 'chill' ? 'border-[#FFB5D8]/10' : 
+            'border-gray-700/20'
+          }`}></div>
+          <div className={`absolute inset-9 ${getRoundedClass('rounded-full')} border ${
+            mode === 'chaos' ? 'border-[#FF00FF]/8' : 
+            mode === 'chill' ? 'border-[#FFB5D8]/8' : 
+            'border-gray-700/15'
+          }`}></div>
+          <div className={`absolute inset-12 ${getRoundedClass('rounded-full')} border ${
+            mode === 'chaos' ? 'border-[#FF00FF]/5' : 
+            mode === 'chill' ? 'border-[#FFB5D8]/5' : 
+            'border-gray-700/10'
+          }`}></div>
+          <div className={`absolute inset-16 ${getRoundedClass('rounded-full')} border ${
+            mode === 'chaos' ? 'border-[#FF00FF]/3' : 
+            mode === 'chill' ? 'border-[#FFB5D8]/3' : 
+            'border-gray-700/8'
+          }`}></div>
+          
+          {/* Center label with album artwork */}
+          <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 ${getRoundedClass('rounded-full')} overflow-hidden border-2 ${
+            mode === 'chaos' ? 'border-[#FF00FF] bg-[#FF00FF]/10' : 
+            mode === 'chill' ? 'border-[#FFB5D8] bg-[#FFB5D8]/10' : 
+            'border-yellow-400 bg-yellow-100'
+          } shadow-lg`}>
+            {albumCoverUrl ? (
+              <ImageWithFallback 
+                src={albumCoverUrl}
+                alt={trackName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className={`w-full h-full ${
+                mode === 'chaos' ? 'bg-[#FF00FF]/20' : 
+                mode === 'chill' ? 'bg-[#FFB5D8]/20' : 
+                'bg-gradient-to-br from-green-400 to-green-500'
+              } flex items-center justify-center`}>
+                <span className={`text-xs ${
+                  mode === 'chaos' || mode === 'chill' ? 'text-white' : 'text-white'
+                }`}>♪</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Center hole */}
+          <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 ${getRoundedClass('rounded-full')} bg-black border ${
+            mode === 'chaos' ? 'border-[#FF00FF]/40' : 
+            mode === 'chill' ? 'border-[#FFB5D8]/40' : 
+            'border-gray-600'
+          } shadow-inner z-10`}></div>
+
+          {/* Play/Pause Button Overlay */}
+          <button
+            onClick={handlePlayPause}
+            className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-14 h-14 ${getRoundedClass('rounded-full')} ${
+              mode === 'chaos' ? 'bg-[#FF00FF] hover:bg-[#FF00FF]/80' : 
+              mode === 'chill' ? 'bg-[#FFB5D8] hover:bg-[#FFB5D8]/80' : 
+              'bg-white/90 hover:bg-white'
+            } flex items-center justify-center shadow-xl transition-all z-20 opacity-0 hover:opacity-100 group-hover:opacity-100`}
+            aria-label={isSpinning ? 'Pause' : 'Play'}
+          >
+            {isSpinning ? (
+              <Pause className={`w-6 h-6 ${
+                mode === 'chaos' || mode === 'code' ? 'text-black' : 'text-[#4A1818]'
+              }`} />
+            ) : (
+              <Play className={`w-6 h-6 ${
+                mode === 'chaos' || mode === 'code' ? 'text-black' : 'text-[#4A1818]'
+              } ml-1`} />
+            )}
+          </button>
+        </motion.div>
       </div>
 
       {/* Track Info */}
@@ -125,4 +204,3 @@ export function SpotifyPlayer({
     </div>
   )
 }
-
