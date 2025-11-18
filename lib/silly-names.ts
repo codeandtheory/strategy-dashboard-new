@@ -1,73 +1,64 @@
 /**
- * Generate a silly character name based on star sign and other factors
+ * Generate a really silly and absurd character name (no zodiac references)
  */
 
-const SILLY_NAME_PATTERNS = [
-  // Star sign based
-  'Cosmic {sign}',
-  'Stellar {sign}',
-  'The {sign} Wizard',
-  'Sir {sign} the Great',
-  'Madame {sign}',
-  'Captain {sign}',
-  'Professor {sign}',
-  'The {sign} Enigma',
-  'Lord {sign}',
-  'Lady {sign}',
-  
-  // Absurd titles
-  'The Absurd {sign}',
-  'The Silly {sign}',
-  'The Ridiculous {sign}',
-  'The Wacky {sign}',
-  'The Zany {sign}',
-  'The Bizarre {sign}',
-  'The Quirky {sign}',
-  'The Eccentric {sign}',
-  
-  // Random silly names
-  'Bubbles Mc{sign}',
-  '{sign} the Magnificent',
-  'Sparkle {sign}',
-  'Glimmer {sign}',
-  'Twinkle {sign}',
-  'Wobble {sign}',
-  'Zigzag {sign}',
-  'Fluffy {sign}',
-  'Snuggles {sign}',
-  'Bouncy {sign}',
-]
-
-const RANDOM_SILLY_NAMES = [
-  'Cosmic Bubbles',
-  'Stardust Sparkle',
-  'Moonbeam McWobble',
-  'Galaxy Giggles',
-  'Nebula Nonsense',
-  'Comet Chaos',
-  'Asteroid Absurdity',
-  'Planet Prankster',
-  'Solar Silly',
-  'Lunar Lunacy',
+const ABSURD_SILLY_NAMES = [
+  // Completely absurd names
+  'Bubbles McWobble',
+  'Zigzag Zucchini',
+  'Fluffy Pickle',
+  'Snuggles the Sock',
+  'Bouncy Banana',
+  'Wobble Waffle',
+  'Sparkle Spatula',
+  'Glimmer Garbage',
+  'Twinkle Toaster',
+  'Cosmic Carrot',
+  'Stardust Sandwich',
+  'Moonbeam Muffin',
+  'Galaxy Gremlin',
+  'Nebula Noodle',
+  'Comet Cookie',
+  'Asteroid Avocado',
+  'Planet Pancake',
+  'Solar Spaghetti',
+  'Lunar Lemon',
+  'Universe Unicorn',
+  'Space Spatula',
+  'Starfish Supreme',
+  'Sunshine Silliness',
   'Cosmic Clown',
   'Stellar Silliness',
-  'Space Spaghetti',
-  'Universe Unicorn',
-  'Galaxy Gremlin',
-  'Starfish Supreme',
-  'Moon Muffin',
-  'Sunshine Silliness',
-  'Cosmic Cookie',
-  'Stardust Sandwich',
+  'The Absurd Avocado',
+  'The Silly Sock',
+  'The Ridiculous Radish',
+  'The Wacky Waffle',
+  'The Zany Zucchini',
+  'The Bizarre Banana',
+  'The Quirky Quiche',
+  'The Eccentric Eggplant',
+  'Sir Pickle the Great',
+  'Madame Muffin',
+  'Captain Carrot',
+  'Professor Pancake',
+  'The Enigma Eggplant',
+  'Lord Lemon',
+  'Lady Lollipop',
+  'Duke of Doughnuts',
+  'Baron of Bananas',
+  'Count Cookie',
+  'Princess Pickle',
+  'Emperor Eggplant',
+  'Queen Quiche',
+  'King Ketchup',
+  'Wizard Waffle',
+  'Sorcerer Spatula',
+  'Mage Muffin',
+  'Necromancer Noodle',
 ]
 
 export function generateSillyCharacterName(starSign: string): string {
-  // Randomly pick between pattern-based and completely random
-  if (Math.random() > 0.5) {
-    const pattern = SILLY_NAME_PATTERNS[Math.floor(Math.random() * SILLY_NAME_PATTERNS.length)]
-    return pattern.replace('{sign}', starSign)
-  } else {
-    return RANDOM_SILLY_NAMES[Math.floor(Math.random() * RANDOM_SILLY_NAMES.length)]
-  }
+  // Always return a completely random absurd name (no zodiac references)
+  return ABSURD_SILLY_NAMES[Math.floor(Math.random() * ABSURD_SILLY_NAMES.length)]
 }
 

@@ -283,6 +283,45 @@ export default function TeamDashboard() {
       </header>
 
       <main className="max-w-[1600px] mx-auto px-6 py-10">
+        {/* Time Zones - 100% width, very short, at the top */}
+        <section className="mb-6">
+          {(() => {
+            const style = mode === 'chaos' ? getSpecificCardStyle('timezones') : getCardStyle('team')
+            const timeZoneColors = mode === 'chaos' 
+              ? ['#00FF87', '#4A9BFF', '#00D4FF', '#9D4EFF']
+              : mode === 'chill'
+              ? ['#C8D961', '#4A9BFF', '#00D4FF', '#9D4EFF']
+              : ['#cccccc', '#e5e5e5', '#999999', '#cccccc']
+            return (
+              <Card className={`${style.bg} ${style.border} p-3 ${getRoundedClass('rounded-xl')}`}
+                    style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  {[
+                    { city: 'San Francisco', time: '12:50 AM', people: '2', emoji: '🌉' },
+                    { city: 'New York', time: '03:50 AM', people: '5', emoji: '🗽' },
+                    { city: 'London', time: '08:50 AM', people: '3', emoji: '🏰' },
+                    { city: 'Tokyo', time: '05:50 PM', people: '1', emoji: '🗼' },
+                  ].map((tz, idx) => (
+                    <div key={tz.city} 
+                         className="flex items-center gap-2 flex-1 p-2 rounded-lg transition-opacity hover:opacity-90" 
+                   style={{
+                           backgroundColor: timeZoneColors[idx],
+                         }}>
+                      <span className="text-base">{tz.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-black text-xs truncate ${mode === 'chaos' ? 'text-black' : 'text-white'}`}>{tz.city}</p>
+                        <p className={`text-xs font-medium ${mode === 'chaos' ? 'text-black/70' : 'text-white/80'}`}>{tz.time}</p>
+                      </div>
+                      <span className={`font-black text-xs ${mode === 'chaos' ? 'text-black' : 'text-white'}`}>{tz.people}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )
+          })()}
+        </section>
+
         {/* Hero Section - Full Width */}
         <section className="mb-12">
           {(() => {
@@ -626,60 +665,12 @@ export default function TeamDashboard() {
                     <div className="flex-1">
                       <p className={`text-xs ${style.text}/80 font-bold uppercase tracking-wide mb-1`}>WIND</p>
                       <p className={`text-lg font-black ${style.text}`}>8 mph</p>
-                </div>
               </div>
-                </Card>
+            </div>
+          </Card>
               )
             })()}
 
-            {/* Time Zones - Clean Design */}
-          {(() => {
-            const style = mode === 'chaos' ? getSpecificCardStyle('timezones') : getCardStyle('team')
-            const timeZoneColors = mode === 'chaos' 
-              ? ['#00FF87', '#4A9BFF', '#00D4FF', '#9D4EFF']
-              : mode === 'chill'
-              ? ['#C8D961', '#4A9BFF', '#00D4FF', '#9D4EFF']
-              : ['#cccccc', '#e5e5e5', '#999999', '#cccccc']
-            return (
-              <Card className={`${style.bg} ${style.border} p-5 ${getRoundedClass('rounded-[2.5rem]')}`}
-                    style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
-              >
-                {/* Header */}
-                <div className="flex items-center gap-2 mb-4" style={{ color: style.accent }}>
-                  <Clock className="w-4 h-4" />
-                  <span className="uppercase tracking-wider font-black text-xs">Global Team</span>
-                </div>
-                
-                {/* Title */}
-                <h2 className={`text-xl font-black mb-4 uppercase ${style.text}`}>TIME<br/>ZONES</h2>
-                
-                {/* Timezone List - Full Width Colored Bars */}
-                <div className="space-y-2.5">
-                  {[
-                    { city: 'San Francisco', time: '12:50 AM', people: '2', emoji: '🌉' },
-                    { city: 'New York', time: '03:50 AM', people: '5', emoji: '🗽' },
-                    { city: 'London', time: '08:50 AM', people: '3', emoji: '🏰' },
-                    { city: 'Tokyo', time: '05:50 PM', people: '1', emoji: '🗼' },
-                  ].map((tz, idx) => (
-                    <div key={tz.city} 
-                         className="flex items-center justify-between p-3 rounded-lg transition-opacity hover:opacity-90" 
-                         style={{ 
-                           backgroundColor: timeZoneColors[idx],
-                         }}>
-                <div className="flex items-center gap-3">
-                        <span className="text-lg">{tz.emoji}</span>
-                  <div>
-                          <p className={`font-black text-sm ${mode === 'chaos' ? 'text-black' : 'text-white'}`}>{tz.city}</p>
-                          <p className={`text-xs font-medium ${mode === 'chaos' ? 'text-black/70' : 'text-white/80'}`}>{tz.people} people</p>
-                  </div>
-                </div>
-                      <span className={`font-black text-sm ${mode === 'chaos' ? 'text-black' : 'text-white'}`}>{tz.time}</span>
-              </div>
-                  ))}
-            </div>
-          </Card>
-            )
-          })()}
           </div>
         </div>
 
