@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { generateSillyCharacterName } from '@/lib/silly-names'
 import { SpotifyPlayer } from '@/components/spotify-player'
 import { AudioEQ } from '@/components/audio-eq'
+import { PlaylistData } from '@/lib/spotify-player-types'
 
 // Force dynamic rendering to avoid SSR issues with context
 export const dynamic = 'force-dynamic'
@@ -1081,97 +1082,40 @@ export default function TeamDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {/* Playlist */}
           {(() => {
-            const style = mode === 'chaos' ? getSpecificCardStyle('playlist') : getCardStyle('vibes')
             const [isPlaying, setIsPlaying] = useState(false)
             
             // Example playlist data - replace with actual Spotify API data
-            const playlistData = {
-              albumCovers: [
-                'https://i.scdn.co/image/ab67616d0000b273c5649add07ed3720be9d5526',
-                'https://i.scdn.co/image/ab67616d0000b273c5649add07ed3720be9d5526',
-                'https://i.scdn.co/image/ab67616d0000b273c5649add07ed3720be9d5526',
-                'https://i.scdn.co/image/ab67616d0000b273c5649add07ed3720be9d5526',
-              ],
-              userImageUrl: '/placeholder-user.jpg', // User image for center label
+            const playlistData: PlaylistData = {
               title: 'Halloween Prom',
-              submittedBy: 'Rebecca Smith',
-              trackCount: 20,
+              curator: 'Rebecca Smith',
+              curatorPhotoUrl: '/placeholder-user.jpg',
+              coverUrl: 'https://i.scdn.co/image/ab67616d0000b273c5649add07ed3720be9d5526',
               description: 'macabre mingling, bone-chilling bops, spooky sl dances, and spiked punch - vampy vibes include',
+              spotifyUrl: 'https://open.spotify.com/playlist/example',
+              trackCount: 20,
+              totalDuration: '73:48',
+              tracks: [
+                { name: 'Thriller', artist: 'Michael Jackson', duration: '5:57' },
+                { name: 'Monster Mash', artist: 'Bobby Pickett', duration: '3:12' },
+                { name: 'Ghostbusters', artist: 'Ray Parker Jr.', duration: '4:05' },
+                { name: 'This Is Halloween', artist: 'Danny Elfman', duration: '3:16' },
+                { name: 'Time Warp', artist: 'Richard O\'Brien', duration: '3:19' },
+                { name: 'Somebody\'s Watching Me', artist: 'Rockwell', duration: '3:57' },
+                { name: 'Bad Moon Rising', artist: 'Creedence Clearwater Revival', duration: '2:21' },
+                { name: 'I Put a Spell on You', artist: 'Screamin\' Jay Hawkins', duration: '2:24' },
+                { name: 'Witch Doctor', artist: 'David Seville', duration: '2:25' },
+                { name: 'The Addams Family Theme', artist: 'Vic Mizzy', duration: '1:49' },
+              ],
             }
             
             return (
-              <Card className={`${style.bg} ${style.border} p-4 ${getRoundedClass('rounded-[2.5rem]')} group`}
-                    style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
-              >
-                {/* Album Covers Grid with Overlapping Record */}
-                <div className="relative mb-4">
-                  {/* 2x2 Grid of Album Covers */}
-                  <div className="grid grid-cols-2 gap-1 w-32">
-                    {playlistData.albumCovers.map((cover, index) => (
-                      <img
-                        key={index}
-                        src={cover}
-                        alt={`Album ${index + 1}`}
-                        className="w-full aspect-square object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://via.placeholder.com/150/1DB954/FFFFFF?text=Album'
-                        }}
-                      />
-                    ))}
-                  </div>
-                  
-                  {/* Spinning Record Overlapping Right Side */}
-                  <div className="absolute top-0 right-0 -mr-8">
-                    <SpotifyPlayer
-                      albumCoverUrl={playlistData.albumCovers[0]}
-                      userImageUrl={playlistData.userImageUrl}
-                      trackName=""
-                      artistName=""
-                      isPlaying={isPlaying}
-                      onPlayPause={() => setIsPlaying(!isPlaying)}
-                      className="w-32 h-32"
-                      hideText={true}
-                    />
-                  </div>
-                </div>
-                
-                {/* Playlist Title */}
-                <div className="text-center mb-3">
-                  <h3 className={`text-lg font-serif mb-1 ${style.text}`}>{playlistData.title}</h3>
-                  <p className={`text-sm ${style.text}/70`}>by {playlistData.submittedBy}</p>
-                </div>
-                
-                {/* Open in Spotify Button */}
-                <Button 
-                  onClick={() => window.open('https://open.spotify.com/playlist/example', '_blank')}
-                  className={`w-full mb-3 ${mode === 'chaos' ? 'bg-[#1DB954] hover:bg-[#1ed760] text-white' : mode === 'chill' ? 'bg-[#1DB954] hover:bg-[#1ed760] text-white' : mode === 'code' ? 'bg-[#00FF00] text-black border border-[#00FF00] hover:bg-[#00CC00]' : 'bg-[#1DB954] hover:bg-[#1ed760] text-white'} font-black ${getRoundedClass('rounded-lg')} h-10 text-sm uppercase ${mode === 'code' ? 'font-mono' : ''}`}
-                >
-                  {mode === 'code' ? '[OPEN IN SPOTIFY]' : (
-                    <>
-                      <Music className="w-4 h-4 mr-2" />
-                      Open in Spotify
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </Button>
-                
-                {/* Track Info and Animated EQ */}
-                <div className="flex items-center justify-between mb-3">
-                  <AudioEQ 
-                    isPlaying={isPlaying} 
-                    color={mode === 'chaos' ? style.accent : mode === 'code' ? '#00FF00' : '#1DB954'}
-                    className="flex-1"
-                  />
-                  <p className={`text-sm ml-4 ${style.text}/70`}>
-                    {playlistData.trackCount} tracks
-                  </p>
-                </div>
-                
-                {/* Description */}
-                <p className={`text-xs ${style.text}/60 leading-relaxed`}>
-                  {playlistData.description}
-                </p>
-              </Card>
+              <div className="col-span-1 md:col-span-2 lg:col-span-4">
+                <SpotifyPlayer
+                  playlist={playlistData}
+                  isPlaying={isPlaying}
+                  onPlayPause={() => setIsPlaying(!isPlaying)}
+                />
+              </div>
             )
           })()}
 

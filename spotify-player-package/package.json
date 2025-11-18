@@ -1,0 +1,41 @@
+{
+  "name": "spotify-player-component",
+  "version": "1.0.0",
+  "description": "A beautiful, animated Spotify-style playlist player component with vinyl animation, equalizer, and full playback controls",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc && echo 'Build complete. For production, use a bundler like Rollup or Vite.'",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "spotify",
+    "player",
+    "playlist",
+    "music",
+    "react",
+    "component",
+    "animated",
+    "vinyl"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "framer-motion": "^10.0.0",
+    "lucide-react": "^0.200.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0 || ^19.0.0",
+    "@types/react-dom": "^18.0.0 || ^19.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {}
+}
+

@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Music, Play, ExternalLink, Volume2, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { PlaylistData, Track, SpotifyPlayerProps as SpotifyPlayerPropsType } from '@/lib/spotify-player-types';
+import { SpotifyPlayerProps, Track } from '../types';
 import '../styles/playlist-card.css';
 
 export function SpotifyPlayer({
@@ -14,7 +14,7 @@ export function SpotifyPlayer({
   onSkipForward,
   onSpotifyLink,
   className = ''
-}: SpotifyPlayerPropsType) {
+}: SpotifyPlayerProps) {
   const [internalIsPlaying, setInternalIsPlaying] = useState(false);
   const shouldReduceMotion = useReducedMotion();
 
@@ -398,3 +398,4 @@ export function SpotifyPlayer({
     </section>
   );
 }
+

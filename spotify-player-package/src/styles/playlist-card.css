@@ -1,0 +1,173 @@
+/* sizes: tighten vertical density + smaller media */
+.playlist-card {
+  --cover: 180px;
+  --vinyl-gap: 24px;
+  --overlap: 80px; /* portion of vinyl tucked under cover */
+  --media-gap: 14px;
+  --stack-gap: 12px;
+  --overlap-add: 0px;
+  --vinyl: calc(var(--cover) - var(--vinyl-gap));
+  --visible: calc(var(--vinyl) - var(--overlap)); /* 140 - 80 = 60 */
+  overflow: visible;
+}
+
+@media (min-width: 768px) {
+  .playlist-card { 
+    --cover: 200px; 
+  }
+}
+
+@media (min-width: 1024px) {
+  .playlist-card { 
+    --cover: 220px; 
+  }
+}
+
+/* Ensure overlap persists on very small widths by slightly increasing ratio */
+@media (max-width: 480px){
+  .playlist-card { --overlap-ratio: 0.40; }
+}
+
+/* guaranteed vinyl spin even if Tailwind isn't configured */
+/* always spin by default; disable for reduced motion */
+.playlist-card .vinyl{ animation: vinylspin 12s linear infinite; }
+@media (prefers-reduced-motion: reduce){ .playlist-card .vinyl{ animation: none; } }
+@keyframes vinylspin{
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* compact type scale */
+.playlist-card .eyebrow { 
+  font-family: var(--font-body, system-ui, -apple-system, sans-serif);
+  font-size: 13px; 
+  letter-spacing: .06em; 
+  text-transform: uppercase; 
+  opacity:.9; 
+}
+.playlist-card .title { 
+  font-family: var(--font-heading, system-ui, -apple-system, sans-serif);
+  font-size: 26px; 
+  line-height:1.2; 
+  font-weight: 400; 
+}
+@media (min-width:768px){ .playlist-card .title { font-size: 28px; } }
+.playlist-card .byline { 
+  font-family: var(--font-body, system-ui, -apple-system, sans-serif); 
+  font-size: 13px; 
+  opacity:.9; 
+}
+.playlist-card .now { 
+  font-family: var(--font-body, system-ui, -apple-system, sans-serif); 
+  font-size: 14px; 
+  opacity:.95; 
+}
+.playlist-card .meta { 
+  font-family: var(--font-body, system-ui, -apple-system, sans-serif);
+  font-size: 12px; 
+  opacity:.7; 
+}
+.playlist-card .artists { 
+  font-family: var(--font-body, system-ui, -apple-system, sans-serif); 
+  font-size: 13px; 
+  line-height:1.55; 
+  max-width: 42rem; 
+  margin-inline:auto; 
+}
+@media (min-width:768px){ .playlist-card .artists { font-size: 14px; line-height:1.55; } }
+.playlist-card .artists.clamp { display:-webkit-box; -webkit-line-clamp:6; -webkit-box-orient:vertical; overflow:hidden; }
+
+/* Enhanced EQ animation (16 bars) */
+.playlist-card .eq-container { display: flex; justify-content: center; margin-top: 1rem; }
+.playlist-card .eq { 
+  display: flex; 
+  align-items: flex-end; 
+  gap: 3px; 
+  height: 24px; 
+  opacity: 0.8; 
+  width: min(400px, 100%); 
+  justify-content: center; 
+}
+.playlist-card .eq-bar { 
+  width: 4px; 
+  height: 6px; 
+  background: linear-gradient(to top, #a7f3d0, #10b981); 
+  border-radius: 2px; 
+  opacity: 0.9; 
+  transform-origin: bottom; 
+  transition: height 0.1s ease;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .playlist-card .eq-bar { 
+    animation: eqPulse 1.2s ease-in-out infinite; 
+  }
+  .playlist-card .eq-bar:nth-child(2n) { animation-duration: 1.4s; }
+  .playlist-card .eq-bar:nth-child(3n) { animation-duration: 1.0s; }
+  .playlist-card .eq-bar:nth-child(4n) { animation-duration: 1.6s; }
+  .playlist-card .eq-bar:nth-child(5n) { animation-duration: 0.8s; }
+}
+@keyframes eqPulse { 
+  0%, 100% { height: 6px; } 
+  50% { height: 24px; } 
+}
+
+/* utilities */
+.playlist-card .media { overflow: visible; position: relative; display:flex; justify-content:center; }
+.playlist-card .mediaGroup{ position: relative; width: calc(var(--cover) + var(--visible)); overflow: visible; }
+.playlist-card .mediaGroup img{ display:block; }
+.playlist-card .control-btn{ width:48px; height:48px; border-radius:9999px !important; display:inline-flex; align-items:center; justify-content:center; appearance:none; }
+.playlist-card .vinylWrap {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: calc(var(--cover) - var(--overlap));
+  width: var(--vinyl);
+  height: var(--vinyl);
+  overflow: visible;
+}
+
+.playlist-card .vinyl {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  z-index: 0;
+  pointer-events: none;
+  position: relative;
+}
+
+/* subtle vinyl ridges */
+.playlist-card .vinyl::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.06) 0 1px, transparent 1px 100%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08) 0 1px, transparent 1px 6px);
+  opacity: .18;
+}
+
+/* artists clamp: 4 (mobile) / 5 (md+) */
+.playlist-card .artists.clamp{ display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
+@media (min-width:768px){ .playlist-card .artists.clamp{ -webkit-line-clamp:5; } }
+
+/* Line clamp utilities (local, without plugin) */
+.line-clamp-6 {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .md\:line-clamp-7 {
+    display: -webkit-box;
+    -webkit-line-clamp: 7;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
