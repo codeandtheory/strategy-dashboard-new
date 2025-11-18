@@ -100,50 +100,55 @@ export default function TeamDashboard() {
   }, [])
   
   // Fetch weather data based on user's location
+  // COMMENTED OUT TO SAVE API TOKENS - Uncomment when ready to use
   useEffect(() => {
-    async function fetchWeather() {
-      try {
-        setWeatherLoading(true)
-        setWeatherError(null)
+    // Set loading state to false since we're not fetching
+    setWeatherLoading(false)
+    setWeatherError('Weather service is temporarily disabled. Add OPENWEATHER_API_KEY to Vercel environment variables to enable.')
+    
+    // async function fetchWeather() {
+    //   try {
+    //     setWeatherLoading(true)
+    //     setWeatherError(null)
 
-        // Try to get location from browser geolocation
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              const { latitude, longitude } = position.coords
-              
-              // Fetch weather (reverse geocoding happens server-side)
-              const response = await fetch(
-                `/api/weather?lat=${latitude}&lon=${longitude}`
-              )
-              
-              if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Failed to fetch weather')
-              }
+    //     // Try to get location from browser geolocation
+    //     if (navigator.geolocation) {
+    //       navigator.geolocation.getCurrentPosition(
+    //         async (position) => {
+    //           const { latitude, longitude } = position.coords
+    //           
+    //           // Fetch weather (reverse geocoding happens server-side)
+    //           const response = await fetch(
+    //             `/api/weather?lat=${latitude}&lon=${longitude}`
+    //           )
+    //           
+    //           if (!response.ok) {
+    //             const errorData = await response.json()
+    //             throw new Error(errorData.error || 'Failed to fetch weather')
+    //           }
 
-              const data = await response.json()
-              setWeather(data)
-              setWeatherLoading(false)
-            },
-            (error) => {
-              console.error('Geolocation error:', error)
-              setWeatherError('Unable to get your location for weather')
-              setWeatherLoading(false)
-            }
-          )
-        } else {
-          setWeatherError('Geolocation not supported')
-          setWeatherLoading(false)
-        }
-      } catch (error: any) {
-        console.error('Error fetching weather:', error)
-        setWeatherError(error.message || 'Failed to load weather')
-        setWeatherLoading(false)
-      }
-    }
+    //           const data = await response.json()
+    //           setWeather(data)
+    //           setWeatherLoading(false)
+    //         },
+    //         (error) => {
+    //           console.error('Geolocation error:', error)
+    //           setWeatherError('Unable to get your location for weather')
+    //           setWeatherLoading(false)
+    //         }
+    //       )
+    //     } else {
+    //       setWeatherError('Geolocation not supported')
+    //       setWeatherLoading(false)
+    //     }
+    //   } catch (error: any) {
+    //     console.error('Error fetching weather:', error)
+    //     setWeatherError(error.message || 'Failed to load weather')
+    //     setWeatherLoading(false)
+    //   }
+    // }
 
-    fetchWeather()
+    // fetchWeather()
   }, [])
   
   // Detect user timezone and calculate timezone times
