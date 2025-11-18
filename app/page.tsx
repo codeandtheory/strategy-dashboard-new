@@ -68,6 +68,25 @@ export default function TeamDashboard() {
   const [timeZones, setTimeZones] = useState<Array<{ label: string; city: string; time: string; offset: number }>>([])
   const [todayDate, setTodayDate] = useState<string>('')
 
+  // Format today's date in user's timezone
+  useEffect(() => {
+    const updateDate = () => {
+      const now = new Date()
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      })
+      setTodayDate(formatter.format(now))
+    }
+    
+    updateDate()
+    // Update every minute to keep it current (though date rarely changes)
+    const interval = setInterval(updateDate, 60000)
+    return () => clearInterval(interval)
+  }, [])
+  
   // Detect user timezone and calculate timezone times
   useEffect(() => {
     // Detect user's timezone
