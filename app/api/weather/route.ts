@@ -97,7 +97,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Reverse geocode to get location name (server-side)
+    // Log API key status (first 4 chars only for security)
+    console.log('Weather API key status:', apiKey ? `${apiKey.substring(0, 4)}...` : 'NOT SET')
+
+    // Reverse geocode to get location name (server-side) - skip if API key fails
     let locationName = 'your location'
     try {
       const geoUrl = `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${apiKey}`
@@ -107,6 +110,8 @@ export async function GET(request: NextRequest) {
         if (geoData[0]) {
           locationName = geoData[0].name || locationName
         }
+      } else if (geoResponse.status === 401) {
+        console.error('OpenWeatherMap reverse geocoding 401 - API key may be invalid')
       }
     } catch (e) {
       console.error('Reverse geocoding error (non-fatal):', e)
@@ -115,14 +120,27 @@ export async function GET(request: NextRequest) {
 
     // Fetch current weather
     const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=imperial`
+    console.log('Fetching weather from OpenWeatherMap...')
     const weatherResponse = await fetch(weatherUrl)
 
     if (!weatherResponse.ok) {
       console.error('OpenWeatherMap API error:', weatherResponse.status, weatherResponse.statusText)
       const errorText = await weatherResponse.text()
       console.error('Error response:', errorText)
+      
+      // Provide more helpful error messages
+      if (weatherResponse.status === 401) {
+        return NextResponse.json(
+          { 
+            error: 'Invalid API key. Please check that OPENWEATHER_API_KEY is correct in Vercel environment variables. Make sure to redeploy after adding the key.',
+            details: 'The API key may be invalid, expired, or not activated. Check your OpenWeatherMap account.'
+          },
+          { status: 401 }
+        )
+      }
+      
       return NextResponse.json(
-        { error: `Failed to fetch weather data: ${weatherResponse.statusText}` },
+        { error: `Failed to fetch weather data: ${weatherResponse.statusText}`, details: errorText },
         { status: weatherResponse.status }
       )
     }
