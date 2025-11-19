@@ -1,10 +1,13 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
-import { Music, Sparkles, Cloud, FileText, BarChart3, Settings, TrendingUp } from 'lucide-react'
+import { Music, Sparkles, Cloud, FileText, BarChart3, Settings, TrendingUp, Shield, Crown } from 'lucide-react'
 import Link from 'next/link'
+import { usePermissions } from '@/contexts/permissions-context'
+import { getRoleDisplayName, getSpecialAccessDisplayName } from '@/lib/permissions'
 
 export default function AdminDashboard() {
+  const { user, permissions } = usePermissions()
   const sections = [
     {
       title: 'Playlists',
@@ -59,8 +62,37 @@ export default function AdminDashboard() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage all content and settings for the dashboard</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground mb-2">Admin Dashboard</h1>
+            <p className="text-muted-foreground">Manage all content and settings for the dashboard</p>
+          </div>
+          {user && (
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <Shield className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    {getRoleDisplayName(user.baseRole)}
+                  </p>
+                  {user.specialAccess.length > 0 && (
+                    <div className="flex items-center gap-1 mt-1">
+                      {user.specialAccess.map((access) => (
+                        <span
+                          key={access}
+                          className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded flex items-center gap-1"
+                        >
+                          <Crown className="w-3 h-3" />
+                          {getSpecialAccessDisplayName(access)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

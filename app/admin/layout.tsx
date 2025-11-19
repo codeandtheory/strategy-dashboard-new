@@ -1,27 +1,103 @@
 'use client'
 
 import { useMode } from '@/contexts/mode-context'
+import { PermissionsProvider, usePermissions } from '@/contexts/permissions-context'
+import { useAuth } from '@/contexts/auth-context'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Settings, Music, Sparkles, Cloud, FileText, BarChart3, Home } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { Settings, Music, Sparkles, Cloud, FileText, BarChart3, Home, Users, Shield, Crown, Zap, LogOut } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useEffect } from 'react'
+import { getRoleDisplayName, getSpecialAccessDisplayName } from '@/lib/permissions'
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { mode } = useMode()
   const pathname = usePathname()
+  const router = useRouter()
+  const { user: authUser, signOut } = useAuth()
+  const { user, permissions, isLoading } = usePermissions()
+
+  // Redirect if no access
+  useEffect(() => {
+    if (!isLoading && (!permissions || !permissions.canViewAdmin)) {
+      router.push('/')
+    }
+  }, [permissions, isLoading, router])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading permissions...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!permissions || !permissions.canViewAdmin) {
+    return null
+  }
 
   const navItems = [
-    { href: '/admin', label: 'Dashboard', icon: Home },
-    { href: '/admin/playlists', label: 'Playlists', icon: Music },
-    { href: '/admin/horoscopes', label: 'Horoscopes', icon: Sparkles },
-    { href: '/admin/weather', label: 'Weather', icon: Cloud },
-    { href: '/admin/content', label: 'Content Cards', icon: FileText },
-    { href: '/admin/stats', label: 'Stats & Metrics', icon: BarChart3 },
-    { href: '/admin/settings', label: 'Settings', icon: Settings },
+    { 
+      href: '/admin', 
+      label: 'Dashboard', 
+      icon: Home,
+      permission: 'canViewAdmin' as const,
+    },
+    { 
+      href: '/admin/playlists', 
+      label: 'Playlists', 
+      icon: Music,
+      permission: 'canManagePlaylists' as const,
+    },
+    { 
+      href: '/admin/horoscopes', 
+      label: 'Horoscopes', 
+      icon: Sparkles,
+      permission: 'canManageHoroscopes' as const,
+    },
+    { 
+      href: '/admin/weather', 
+      label: 'Weather', 
+      icon: Cloud,
+      permission: 'canManageWeather' as const,
+    },
+    { 
+      href: '/admin/content', 
+      label: 'Content Cards', 
+      icon: FileText,
+      permission: 'canManageContent' as const,
+    },
+    { 
+      href: '/admin/stats', 
+      label: 'Stats & Metrics', 
+      icon: BarChart3,
+      permission: 'canViewAdmin' as const,
+    },
+    { 
+      href: '/admin/users', 
+      label: 'User Management', 
+      icon: Users,
+      permission: 'canManageUsers' as const,
+    },
+    { 
+      href: '/admin/beast-babe', 
+      label: 'Beast Babe Torch', 
+      icon: Zap,
+      permission: 'canPassBeastBabe' as const,
+    },
+    { 
+      href: '/admin/settings', 
+      label: 'Settings', 
+      icon: Settings,
+      permission: 'canManageSettings' as const,
+    },
   ]
+
+  // Filter nav items based on permissions
+  const visibleNavItems = navItems.filter(item => permissions[item.permission])
 
   return (
     <div className="min-h-screen bg-background">
@@ -31,9 +107,33 @@ export default function AdminLayout({
           <h1 className="text-2xl font-bold text-foreground">Admin CMS</h1>
           <p className="text-sm text-muted-foreground mt-1">Content Management</p>
         </div>
+
+        {/* User Role Display */}
+        {user && (
+          <div className="mb-6 p-3 bg-muted rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-foreground">
+                {getRoleDisplayName(user.baseRole)}
+              </span>
+            </div>
+            {user.specialAccess.length > 0 && (
+              <div className="space-y-1">
+                {user.specialAccess.map((access) => (
+                  <div key={access} className="flex items-center gap-2">
+                    <Crown className="w-3 h-3 text-yellow-500" />
+                    <span className="text-xs text-muted-foreground">
+                      {getSpecialAccessDisplayName(access)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         
         <nav className="space-y-2">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href || (item.href !== '/admin' && pathname?.startsWith(item.href))
             return (
@@ -53,7 +153,7 @@ export default function AdminLayout({
           })}
         </nav>
 
-        <div className="mt-8 pt-8 border-t border-border">
+        <div className="mt-8 pt-8 border-t border-border space-y-2">
           <Link
             href="/"
             className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -61,6 +161,15 @@ export default function AdminLayout({
             <Home className="w-5 h-5" />
             <span className="font-medium">Back to Dashboard</span>
           </Link>
+          {authUser && (
+            <button
+              onClick={signOut}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Sign Out</span>
+            </button>
+          )}
         </div>
       </aside>
 
@@ -72,3 +181,15 @@ export default function AdminLayout({
   )
 }
 
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  // PermissionsProvider requires AuthProvider, which is already in root layout
+  return (
+    <PermissionsProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </PermissionsProvider>
+  )
+}

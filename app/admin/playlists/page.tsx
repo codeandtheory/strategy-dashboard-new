@@ -4,51 +4,99 @@ import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { PlaylistData, Track } from '@/lib/spotify-player-types'
-import { Plus, Trash2, Save, Music } from 'lucide-react'
+import { PlaylistData } from '@/lib/spotify-player-types'
+import { Save, Music, Loader2, ExternalLink, CheckCircle2, ShieldOff } from 'lucide-react'
+import { usePermissions } from '@/contexts/permissions-context'
 
 export default function PlaylistsAdmin() {
-  const [playlist, setPlaylist] = useState<PlaylistData>({
-    title: 'Halloween Prom',
-    curator: 'Rebecca Smith',
-    curatorPhotoUrl: '/placeholder-user.jpg',
-    coverUrl: 'https://i.scdn.co/image/ab67616d0000b273c5649add07ed3720be9d5526',
-    description: 'macabre mingling, bone-chilling bops, spooky sl dances, and spiked punch - vampy vibes include',
-    spotifyUrl: 'https://open.spotify.com/playlist/example',
-    trackCount: 20,
-    totalDuration: '73:48',
-    tracks: [
-      { name: 'Thriller', artist: 'Michael Jackson', duration: '5:57' },
-      { name: 'Monster Mash', artist: 'Bobby Pickett', duration: '3:12' },
-      { name: 'Ghostbusters', artist: 'Ray Parker Jr.', duration: '4:05' },
-      { name: 'This Is Halloween', artist: 'Danny Elfman', duration: '3:16' },
-      { name: 'Time Warp', artist: 'Richard O\'Brien', duration: '3:19' },
-    ],
-  })
+  const { permissions } = usePermissions()
 
-  const addTrack = () => {
-    setPlaylist({
+  if (!permissions?.canManagePlaylists) {
+    return (
+      <div>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Manage Playlists</h1>
+        </div>
+        <Card className="p-6">
+          <div className="flex items-center gap-3 text-destructive">
+            <ShieldOff className="w-5 h-5" />
+            <p>You don't have permission to manage playlists. You need the "Leader", "Admin", or "Curator" role.</p>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+  const [spotifyUrl, setSpotifyUrl] = useState('')
+  const [curator, setCurator] = useState('')
+  const [description, setDescription] = useState('')
+  const [playlist, setPlaylist] = useState<PlaylistData | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+
+  const fetchPlaylistData = async () => {
+    if (!spotifyUrl.trim()) {
+      setError('Please enter a Spotify playlist URL')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setSuccess(false)
+
+    try {
+      const response = await fetch('/api/spotify/playlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: spotifyUrl }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch playlist data')
+      }
+
+      const data = await response.json()
+      
+      // Use curator from form if provided, otherwise use Spotify owner
+      const finalCurator = curator.trim() || data.curator
+      
+      // TODO: Look up curator photo from profile system
+      // For now, use Spotify owner photo or null
+      const curatorPhotoUrl = data.curatorPhotoUrl || null
+
+      setPlaylist({
+        ...data,
+        curator: finalCurator,
+        curatorPhotoUrl,
+        description: description.trim() || data.description || '',
+      })
+      setSuccess(true)
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch playlist data')
+      setPlaylist(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!playlist) {
+      setError('Please fetch playlist data first')
+      return
+    }
+
+    // Update curator and description from form
+    const updatedPlaylist = {
       ...playlist,
-      tracks: [...playlist.tracks, { name: '', artist: '', duration: '' }],
-    })
-  }
+      curator: curator.trim() || playlist.curator,
+      description: description.trim() || playlist.description || '',
+    }
 
-  const removeTrack = (index: number) => {
-    setPlaylist({
-      ...playlist,
-      tracks: playlist.tracks.filter((_, i) => i !== index),
-    })
-  }
-
-  const updateTrack = (index: number, field: keyof Track, value: string) => {
-    const updatedTracks = [...playlist.tracks]
-    updatedTracks[index] = { ...updatedTracks[index], [field]: value }
-    setPlaylist({ ...playlist, tracks: updatedTracks })
-  }
-
-  const handleSave = () => {
     // TODO: Save to database/API
-    console.log('Saving playlist:', playlist)
+    console.log('Saving playlist:', updatedPlaylist)
     alert('Playlist saved! (This will connect to your backend)')
   }
 
@@ -56,134 +104,189 @@ export default function PlaylistsAdmin() {
     <div>
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-foreground mb-2">Manage Playlists</h1>
-        <p className="text-muted-foreground">Edit playlist information, tracks, and metadata</p>
+        <p className="text-muted-foreground">
+          Enter a Spotify playlist URL to automatically populate all playlist information
+        </p>
       </div>
 
-      <Card className="p-6">
-        <div className="space-y-6">
-          {/* Basic Info */}
-          <div>
-            <h2 className="text-xl font-semibold text-foreground mb-4">Basic Information</h2>
+      <div className="space-y-6">
+        {/* Input Form */}
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold text-foreground mb-4">Playlist Information</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Spotify Playlist URL <span className="text-destructive">*</span>
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  value={spotifyUrl}
+                  onChange={(e) => {
+                    setSpotifyUrl(e.target.value)
+                    setError(null)
+                    setSuccess(false)
+                  }}
+                  placeholder="https://open.spotify.com/playlist/..."
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={fetchPlaylistData} 
+                  disabled={loading || !spotifyUrl.trim()}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Fetching...
+                    </>
+                  ) : (
+                    <>
+                      <Music className="w-4 h-4 mr-2" />
+                      Fetch from Spotify
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Paste a Spotify playlist link to automatically populate all fields
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Playlist Title</label>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Curator <span className="text-destructive">*</span>
+                </label>
                 <Input
-                  value={playlist.title}
-                  onChange={(e) => setPlaylist({ ...playlist, title: e.target.value })}
-                  placeholder="Halloween Prom"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Curator</label>
-                <Input
-                  value={playlist.curator}
-                  onChange={(e) => setPlaylist({ ...playlist, curator: e.target.value })}
+                  value={curator}
+                  onChange={(e) => setCurator(e.target.value)}
                   placeholder="Rebecca Smith"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Will use playlist owner if left empty
+                </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Cover Image URL</label>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Description (Optional)
+                </label>
                 <Input
-                  value={playlist.coverUrl || ''}
-                  onChange={(e) => setPlaylist({ ...playlist, coverUrl: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Curator Photo URL</label>
-                <Input
-                  value={playlist.curatorPhotoUrl || ''}
-                  onChange={(e) => setPlaylist({ ...playlist, curatorPhotoUrl: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-foreground mb-2">Description</label>
-                <Input
-                  value={playlist.description || ''}
-                  onChange={(e) => setPlaylist({ ...playlist, description: e.target.value })}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   placeholder="Playlist description..."
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Spotify URL</label>
-                <Input
-                  value={playlist.spotifyUrl || ''}
-                  onChange={(e) => setPlaylist({ ...playlist, spotifyUrl: e.target.value })}
-                  placeholder="https://open.spotify.com/playlist/..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Total Duration</label>
-                <Input
-                  value={playlist.totalDuration || ''}
-                  onChange={(e) => setPlaylist({ ...playlist, totalDuration: e.target.value })}
-                  placeholder="73:48"
-                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Will use Spotify description if left empty
+                </p>
               </div>
             </div>
-          </div>
 
-          {/* Tracks */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-foreground">Tracks</h2>
-              <Button onClick={addTrack} size="sm" variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Track
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {playlist.tracks.map((track, index) => (
-                <Card key={index} className="p-4">
-                  <div className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-5">
-                      <Input
-                        value={track.name}
-                        onChange={(e) => updateTrack(index, 'name', e.target.value)}
-                        placeholder="Track name"
-                      />
-                    </div>
-                    <div className="col-span-5">
-                      <Input
-                        value={track.artist}
-                        onChange={(e) => updateTrack(index, 'artist', e.target.value)}
-                        placeholder="Artist name"
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      <Input
-                        value={track.duration || ''}
-                        onChange={(e) => updateTrack(index, 'duration', e.target.value)}
-                        placeholder="3:45"
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      <Button
-                        onClick={() => removeTrack(index)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+            {error && (
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
+
+            {success && playlist && (
+              <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  <p className="text-sm text-green-700 dark:text-green-400">
+                    Playlist data fetched successfully!
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Fetched Playlist Preview */}
+        {playlist && (
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold text-foreground mb-4">Playlist Preview</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Title</label>
+                  <p className="text-lg font-semibold text-foreground">{playlist.title}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Curator</label>
+                  <p className="text-lg font-semibold text-foreground">{playlist.curator}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Track Count</label>
+                  <p className="text-lg font-semibold text-foreground">{playlist.trackCount} tracks</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Total Duration</label>
+                  <p className="text-lg font-semibold text-foreground">{playlist.totalDuration}</p>
+                </div>
+                {playlist.description && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
+                    <p className="text-foreground">{playlist.description}</p>
                   </div>
-                </Card>
-              ))}
-            </div>
-          </div>
+                )}
+                {playlist.coverUrl && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">Cover Image</label>
+                    <img 
+                      src={playlist.coverUrl} 
+                      alt={playlist.title}
+                      className="w-32 h-32 object-cover rounded-lg"
+                    />
+                  </div>
+                )}
+                {playlist.artistsList && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">Artists</label>
+                    <p className="text-sm text-foreground line-clamp-3">{playlist.artistsList}</p>
+                  </div>
+                )}
+              </div>
 
-          {/* Save Button */}
-          <div className="flex justify-end pt-4 border-t border-border">
-            <Button onClick={handleSave} size="lg">
-              <Save className="w-4 h-4 mr-2" />
-              Save Playlist
-            </Button>
-          </div>
-        </div>
-      </Card>
+              {playlist.tracks && playlist.tracks.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Tracks ({playlist.tracks.length} shown)
+                  </label>
+                  <div className="max-h-64 overflow-y-auto space-y-2">
+                    {playlist.tracks.slice(0, 10).map((track, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
+                        <span className="text-foreground">
+                          <span className="font-medium">{track.name}</span> - {track.artist}
+                        </span>
+                        <span className="text-muted-foreground">{track.duration}</span>
+                      </div>
+                    ))}
+                    {playlist.tracks.length > 10 && (
+                      <p className="text-xs text-muted-foreground text-center pt-2">
+                        ... and {playlist.tracks.length - 10} more tracks
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-4 border-t border-border">
+                <a
+                  href={playlist.spotifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open in Spotify
+                </a>
+                <Button onClick={handleSave} size="lg">
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Playlist
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
     </div>
   )
 }
-

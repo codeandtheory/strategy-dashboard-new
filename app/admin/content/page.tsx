@@ -4,9 +4,27 @@ import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Save } from 'lucide-react'
+import { Save, ShieldOff } from 'lucide-react'
+import { usePermissions } from '@/contexts/permissions-context'
 
 export default function ContentAdmin() {
+  const { permissions } = usePermissions()
+
+  if (!permissions?.canManageContent) {
+    return (
+      <div>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Manage Content Cards</h1>
+        </div>
+        <Card className="p-6">
+          <div className="flex items-center gap-3 text-destructive">
+            <ShieldOff className="w-5 h-5" />
+            <p>You don't have permission to manage content. You need the "Leader", "Admin", or "Curator" role.</p>
+          </div>
+        </Card>
+      </div>
+    )
+  }
   const [fridayDrop, setFridayDrop] = useState({
     new: '5',
     shipped: '8',
