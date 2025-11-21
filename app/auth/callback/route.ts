@@ -72,9 +72,9 @@ export async function GET(request: NextRequest) {
         console.log('Session verified after exchange:', session.user.email)
       }
 
-      // Add a small delay to ensure cookies are set before redirect
-      // This helps with cookie persistence across the redirect
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Log all cookies being set (for debugging)
+      const allCookies = response.cookies.getAll()
+      console.log('Cookies being set in response:', allCookies.map(c => c.name))
 
       // Successfully authenticated, redirect to home with cookies set
       // The response object already has the cookies set from the exchangeCodeForSession call
