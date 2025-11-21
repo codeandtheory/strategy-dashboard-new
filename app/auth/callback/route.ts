@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
                 path: '/',
                 sameSite: 'lax' as const,
                 secure: process.env.NODE_ENV === 'production',
+                httpOnly: false, // Allow client-side JavaScript to read the cookie
               }
               request.cookies.set({ name, value, ...cookieOptions })
               response.cookies.set({ name, value, ...cookieOptions })
