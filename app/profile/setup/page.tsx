@@ -23,6 +23,13 @@ export default function ProfileSetupPage() {
   const [discipline, setDiscipline] = useState('')
   const [role, setRole] = useState('')
   
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login')
+    }
+  }, [user, authLoading, router])
+
   // Check if profile already exists and has birthday
   useEffect(() => {
     async function checkProfile() {
@@ -73,18 +80,42 @@ export default function ProfileSetupPage() {
         return
       }
       
-      // Update profile
+      // Update profile - use update instead of upsert to avoid schema cache issues
       const { error: updateError } = await supabase
         .from('profiles')
-        .upsert({
-          id: user?.id,
+        .update({
           birthday: birthday,
           discipline: discipline || null,
           role: role || null,
           updated_at: new Date().toISOString(),
         })
+        .eq('id', user?.id)
+      
+      // If update fails (profile doesn't exist), try insert
+      if (updateError && updateError.code === 'PGRST116') {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user?.id,
+            birthday: birthday,
+            discipline: discipline || null,
+            role: role || null,
+            email: user?.email || null,
+            updated_at: new Date().toISOString(),
+          })
+        
+        if (insertError) {
+          throw insertError
+        }
+      } else if (updateError) {
+        throw updateError
+      }
       
       if (updateError) {
+        // Check if it's a schema error
+        if (updateError.message?.includes('birthday') || updateError.message?.includes('schema cache')) {
+          throw new Error('Database schema needs to be updated. Please run the migration script in Supabase SQL Editor: supabase/add-profile-fields.sql')
+        }
         throw updateError
       }
       
@@ -92,7 +123,14 @@ export default function ProfileSetupPage() {
       router.push('/')
     } catch (err: any) {
       console.error('Error saving profile:', err)
-      setError(err.message || 'Failed to save profile. Please try again.')
+      let errorMessage = err.message || 'Failed to save profile. Please try again.'
+      
+      // Provide helpful error message for schema issues
+      if (errorMessage.includes('schema') || errorMessage.includes('birthday') || errorMessage.includes('column')) {
+        errorMessage = 'Database schema needs to be updated. Please run the migration script: supabase/add-profile-fields.sql in your Supabase SQL Editor.'
+      }
+      
+      setError(errorMessage)
       setSaving(false)
     }
   }

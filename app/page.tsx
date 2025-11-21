@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info } from 'lucide-react'
+import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info, LogOut } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic'
 
 export default function TeamDashboard() {
   const { mode } = useMode()
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, signOut } = useAuth()
   const router = useRouter()
 
   // Show loading state while checking authentication
@@ -263,6 +263,7 @@ export default function TeamDashboard() {
         return
       }
 
+      // Don't redirect to profile setup from here - let the API handle it
       console.log('Fetching horoscope data for authenticated user...')
 
       setHoroscopeLoading(true)
@@ -284,9 +285,11 @@ export default function TeamDashboard() {
           if (textResponse.status === 401) {
             setHoroscopeError('Please log in to view your horoscope')
           } else if (textResponse.status === 404 && textData.error?.includes('profile')) {
-            // Profile setup needed - redirect to setup page
-            router.push('/profile/setup')
-            return
+            // Profile setup needed - redirect to setup page only if user is authenticated
+            if (user) {
+              router.push('/profile/setup')
+              return
+            }
           } else {
             setHoroscopeError(textData.error || 'Failed to load horoscope')
           }
@@ -640,6 +643,20 @@ export default function TeamDashboard() {
                   </button>
                 </div>
               </TooltipProvider>
+            )}
+            {user && (
+              <button
+                onClick={signOut}
+                className={`flex items-center gap-2 px-4 py-2 ${getRoundedClass('rounded-lg')} border-2 transition-all hover:opacity-80 ${
+                  mode === 'chaos' ? 'bg-black/20 border-[#C4F500]/40 hover:bg-black/30 text-[#C4F500]' :
+                  mode === 'chill' ? 'bg-[#F5E6D3]/30 border-[#FFC043]/40 hover:bg-[#F5E6D3]/40 text-[#FFC043]' :
+                  'bg-black/20 border-white/20 hover:bg-black/30 text-white'
+                }`}
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm font-medium hidden md:inline">Sign Out</span>
+              </button>
             )}
             <ModeSwitcher />
             <div className={`w-10 h-10 ${getRoundedClass('rounded-full')} border-2 ${
