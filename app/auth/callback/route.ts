@@ -30,16 +30,10 @@ export async function GET(request: NextRequest) {
               return request.cookies.getAll()
             },
             set(name: string, value: string, options: any) {
-              // Set cookie on both request and response with proper options
-              const cookieOptions = {
-                ...options,
-                path: '/',
-                sameSite: 'lax' as const,
-                secure: process.env.NODE_ENV === 'production',
-                httpOnly: false, // Allow client-side JavaScript to read the cookie
-              }
-              request.cookies.set({ name, value, ...cookieOptions })
-              response.cookies.set({ name, value, ...cookieOptions })
+              // Set cookie on both request and response
+              // Supabase SSR handles the cookie options automatically
+              request.cookies.set({ name, value, ...options })
+              response.cookies.set({ name, value, ...options })
             },
             remove(name: string, options: any) {
               // Remove cookie from both request and response
