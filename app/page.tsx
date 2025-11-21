@@ -255,6 +255,36 @@ export default function TeamDashboard() {
     return () => clearInterval(interval)
   }, [userTimeZone])
   
+  // Check if profile needs to be set up (only for users missing required details)
+  useEffect(() => {
+    async function checkProfileSetup() {
+      if (!user || profileChecked) return
+      
+      try {
+        const supabase = createClient()
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('birthday')
+          .eq('id', user.id)
+          .maybeSingle()
+        
+        // Only show modal if profile is incomplete (missing birthday - the only required field)
+        // Users who already have their details set up won't see the modal
+        if (!profile || !profile.birthday) {
+          setShowProfileModal(true)
+        }
+        setProfileChecked(true)
+      } catch (err) {
+        console.error('Error checking profile:', err)
+        setProfileChecked(true)
+      }
+    }
+    
+    if (user && !authLoading) {
+      checkProfileSetup()
+    }
+  }, [user, authLoading, profileChecked])
+  
   // Fetch horoscope text and image on mount - only fetches today's data
   // Historical horoscopes are stored in the database but only today's is displayed
   useEffect(() => {
@@ -1773,7 +1803,7 @@ export default function TeamDashboard() {
         </footer>
       </main>
       
-      {/* Profile Setup Modal - Shows on first visit */}
+      {/* Profile Setup Modal - Shows only for users missing required profile details */}
       <ProfileSetupModal
         open={showProfileModal}
         onOpenChange={setShowProfileModal}
