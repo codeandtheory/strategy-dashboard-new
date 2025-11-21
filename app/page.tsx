@@ -1,6 +1,7 @@
 'use client'
 
-import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info, LogOut } from 'lucide-react'
+import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info } from 'lucide-react'
+import { AccountMenu } from '@/components/account-menu'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -644,26 +645,10 @@ export default function TeamDashboard() {
                 </div>
               </TooltipProvider>
             )}
-            {user && (
-              <button
-                onClick={signOut}
-                className={`flex items-center gap-2 px-4 py-2 ${getRoundedClass('rounded-lg')} border-2 transition-all hover:opacity-80 ${
-                  mode === 'chaos' ? 'bg-black/20 border-[#C4F500]/40 hover:bg-black/30 text-[#C4F500]' :
-                  mode === 'chill' ? 'bg-[#F5E6D3]/30 border-[#FFC043]/40 hover:bg-[#F5E6D3]/40 text-[#FFC043]' :
-                  'bg-black/20 border-white/20 hover:bg-black/30 text-white'
-                }`}
-                title="Sign Out"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="text-sm font-medium hidden md:inline">Sign Out</span>
-              </button>
-            )}
             <ModeSwitcher />
-            <div className={`w-10 h-10 ${getRoundedClass('rounded-full')} border-2 ${
-              mode === 'chaos' ? 'bg-[#C4F500] border-[#C4F500]/40' :
-              mode === 'chill' ? 'bg-[#FFC043] border-[#FFC043]/30' :
-              'bg-white border-white/20'
-            }`} />
+            {user && (
+              <AccountMenu />
+            )}
           </div>
         </div>
       </header>

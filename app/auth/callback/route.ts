@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import { NextRequest } from 'next/server'
 
@@ -17,7 +17,32 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     try {
-      const supabase = await createClient()
+      // Create a response object for cookie handling
+      const response = NextResponse.redirect(`${origin}/`)
+      
+      // Create Supabase client with proper cookie handling for route handlers
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll()
+            },
+            set(name: string, value: string, options: any) {
+              // Set cookie on both request and response
+              request.cookies.set({ name, value, ...options })
+              response.cookies.set({ name, value, ...options })
+            },
+            remove(name: string, options: any) {
+              // Remove cookie from both request and response
+              request.cookies.set({ name, value: '', ...options })
+              response.cookies.set({ name, value: '', ...options })
+            },
+          },
+        }
+      )
+
       const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
       
       if (exchangeError) {
@@ -25,8 +50,18 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(exchangeError.message)}`)
       }
 
-      // Successfully authenticated, redirect to home
-      return NextResponse.redirect(`${origin}/`)
+      // Verify the session was created
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError || !session) {
+        console.error('Session not created after exchange:', sessionError)
+        return NextResponse.redirect(`${origin}/login?error=Session not created`)
+      }
+
+      console.log('Successfully authenticated user:', session.user.email)
+
+      // Successfully authenticated, redirect to home with cookies set
+      return response
     } catch (error: any) {
       console.error('Error in auth callback:', error)
       return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message || 'Authentication failed')}`)

@@ -1,8 +1,14 @@
 # Database Setup Instructions
 
-## Fix: Missing Birthday Column Error
+## Common Database Errors and Fixes
+
+### Error 1: Missing Birthday Column
 
 If you're getting the error: **"Could not find the 'birthday' column of 'profiles' in the schema cache"**, you need to add the missing columns to your Supabase database.
+
+### Error 2: Check Constraint Violation
+
+If you're getting the error: **"new row for relation 'profiles' violates check constraint 'profiles_role_check'"**, you need to remove the check constraint from the `role` column.
 
 ### Steps to Fix:
 
@@ -39,11 +45,20 @@ The migration script (`supabase/add-profile-fields.sql`) will:
 - Add `role` column (TEXT) - stores job title
 - Only adds columns if they don't already exist (safe to run multiple times)
 
-### After Running the Migration
+### Fix Check Constraint Error
+
+If you're getting a constraint violation error on the `role` column:
+
+1. **Go to Supabase SQL Editor**
+2. **Run the fix script**: `supabase/fix-role-constraint.sql`
+3. This will remove the check constraint from the `role` column
+4. The `role` column should be a free text field for job titles
+
+### After Running the Migrations
 
 1. Refresh your browser
 2. Try saving your profile again
-3. The error should be resolved
+3. The errors should be resolved
 
 ## Troubleshooting
 
