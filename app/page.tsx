@@ -1153,8 +1153,8 @@ export default function TeamDashboard() {
           )}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          {/* Playlist */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+          {/* Playlist - spans 2 rows */}
           {(() => {
             const [isPlaying, setIsPlaying] = useState(false)
             
@@ -1183,7 +1183,7 @@ export default function TeamDashboard() {
             }
             
             return (
-              <div className="col-span-1">
+              <div className="col-span-1 row-span-2">
                 <SpotifyPlayer
                   playlist={playlistData}
                   isPlaying={isPlaying}
@@ -1193,17 +1193,17 @@ export default function TeamDashboard() {
             )
           })()}
 
-          {/* Friday Drop - 3/4 width, 1 row high */}
+          {/* Friday Drop - 3/4 width, very short, top row */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
             return (
-              <Card className={`${style.bg} ${style.border} p-4 col-span-1 md:col-span-3 ${getRoundedClass('rounded-[2.5rem]')}`}
+              <Card className={`${style.bg} ${style.border} p-3 col-span-1 md:col-span-3 ${getRoundedClass('rounded-[2.5rem]')}`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`text-xs uppercase tracking-wider mb-2 font-black ${style.text}`}>WEEKLY REPORT</p>
-                    <h2 className={`text-2xl font-black uppercase leading-tight ${style.text}`}>THE FRIDAY DROP</h2>
+                    <p className={`text-xs uppercase tracking-wider mb-1 font-black ${style.text}`}>WEEKLY REPORT</p>
+                    <h2 className={`text-xl font-black uppercase leading-tight ${style.text}`}>THE FRIDAY DROP</h2>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     {[
@@ -1212,7 +1212,7 @@ export default function TeamDashboard() {
                       { value: '12', label: 'IN QA' },
                     ].map((stat) => (
                       <div key={stat.label} className={`bg-black/30 ${getRoundedClass('rounded-lg')} p-2 text-center`}>
-                        <p className={`text-xl font-black mb-1 ${style.text}`}>{stat.value}</p>
+                        <p className={`text-lg font-black mb-0.5 ${style.text}`}>{stat.value}</p>
                         <p className={`text-xs font-bold uppercase tracking-wide ${style.text}`}>{stat.label}</p>
                       </div>
                     ))}
@@ -1221,10 +1221,8 @@ export default function TeamDashboard() {
               </Card>
             )
           })()}
-        </div>
 
-        {/* New card row - 3/4 width */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+          {/* Placeholder - 3/4 width, bottom row, right under Friday Drop */}
           {(() => {
             const style = mode === 'chaos' ? getCardStyle('work') : getCardStyle('work')
             return (
