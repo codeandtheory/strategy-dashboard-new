@@ -43,16 +43,15 @@ export async function GET(request: NextRequest) {
     const submittedBy = searchParams.get('submitted_by')
     const assignedTo = searchParams.get('assigned_to')
 
-    // Build query - use the column names that exist in the table
-    // Include all possible columns to handle different table schemas
+    // Build query - select all possible columns to handle schema variations
     let query = supabase
       .from('must_reads')
       .select(`
         id,
-        title,
         article_title,
-        url,
+        title,
         article_url,
+        url,
         notes,
         pinned,
         submitted_by,
@@ -90,12 +89,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Map response to expected format (article_title, article_url)
+    // Map response to expected format - prioritize article_title/article_url
     // Handle both old and new column name conventions
     let mappedData = (data || []).map((item: any) => ({
       ...item,
-      article_title: item.title || item.article_title || '',
-      article_url: item.url || item.article_url || '',
+      // Prioritize article_title/article_url (what table actually uses)
+      article_title: item.article_title || item.title || '',
+      article_url: item.article_url || item.url || '',
       // Ensure created_by is included if it exists
       created_by: item.created_by || item.submitted_by,
       submitted_by: item.submitted_by || item.created_by,
@@ -206,8 +206,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Use the column names that exist in the table
-    // Based on the error, the table has 'title', 'url', and 'week_start_date' columns
     // Calculate week_start_date (Monday of current week)
     const today = new Date()
     const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, etc.
@@ -216,22 +214,28 @@ export async function POST(request: NextRequest) {
     weekStart.setDate(today.getDate() + daysToMonday)
     weekStart.setHours(0, 0, 0, 0) // Start of day
     
-    // Build insert data with all required fields
-    // Based on errors, the table uses: title, url, week_start_date, created_by
+    // Build insert data with ALL possible required fields
+    // Based on errors, the table uses: article_title, article_url, week_start_date, created_by
+    // Include both column name variations to handle schema differences
     const insertData: any = {
-      // Required fields based on errors
-      title: article_title,  // Table uses 'title' not 'article_title'
-      url: article_url,      // Table uses 'url' not 'article_url'
-      created_by: user.id,   // Required field - who created the record
+      // Required fields - use article_title/article_url as primary (based on latest error)
+      article_title: article_title,
+      article_url: article_url,
+      // Also include title/url in case table has both or uses different names
+      title: article_title,
+      url: article_url,
+      // Required user fields
+      created_by: user.id,   // Required - who created the record
+      submitted_by: user.id, // May also be required
+      // Required date fields
       week_start_date: weekStart.toISOString().split('T')[0], // Required - Monday of current week
-      // Optional but commonly used fields
+      // Optional fields
       notes: notes || null,
       pinned: pinned || false,
-      submitted_by: user.id, // May or may not exist, but include it
       assigned_to: assignedToId,
+      // Timestamps
       updated_at: new Date().toISOString(),
-      // Include created_at in case it's not auto-generated
-      created_at: new Date().toISOString(),
+      created_at: new Date().toISOString(), // In case it's not auto-generated
     }
 
     const { data, error } = await supabase
@@ -239,10 +243,10 @@ export async function POST(request: NextRequest) {
       .insert(insertData)
       .select(`
         id,
-        title,
         article_title,
-        url,
+        title,
         article_url,
+        url,
         notes,
         pinned,
         submitted_by,
@@ -254,10 +258,11 @@ export async function POST(request: NextRequest) {
       `)
       .single()
 
-    // Map the response back to the expected format
+    // Map the response back to the expected format - prioritize article_title/article_url
     if (data) {
-      data.article_title = data.title || data.article_title
-      data.article_url = data.url || data.article_url
+      // Prioritize article_title/article_url (what table actually uses)
+      data.article_title = data.article_title || data.title || ''
+      data.article_url = data.article_url || data.url || ''
       // Ensure created_by is included
       data.created_by = data.created_by || data.submitted_by
       data.submitted_by = data.submitted_by || data.created_by
@@ -319,8 +324,12 @@ export async function PUT(request: NextRequest) {
     }
 
     const updateData: any = {
-      title: article_title,  // Map to title column
-      url: article_url,      // Map to url column
+      // Use article_title/article_url as primary (what table actually uses)
+      article_title: article_title,
+      article_url: article_url,
+      // Also include title/url in case table has both
+      title: article_title,
+      url: article_url,
       notes: notes || null,
       pinned: pinned || false,
       updated_at: new Date().toISOString(),
@@ -359,10 +368,11 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Map response to expected format
+    // Map response to expected format - prioritize article_title/article_url
     if (data) {
-      data.article_title = data.title || data.article_title
-      data.article_url = data.url || data.article_url
+      // Prioritize article_title/article_url (what table actually uses)
+      data.article_title = data.article_title || data.title || ''
+      data.article_url = data.article_url || data.url || ''
       // Ensure created_by is included
       data.created_by = data.created_by || data.submitted_by
       data.submitted_by = data.submitted_by || data.created_by
