@@ -10,6 +10,7 @@ import {
   StyleGroup,
   fetchAllPromptSlotCatalogs,
   fetchStyleGroups,
+  fetchOrCreateUserAvatarState,
 } from './horoscope-catalogs'
 
 export interface UserProfile {

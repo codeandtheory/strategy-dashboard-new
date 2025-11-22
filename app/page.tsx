@@ -1325,11 +1325,17 @@ export default function TeamDashboard() {
                         <div key={sample.id} className="flex flex-col">
                           {sample.thumbnail_url ? (
                             <img 
-                              src={sample.thumbnail_url} 
+                              src={
+                                // Use proxy immediately for Airtable URLs (they're expired)
+                                sample.thumbnail_url.includes('airtable.com') || sample.thumbnail_url.includes('airtableusercontent.com')
+                                  ? `/api/work-samples/thumbnail?url=${encodeURIComponent(sample.thumbnail_url)}`
+                                  // For Supabase URLs, try direct first, fallback to proxy on error
+                                  : sample.thumbnail_url
+                              }
                               alt={sample.project_name}
-                              className={`w-full aspect-video object-contain ${getRoundedClass('rounded-lg')} mb-3 bg-gray-100`}
+                              className={`w-full aspect-video object-cover ${getRoundedClass('rounded-lg')} mb-3`}
                               onError={(e) => {
-                                // Try proxy if direct URL fails
+                                // Try proxy if direct URL fails (for Supabase URLs)
                                 const target = e.target as HTMLImageElement
                                 const originalSrc = target.src
                                 if (originalSrc.includes('supabase') && !originalSrc.includes('/api/work-samples/thumbnail')) {
