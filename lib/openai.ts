@@ -182,53 +182,79 @@ export async function generateHoroscopeImage(
 
   console.log('Calling OpenAI DALL-E API with generated prompt...')
   
-  try {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not set in environment variables')
-    }
-    
-    const response = await openai.images.generate({
-      model: 'dall-e-3',
-      prompt: prompt,
-      size: '1024x1024', // Square format for portrait/avatar use
-      quality: 'standard',
-      n: 1,
-    })
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not set in environment variables')
+  }
+  
+  // Retry logic with exponential backoff for rate limits
+  const maxRetries = 3
+  let lastError: any = null
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await openai.images.generate({
+        model: 'dall-e-3',
+        prompt: prompt,
+        size: '1024x1024', // Square format for portrait/avatar use
+        quality: 'standard',
+        n: 1,
+      })
 
-    const imageUrl = response.data[0]?.url
-    if (!imageUrl) {
-      throw new Error('Failed to generate horoscope image - empty response')
-    }
+      const imageUrl = response.data[0]?.url
+      if (!imageUrl) {
+        throw new Error('Failed to generate horoscope image - empty response')
+      }
 
-    console.log('OpenAI DALL-E API call successful')
-    return { imageUrl, prompt, slots }
-  } catch (error: any) {
-    console.error('Error generating horoscope image:', error)
-    
-    // Handle specific OpenAI API errors
-    if (error.response) {
-      const status = error.response.status
-      const errorData = error.response.data
-      console.error('OpenAI API error response:', status, errorData)
+      console.log('OpenAI DALL-E API call successful')
+      return { imageUrl, prompt, slots }
+    } catch (error: any) {
+      lastError = error
+      console.error(`Error generating horoscope image (attempt ${attempt + 1}/${maxRetries + 1}):`, error)
       
-      // Check for billing/quota errors
-      if (status === 400 || status === 429) {
+      // Handle specific OpenAI API errors
+      if (error.response) {
+        const status = error.response.status
+        const errorData = error.response.data
         const errorMessage = errorData?.error?.message || error.message || 'OpenAI API error'
         
-        if (errorMessage.toLowerCase().includes('billing') || 
-            errorMessage.toLowerCase().includes('quota') ||
-            errorMessage.toLowerCase().includes('limit')) {
-          throw new Error('OpenAI billing limit reached. Please check your OpenAI account billing settings.')
+        console.error('OpenAI API error response:', status, errorData)
+        
+        // Check for billing/quota errors - don't retry these
+        if (status === 400) {
+          if (errorMessage.toLowerCase().includes('billing') || 
+              errorMessage.toLowerCase().includes('quota') ||
+              errorMessage.toLowerCase().includes('hard billing limit')) {
+            throw new Error('OpenAI billing limit reached. Please check your OpenAI account billing settings and add payment method if needed.')
+          }
+          // Other 400 errors - don't retry
+          throw error
         }
         
+        // Rate limit (429) - retry with exponential backoff
         if (status === 429) {
-          throw new Error('OpenAI API rate limit exceeded. Please try again later.')
+          if (attempt < maxRetries) {
+            const retryAfter = error.response.headers?.['retry-after'] 
+              ? parseInt(error.response.headers['retry-after'])
+              : Math.pow(2, attempt) // Exponential backoff: 2s, 4s, 8s
+            
+            console.log(`Rate limit hit. Retrying after ${retryAfter} seconds...`)
+            await new Promise(resolve => setTimeout(resolve, retryAfter * 1000))
+            continue // Retry the request
+          } else {
+            throw new Error('OpenAI API rate limit exceeded after retries. Please try again later.')
+          }
         }
+        
+        // Other errors - don't retry
+        throw error
       }
+      
+      // If no response object, don't retry
+      throw error
     }
-    
-    // Re-throw with original error if not handled above
-    throw error
   }
+  
+  // If we exhausted all retries, throw the last error
+  throw lastError || new Error('Failed to generate horoscope image after retries')
 }
 

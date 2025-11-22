@@ -131,9 +131,10 @@ export async function GET(request: NextRequest) {
     // - URL is expired (frontend will handle the error)
     // - prompt_slots_json is null (old system - we'll migrate gradually)
     // This prevents hitting billing limits by regenerating unnecessarily
+    // Images are generated ONCE per day per user and cached in the database
     
     if (cachedHoroscope && cachedHoroscope.image_url && cachedHoroscope.image_url.trim() !== '') {
-      console.log('✅ Returning cached image for user', userId, 'on date', todayDate)
+      console.log('✅ Returning cached image for user', userId, 'on date', todayDate, '- NO API CALL - using database cache')
       
       // Resolve slot IDs to labels for display (only if prompt_slots_json exists)
       const slots = cachedHoroscope.prompt_slots_json
@@ -192,7 +193,7 @@ export async function GET(request: NextRequest) {
     
     // Only generate new image if there's NO cached image at all
     // This ensures we only generate once per day and avoid hitting billing limits
-    console.log('No cached image found for user', userId, 'on date', todayDate, '- generating new image')
+    console.log('⚠️ No cached image found for user', userId, 'on date', todayDate, '- GENERATING NEW IMAGE (this will call OpenAI API)')
     
     // Generate new image with new slot-based prompt system
     const { imageUrl, prompt, slots } = await generateHoroscopeImage(
