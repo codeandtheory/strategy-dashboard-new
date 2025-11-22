@@ -159,30 +159,29 @@ export default function DeckAdmin() {
 
       const { uploadUrl } = sessionResult
 
-      // Step 2: Upload file directly to Google Drive using resumable URL
+      // Step 2: Upload file to Google Drive via our server (to avoid CORS)
       setUploadStatus({ type: 'idle', message: 'Uploading file to Google Drive...' })
       
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: selectedFile,
-        headers: {
-          'Content-Type': selectedFile.type || 'application/pdf',
-          'Content-Length': selectedFile.size.toString(),
-        },
+      const uploadFormData = new FormData()
+      uploadFormData.append('uploadUrl', uploadUrl)
+      uploadFormData.append('file', selectedFile)
+
+      const uploadResponse = await fetch('/api/decks/upload-chunk', {
+        method: 'POST',
+        body: uploadFormData,
       })
 
+      const uploadResult = await uploadResponse.json()
+
       if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text()
-        throw new Error(`Failed to upload file: ${uploadResponse.status} ${errorText}`)
+        throw new Error(uploadResult.error || 'Failed to upload file to Google Drive')
       }
 
-      // Step 3: Get file ID from upload response
-      const uploadResult = await uploadResponse.json()
-      const fileId = uploadResult.id
-      
-      if (!fileId) {
+      if (!uploadResult.fileId) {
         throw new Error('Failed to get file ID from upload response')
       }
+
+      const fileId = uploadResult.fileId
 
       // Step 2: Ingest the deck from Google Drive
       const ingestResponse = await fetch('/api/upload-deck', {
