@@ -61,39 +61,8 @@ export default function TeamDashboard() {
   const [workSamplesSearchQuery, setWorkSamplesSearchQuery] = useState('')
   const [horoscopeImage, setHoroscopeImage] = useState<string | null>(null)
   const [horoscopeImagePrompt, setHoroscopeImagePrompt] = useState<string | null>(null)
-  const [horoscopeImageConfig, setHoroscopeImageConfig] = useState<{
-    userProfile?: {
-      sign: string
-      element: string
-      modality: string
-      discipline: string | null
-      roleLevel: string | null
-      weekday: string
-      season: string
-    }
-    resolvedChoices?: {
-      styleKey: string | null
-      styleLabel: string | null
-      characterType: string | null
-      promptTags?: string[]
-      themeSnippet?: string | null
-      settingHint?: string | null
-    }
-    matchedSegments?: Array<{ type: string; value: string }>
-    appliedRules?: Array<{
-      segmentType: string
-      segmentValue: string
-      priority: number
-      styleWeights: number
-      characterWeights: number
-      promptTags: string[]
-    }>
-    themes?: Array<{
-      name: string
-      moodTags: string[]
-      textSnippet: string | null
-    }>
-  } | null>(null)
+  const [horoscopeImageSlots, setHoroscopeImageSlots] = useState<any>(null)
+  const [horoscopeImageSlotsLabels, setHoroscopeImageSlotsLabels] = useState<any>(null)
   const [horoscopeLoading, setHoroscopeLoading] = useState(true)
   const [horoscopeImageLoading, setHoroscopeImageLoading] = useState(true)
   const [horoscopeError, setHoroscopeError] = useState<string | null>(null)
@@ -394,7 +363,8 @@ export default function TeamDashboard() {
           // Only set today's image - historical images remain in database
           setHoroscopeImage(imageData.image_url)
           setHoroscopeImagePrompt(imageData.image_prompt || null)
-          setHoroscopeImageConfig(imageData.config || null)
+          setHoroscopeImageSlots(imageData.prompt_slots || null)
+          setHoroscopeImageSlotsLabels(imageData.prompt_slots_labels || null)
         }
       } catch (error: any) {
         console.error('Error fetching horoscope data:', error)
@@ -601,7 +571,7 @@ export default function TeamDashboard() {
             {horoscopeImage && (
               <TooltipProvider>
                 <div className="flex items-center gap-2">
-                  {horoscopeImageConfig && (
+                  {(horoscopeImageSlotsLabels || horoscopeImagePrompt) && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button 
@@ -621,60 +591,63 @@ export default function TeamDashboard() {
                       </TooltipTrigger>
                       <TooltipContent 
                         side="bottom"
-                        className="max-w-lg p-4 bg-black/95 text-white text-xs border border-white/20 z-[10000]"
+                        className="max-w-2xl p-4 bg-black/95 text-white text-xs border border-white/20 z-[10000] max-h-[80vh] overflow-y-auto"
                       >
-                        <p className="font-bold mb-3 text-sm">Image Generation Factors</p>
-                        <div className="space-y-3">
-                          {/* User Profile Section */}
-                          {horoscopeImageConfig.userProfile && (
+                        <p className="font-bold mb-3 text-sm">Image Generation Details</p>
+                        <div className="space-y-4">
+                          {/* Prompt Slots Section */}
+                          {horoscopeImageSlotsLabels && (
                             <div>
-                              <p className="font-semibold mb-1 text-[#C4F500]">User Profile:</p>
-                              <div className="space-y-1 pl-2">
-                                <p><span className="text-gray-400">Sign:</span> {horoscopeImageConfig.userProfile.sign}</p>
-                                <p><span className="text-gray-400">Element:</span> {horoscopeImageConfig.userProfile.element}</p>
-                                <p><span className="text-gray-400">Modality:</span> {horoscopeImageConfig.userProfile.modality}</p>
-                                {horoscopeImageConfig.userProfile.discipline && (
-                                  <p><span className="text-gray-400">Discipline:</span> {horoscopeImageConfig.userProfile.discipline}</p>
+                              <p className="font-semibold mb-2 text-[#C4F500]">Selected Slots:</p>
+                              <div className="space-y-1 pl-2 text-xs">
+                                {horoscopeImageSlotsLabels.style_medium && (
+                                  <p><span className="text-gray-400">Style Medium:</span> {horoscopeImageSlotsLabels.style_medium}</p>
                                 )}
-                                {horoscopeImageConfig.userProfile.roleLevel && (
-                                  <p><span className="text-gray-400">Role Level:</span> {horoscopeImageConfig.userProfile.roleLevel}</p>
+                                {horoscopeImageSlotsLabels.style_reference && (
+                                  <p><span className="text-gray-400">Style Reference:</span> {horoscopeImageSlotsLabels.style_reference}</p>
                                 )}
-                                <p><span className="text-gray-400">Weekday:</span> {horoscopeImageConfig.userProfile.weekday}</p>
-                                <p><span className="text-gray-400">Season:</span> {horoscopeImageConfig.userProfile.season}</p>
+                                {horoscopeImageSlotsLabels.subject_role && (
+                                  <p><span className="text-gray-400">Subject Role:</span> {horoscopeImageSlotsLabels.subject_role}</p>
+                                )}
+                                {horoscopeImageSlotsLabels.subject_twist && (
+                                  <p><span className="text-gray-400">Subject Twist:</span> {horoscopeImageSlotsLabels.subject_twist}</p>
+                                )}
+                                {horoscopeImageSlotsLabels.setting_place && (
+                                  <p><span className="text-gray-400">Setting Place:</span> {horoscopeImageSlotsLabels.setting_place}</p>
+                                )}
+                                {horoscopeImageSlotsLabels.setting_time && (
+                                  <p><span className="text-gray-400">Setting Time:</span> {horoscopeImageSlotsLabels.setting_time}</p>
+                                )}
+                                {horoscopeImageSlotsLabels.activity && (
+                                  <p><span className="text-gray-400">Activity:</span> {horoscopeImageSlotsLabels.activity}</p>
+                                )}
+                                {horoscopeImageSlotsLabels.mood_vibe && (
+                                  <p><span className="text-gray-400">Mood Vibe:</span> {horoscopeImageSlotsLabels.mood_vibe}</p>
+                                )}
+                                {horoscopeImageSlotsLabels.color_palette && (
+                                  <p><span className="text-gray-400">Color Palette:</span> {horoscopeImageSlotsLabels.color_palette}</p>
+                                )}
+                                {horoscopeImageSlotsLabels.camera_frame && (
+                                  <p><span className="text-gray-400">Camera Frame:</span> {horoscopeImageSlotsLabels.camera_frame}</p>
+                                )}
+                                {horoscopeImageSlotsLabels.lighting_style && (
+                                  <p><span className="text-gray-400">Lighting Style:</span> {horoscopeImageSlotsLabels.lighting_style}</p>
+                                )}
+                                {horoscopeImageSlotsLabels.constraints && horoscopeImageSlotsLabels.constraints.length > 0 && (
+                                  <p>
+                                    <span className="text-gray-400">Constraints:</span>{' '}
+                                    {horoscopeImageSlotsLabels.constraints.join(', ')}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           )}
                           
-                          {/* Resolved Choices Section */}
-                          {horoscopeImageConfig.resolvedChoices && (
+                          {/* Full Prompt Section */}
+                          {horoscopeImagePrompt && (
                             <div>
-                              <p className="font-semibold mb-1 text-[#C4F500]">Resolved Choices:</p>
-                              <div className="space-y-1 pl-2">
-                                {horoscopeImageConfig.resolvedChoices.styleLabel && (
-                                  <p><span className="text-gray-400">Style:</span> {horoscopeImageConfig.resolvedChoices.styleLabel}</p>
-                                )}
-                                {horoscopeImageConfig.resolvedChoices.characterType && (
-                                  <p><span className="text-gray-400">Character Type:</span> {horoscopeImageConfig.resolvedChoices.characterType}</p>
-                                )}
-                                {horoscopeImageConfig.resolvedChoices.promptTags && horoscopeImageConfig.resolvedChoices.promptTags.length > 0 && (
-                                  <p>
-                                    <span className="text-gray-400">Prompt Tags:</span>{' '}
-                                    {horoscopeImageConfig.resolvedChoices.promptTags.join(', ')}
-                                  </p>
-                                )}
-                                {horoscopeImageConfig.resolvedChoices.themeSnippet && (
-                                  <p>
-                                    <span className="text-gray-400">Theme:</span>{' '}
-                                    {horoscopeImageConfig.resolvedChoices.themeSnippet}
-                                  </p>
-                                )}
-                                {horoscopeImageConfig.resolvedChoices.settingHint && (
-                                  <p>
-                                    <span className="text-gray-400">Setting:</span>{' '}
-                                    {horoscopeImageConfig.resolvedChoices.settingHint}
-                                  </p>
-                                )}
-                              </div>
+                              <p className="font-semibold mb-2 text-[#C4F500]">Full Prompt:</p>
+                              <p className="text-xs pl-2 text-gray-300 whitespace-pre-wrap break-words">{horoscopeImagePrompt}</p>
                             </div>
                           )}
                         </div>

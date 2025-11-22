@@ -271,21 +271,38 @@ export async function GET(request: NextRequest) {
     // Save horoscope text to database
     // Use upsert to handle both insert and update in one operation
     // This ensures the date is always set correctly and avoids race conditions
+    // First check if a record exists to preserve image_url and prompt_slots_json
+    const { data: existingHoroscope } = await supabaseAdmin
+      .from('horoscopes')
+      .select('image_url, prompt_slots_json, image_prompt')
+      .eq('user_id', userId)
+      .eq('date', todayDate)
+      .maybeSingle()
+    
+    const upsertData: any = {
+      user_id: userId,
+      star_sign: starSign,
+      horoscope_text: horoscopeText,
+      horoscope_dos: horoscopeDos,
+      horoscope_donts: horoscopeDonts,
+      date: todayDate, // Explicitly set date to ensure consistency
+      generated_at: new Date().toISOString(),
+    }
+    
+    // Preserve existing image data if it exists
+    if (existingHoroscope?.image_url) {
+      upsertData.image_url = existingHoroscope.image_url
+    }
+    if (existingHoroscope?.prompt_slots_json) {
+      upsertData.prompt_slots_json = existingHoroscope.prompt_slots_json
+    }
+    if (existingHoroscope?.image_prompt) {
+      upsertData.image_prompt = existingHoroscope.image_prompt
+    }
+    
     const { error: upsertError } = await supabaseAdmin
       .from('horoscopes')
-      .upsert({
-        user_id: userId,
-        star_sign: starSign,
-        horoscope_text: horoscopeText,
-        horoscope_dos: horoscopeDos,
-        horoscope_donts: horoscopeDonts,
-        image_url: imageUrl || '', // Preserve existing image_url if present
-        style_key: resolvedChoices.styleKey,
-        style_label: resolvedChoices.styleLabel,
-        character_type: resolvedChoices.characterType,
-        date: todayDate, // Explicitly set date to ensure consistency
-        generated_at: new Date().toISOString(),
-      }, {
+      .upsert(upsertData, {
         onConflict: 'user_id,date', // Use the unique constraint
         ignoreDuplicates: false // Update existing records
       })

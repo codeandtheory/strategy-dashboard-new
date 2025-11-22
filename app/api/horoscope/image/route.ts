@@ -156,10 +156,58 @@ export async function GET(request: NextRequest) {
     
     if (cachedHoroscope && cachedHoroscope.image_url && cachedHoroscope.image_url.trim() !== '' && cachedHoroscope.prompt_slots_json && !urlExpired) {
       console.log('✅ Returning cached image for user', userId, 'on date', todayDate)
+      
+      // Resolve slot IDs to labels for display
+      const slots = cachedHoroscope.prompt_slots_json
+      const slotLabels: any = {}
+      
+      if (slots) {
+        // Fetch catalog items for the slot IDs
+        const slotIds = [
+          slots.style_medium_id,
+          slots.style_reference_id,
+          slots.subject_role_id,
+          slots.subject_twist_id,
+          slots.setting_place_id,
+          slots.setting_time_id,
+          slots.activity_id,
+          slots.mood_vibe_id,
+          slots.color_palette_id,
+          slots.camera_frame_id,
+          slots.lighting_style_id,
+          ...(slots.constraints_ids || []),
+        ].filter(Boolean)
+        
+        if (slotIds.length > 0) {
+          const { data: catalogItems } = await supabaseAdmin
+            .from('prompt_slot_catalogs')
+            .select('id, slot_type, label, value')
+            .in('id', slotIds)
+          
+          if (catalogItems) {
+            const catalogMap = new Map(catalogItems.map(item => [item.id, item]))
+            
+            slotLabels.style_medium = catalogMap.get(slots.style_medium_id)?.label
+            slotLabels.style_reference = catalogMap.get(slots.style_reference_id)?.label
+            slotLabels.subject_role = catalogMap.get(slots.subject_role_id)?.label
+            slotLabels.subject_twist = slots.subject_twist_id ? catalogMap.get(slots.subject_twist_id)?.label : null
+            slotLabels.setting_place = catalogMap.get(slots.setting_place_id)?.label
+            slotLabels.setting_time = catalogMap.get(slots.setting_time_id)?.label
+            slotLabels.activity = catalogMap.get(slots.activity_id)?.label
+            slotLabels.mood_vibe = catalogMap.get(slots.mood_vibe_id)?.label
+            slotLabels.color_palette = catalogMap.get(slots.color_palette_id)?.label
+            slotLabels.camera_frame = catalogMap.get(slots.camera_frame_id)?.label
+            slotLabels.lighting_style = catalogMap.get(slots.lighting_style_id)?.label
+            slotLabels.constraints = (slots.constraints_ids || []).map((id: string) => catalogMap.get(id)?.label).filter(Boolean)
+          }
+        }
+      }
+      
       return NextResponse.json({
         image_url: cachedHoroscope.image_url,
         image_prompt: cachedHoroscope.image_prompt || null,
         prompt_slots: cachedHoroscope.prompt_slots_json || null,
+        prompt_slots_labels: slotLabels,
         cached: true,
       })
     }
@@ -245,10 +293,52 @@ export async function GET(request: NextRequest) {
       console.log('Successfully saved horoscope image for user', userId, 'on date', todayDate)
     }
     
+    // Resolve slot IDs to labels for display
+    const slotLabels: any = {}
+    const slotIds = [
+      slots.style_medium_id,
+      slots.style_reference_id,
+      slots.subject_role_id,
+      slots.subject_twist_id,
+      slots.setting_place_id,
+      slots.setting_time_id,
+      slots.activity_id,
+      slots.mood_vibe_id,
+      slots.color_palette_id,
+      slots.camera_frame_id,
+      slots.lighting_style_id,
+      ...(slots.constraints_ids || []),
+    ].filter(Boolean)
+    
+    if (slotIds.length > 0) {
+      const { data: catalogItems } = await supabaseAdmin
+        .from('prompt_slot_catalogs')
+        .select('id, slot_type, label, value')
+        .in('id', slotIds)
+      
+      if (catalogItems) {
+        const catalogMap = new Map(catalogItems.map(item => [item.id, item]))
+        
+        slotLabels.style_medium = catalogMap.get(slots.style_medium_id)?.label
+        slotLabels.style_reference = catalogMap.get(slots.style_reference_id)?.label
+        slotLabels.subject_role = catalogMap.get(slots.subject_role_id)?.label
+        slotLabels.subject_twist = slots.subject_twist_id ? catalogMap.get(slots.subject_twist_id)?.label : null
+        slotLabels.setting_place = catalogMap.get(slots.setting_place_id)?.label
+        slotLabels.setting_time = catalogMap.get(slots.setting_time_id)?.label
+        slotLabels.activity = catalogMap.get(slots.activity_id)?.label
+        slotLabels.mood_vibe = catalogMap.get(slots.mood_vibe_id)?.label
+        slotLabels.color_palette = catalogMap.get(slots.color_palette_id)?.label
+        slotLabels.camera_frame = catalogMap.get(slots.camera_frame_id)?.label
+        slotLabels.lighting_style = catalogMap.get(slots.lighting_style_id)?.label
+        slotLabels.constraints = (slots.constraints_ids || []).map((id: string) => catalogMap.get(id)?.label).filter(Boolean)
+      }
+    }
+    
     return NextResponse.json({
       image_url: imageUrl,
       image_prompt: prompt,
       prompt_slots: slots,
+      prompt_slots_labels: slotLabels,
       cached: false,
     })
   } catch (error: any) {
