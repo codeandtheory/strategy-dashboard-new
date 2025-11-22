@@ -1182,7 +1182,7 @@ export default function WorkSampleAdmin() {
                 >
                   Update
                 </Button>
-              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
