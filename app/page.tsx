@@ -1153,7 +1153,7 @@ export default function TeamDashboard() {
           )}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 items-start">
           {/* Playlist - spans 2 rows */}
           {(() => {
             const [isPlaying, setIsPlaying] = useState(false)
@@ -1193,48 +1193,51 @@ export default function TeamDashboard() {
             )
           })()}
 
-          {/* Friday Drop - 3/4 width, very short, top row */}
-          {(() => {
-            const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
-            return (
-              <Card className={`${style.bg} ${style.border} p-3 col-span-1 md:col-span-3 ${getRoundedClass('rounded-[2.5rem]')}`}
-                    style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`text-xs uppercase tracking-wider mb-1 font-black ${style.text}`}>WEEKLY REPORT</p>
-                    <h2 className={`text-xl font-black uppercase leading-tight ${style.text}`}>THE FRIDAY DROP</h2>
+          {/* Right side container - Friday Drop + Placeholder */}
+          <div className="col-span-1 md:col-span-3 flex flex-col gap-6 h-full">
+            {/* Friday Drop - 3/4 width, very short (1/3 height), top row */}
+            {(() => {
+              const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
+              return (
+                <Card className={`${style.bg} ${style.border} p-1.5 ${getRoundedClass('rounded-[2.5rem]')}`}
+                      style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className={`text-[10px] uppercase tracking-wider mb-0 font-black ${style.text}`}>WEEKLY REPORT</p>
+                      <h2 className={`text-sm font-black uppercase leading-tight ${style.text}`}>THE FRIDAY DROP</h2>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { value: '5', label: 'NEW' },
+                        { value: '8', label: 'SHIPPED' },
+                        { value: '12', label: 'IN QA' },
+                      ].map((stat) => (
+                        <div key={stat.label} className={`bg-black/30 ${getRoundedClass('rounded-lg')} p-1 text-center`}>
+                          <p className={`text-sm font-black mb-0 ${style.text}`}>{stat.value}</p>
+                          <p className={`text-[10px] font-bold uppercase tracking-wide ${style.text}`}>{stat.label}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { value: '5', label: 'NEW' },
-                      { value: '8', label: 'SHIPPED' },
-                      { value: '12', label: 'IN QA' },
-                    ].map((stat) => (
-                      <div key={stat.label} className={`bg-black/30 ${getRoundedClass('rounded-lg')} p-2 text-center`}>
-                        <p className={`text-lg font-black mb-0.5 ${style.text}`}>{stat.value}</p>
-                        <p className={`text-xs font-bold uppercase tracking-wide ${style.text}`}>{stat.label}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            )
-          })()}
+                </Card>
+              )
+            })()}
 
-          {/* Placeholder - 3/4 width, bottom row, right under Friday Drop */}
-          {(() => {
-            const style = mode === 'chaos' ? getCardStyle('work') : getCardStyle('work')
-            return (
-              <Card className={`${style.bg} ${style.border} p-6 col-span-1 md:col-span-3 ${getRoundedClass('rounded-[2.5rem]')}`}
-                    style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
-              >
-                <p className={`text-xs uppercase tracking-wider mb-4 font-black ${style.text}`}>NEW CARD</p>
-                <h2 className={`text-3xl font-black mb-6 uppercase leading-tight ${style.text}`}>PLACEHOLDER</h2>
-                <p className={`text-sm font-medium ${style.text}/70`}>Content goes here</p>
-              </Card>
-            )
-          })()}
+            {/* Placeholder - 3/4 width, fills remaining height, right under Friday Drop */}
+            {(() => {
+              const style = mode === 'chaos' ? getCardStyle('work') : getCardStyle('work')
+              return (
+                <Card className={`${style.bg} ${style.border} p-6 flex-1 ${getRoundedClass('rounded-[2.5rem]')}`}
+                      style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
+                >
+                  <p className={`text-xs uppercase tracking-wider mb-4 font-black ${style.text}`}>NEW CARD</p>
+                  <h2 className={`text-3xl font-black mb-6 uppercase leading-tight ${style.text}`}>PLACEHOLDER</h2>
+                  <p className={`text-sm font-medium ${style.text}/70`}>Content goes here</p>
+                </Card>
+              )
+            })()}
+          </div>
         </div>
 
         <p className={`text-xs uppercase tracking-widest font-black mb-6 flex items-center gap-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : mode === 'code' ? 'text-[#808080] font-mono' : 'text-[#808080]'}`}>
