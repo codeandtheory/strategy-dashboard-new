@@ -77,41 +77,34 @@ export async function POST(request: NextRequest) {
 
     const { drive, folderId, auth, clientEmail } = getDriveClient()
 
-    // Step 1: Verify folder exists and is accessible
-    try {
-      const folderInfo = await drive.files.get({
-        fileId: folderId,
-        fields: 'id, name, mimeType',
-      })
-      console.log('Verified folder access:', { folderId, folderName: folderInfo.data.name })
-      
-      if (folderInfo.data.mimeType !== 'application/vnd.google-apps.folder') {
-        throw new Error(`The provided ID (${folderId}) is not a folder. It is a ${folderInfo.data.mimeType}`)
-      }
-    } catch (folderError: any) {
-      if (folderError.code === 404) {
-        throw new Error(`Folder not found: ${folderId}. Please verify the folder ID and ensure the service account (${clientEmail}) has been granted access to this folder in Google Drive.`)
-      }
-      throw new Error(`Failed to verify folder access: ${folderError.message}`)
-    }
-
-    // Step 2: Create an empty file in Google Drive to get the file ID
+    // Step 1: Create an empty file in Google Drive to get the file ID
+    // We don't verify the folder first - if it doesn't exist or we don't have access,
+    // the create operation will fail with a clear error message
     console.log('Creating empty file in Google Drive:', { fileName, folderId })
     
-    const emptyFile = await drive.files.create({
-      requestBody: {
-        name: fileName,
-        parents: [folderId],
-      },
-      fields: 'id',
-    })
+    let fileId: string
+    try {
+      const emptyFile = await drive.files.create({
+        requestBody: {
+          name: fileName,
+          parents: [folderId],
+        },
+        fields: 'id',
+      })
 
-    if (!emptyFile.data.id) {
-      throw new Error('Failed to create empty file in Google Drive: no file ID returned')
+      if (!emptyFile.data.id) {
+        throw new Error('Failed to create empty file in Google Drive: no file ID returned')
+      }
+
+      fileId = emptyFile.data.id
+      console.log('Created empty file with ID:', fileId)
+    } catch (createError: any) {
+      // Provide helpful error message if folder access is the issue
+      if (createError.code === 404 || createError.message?.includes('not found')) {
+        throw new Error(`Folder not found or inaccessible: ${folderId}. Please verify the folder ID and ensure the service account (${clientEmail}) has been granted access to this folder in Google Drive.`)
+      }
+      throw createError
     }
-
-    const fileId = emptyFile.data.id
-    console.log('Created empty file with ID:', fileId)
 
     // Step 3: Get resumable upload URL for this file ID using files.update
     const authClient = await auth.getAccessToken()
