@@ -43,13 +43,13 @@ export async function GET(request: NextRequest) {
     const submittedBy = searchParams.get('submitted_by')
     const assignedTo = searchParams.get('assigned_to')
 
-    // Build query
+    // Build query - use the column names that exist in the table
     let query = supabase
       .from('must_reads')
       .select(`
         id,
-        article_title,
-        article_url,
+        title,
+        url,
         notes,
         pinned,
         submitted_by,
@@ -85,8 +85,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Map response to expected format (article_title, article_url)
+    let mappedData = (data || []).map((item: any) => ({
+      ...item,
+      article_title: item.title || item.article_title,
+      article_url: item.url || item.article_url,
+    }))
+
     // Apply search filter in memory (for title and notes)
-    let filteredData = data || []
+    let filteredData = mappedData
     if (search) {
       const searchLower = search.toLowerCase()
       filteredData = filteredData.filter((item: any) => 
@@ -190,21 +197,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Use the column names that exist in the table
+    // Based on the error, the table has 'title' and likely 'url' columns
+    const insertData: any = {
+      title: article_title,  // Map article_title to title column
+      url: article_url,      // Map article_url to url column (assuming it exists)
+      notes: notes || null,
+      pinned: pinned || false,
+      submitted_by: user.id,
+      assigned_to: assignedToId,
+      updated_at: new Date().toISOString(),
+    }
+
     const { data, error } = await supabase
       .from('must_reads')
-      .insert({
-        article_title,
-        article_url,
-        notes: notes || null,
-        pinned: pinned || false,
-        submitted_by: user.id,
-        assigned_to: assignedToId,
-        updated_at: new Date().toISOString(),
-      })
+      .insert(insertData)
       .select(`
         id,
-        article_title,
-        article_url,
+        title,
+        url,
         notes,
         pinned,
         submitted_by,
@@ -213,6 +224,12 @@ export async function POST(request: NextRequest) {
         updated_at
       `)
       .single()
+
+    // Map the response back to the expected format
+    if (data) {
+      data.article_title = data.title
+      data.article_url = data.url
+    }
 
     if (error) {
       console.error('Error creating must read:', error)
@@ -270,8 +287,8 @@ export async function PUT(request: NextRequest) {
     }
 
     const updateData: any = {
-      article_title,
-      article_url,
+      title: article_title,  // Map to title column
+      url: article_url,      // Map to url column
       notes: notes || null,
       pinned: pinned || false,
       updated_at: new Date().toISOString(),
@@ -287,8 +304,8 @@ export async function PUT(request: NextRequest) {
       .eq('id', id)
       .select(`
         id,
-        article_title,
-        article_url,
+        title,
+        url,
         notes,
         pinned,
         submitted_by,
@@ -304,6 +321,12 @@ export async function PUT(request: NextRequest) {
         { error: 'Failed to update must read', details: error.message, code: error.code },
         { status: 500 }
       )
+    }
+
+    // Map response to expected format
+    if (data) {
+      data.article_title = data.title
+      data.article_url = data.url
     }
 
     return NextResponse.json({ data })
