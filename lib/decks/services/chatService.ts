@@ -43,7 +43,7 @@ export async function answerChatQuery(input: {
 
   if (queryEmbedding) {
     // Get top topics
-    const { data: topics } = await supabase.rpc('match_topics', {
+    const { data: topics } = await (supabase.rpc as any)('match_topics', {
       query_embedding: queryEmbedding,
       match_threshold: 0.6,
       match_count: Math.ceil(limit / 2),
@@ -70,7 +70,7 @@ export async function answerChatQuery(input: {
     }
 
     // Get top slides
-    const { data: slides } = await supabase.rpc('match_slides', {
+    const { data: slides } = await (supabase.rpc as any)('match_slides', {
       query_embedding: queryEmbedding,
       match_threshold: 0.6,
       match_count: Math.ceil(limit / 2),

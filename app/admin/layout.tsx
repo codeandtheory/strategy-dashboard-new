@@ -105,6 +105,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       items: [
         { href: '/admin/must-read', label: 'Must Reads', icon: FileText, permission: null },
         { href: '/admin/work-sample', label: 'Work Samples', icon: Briefcase, permission: null },
+        { href: '/admin/decks', label: 'Decks', icon: Upload, permission: null },
         { href: '/admin/content', label: 'Resources', icon: FolderOpen, permission: 'canManageContent' as const },
         { href: '/admin/pipeline', label: 'Pipeline', icon: GitBranch, permission: null },
         { href: '/admin/beast-babe', label: 'Beast Babe', icon: Crown, permission: 'canPassBeastBabe' as const },

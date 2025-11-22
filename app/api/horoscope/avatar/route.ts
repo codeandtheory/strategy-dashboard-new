@@ -235,13 +235,84 @@ export async function GET(request: NextRequest) {
       })
     }
     
+    // CRITICAL SAFETY CHECK: Double-check database one more time before generating
+    // This prevents race conditions if multiple requests come in simultaneously
+    const { data: doubleCheckHoroscope } = await supabaseAdmin
+      .from('horoscopes')
+      .select('image_url, image_prompt, prompt_slots_json, date')
+      .eq('user_id', userId)
+      .eq('date', todayDate)
+      .maybeSingle()
+    
+    if (doubleCheckHoroscope && doubleCheckHoroscope.image_url && doubleCheckHoroscope.image_url.trim() !== '') {
+      console.log('🛡️ SAFETY CHECK: Image was created between checks - returning cached instead of generating')
+      console.log('   This prevents duplicate API calls and billing limit hits')
+      // Return cached image to prevent duplicate generation
+      // Re-fetch labels if needed (simplified for safety check)
+      const slots = doubleCheckHoroscope.prompt_slots_json
+      const slotLabels: any = {}
+      
+      if (slots) {
+        const slotIds = [
+          slots.style_medium_id,
+          slots.style_reference_id,
+          slots.subject_role_id,
+          slots.subject_twist_id,
+          slots.setting_place_id,
+          slots.setting_time_id,
+          slots.activity_id,
+          slots.mood_vibe_id,
+          slots.color_palette_id,
+          slots.camera_frame_id,
+          slots.lighting_style_id,
+          ...(slots.constraints_ids || []),
+        ].filter(Boolean)
+        
+        if (slotIds.length > 0) {
+          const { data: catalogItems } = await supabaseAdmin
+            .from('prompt_slot_catalogs')
+            .select('id, slot_type, label, value')
+            .in('id', slotIds)
+          
+          if (catalogItems) {
+            const catalogMap = new Map(catalogItems.map(item => [item.id, item]))
+            slotLabels.style_medium = catalogMap.get(slots.style_medium_id)?.label
+            slotLabels.style_reference = catalogMap.get(slots.style_reference_id)?.label
+            slotLabels.subject_role = catalogMap.get(slots.subject_role_id)?.label
+            slotLabels.subject_twist = slots.subject_twist_id ? catalogMap.get(slots.subject_twist_id)?.label : null
+            slotLabels.setting_place = catalogMap.get(slots.setting_place_id)?.label
+            slotLabels.setting_time = catalogMap.get(slots.setting_time_id)?.label
+            slotLabels.activity = catalogMap.get(slots.activity_id)?.label
+            slotLabels.mood_vibe = catalogMap.get(slots.mood_vibe_id)?.label
+            slotLabels.color_palette = catalogMap.get(slots.color_palette_id)?.label
+            slotLabels.camera_frame = catalogMap.get(slots.camera_frame_id)?.label
+            slotLabels.lighting_style = catalogMap.get(slots.lighting_style_id)?.label
+            slotLabels.constraints = (slots.constraints_ids || []).map((id: string) => catalogMap.get(id)?.label).filter(Boolean)
+          }
+        }
+      }
+      
+      const cachedReasoning = slots?.reasoning || null
+      
+      return NextResponse.json({
+        image_url: doubleCheckHoroscope.image_url,
+        image_prompt: doubleCheckHoroscope.image_prompt || null,
+        prompt_slots: slots || null,
+        prompt_slots_labels: Object.keys(slotLabels).length > 0 ? slotLabels : null,
+        prompt_slots_reasoning: cachedReasoning,
+        cached: true,
+      })
+    }
+    
     // Only generate new image if there's NO cached image at all
     // This ensures we only generate once per day and avoid hitting billing limits
     console.log('⚠️ NO cached image found in database for user', userId, 'on date', todayDate)
     console.log('   Cached horoscope exists:', !!cachedHoroscope)
     console.log('   Has image_url:', !!cachedHoroscope?.image_url)
     console.log('   Image URL value:', cachedHoroscope?.image_url || 'null/empty')
+    console.log('   Double-check result:', !!doubleCheckHoroscope?.image_url)
     console.log('   ⚠️ PROCEEDING TO GENERATE NEW IMAGE (this will call OpenAI API)')
+    console.log('   ⚠️ THIS IS THE ONLY GENERATION FOR TODAY - NO MORE WILL BE GENERATED')
     
     // Generate new image with new slot-based prompt system
     const { imageUrl, prompt, slots, reasoning } = await generateHoroscopeImage(

@@ -5,6 +5,7 @@ export interface SearchResult {
   type: 'topic' | 'slide'
   deck_id: string
   deck_title: string
+  deck_gdrive_url?: string
   topic_id?: string
   slide_id?: string
   slide_number?: number
@@ -32,16 +33,22 @@ export async function searchKeywordAndSemantic(
   // Keyword search on decks
   const { data: keywordDecks } = await supabase
     .from('decks')
-    .select('id, title, deck_summary')
+    .select('id, title, deck_summary, gdrive_file_url')
     .or(`title.ilike.%${query}%,deck_summary.ilike.%${query}%`)
     .limit(limit)
 
   if (keywordDecks) {
-    for (const deck of keywordDecks) {
+    for (const deck of keywordDecks as Array<{
+      id: string
+      title: string
+      deck_summary: string | null
+      gdrive_file_url: string | null
+    }>) {
       results.push({
         type: 'topic',
         deck_id: deck.id,
         deck_title: deck.title,
+        deck_gdrive_url: deck.gdrive_file_url || undefined,
         summary: deck.deck_summary || deck.title,
         score: 0.8, // Keyword match score
       })
@@ -51,17 +58,24 @@ export async function searchKeywordAndSemantic(
   // Keyword search on topics
   const { data: keywordTopics } = await supabase
     .from('topics')
-    .select('id, deck_id, topic_title, topic_summary, decks!inner(title)')
+    .select('id, deck_id, topic_title, topic_summary, decks!inner(title, gdrive_file_url)')
     .or(`topic_title.ilike.%${query}%,topic_summary.ilike.%${query}%`)
     .limit(limit)
 
   if (keywordTopics) {
-    for (const topic of keywordTopics) {
-      const deck = topic.decks as { title: string }
+    for (const topic of keywordTopics as Array<{
+      id: string
+      deck_id: string
+      topic_title: string
+      topic_summary: string
+      decks: { title: string; gdrive_file_url: string | null }
+    }>) {
+      const deck = topic.decks
       results.push({
         type: 'topic',
         deck_id: topic.deck_id,
         deck_title: deck.title,
+        deck_gdrive_url: deck.gdrive_file_url || undefined,
         topic_id: topic.id,
         summary: topic.topic_summary || topic.topic_title,
         score: 0.9, // Topic keyword match
@@ -72,17 +86,24 @@ export async function searchKeywordAndSemantic(
   // Keyword search on slides
   const { data: keywordSlides } = await supabase
     .from('slides')
-    .select('id, deck_id, slide_number, slide_caption, decks!inner(title)')
+    .select('id, deck_id, slide_number, slide_caption, decks!inner(title, gdrive_file_url)')
     .ilike('slide_caption', `%${query}%`)
     .limit(limit)
 
   if (keywordSlides) {
-    for (const slide of keywordSlides) {
-      const deck = slide.decks as { title: string }
+    for (const slide of keywordSlides as Array<{
+      id: string
+      deck_id: string
+      slide_number: number
+      slide_caption: string | null
+      decks: { title: string; gdrive_file_url: string | null }
+    }>) {
+      const deck = slide.decks
       results.push({
         type: 'slide',
         deck_id: slide.deck_id,
         deck_title: deck.title,
+        deck_gdrive_url: deck.gdrive_file_url || undefined,
         slide_id: slide.id,
         slide_number: slide.slide_number,
         summary: slide.slide_caption || `Slide ${slide.slide_number}`,
@@ -93,18 +114,27 @@ export async function searchKeywordAndSemantic(
 
   // Semantic search on topics if embedding is available
   if (queryEmbedding) {
-    const { data: semanticTopics } = await supabase.rpc('match_topics', {
+    const { data: semanticTopics } = await (supabase.rpc as any)('match_topics', {
       query_embedding: queryEmbedding,
       match_threshold: 0.7,
       match_count: limit,
     })
 
     if (semanticTopics) {
-      for (const topic of semanticTopics) {
+      for (const topic of semanticTopics as Array<{
+        id: string
+        deck_id: string
+        deck_title: string
+        deck_gdrive_url: string | null
+        topic_summary: string
+        topic_title: string
+        similarity: number
+      }>) {
         results.push({
           type: 'topic',
           deck_id: topic.deck_id,
           deck_title: topic.deck_title,
+          deck_gdrive_url: topic.deck_gdrive_url || undefined,
           topic_id: topic.id,
           summary: topic.topic_summary || topic.topic_title,
           score: topic.similarity || 0.5,
@@ -113,18 +143,27 @@ export async function searchKeywordAndSemantic(
     }
 
     // Semantic search on slides
-    const { data: semanticSlides } = await supabase.rpc('match_slides', {
+    const { data: semanticSlides } = await (supabase.rpc as any)('match_slides', {
       query_embedding: queryEmbedding,
       match_threshold: 0.7,
       match_count: limit,
     })
 
     if (semanticSlides) {
-      for (const slide of semanticSlides) {
+      for (const slide of semanticSlides as Array<{
+        id: string
+        deck_id: string
+        deck_title: string
+        deck_gdrive_url: string | null
+        slide_number: number
+        slide_caption: string | null
+        similarity: number
+      }>) {
         results.push({
           type: 'slide',
           deck_id: slide.deck_id,
           deck_title: slide.deck_title,
+          deck_gdrive_url: slide.deck_gdrive_url || undefined,
           slide_id: slide.id,
           slide_number: slide.slide_number,
           summary: slide.slide_caption || `Slide ${slide.slide_number}`,

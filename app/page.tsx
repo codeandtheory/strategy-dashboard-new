@@ -295,6 +295,7 @@ export default function TeamDashboard() {
   // Historical horoscopes are stored in the database but only today's is displayed
   useEffect(() => {
     let isMounted = true // Prevent state updates if component unmounts
+    let isFetching = false // Prevent multiple simultaneous requests
     
     async function fetchHoroscopeData() {
       // Only fetch if user is authenticated
@@ -307,6 +308,14 @@ export default function TeamDashboard() {
         }
         return
       }
+
+      // Prevent multiple simultaneous requests
+      if (isFetching) {
+        console.log('⏸️ Request already in progress, skipping duplicate request')
+        return
+      }
+      
+      isFetching = true
 
       // Don't redirect to profile setup from here - let the API handle it
       console.log('Fetching horoscope data for authenticated user...')
@@ -325,7 +334,10 @@ export default function TeamDashboard() {
           fetch('/api/horoscope/avatar')
         ])
         
-        if (!isMounted) return // Don't process if component unmounted
+        if (!isMounted) {
+          isFetching = false
+          return // Don't process if component unmounted
+        }
         
         // Process text response
         const textData = await textResponse.json()
@@ -388,6 +400,7 @@ export default function TeamDashboard() {
         setHoroscopeError('Failed to load horoscope: ' + (error.message || 'Unknown error'))
         setHoroscopeImageError('Failed to load horoscope image: ' + (error.message || 'Unknown error'))
       } finally {
+        isFetching = false // Reset fetching flag
         if (isMounted) {
           setHoroscopeLoading(false)
           setHoroscopeImageLoading(false)
@@ -399,6 +412,7 @@ export default function TeamDashboard() {
     
     return () => {
       isMounted = false // Cleanup on unmount
+      isFetching = false // Reset fetching flag
     }
   }, [user])
 

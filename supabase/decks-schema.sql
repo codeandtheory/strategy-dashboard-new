@@ -73,7 +73,8 @@ RETURNS TABLE (
   reuse_suggestions text[],
   slide_numbers int[],
   similarity float,
-  deck_title text
+  deck_title text,
+  deck_gdrive_url text
 )
 LANGUAGE plpgsql
 AS $$
@@ -89,7 +90,8 @@ BEGIN
     t.reuse_suggestions,
     t.slide_numbers,
     1 - (t.embedding <=> query_embedding) AS similarity,
-    d.title AS deck_title
+    d.title AS deck_title,
+    d.gdrive_file_url AS deck_gdrive_url
   FROM topics t
   INNER JOIN decks d ON t.deck_id = d.id
   WHERE t.embedding IS NOT NULL
@@ -114,7 +116,8 @@ RETURNS TABLE (
   topics text[],
   reusable text,
   similarity float,
-  deck_title text
+  deck_title text,
+  deck_gdrive_url text
 )
 LANGUAGE plpgsql
 AS $$
@@ -129,7 +132,8 @@ BEGIN
     s.topics,
     s.reusable,
     1 - (s.embedding <=> query_embedding) AS similarity,
-    d.title AS deck_title
+    d.title AS deck_title,
+    d.gdrive_file_url AS deck_gdrive_url
   FROM slides s
   INNER JOIN decks d ON s.deck_id = d.id
   WHERE s.embedding IS NOT NULL

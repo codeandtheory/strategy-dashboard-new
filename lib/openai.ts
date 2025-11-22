@@ -187,58 +187,79 @@ export async function generateHoroscopeImage(
     }
     
   // Retry logic with exponential backoff for rate limits
+  // IMPORTANT: We use exponential backoff with jitter to avoid thundering herd
   const maxRetries = 3
   let lastError: any = null
   
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-    const response = await openai.images.generate({
-      model: 'dall-e-3',
-      prompt: prompt,
-      size: '1024x1024', // Square format for portrait/avatar use
-      quality: 'standard',
-      n: 1,
-    })
+      console.log(`🔄 Attempting OpenAI DALL-E API call (attempt ${attempt + 1}/${maxRetries + 1})...`)
+      
+      const response = await openai.images.generate({
+        model: 'dall-e-3',
+        prompt: prompt,
+        size: '1024x1024', // Square format for portrait/avatar use
+        quality: 'standard',
+        n: 1,
+      })
 
-    const imageUrl = response.data[0]?.url
-    if (!imageUrl) {
-      throw new Error('Failed to generate horoscope image - empty response')
-    }
+      // Note: Rate limit headers are not directly accessible in OpenAI SDK response
+      // They would need to be accessed from the raw HTTP response if needed
+      // For now, we rely on error responses to detect rate limits
 
-    console.log('OpenAI DALL-E API call successful')
+      const imageUrl = response.data?.[0]?.url
+      if (!imageUrl) {
+        throw new Error('Failed to generate horoscope image - empty response')
+      }
+
+      console.log('✅ OpenAI DALL-E API call successful')
       return { imageUrl, prompt, slots, reasoning }
-  } catch (error: any) {
+    } catch (error: any) {
       lastError = error
-      console.error(`Error generating horoscope image (attempt ${attempt + 1}/${maxRetries + 1}):`, error)
+      console.error(`❌ Error generating horoscope image (attempt ${attempt + 1}/${maxRetries + 1}):`, error)
       
       // Handle specific OpenAI API errors
-    if (error.response) {
+      if (error.response) {
         const status = error.response.status
         const errorData = error.response.data
         const errorMessage = errorData?.error?.message || error.message || 'OpenAI API error'
         
-        console.error('OpenAI API error response:', status, errorData)
+        console.error('OpenAI API error response:', {
+          status,
+          errorData,
+          headers: error.response.headers
+        })
         
-        // Check for billing/quota errors - don't retry these
+        // Check for billing/quota errors - don't retry these, fail immediately
         if (status === 400) {
-          if (errorMessage.toLowerCase().includes('billing') || 
-              errorMessage.toLowerCase().includes('quota') ||
-              errorMessage.toLowerCase().includes('hard billing limit')) {
-            throw new Error('OpenAI billing limit reached. Please check your OpenAI account billing settings and add payment method if needed.')
+          const lowerMessage = errorMessage.toLowerCase()
+          if (lowerMessage.includes('billing') || 
+              lowerMessage.includes('quota') ||
+              lowerMessage.includes('hard billing limit') ||
+              lowerMessage.includes('usage limit')) {
+            const billingError = 'OpenAI billing/usage limit reached. Please check your OpenAI account billing settings and add payment method if needed. The system will not retry to avoid further charges.'
+            console.error('🚫 BILLING LIMIT REACHED - STOPPING ALL RETRIES:', billingError)
+            throw new Error(billingError)
           }
           // Other 400 errors - don't retry
           throw error
         }
         
-        // Rate limit (429) - retry with exponential backoff
+        // Rate limit (429) - retry with exponential backoff and jitter
         if (status === 429) {
           if (attempt < maxRetries) {
-            const retryAfter = error.response.headers?.['retry-after'] 
-              ? parseInt(error.response.headers['retry-after'])
-              : Math.pow(2, attempt) // Exponential backoff: 2s, 4s, 8s
+            // Get retry-after header or use exponential backoff
+            const retryAfterHeader = error.response.headers?.['retry-after']
+            const retryAfterSeconds = retryAfterHeader 
+              ? parseInt(retryAfterHeader)
+              : Math.pow(2, attempt) // Exponential backoff: 1s, 2s, 4s
             
-            console.log(`Rate limit hit. Retrying after ${retryAfter} seconds...`)
-            await new Promise(resolve => setTimeout(resolve, retryAfter * 1000))
+            // Add random jitter (0-1 second) to prevent thundering herd
+            const jitter = Math.random()
+            const delay = retryAfterSeconds + jitter
+            
+            console.log(`⏳ Rate limit hit (429). Waiting ${delay.toFixed(2)} seconds before retry ${attempt + 1}/${maxRetries}...`)
+            await new Promise(resolve => setTimeout(resolve, delay * 1000))
             continue // Retry the request
           } else {
             throw new Error('OpenAI API rate limit exceeded after retries. Please try again later.')
@@ -250,8 +271,8 @@ export async function generateHoroscopeImage(
       }
       
       // If no response object, don't retry
-    throw error
-  }
+      throw error
+    }
   }
   
   // If we exhausted all retries, throw the last error
