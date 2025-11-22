@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { createClient } from '@/lib/supabase/server'
 
-// Initialize Google Drive API (same pattern as work-samples)
+// Initialize Google Drive API (exact copy from work-samples)
 function getDriveClient() {
   const clientEmail = process.env.GOOGLE_DRIVE_CLIENT_EMAIL
   const privateKey = process.env.GOOGLE_DRIVE_PRIVATE_KEY?.replace(/\\n/g, '\n')
@@ -21,13 +21,7 @@ function getDriveClient() {
   return { drive: google.drive({ version: 'v3', auth }), folderId }
 }
 
-export const runtime = 'nodejs'
-export const maxDuration = 300 // 5 minutes for large file uploads
-
-/**
- * This endpoint handles file uploads to Google Drive.
- * Uses the same implementation as work-samples upload-to-drive.
- */
+// POST - Upload file to Google Drive (exact copy from work-samples)
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -41,10 +35,13 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData()
-    const file = formData.get('file') as File | null
+    const file = formData.get('file') as File
 
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'No file provided' },
+        { status: 400 }
+      )
     }
 
     // Validate file type (PDF only)
@@ -52,7 +49,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File must be a PDF' }, { status: 400 })
     }
 
-    // Validate file size (max 100MB - same as work samples)
+    // Validate file size (max 100MB)
     const maxSize = 100 * 1024 * 1024 // 100MB
     if (file.size > maxSize) {
       return NextResponse.json(
@@ -74,7 +71,7 @@ export async function POST(request: NextRequest) {
         parents: [folderId],
       },
       media: {
-        mimeType: file.type || 'application/pdf',
+        mimeType: file.type,
         body: buffer,
       },
       fields: 'id, name, webViewLink, webContentLink',
@@ -84,18 +81,14 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to upload file to Google Drive')
     }
 
-    // Make the file accessible
-    try {
-      await drive.permissions.create({
-        fileId: driveResponse.data.id,
-        requestBody: {
-          role: 'reader',
-          type: 'anyone',
-        },
-      })
-    } catch (permError) {
-      console.warn('Failed to set file permissions:', permError)
-    }
+    // Make the file accessible (optional - adjust permissions as needed)
+    await drive.permissions.create({
+      fileId: driveResponse.data.id,
+      requestBody: {
+        role: 'reader',
+        type: 'anyone',
+      },
+    })
 
     // Get the file URL
     const fileUrl = driveResponse.data.webViewLink || `https://drive.google.com/file/d/${driveResponse.data.id}/view`

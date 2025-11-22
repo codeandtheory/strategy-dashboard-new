@@ -4,6 +4,14 @@
     "app/api/upload-deck/route.ts": {
       "maxDuration": 300,
       "memory": 3008
+    },
+    "app/api/decks/upload-to-drive/route.ts": {
+      "maxDuration": 300,
+      "memory": 3008
+    },
+    "app/api/work-samples/upload-to-drive/route.ts": {
+      "maxDuration": 300,
+      "memory": 3008
     }
   }
 }
