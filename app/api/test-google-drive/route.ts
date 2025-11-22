@@ -56,10 +56,16 @@ export async function GET(request: NextRequest) {
         )
       }
 
+      // For shared drives, we may need the full drive scope instead of just drive.file
+      // drive.file only allows access to files created by the app
+      // drive allows access to all files the service account has permission to access
       const auth = new google.auth.JWT({
         email: clientEmail,
         key: privateKey,
-        scopes: ['https://www.googleapis.com/auth/drive.file'],
+        scopes: [
+          'https://www.googleapis.com/auth/drive', // Full access (needed for shared drives)
+          'https://www.googleapis.com/auth/drive.file', // Files created by app
+        ],
       })
 
       return { drive: google.drive({ version: 'v3', auth }), folderId, auth, clientEmail }

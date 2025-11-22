@@ -36,10 +36,14 @@ function getDriveClient() {
     )
   }
 
+  // For shared drives, we need the full drive scope
   const auth = new google.auth.JWT({
     email: clientEmail,
     key: privateKey,
-    scopes: ['https://www.googleapis.com/auth/drive.file'],
+    scopes: [
+      'https://www.googleapis.com/auth/drive', // Full access (needed for shared drives)
+      'https://www.googleapis.com/auth/drive.file', // Files created by app
+    ],
   })
 
   return { drive: google.drive({ version: 'v3', auth }), folderId, auth, clientEmail }
