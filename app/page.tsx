@@ -801,34 +801,14 @@ export default function TeamDashboard() {
                           alt="Horoscope portrait"
                           className="w-full h-full object-cover"
                           style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                          onError={async (e) => {
+                          onError={(e) => {
+                            // Image failed to load (likely expired URL)
+                            // Don't regenerate - we only generate once per day
+                            // Just hide the broken image and show an error message
                             const target = e.target as HTMLImageElement
-                            const img = target
-                            // Check if it's a 410/403 error (expired URL)
-                            try {
-                              const response = await fetch(img.src, { method: 'HEAD' })
-                              if (response.status === 410 || response.status === 403) {
-                                console.log('Image URL expired, refreshing...')
-                                // Trigger a refresh by clearing the image and refetching
-                                setHoroscopeImage(null)
-                                setHoroscopeImageLoading(true)
-                                // Refetch the image
-                                const imageResponse = await fetch('/api/horoscope/avatar')
-                                if (imageResponse.ok) {
-                                  const imageData = await imageResponse.json()
-                                  if (imageData.image_url) {
-                                    setHoroscopeImage(imageData.image_url)
-                                    setHoroscopeImageSlotsLabels(imageData.prompt_slots_labels || null)
-                                    setHoroscopeImageSlotsReasoning(imageData.prompt_slots_reasoning || null)
-                                  }
-                                }
-                                setHoroscopeImageLoading(false)
-                              }
-                            } catch (error) {
-                              console.error('Error checking image URL:', error)
-                              // Hide broken image
-                              img.style.display = 'none'
-                            }
+                            target.style.display = 'none'
+                            setHoroscopeImageError('Image URL has expired. A new image will be generated tomorrow.')
+                            console.log('Image URL expired or failed to load. Not regenerating to avoid billing limits.')
                           }}
                         />
                       </div>
@@ -854,34 +834,14 @@ export default function TeamDashboard() {
                           alt="Horoscope portrait"
                           className="w-full h-full object-cover"
                           style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                          onError={async (e) => {
+                          onError={(e) => {
+                            // Image failed to load (likely expired URL)
+                            // Don't regenerate - we only generate once per day
+                            // Just hide the broken image and show an error message
                             const target = e.target as HTMLImageElement
-                            const img = target
-                            // Check if it's a 410/403 error (expired URL)
-                            try {
-                              const response = await fetch(img.src, { method: 'HEAD' })
-                              if (response.status === 410 || response.status === 403) {
-                                console.log('Image URL expired, refreshing...')
-                                // Trigger a refresh by clearing the image and refetching
-                                setHoroscopeImage(null)
-                                setHoroscopeImageLoading(true)
-                                // Refetch the image
-                                const imageResponse = await fetch('/api/horoscope/avatar')
-                                if (imageResponse.ok) {
-                                  const imageData = await imageResponse.json()
-                                  if (imageData.image_url) {
-                                    setHoroscopeImage(imageData.image_url)
-                                    setHoroscopeImageSlotsLabels(imageData.prompt_slots_labels || null)
-                                    setHoroscopeImageSlotsReasoning(imageData.prompt_slots_reasoning || null)
-                                  }
-                                }
-                                setHoroscopeImageLoading(false)
-                              }
-                            } catch (error) {
-                              console.error('Error checking image URL:', error)
-                              // Hide broken image
-                              img.style.display = 'none'
-                            }
+                            target.style.display = 'none'
+                            setHoroscopeImageError('Image URL has expired. A new image will be generated tomorrow.')
+                            console.log('Image URL expired or failed to load. Not regenerating to avoid billing limits.')
                           }}
                         />
                       </div>

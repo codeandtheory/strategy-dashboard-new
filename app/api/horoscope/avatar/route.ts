@@ -96,8 +96,10 @@ export async function GET(request: NextRequest) {
     const localDate = new Date(today.getFullYear(), today.getMonth(), today.getDate())
     const todayDate = localDate.toISOString().split('T')[0] // YYYY-MM-DD format
     
-    console.log('Checking for cached image - user:', userId, 'date:', todayDate, 'local time:', today.toLocaleString())
+    console.log('🔍 Checking database for cached image - user:', userId, 'date:', todayDate, 'local time:', today.toLocaleString())
     
+    // CRITICAL: Check database FIRST before any generation
+    // This is the primary check to prevent unnecessary API calls
     const { data: cachedHoroscope, error: cacheError } = await supabaseAdmin
       .from('horoscopes')
       .select('image_url, image_prompt, prompt_slots_json, date, generated_at')
@@ -106,7 +108,12 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
     
     if (cacheError) {
-      console.error('Error checking cache:', cacheError)
+      console.error('❌ Error checking database cache:', cacheError)
+      // Don't proceed if there's a database error - return error instead of generating
+      return NextResponse.json(
+        { error: 'Database error while checking cache: ' + cacheError.message },
+        { status: 500 }
+      )
     }
     
     // Also check if there are any recent horoscopes for debugging
@@ -117,45 +124,49 @@ export async function GET(request: NextRequest) {
       .order('date', { ascending: false })
       .limit(5)
     
-    console.log('Image cache check result:', {
+    console.log('📊 Database cache check result:', {
       found: !!cachedHoroscope,
       hasImage: !!cachedHoroscope?.image_url,
+      imageUrlLength: cachedHoroscope?.image_url?.length || 0,
       hasPromptSlots: !!cachedHoroscope?.prompt_slots_json,
       date: cachedHoroscope?.date,
       expectedDate: todayDate,
+      datesMatch: cachedHoroscope?.date === todayDate,
       recentHoroscopes: recentHoroscopes?.map(h => ({ date: h.date, hasImage: !!h.image_url, hasSlots: !!h.prompt_slots_json }))
     })
     
-    // Helper function to check if image URL is expired or will expire soon
-    // OpenAI DALL-E URLs expire after a certain time (typically 1 hour)
-    // We check by attempting to fetch the image with a HEAD request
-    const isImageUrlExpired = async (url: string): Promise<boolean> => {
-      try {
-        const response = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(5000) })
-        // 410 = Gone (expired), 403 = Forbidden (expired/invalid)
-        return !response.ok || response.status === 410 || response.status === 403
-      } catch (error) {
-        // Network errors or timeouts - assume expired
-        console.log('Image URL check failed, assuming expired:', error)
-        return true
-      }
-    }
+    // IMPORTANT: Only regenerate if there's NO cached image at all
+    // We return cached images even if:
+    // - URL is expired (frontend will handle the error and show a message)
+    // - prompt_slots_json is null (old system - we'll migrate gradually)
+    // This prevents hitting billing limits by regenerating unnecessarily
+    // Images are generated ONCE per day per user and cached in the database
+    // Even if the URL expires, we don't regenerate - we only generate once per day
     
-    // Check if cached image exists and is valid
-    let shouldRegenerate = false
-    if (cachedHoroscope && cachedHoroscope.image_url && cachedHoroscope.image_url.trim() !== '') {
-      // Check if URL is expired
-      const isExpired = await isImageUrlExpired(cachedHoroscope.image_url)
-      if (isExpired) {
-        console.log('⚠️ Cached image URL is expired, will regenerate')
-        shouldRegenerate = true
+    // SAFETY CHECK: If ANY record exists for today, we should NOT generate
+    // This prevents duplicate generations even if image_url is somehow empty
+    if (cachedHoroscope) {
+      if (cachedHoroscope.image_url && cachedHoroscope.image_url.trim() !== '') {
+        console.log('✅ FOUND cached image in database - RETURNING CACHED (NO API CALL)')
+        console.log('   Image URL:', cachedHoroscope.image_url.substring(0, 50) + '...')
+        console.log('   Date:', cachedHoroscope.date)
+        console.log('   Generated at:', cachedHoroscope.generated_at)
+      } else {
+        // Record exists but image_url is empty - this shouldn't happen, but don't regenerate
+        console.log('⚠️ WARNING: Record exists for today but image_url is empty/null')
+        console.log('   Date:', cachedHoroscope.date)
+        console.log('   Generated at:', cachedHoroscope.generated_at)
+        console.log('   Returning existing record (NOT generating to avoid billing limits)')
+        return NextResponse.json({
+          image_url: null,
+          image_prompt: cachedHoroscope.image_prompt || null,
+          prompt_slots: cachedHoroscope.prompt_slots_json || null,
+          prompt_slots_labels: null,
+          prompt_slots_reasoning: null,
+          cached: true,
+          error: 'Image URL is missing from cached record. Please contact support.'
+        })
       }
-    } else {
-      shouldRegenerate = true
-    }
-    
-    // Return cached image if it exists and is valid
-    if (cachedHoroscope && cachedHoroscope.image_url && cachedHoroscope.image_url.trim() !== '' && !shouldRegenerate) {
       console.log('✅ Returning cached image for user', userId, 'on date', todayDate, '- NO API CALL - using database cache')
       
       // Resolve slot IDs to labels for display (only if prompt_slots_json exists)
@@ -224,13 +235,13 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    // Generate new image if there's no cached image or if the cached image URL is expired
-    // This ensures we only generate once per day (unless URL expires) and avoid hitting billing limits
-    if (shouldRegenerate) {
-      console.log('⚠️ No valid cached image found for user', userId, 'on date', todayDate, '- GENERATING NEW IMAGE (this will call OpenAI API)')
-    } else {
-      console.log('⚠️ No cached image found for user', userId, 'on date', todayDate, '- GENERATING NEW IMAGE (this will call OpenAI API)')
-    }
+    // Only generate new image if there's NO cached image at all
+    // This ensures we only generate once per day and avoid hitting billing limits
+    console.log('⚠️ NO cached image found in database for user', userId, 'on date', todayDate)
+    console.log('   Cached horoscope exists:', !!cachedHoroscope)
+    console.log('   Has image_url:', !!cachedHoroscope?.image_url)
+    console.log('   Image URL value:', cachedHoroscope?.image_url || 'null/empty')
+    console.log('   ⚠️ PROCEEDING TO GENERATE NEW IMAGE (this will call OpenAI API)')
     
     // Generate new image with new slot-based prompt system
     const { imageUrl, prompt, slots, reasoning } = await generateHoroscopeImage(
