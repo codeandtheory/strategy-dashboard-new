@@ -57,6 +57,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS slides_deck_slide_unique ON slides (deck_id, s
 CREATE INDEX IF NOT EXISTS decks_title_idx ON decks USING gin(to_tsvector('english', title));
 CREATE INDEX IF NOT EXISTS decks_summary_idx ON decks USING gin(to_tsvector('english', deck_summary));
 
+-- Drop existing functions if they exist (to allow return type changes)
+DROP FUNCTION IF EXISTS match_topics(vector, double precision, integer);
+DROP FUNCTION IF EXISTS match_slides(vector, double precision, integer);
+
 -- Function for semantic search on topics
 CREATE OR REPLACE FUNCTION match_topics(
   query_embedding vector(1536),

@@ -120,10 +120,10 @@ export async function GET(request: NextRequest) {
     const localDate = new Date(today.getFullYear(), today.getMonth(), today.getDate())
     const todayDate = localDate.toISOString().split('T')[0] // YYYY-MM-DD format
     
-    console.log('Checking for cached horoscope - user:', userId, 'date:', todayDate, 'local time:', today.toLocaleString())
+    console.log('🔍 Checking database for cached horoscope text - user:', userId, 'date:', todayDate, 'local time:', today.toLocaleString())
     
-    // Check for cached horoscope for today - return immediately if found
-    // Use gte and lt to handle any timezone edge cases, but primarily use exact match
+    // CRITICAL: Check database FIRST before any generation
+    // This is the primary check to prevent unnecessary API calls
     const { data: cachedHoroscope, error: cacheError } = await supabaseAdmin
       .from('horoscopes')
       .select('star_sign, horoscope_text, horoscope_dos, horoscope_donts, image_url, date, generated_at, character_name')
@@ -132,44 +132,85 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
     
     if (cacheError) {
-      console.error('Error checking cache:', cacheError)
+      console.error('❌ Error checking database cache:', cacheError)
+      // Don't proceed if there's a database error - return error instead of generating
+      return NextResponse.json(
+        { error: 'Database error while checking cache: ' + cacheError.message },
+        { status: 500 }
+      )
     }
     
     // Also check if there are any recent horoscopes for debugging
     const { data: recentHoroscopes } = await supabaseAdmin
       .from('horoscopes')
-      .select('date, horoscope_text, generated_at')
+      .select('date, horoscope_text, generated_at, image_url')
       .eq('user_id', userId)
       .order('date', { ascending: false })
       .limit(5)
     
-    console.log('Cache check result:', {
+    console.log('📊 Database cache check result:', {
       found: !!cachedHoroscope,
       hasText: !!cachedHoroscope?.horoscope_text,
+      textLength: cachedHoroscope?.horoscope_text?.length || 0,
+      textPreview: cachedHoroscope?.horoscope_text?.substring(0, 50) || 'none',
+      hasImage: !!cachedHoroscope?.image_url,
       date: cachedHoroscope?.date,
       expectedDate: todayDate,
-      recentHoroscopes: recentHoroscopes?.map(h => ({ date: h.date, hasText: !!h.horoscope_text }))
+      datesMatch: cachedHoroscope?.date === todayDate,
+      recentHoroscopes: recentHoroscopes?.map(h => ({ 
+        date: h.date, 
+        hasText: !!h.horoscope_text,
+        textLength: h.horoscope_text?.length || 0,
+        hasImage: !!h.image_url
+      }))
     })
     
     // IMPORTANT: Only regenerate if there's NO cached text at all
     // This ensures horoscope text is generated ONCE per day per user and cached in the database
     // This prevents hitting billing limits by regenerating unnecessarily
     
-    if (cachedHoroscope && cachedHoroscope.horoscope_text && cachedHoroscope.horoscope_text.trim() !== '') {
-      console.log('✅ Returning cached horoscope text for user', userId, 'on date', todayDate, '- NO API CALL - using database cache')
-      return NextResponse.json({
-        star_sign: cachedHoroscope.star_sign,
-        horoscope_text: cachedHoroscope.horoscope_text,
-        horoscope_dos: cachedHoroscope.horoscope_dos || [],
-        horoscope_donts: cachedHoroscope.horoscope_donts || [],
-        image_url: cachedHoroscope.image_url || '',
-        character_name: cachedHoroscope.character_name || null,
-        cached: true,
-      })
+    // SAFETY CHECK: If ANY record exists for today, check if it has text
+    if (cachedHoroscope) {
+      if (cachedHoroscope.horoscope_text && cachedHoroscope.horoscope_text.trim() !== '') {
+        console.log('✅ FOUND cached horoscope text in database - RETURNING CACHED (NO API CALL)')
+        console.log('   Text length:', cachedHoroscope.horoscope_text.length)
+        console.log('   Date:', cachedHoroscope.date)
+        console.log('   Generated at:', cachedHoroscope.generated_at)
+        return NextResponse.json({
+          star_sign: cachedHoroscope.star_sign,
+          horoscope_text: cachedHoroscope.horoscope_text,
+          horoscope_dos: cachedHoroscope.horoscope_dos || [],
+          horoscope_donts: cachedHoroscope.horoscope_donts || [],
+          image_url: cachedHoroscope.image_url || '',
+          character_name: cachedHoroscope.character_name || null,
+          cached: true,
+        })
+      } else {
+        // Record exists but text is empty - this shouldn't happen, but don't regenerate
+        console.log('⚠️ WARNING: Record exists for today but horoscope_text is empty/null')
+        console.log('   Date:', cachedHoroscope.date)
+        console.log('   Generated at:', cachedHoroscope.generated_at)
+        console.log('   Returning existing record (NOT generating to avoid billing limits)')
+        return NextResponse.json({
+          star_sign: cachedHoroscope.star_sign || null,
+          horoscope_text: '',
+          horoscope_dos: [],
+          horoscope_donts: [],
+          image_url: cachedHoroscope.image_url || '',
+          character_name: cachedHoroscope.character_name || null,
+          cached: true,
+          error: 'Horoscope text is missing from cached record. Please contact support.'
+        })
+      }
     }
     
-    // Only generate new horoscope if we don't have one cached for today
-    console.log('⚠️ No cached horoscope text found for user', userId, 'on date', todayDate, '- GENERATING NEW HOROSCOPE (this will call OpenAI API)')
+    // Only generate new horoscope if there's NO cached text at all
+    console.log('⚠️ NO cached horoscope text found in database for user', userId, 'on date', todayDate)
+    console.log('   Cached horoscope exists:', !!cachedHoroscope)
+    console.log('   Has horoscope_text:', !!cachedHoroscope?.horoscope_text)
+    console.log('   Text value:', cachedHoroscope?.horoscope_text || 'null/empty')
+    console.log('   ⚠️ PROCEEDING TO GENERATE NEW HOROSCOPE (this will call OpenAI API)')
+    console.log('   ⚠️ THIS IS THE ONLY GENERATION FOR TODAY - NO MORE WILL BE GENERATED')
     
     // Fetch user profile to get birthday, discipline (department), role (title)
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -277,6 +318,30 @@ export async function GET(request: NextRequest) {
       )
     }
     
+    // CRITICAL SAFETY CHECK: Double-check database one more time before saving
+    // This prevents race conditions if multiple requests come in simultaneously
+    const { data: doubleCheckHoroscope } = await supabaseAdmin
+      .from('horoscopes')
+      .select('horoscope_text, image_url, prompt_slots_json, image_prompt')
+      .eq('user_id', userId)
+      .eq('date', todayDate)
+      .maybeSingle()
+    
+    if (doubleCheckHoroscope && doubleCheckHoroscope.horoscope_text && doubleCheckHoroscope.horoscope_text.trim() !== '') {
+      console.log('🛡️ SAFETY CHECK: Horoscope text was created between checks - returning cached instead of saving')
+      console.log('   This prevents duplicate API calls and billing limit hits')
+      // Return cached text to prevent duplicate generation
+      return NextResponse.json({
+        star_sign: starSign, // Use the star sign we calculated
+        horoscope_text: doubleCheckHoroscope.horoscope_text,
+        horoscope_dos: cachedHoroscope?.horoscope_dos || [],
+        horoscope_donts: cachedHoroscope?.horoscope_donts || [],
+        image_url: doubleCheckHoroscope.image_url || '',
+        character_name: cachedHoroscope?.character_name || characterName,
+        cached: true,
+      })
+    }
+    
     // Save horoscope text to database
     // Use upsert to handle both insert and update in one operation
     // This ensures the date is always set correctly and avoids race conditions
@@ -302,14 +367,18 @@ export async function GET(request: NextRequest) {
     // Preserve existing image data if it exists
     if (existingHoroscope?.image_url) {
       upsertData.image_url = existingHoroscope.image_url
+      console.log('   Preserving existing image_url')
     }
     if (existingHoroscope?.prompt_slots_json) {
       upsertData.prompt_slots_json = existingHoroscope.prompt_slots_json
+      console.log('   Preserving existing prompt_slots_json')
     }
     if (existingHoroscope?.image_prompt) {
       upsertData.image_prompt = existingHoroscope.image_prompt
+      console.log('   Preserving existing image_prompt')
     }
     
+    console.log('💾 Saving horoscope text to database...')
     const { error: upsertError } = await supabaseAdmin
       .from('horoscopes')
       .upsert(upsertData, {
@@ -318,11 +387,13 @@ export async function GET(request: NextRequest) {
       })
     
     if (upsertError) {
-      // Continue anyway - we still return the generated horoscope
-      console.error('Error upserting horoscope text:', upsertError)
+      // This is critical - if we can't save, we've wasted an API call
+      console.error('❌ CRITICAL: Error upserting horoscope text:', upsertError)
+      console.error('   This means we generated text but failed to save it - API call was wasted!')
+      // Still return the generated horoscope, but log the error
       console.warn('Warning: Failed to save horoscope to database, but returning generated horoscope')
     } else {
-      console.log('Successfully saved horoscope text for user', userId, 'on date', todayDate)
+      console.log('✅ Successfully saved horoscope text for user', userId, 'on date', todayDate)
     }
     
     return NextResponse.json({
