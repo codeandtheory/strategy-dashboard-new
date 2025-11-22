@@ -58,6 +58,10 @@ export async function GET(request: NextRequest) {
         created_by,
         assigned_to,
         week_start_date,
+        category,
+        source,
+        summary,
+        tags,
         created_at,
         updated_at
       `)
@@ -139,9 +143,9 @@ export async function POST(request: NextRequest) {
     console.log('User authenticated:', user.id)
 
     const body = await request.json()
-    const { article_title, article_url, notes, pinned, assigned_to, week_start_date } = body
+    const { article_title, article_url, notes, pinned, assigned_to, week_start_date, category, source, summary, tags } = body
 
-    console.log('Request body:', { article_title, article_url, notes, pinned, assigned_to, week_start_date })
+    console.log('Request body:', { article_title, article_url, notes, pinned, assigned_to, week_start_date, category, source, summary, tags })
 
     if (!article_title || !article_url) {
       return NextResponse.json(
@@ -237,6 +241,11 @@ export async function POST(request: NextRequest) {
       notes: notes || null,
       pinned: pinned || false,
       assigned_to: assignedToId,
+      // New fields
+      category: category || null,
+      source: source || null,
+      summary: summary || null,
+      tags: tags && Array.isArray(tags) ? tags : null,
       // Timestamps
       updated_at: new Date().toISOString(),
       created_at: new Date().toISOString(), // In case it's not auto-generated
@@ -257,6 +266,10 @@ export async function POST(request: NextRequest) {
         created_by,
         assigned_to,
         week_start_date,
+        category,
+        source,
+        summary,
+        tags,
         created_at,
         updated_at
       `)
@@ -311,7 +324,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, article_title, article_url, notes, pinned, assigned_to, week_start_date } = body
+    const { id, article_title, article_url, notes, pinned, assigned_to, week_start_date, category, source, summary, tags } = body
 
     if (!id) {
       return NextResponse.json(
@@ -348,6 +361,20 @@ export async function PUT(request: NextRequest) {
       updateData.assigned_to = assigned_to || null
     }
 
+    // Include new fields if provided
+    if (category !== undefined) {
+      updateData.category = category || null
+    }
+    if (source !== undefined) {
+      updateData.source = source || null
+    }
+    if (summary !== undefined) {
+      updateData.summary = summary || null
+    }
+    if (tags !== undefined) {
+      updateData.tags = tags && Array.isArray(tags) ? tags : null
+    }
+
     const { data, error } = await supabase
       .from('must_reads')
       .update(updateData)
@@ -364,6 +391,10 @@ export async function PUT(request: NextRequest) {
         created_by,
         assigned_to,
         week_start_date,
+        category,
+        source,
+        summary,
+        tags,
         created_at,
         updated_at
       `)

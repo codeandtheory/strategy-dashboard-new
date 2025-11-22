@@ -31,6 +31,10 @@ interface MustRead {
   submitted_by: string
   assigned_to: string | null
   week_start_date?: string
+  category?: string | null
+  source?: string | null
+  summary?: string | null
+  tags?: string[] | null
   created_at: string
   updated_at: string
   submitted_by_profile?: {
@@ -71,7 +75,14 @@ export default function MustReadAdmin() {
     pinned: false,
     assigned_to: '',
     date: getTodayDate(), // Default to current date
+    category: '',
+    source: '',
+    summary: '',
+    tags: [] as string[],
   })
+
+  const [generatingSummary, setGeneratingSummary] = useState(false)
+  const [generatingTags, setGeneratingTags] = useState(false)
 
   // Theme-aware styling helpers
   const getBgClass = () => {
@@ -219,6 +230,10 @@ export default function MustReadAdmin() {
       pinned: item.pinned,
       assigned_to: item.assigned_to || user?.id || '',
       date: item.week_start_date || getTodayDate(), // Use week_start_date or default to today
+      category: item.category || '',
+      source: item.source || '',
+      summary: item.summary || '',
+      tags: item.tags || [],
     })
     setIsEditDialogOpen(true)
   }
@@ -311,7 +326,99 @@ export default function MustReadAdmin() {
       pinned: false,
       assigned_to: user?.id || '',
       date: getTodayDate(), // Reset to current date
+      category: '',
+      source: '',
+      summary: '',
+      tags: [],
     })
+  }
+
+  // Extract source (domain) from URL
+  const extractSource = (url: string) => {
+    try {
+      const urlObj = new URL(url)
+      return urlObj.hostname.replace('www.', '')
+    } catch {
+      return ''
+    }
+  }
+
+  // Auto-extract source when URL changes
+  useEffect(() => {
+    if (formData.article_url && !formData.source) {
+      const source = extractSource(formData.article_url)
+      if (source) {
+        setFormData(prev => ({ ...prev, source }))
+      }
+    }
+  }, [formData.article_url, formData.source])
+
+  // Generate summary from article
+  const handleGenerateSummary = async () => {
+    if (!formData.article_url) {
+      alert('Please enter an article URL first')
+      return
+    }
+
+    try {
+      setGeneratingSummary(true)
+      const response = await fetch('/api/must-reads/generate-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: formData.article_url,
+          title: formData.article_title,
+          generateSummary: true,
+        }),
+      })
+
+      const result = await response.json()
+      
+      if (response.ok && result.summary) {
+        setFormData({ ...formData, summary: result.summary })
+      } else {
+        alert(result.summaryError || 'Failed to generate summary')
+      }
+    } catch (error) {
+      console.error('Error generating summary:', error)
+      alert('Failed to generate summary')
+    } finally {
+      setGeneratingSummary(false)
+    }
+  }
+
+  // Generate tags from article
+  const handleGenerateTags = async () => {
+    if (!formData.article_url) {
+      alert('Please enter an article URL first')
+      return
+    }
+
+    try {
+      setGeneratingTags(true)
+      const response = await fetch('/api/must-reads/generate-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: formData.article_url,
+          title: formData.article_title,
+          generateTags: true,
+        }),
+      })
+
+      const result = await response.json()
+      
+      if (response.ok && result.tags && Array.isArray(result.tags)) {
+        setFormData({ ...formData, tags: result.tags })
+      } else {
+        alert(result.tagsError || 'Failed to generate tags')
+      }
+    } catch (error) {
+      console.error('Error generating tags:', error)
+      alert('Failed to generate tags')
+    } finally {
+      setGeneratingTags(false)
+    }
   }
 
   const toggleSelect = (id: string) => {
@@ -392,6 +499,94 @@ export default function MustReadAdmin() {
                     placeholder="https://example.com/article"
                     type="url"
                   />
+                </div>
+                <div>
+                  <Label className={cardStyle.text}>Category (optional)</Label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className={`w-full ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} p-2 ${getRoundedClass('rounded-md')}`}
+                  >
+                    <option value="">No Category</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Culture">Culture</option>
+                    <option value="Fun">Fun</option>
+                    <option value="Industry">Industry</option>
+                    <option value="Craft">Craft</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className={cardStyle.text}>Source (optional)</Label>
+                  <Input
+                    value={formData.source}
+                    onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                    className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
+                    placeholder="Auto-extracted from URL"
+                  />
+                  <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
+                    Source is automatically extracted from the URL, but you can edit it
+                  </p>
+                </div>
+                <div>
+                  <Label className={cardStyle.text}>Summary (optional)</Label>
+                  <div className="flex gap-2">
+                    <Textarea
+                      value={formData.summary}
+                      onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                      className={`flex-1 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
+                      placeholder="AI-generated summary will appear here..."
+                      rows={3}
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleGenerateSummary}
+                      disabled={!formData.article_url || generatingSummary}
+                      variant="outline"
+                      className={`${cardStyle.border} border ${cardStyle.text} whitespace-nowrap`}
+                    >
+                      {generatingSummary ? 'Generating...' : 'Generate'}
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label className={cardStyle.text}>Tags (optional)</Label>
+                  <div className="flex gap-2">
+                    <div className="flex-1 flex flex-wrap gap-2">
+                      {formData.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} px-2 py-1 ${getRoundedClass('rounded-md')} text-sm flex items-center gap-1`}
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newTags = formData.tags.filter((_, i) => i !== index)
+                              setFormData({ ...formData, tags: newTags })
+                            }}
+                            className="hover:opacity-70"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                      {formData.tags.length === 0 && (
+                        <span className={`${cardStyle.text}/50 text-sm`}>No tags yet</span>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleGenerateTags}
+                      disabled={!formData.article_url || generatingTags}
+                      variant="outline"
+                      className={`${cardStyle.border} border ${cardStyle.text} whitespace-nowrap`}
+                    >
+                      {generatingTags ? 'Generating...' : 'Generate'}
+                    </Button>
+                  </div>
+                  <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
+                    AI will generate up to 3 relevant tags from the article
+                  </p>
                 </div>
                 <div>
                   <Label className={cardStyle.text}>Notes (optional)</Label>
@@ -623,6 +818,94 @@ export default function MustReadAdmin() {
                   placeholder="https://example.com/article"
                   type="url"
                 />
+              </div>
+              <div>
+                <Label className={cardStyle.text}>Category (optional)</Label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className={`w-full ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} p-2 ${getRoundedClass('rounded-md')}`}
+                >
+                  <option value="">No Category</option>
+                  <option value="Technology">Technology</option>
+                  <option value="Culture">Culture</option>
+                  <option value="Fun">Fun</option>
+                  <option value="Industry">Industry</option>
+                  <option value="Craft">Craft</option>
+                </select>
+              </div>
+              <div>
+                <Label className={cardStyle.text}>Source (optional)</Label>
+                <Input
+                  value={formData.source}
+                  onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                  className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
+                  placeholder="Auto-extracted from URL"
+                />
+                <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
+                  Source is automatically extracted from the URL, but you can edit it
+                </p>
+              </div>
+              <div>
+                <Label className={cardStyle.text}>Summary (optional)</Label>
+                <div className="flex gap-2">
+                  <Textarea
+                    value={formData.summary}
+                    onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                    className={`flex-1 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
+                    placeholder="AI-generated summary will appear here..."
+                    rows={3}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleGenerateSummary}
+                    disabled={!formData.article_url || generatingSummary}
+                    variant="outline"
+                    className={`${cardStyle.border} border ${cardStyle.text} whitespace-nowrap`}
+                  >
+                    {generatingSummary ? 'Generating...' : 'Generate'}
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <Label className={cardStyle.text}>Tags (optional)</Label>
+                <div className="flex gap-2">
+                  <div className="flex-1 flex flex-wrap gap-2">
+                    {formData.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} px-2 py-1 ${getRoundedClass('rounded-md')} text-sm flex items-center gap-1`}
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newTags = formData.tags.filter((_, i) => i !== index)
+                            setFormData({ ...formData, tags: newTags })
+                          }}
+                          className="hover:opacity-70"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                    {formData.tags.length === 0 && (
+                      <span className={`${cardStyle.text}/50 text-sm`}>No tags yet</span>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={handleGenerateTags}
+                    disabled={!formData.article_url || generatingTags}
+                    variant="outline"
+                    className={`${cardStyle.border} border ${cardStyle.text} whitespace-nowrap`}
+                  >
+                    {generatingTags ? 'Generating...' : 'Generate'}
+                  </Button>
+                </div>
+                <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
+                  AI will generate up to 3 relevant tags from the article
+                </p>
               </div>
               <div>
                 <Label className={cardStyle.text}>Notes (optional)</Label>
