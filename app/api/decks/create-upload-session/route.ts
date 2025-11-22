@@ -107,8 +107,14 @@ export async function POST(request: NextRequest) {
     // Get the resumable upload URL from Location header
     const uploadUrl = initResponse.headers.get('Location')
     if (!uploadUrl) {
+      console.error('Init response headers:', Object.fromEntries(initResponse.headers.entries()))
+      console.error('Init response status:', initResponse.status)
+      const errorText = await initResponse.text()
+      console.error('Init response body:', errorText)
       throw new Error('Failed to get resumable upload session URL from Location header')
     }
+
+    console.log('Created resumable upload session, URL:', uploadUrl.substring(0, 100) + '...')
 
     // Note: The file ID will be returned after the upload is complete
     // For now, we return the upload URL. The client will upload and get the file ID from the response

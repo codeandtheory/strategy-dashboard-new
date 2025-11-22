@@ -47,11 +47,16 @@ export async function POST(request: NextRequest) {
       'Content-Length': buffer.length.toString(),
     }
 
+    console.log('Uploading chunk:', { startByte, endByte, fileSize, uploadUrl: uploadUrl.substring(0, 100) + '...' })
+    
     const uploadResponse = await fetch(uploadUrl, {
       method: 'PUT',
       headers,
       body: buffer,
     })
+
+    console.log('Upload response status:', uploadResponse.status)
+    console.log('Upload response headers:', Object.fromEntries(uploadResponse.headers.entries()))
 
     // Handle different response statuses
     if (uploadResponse.status === 200 || uploadResponse.status === 201) {
@@ -150,6 +155,13 @@ export async function POST(request: NextRequest) {
         })
 
         const drive = google.drive({ version: 'v3', auth })
+        
+        // Double-check we're not using the folder ID as file ID
+        const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
+        if (fileId === folderId) {
+          throw new Error(`File ID cannot be the same as folder ID. This indicates the upload response did not contain a valid file ID.`)
+        }
+        
         await drive.permissions.create({
           fileId: fileId,
           requestBody: {
@@ -182,6 +194,9 @@ export async function POST(request: NextRequest) {
 
     // Error response
     const errorText = await uploadResponse.text()
+    console.error('Upload failed with status:', uploadResponse.status)
+    console.error('Error response:', errorText)
+    console.error('Upload URL used:', uploadUrl)
     throw new Error(`Google Drive upload failed: ${uploadResponse.status} ${errorText}`)
   } catch (error: any) {
     console.error('Error uploading chunk to Google Drive:', error)
