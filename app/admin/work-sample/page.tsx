@@ -338,22 +338,22 @@ export default function WorkSampleAdmin() {
     setSelectedFile(file)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
 
       const response = await fetch('/api/work-samples/upload-to-drive', {
         method: 'POST',
-        body: formData,
+        body: uploadFormData,
       })
 
       const result = await response.json()
 
       if (response.ok) {
-        setFormData({
-          ...formData,
+        setFormData(prev => ({
+          ...prev,
           file_url: result.fileUrl,
           file_name: result.fileName,
-        })
+        }))
       } else {
         throw new Error(result.error || 'Failed to upload file')
       }
@@ -587,7 +587,7 @@ export default function WorkSampleAdmin() {
         {/* Header */}
         <div className="mb-8">
           <h1 className={`text-4xl font-black uppercase tracking-wider ${getTextClass()} mb-2`}>Work Samples</h1>
-          <p className={`${getTextClass()}/70 font-bold`}>Manage work samples and portfolios</p>
+          <p className={`${getTextClass()}/70 font-normal`}>Manage work samples and portfolios</p>
         </div>
 
         {/* Actions Bar */}
@@ -953,10 +953,10 @@ export default function WorkSampleAdmin() {
                   <div className="flex-1">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <h3 className={`text-xl font-black uppercase ${cardStyle.text} mb-2`}>
+                        <h3 className={`text-xl font-semibold ${cardStyle.text} mb-2`}>
                           {item.project_name}
                         </h3>
-                        <div className={`flex items-center gap-4 text-sm ${cardStyle.text}/70 font-bold`}>
+                        <div className={`flex items-center gap-4 text-sm ${cardStyle.text}/70 font-normal`}>
                           <span>
                             Author: {item.author?.full_name || item.author?.email || 'Unknown'}
                           </span>
@@ -1183,7 +1183,6 @@ export default function WorkSampleAdmin() {
                   Update
                 </Button>
               </div>
-            </div>
           </DialogContent>
         </Dialog>
       </div>
