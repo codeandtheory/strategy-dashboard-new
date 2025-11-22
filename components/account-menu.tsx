@@ -13,8 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LogOut, User, Bell } from 'lucide-react'
+import { LogOut, User, Bell, Shield } from 'lucide-react'
 import { User as UserIcon } from 'lucide-react'
+import { usePermissions } from '@/contexts/permissions-context'
 
 interface UserProfile {
   avatar_url: string | null
@@ -27,6 +28,7 @@ export function AccountMenu() {
   const { mode } = useMode()
   const router = useRouter()
   const supabase = createClient()
+  const { permissions } = usePermissions()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -145,6 +147,12 @@ export function AccountMenu() {
           <Bell className="mr-2 h-4 w-4" />
           <span>Notification Settings</span>
         </DropdownMenuItem>
+        {permissions?.canViewAdmin && (
+          <DropdownMenuItem onClick={() => router.push('/admin')}>
+            <Shield className="mr-2 h-4 w-4" />
+            <span>Admin</span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
           <LogOut className="mr-2 h-4 w-4" />
