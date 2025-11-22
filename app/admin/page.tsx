@@ -1,10 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { usePermissions } from '@/contexts/permissions-context'
 import { useAuth } from '@/contexts/auth-context'
 import { useMode } from '@/contexts/mode-context'
@@ -23,8 +20,6 @@ import {
   Users, 
   RotateCw,
   Shield,
-  Loader2,
-  CheckCircle2,
   AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
@@ -34,15 +29,6 @@ export default function AdminDashboard() {
   const { user } = useAuth()
   const { mode } = useMode()
   const router = useRouter()
-  
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  })
-  const [passwordLoading, setPasswordLoading] = useState(false)
-  const [passwordError, setPasswordError] = useState<string | null>(null)
-  const [passwordSuccess, setPasswordSuccess] = useState(false)
 
   // Theme-aware styling helpers
   const getBgClass = () => {
@@ -103,33 +89,6 @@ export default function AdminDashboard() {
     }
   }
 
-  const handlePasswordUpdate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setPasswordError(null)
-    setPasswordSuccess(false)
-    setPasswordLoading(true)
-
-    try {
-      if (passwordData.newPassword !== passwordData.confirmPassword) {
-        setPasswordError('New passwords do not match')
-        setPasswordLoading(false)
-        return
-      }
-
-      if (passwordData.newPassword.length < 6) {
-        setPasswordError('Password must be at least 6 characters')
-        setPasswordLoading(false)
-        return
-      }
-
-      // Note: Supabase doesn't support password updates from client-side for OAuth users
-      setPasswordError('Password updates for OAuth users must be done through your Google account settings.')
-      setPasswordLoading(false)
-    } catch (err: any) {
-      setPasswordError(err.message || 'Failed to update password')
-      setPasswordLoading(false)
-    }
-  }
 
   const roleDisplay = permissionsUser?.baseRole && typeof permissionsUser.baseRole === 'string' && permissionsUser.baseRole.length > 0
     ? `${permissionsUser.baseRole.charAt(0).toUpperCase() + permissionsUser.baseRole.slice(1)}`
