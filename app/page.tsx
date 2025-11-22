@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info } from 'lucide-react'
+import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info, ExternalLink, User } from 'lucide-react'
 import { AccountMenu } from '@/components/account-menu'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -1290,17 +1290,52 @@ export default function TeamDashboard() {
                             <img 
                               src={sample.thumbnail_url} 
                               alt={sample.project_name}
-                              className={`w-full aspect-video object-contain ${getRoundedClass('rounded-lg')} mb-2 bg-gray-100`}
+                              className={`w-full aspect-video object-contain ${getRoundedClass('rounded-lg')} mb-3 bg-gray-100`}
                             />
                           ) : (
-                            <div className={`w-full aspect-video ${getRoundedClass('rounded-lg')} mb-2 bg-gray-200 flex items-center justify-center`}>
+                            <div className={`w-full aspect-video ${getRoundedClass('rounded-lg')} mb-3 bg-gray-200 flex items-center justify-center`}>
                               <span className="text-gray-400 text-xs">No Image</span>
                             </div>
                           )}
-                          <h3 className={`text-sm font-black uppercase mb-1 ${textStyle}`}>{sample.project_name}</h3>
-                          {sample.type && (
-                            <p className={`text-xs uppercase tracking-wide ${textStyle}/70`}>{sample.type.name}</p>
-                          )}
+                          <div className="flex flex-col gap-2">
+                            {/* Date */}
+                            <p className={`text-xs ${textStyle}/70`}>
+                              {sample.date ? new Date(sample.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                            </p>
+                            
+                            {/* Title with external link */}
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className={`text-base font-black uppercase flex-1 ${textStyle}`}>{sample.project_name}</h3>
+                              <Link 
+                                href={`/work-samples/${sample.id}`}
+                                className={`${textStyle}/70 hover:${textStyle} transition-colors`}
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Link>
+                            </div>
+                            
+                            {/* Client as badge */}
+                            {sample.client && (
+                              <div className={`inline-flex items-center px-2 py-1 rounded ${getRoundedClass('rounded-md')} bg-gray-800 w-fit`}>
+                                <span className={`text-xs font-medium ${textStyle}`}>{sample.client}</span>
+                              </div>
+                            )}
+                            
+                            {/* Author with icon */}
+                            {sample.author && (
+                              <div className="flex items-center gap-2">
+                                <User className={`w-3 h-3 ${textStyle}/70`} />
+                                <p className={`text-xs ${textStyle}/70`}>
+                                  {sample.author.full_name || sample.author.email}
+                                </p>
+                              </div>
+                            )}
+                            
+                            {/* Description */}
+                            {sample.description && (
+                              <p className={`text-sm ${textStyle}/80 line-clamp-2`}>{sample.description}</p>
+                            )}
+                          </div>
                         </div>
                       ))
                     ) : (
