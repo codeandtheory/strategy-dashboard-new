@@ -7,6 +7,12 @@ VALUES ('avatars', 'avatars', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Set up storage policies for avatars bucket
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Public can view avatars" ON storage.objects;
+
 -- Allow authenticated users to upload their own avatars
 CREATE POLICY "Users can upload their own avatar"
 ON storage.objects FOR INSERT

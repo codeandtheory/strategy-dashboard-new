@@ -115,9 +115,10 @@ export default function ProfilePage() {
 
     try {
       // Create a unique filename
+      // Store in user's folder: avatars/{user_id}/{filename}
       const fileExt = file.name.split('.').pop()
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`
-      const filePath = `avatars/${fileName}`
+      const fileName = `${Date.now()}.${fileExt}`
+      const filePath = `${user.id}/${fileName}`
 
       // Upload to Supabase storage
       const { error: uploadError } = await supabase.storage
