@@ -7,8 +7,6 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { 
   Home, 
-  Lock, 
-  User, 
   FileText, 
   Newspaper, 
   Briefcase, 
@@ -103,8 +101,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       title: 'PROFILE',
       items: [
         { href: '/admin', label: 'Admin Homepage', icon: Home, permission: null },
-        { href: '/admin/password', label: 'Update Password', icon: Lock, permission: null },
-        { href: '/profile', label: 'Update Profile', icon: User, permission: null },
       ]
     },
     {
