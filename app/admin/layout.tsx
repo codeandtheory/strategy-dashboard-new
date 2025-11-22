@@ -137,11 +137,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   ]
 
   return (
-    <div className={`min-h-screen ${getBgClass()} ${getTextClass()}`}>
+    <div className={`min-h-screen ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       {/* Sidebar Navigation */}
       <aside className={`fixed left-0 top-0 h-full w-64 border-r ${getBorderClass()} ${getBgClass()} p-6 overflow-y-auto`}>
         <div className="mb-8">
-          <h1 className={`text-2xl font-bold ${getTextClass()} mb-1`}>Admin Panel</h1>
+          <h1 className={`text-2xl font-black uppercase tracking-wider ${getTextClass()} mb-1`}>Admin Panel</h1>
         </div>
 
         {/* User Profile Section */}
@@ -217,7 +217,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                       }`}
                     >
                       <Icon className="w-4 h-4" />
-                      <span className="font-medium">{item.label}</span>
+                      <span className="font-black uppercase tracking-wider text-sm">{item.label}</span>
                     </Link>
                   )
                 })}

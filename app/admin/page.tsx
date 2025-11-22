@@ -96,50 +96,50 @@ export default function AdminDashboard() {
   const accessLevel = permissions?.canManageUsers ? 'admin' : permissions?.canViewAdmin ? 'contributor' : 'user'
 
   return (
-    <div className={getBgClass()}>
+    <div className={`${getBgClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       {/* Header */}
       <div className="mb-8">
-        <h1 className={`text-4xl font-bold ${getTextClass()} mb-2`}>Welcome to the Admin Panel</h1>
-        <p className={`${getTextClass()}/70`}>You have {accessLevel} level access.</p>
-        <p className={`text-sm ${getTextClass()}/50 mt-2`}>
+        <h1 className={`text-4xl font-black uppercase ${getTextClass()} mb-2`}>Welcome to the Admin Panel</h1>
+        <p className={`${getTextClass()}/70 font-bold`}>You have {accessLevel} level access.</p>
+        <p className={`text-sm ${getTextClass()}/50 mt-2 font-medium`}>
           Use the sidebar to navigate to different sections based on your permissions.
         </p>
       </div>
 
       {/* Getting Started Guide */}
       <div className="mb-8">
-        <h2 className={`text-2xl font-bold ${getTextClass()} mb-2`}>Getting Started Guide</h2>
-        <p className={`${getTextClass()}/70 mb-6`}>
+        <h2 className={`text-2xl font-black uppercase tracking-wider ${getTextClass()} mb-2`}>Getting Started Guide</h2>
+        <p className={`${getTextClass()}/70 mb-6 font-bold`}>
           New to the admin panel? Here's how to get started and make the most of your dashboard.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* PUBLISH CONTENT */}
           <Card className={`${getCardStyle().bg} ${getCardStyle().border} border p-6 ${getRoundedClass('rounded-xl')}`}>
-            <h3 className={`text-xl font-bold ${getCardStyle().text} mb-4`}>PUBLISH CONTENT</h3>
+            <h3 className={`text-xl font-black uppercase tracking-wider ${getCardStyle().text} mb-4`}>PUBLISH CONTENT</h3>
             <ul className={`space-y-3 ${getCardStyle().text}/90`}>
               <li className="flex items-start gap-2">
                 <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  <strong>Must Reads:</strong> Share articles, resources, and important content.
+                <div className="font-bold">
+                  <strong className="font-black">Must Reads:</strong> Share articles, resources, and important content.
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <Newspaper className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  <strong>News:</strong> Post team announcements and updates.
+                <div className="font-bold">
+                  <strong className="font-black">News:</strong> Post team announcements and updates.
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <Briefcase className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  <strong>Work Samples:</strong> Showcase completed projects and achievements.
+                <div className="font-bold">
+                  <strong className="font-black">Work Samples:</strong> Showcase completed projects and achievements.
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <FolderOpen className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  <strong>Team Resources:</strong> Upload documents, guides, and shared materials.
+                <div className="font-bold">
+                  <strong className="font-black">Team Resources:</strong> Upload documents, guides, and shared materials.
                 </div>
               </li>
             </ul>
@@ -147,30 +147,30 @@ export default function AdminDashboard() {
 
           {/* CONTENT MANAGEMENT */}
           <Card className={`${getCardStyle().bg} ${getCardStyle().border} border p-6 ${getRoundedClass('rounded-xl')}`}>
-            <h3 className={`text-xl font-bold ${getCardStyle().text} mb-4`}>CONTENT MANAGEMENT</h3>
+            <h3 className={`text-xl font-black uppercase tracking-wider ${getCardStyle().text} mb-4`}>CONTENT MANAGEMENT</h3>
             <ul className={`space-y-3 ${getCardStyle().text}/90`}>
               <li className="flex items-start gap-2">
                 <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  <strong>Edit & Update:</strong> Modify existing content you've created or been assigned.
+                <div className="font-bold">
+                  <strong className="font-black">Edit & Update:</strong> Modify existing content you've created or been assigned.
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <FolderOpen className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  <strong>View & Organize:</strong> Browse and organize team resources and pipeline items.
+                <div className="font-bold">
+                  <strong className="font-black">View & Organize:</strong> Browse and organize team resources and pipeline items.
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <GitBranch className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  <strong>Manage Pipeline:</strong> Track and update new business opportunities.
+                <div className="font-bold">
+                  <strong className="font-black">Manage Pipeline:</strong> Track and update new business opportunities.
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <Video className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  <strong>Meeting Recordings:</strong> Access and manage team meeting recordings.
+                <div className="font-bold">
+                  <strong className="font-black">Meeting Recordings:</strong> Access and manage team meeting recordings.
                 </div>
               </li>
             </ul>
@@ -179,30 +179,30 @@ export default function AdminDashboard() {
           {/* ADMIN FUNCTIONS */}
           {permissions?.canManageUsers && (
             <Card className={`${getCardStyle().bg} ${getCardStyle().border} border p-6 ${getRoundedClass('rounded-xl')}`}>
-              <h3 className={`text-xl font-bold ${getCardStyle().text} mb-4`}>ADMIN FUNCTIONS</h3>
+              <h3 className={`text-xl font-black uppercase tracking-wider ${getCardStyle().text} mb-4`}>ADMIN FUNCTIONS</h3>
               <ul className={`space-y-3 ${getCardStyle().text}/90`}>
                 <li className="flex items-start gap-2">
                   <Bell className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <strong>Push Notifications:</strong> Send important announcements and updates to the team.
+                  <div className="font-bold">
+                    <strong className="font-black">Push Notifications:</strong> Send important announcements and updates to the team.
                   </div>
                 </li>
                 <li className="flex items-start gap-2">
                   <Users className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <strong>Curator Management:</strong> Assign and manage weekly curator responsibilities.
+                  <div className="font-bold">
+                    <strong className="font-black">Curator Management:</strong> Assign and manage weekly curator responsibilities.
                   </div>
                 </li>
                 <li className="flex items-start gap-2">
                   <Crown className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <strong>Beast Babe Selection:</strong> Choose and recognize outstanding team members.
+                  <div className="font-bold">
+                    <strong className="font-black">Beast Babe Selection:</strong> Choose and recognize outstanding team members.
                   </div>
                 </li>
                 <li className="flex items-start gap-2">
                   <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <strong>System Monitoring:</strong> Monitor dashboard performance and team activity.
+                  <div className="font-bold">
+                    <strong className="font-black">System Monitoring:</strong> Monitor dashboard performance and team activity.
                   </div>
                 </li>
               </ul>
@@ -213,7 +213,7 @@ export default function AdminDashboard() {
 
       {/* Quick Actions */}
       <div className="mb-8">
-        <h2 className={`text-2xl font-bold ${getTextClass()} mb-4`}>Quick Actions</h2>
+        <h2 className={`text-2xl font-black uppercase tracking-wider ${getTextClass()} mb-4`}>Quick Actions</h2>
         <div className="flex flex-wrap gap-3">
           <Link href="/admin/must-read">
             <Button 
@@ -221,7 +221,7 @@ export default function AdminDashboard() {
                 mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
                 mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
                 'bg-[#FFFFFF] text-black hover:bg-[#FFFFFF]/80'
-              } font-black`}
+              } font-black uppercase tracking-wider ${mode === 'code' ? 'font-mono' : ''}`}
             >
               <FileText className="w-4 h-4 mr-2" />
               Add a Must Read
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
         <div className="flex items-start gap-3">
           <AlertCircle className={`w-6 h-6`} style={{ color: getCardStyle().accent }} />
           <div>
-            <h3 className={`text-xl font-bold ${getCardStyle().text} mb-2`}>Need Help?</h3>
+            <h3 className={`text-xl font-black uppercase tracking-wider ${getCardStyle().text} mb-2`}>Need Help?</h3>
             <p className={`${getCardStyle().text}/70 mb-3`}>
               If you're having trouble or need assistance with any feature:
             </p>
