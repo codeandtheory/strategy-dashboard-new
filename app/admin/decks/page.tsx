@@ -136,24 +136,90 @@ export default function DeckAdmin() {
     setUploadStatus({ type: 'idle', message: '' })
 
     try {
-      // Step 1: Upload file to Google Drive (same simple approach as work samples)
-      setUploadStatus({ type: 'idle', message: 'Uploading file to Google Drive...' })
+      // Step 1: Create upload session (creates empty file and gets upload URL)
+      setUploadStatus({ type: 'idle', message: 'Creating upload session...' })
       
-      const uploadFormData = new FormData()
-      uploadFormData.append('file', selectedFile)
-
-      const uploadResponse = await fetch('/api/decks/upload-to-drive', {
+      const sessionResponse = await fetch('/api/decks/create-upload-session', {
         method: 'POST',
-        body: uploadFormData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName: selectedFile.name,
+          mimeType: selectedFile.type || 'application/pdf',
+          fileSize: selectedFile.size,
+        }),
       })
 
-      const uploadResult = await uploadResponse.json()
+      const sessionResult = await sessionResponse.json()
 
-      if (!uploadResponse.ok) {
-        throw new Error(uploadResult.error || 'Failed to upload file to Google Drive')
+      if (!sessionResponse.ok) {
+        throw new Error(sessionResult.error || 'Failed to create upload session')
       }
 
-      const fileId = uploadResult.fileId
+      const { fileId, uploadUrl } = sessionResult
+
+      if (!fileId || !uploadUrl) {
+        throw new Error('Failed to get file ID and upload URL from session')
+      }
+
+      // Step 2: Upload file in chunks to Google Drive via our server
+      setUploadStatus({ type: 'idle', message: 'Uploading file to Google Drive...' })
+      
+      const CHUNK_SIZE = 2 * 1024 * 1024 // 2MB chunks (safe for Vercel's 4.5MB limit)
+      const fileSize = selectedFile.size
+      let uploadedBytes = 0
+
+      // Upload file in chunks
+      while (uploadedBytes < fileSize) {
+        const chunkEnd = Math.min(uploadedBytes + CHUNK_SIZE - 1, fileSize - 1)
+        const chunk = selectedFile.slice(uploadedBytes, chunkEnd + 1)
+        
+        // Update progress
+        const progress = Math.round((uploadedBytes / fileSize) * 100)
+        setUploadStatus({ 
+          type: 'idle', 
+          message: `Uploading file to Google Drive... ${progress}%` 
+        })
+
+        const uploadFormData = new FormData()
+        uploadFormData.append('uploadUrl', uploadUrl)
+        uploadFormData.append('fileId', fileId) // Pass file ID from step 1
+        uploadFormData.append('chunk', chunk)
+        uploadFormData.append('startByte', uploadedBytes.toString())
+        uploadFormData.append('endByte', chunkEnd.toString())
+        uploadFormData.append('fileSize', fileSize.toString())
+        uploadFormData.append('mimeType', selectedFile.type || 'application/pdf')
+
+        const uploadResponse = await fetch('/api/decks/upload-chunk', {
+          method: 'POST',
+          body: uploadFormData,
+        })
+
+        const uploadResult = await uploadResponse.json()
+
+        if (!uploadResponse.ok) {
+          throw new Error(uploadResult.error || 'Failed to upload chunk to Google Drive')
+        }
+
+        // Check if upload is complete
+        if (uploadResult.complete && uploadResult.fileId) {
+          break
+        }
+
+        // Update uploaded bytes based on response
+        if (uploadResult.range) {
+          // Parse range header (e.g., "bytes=0-2097151")
+          const match = uploadResult.range.match(/bytes=0-(\d+)/)
+          if (match) {
+            uploadedBytes = parseInt(match[1], 10) + 1
+          } else {
+            uploadedBytes = chunkEnd + 1
+          }
+        } else {
+          uploadedBytes = chunkEnd + 1
+        }
+      }
 
       // Step 2: Ingest the deck from Google Drive
       const ingestResponse = await fetch('/api/upload-deck', {

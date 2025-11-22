@@ -46,9 +46,9 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 /**
- * Step 1: Create a resumable upload session in Google Drive
- * This creates a resumable upload session and returns the file ID and upload URL
- * The client will then upload the file directly to Google Drive using this URL
+ * Step 1: Create an empty file in Google Drive to get the file ID,
+ * then get a resumable upload URL for that file ID.
+ * This two-step approach ensures we have the file ID upfront.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -72,63 +72,69 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { folderId, auth } = getDriveClient()
+    const { drive, folderId, auth } = getDriveClient()
 
-    // Get access token
+    // Step 1: Create an empty file in Google Drive to get the file ID
+    console.log('Creating empty file in Google Drive:', { fileName, folderId: folderId.substring(0, 10) + '...' })
+    
+    const emptyFile = await drive.files.create({
+      requestBody: {
+        name: fileName,
+        parents: [folderId],
+      },
+      fields: 'id',
+    })
+
+    if (!emptyFile.data.id) {
+      throw new Error('Failed to create empty file in Google Drive: no file ID returned')
+    }
+
+    const fileId = emptyFile.data.id
+    console.log('Created empty file with ID:', fileId)
+
+    // Step 2: Get resumable upload URL for this file ID using files.update
     const authClient = await auth.getAccessToken()
     if (!authClient.token) {
       throw new Error('Failed to get access token')
     }
 
-    // Step 1: Create resumable upload session
-    // POST to Google Drive API to initialize resumable upload
-    const metadata = {
-      name: fileName,
-    }
-    
-    // Only add parents if folderId is valid and not empty
-    if (folderId && folderId.trim() && !folderId.includes('.')) {
-      metadata.parents = [folderId]
-    }
-    
-    console.log('Creating resumable session with metadata:', { ...metadata, parents: metadata.parents ? '[REDACTED]' : undefined })
-    
-    const initResponse = await fetch(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
+    // Initialize resumable upload for the existing file
+    // Use raw fetch to get the Location header with the resumable upload URL
+    const updateResponse = await fetch(
+      `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=resumable`,
       {
-        method: 'POST',
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${authClient.token}`,
           'Content-Type': 'application/json; charset=UTF-8',
           'X-Upload-Content-Type': mimeType,
           'X-Upload-Content-Length': fileSize.toString(),
         },
-        body: JSON.stringify(metadata),
+        body: JSON.stringify({}), // Empty body, we're just getting the upload URL
       }
     )
 
-    if (!initResponse.ok) {
-      const errorText = await initResponse.text()
-      console.error('Failed to create resumable session:', initResponse.status, errorText)
-      console.error('Request metadata was:', JSON.stringify(metadata))
-      throw new Error(`Failed to create resumable session: ${initResponse.status} ${errorText}`)
+    if (!updateResponse.ok) {
+      const errorText = await updateResponse.text()
+      console.error('Failed to create resumable upload URL:', updateResponse.status, errorText)
+      throw new Error(`Failed to create resumable upload URL: ${updateResponse.status} ${errorText}`)
     }
 
     // Get the resumable upload URL from Location header
-    const uploadUrl = initResponse.headers.get('Location')
+    const uploadUrl = updateResponse.headers.get('Location')
     if (!uploadUrl) {
-      console.error('Init response headers:', Object.fromEntries(initResponse.headers.entries()))
-      console.error('Init response status:', initResponse.status)
-      const errorText = await initResponse.text()
-      console.error('Init response body:', errorText)
+      console.error('Update response headers:', Object.fromEntries(updateResponse.headers.entries()))
+      console.error('Update response status:', updateResponse.status)
+      const errorText = await updateResponse.text()
+      console.error('Update response body:', errorText)
       throw new Error('Failed to get resumable upload session URL from Location header')
     }
 
-    console.log('Created resumable upload session, URL:', uploadUrl.substring(0, 100) + '...')
+    console.log('Created resumable upload URL for file ID:', fileId)
 
-    // Note: The file ID will be returned after the upload is complete
-    // For now, we return the upload URL. The client will upload and get the file ID from the response
+    // Return both file ID and upload URL
     return NextResponse.json({
+      fileId: fileId,
       uploadUrl: uploadUrl,
     })
   } catch (error: any) {

@@ -23,15 +23,16 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const uploadUrl = formData.get('uploadUrl') as string
+    const fileId = formData.get('fileId') as string // File ID from step 1
     const chunk = formData.get('chunk') as File | Blob
     const startByte = parseInt(formData.get('startByte') as string, 10)
     const endByte = parseInt(formData.get('endByte') as string, 10)
     const fileSize = parseInt(formData.get('fileSize') as string, 10)
     const mimeType = formData.get('mimeType') as string
 
-    if (!uploadUrl || !chunk || isNaN(startByte) || isNaN(endByte) || isNaN(fileSize)) {
+    if (!uploadUrl || !fileId || !chunk || isNaN(startByte) || isNaN(endByte) || isNaN(fileSize)) {
       return NextResponse.json(
-        { error: 'uploadUrl, chunk, startByte, endByte, and fileSize are required' },
+        { error: 'uploadUrl, fileId, chunk, startByte, endByte, and fileSize are required' },
         { status: 400 }
       )
     }
@@ -60,76 +61,15 @@ export async function POST(request: NextRequest) {
 
     // Handle different response statuses
     if (uploadResponse.status === 200 || uploadResponse.status === 201) {
-      // Upload complete - get file ID from response
+      // Upload complete - we already have the file ID from step 1
       const responseText = await uploadResponse.text()
       console.log('Upload response status:', uploadResponse.status)
-      console.log('Upload response text:', responseText)
+      console.log('Upload complete for file ID:', fileId)
       
-      let result: any = {}
-      let fileId: string | null = null
-      
-      if (responseText) {
-        try {
-          result = JSON.parse(responseText)
-          fileId = result.id
-          console.log('Parsed file ID from response:', fileId)
-        } catch (e) {
-          console.warn('Failed to parse upload response as JSON:', responseText, e)
-        }
-      }
-
-      // If no file ID in response body, try to get it from the upload URL or query the file
-      if (!fileId) {
-        console.log('No file ID in response, attempting to query for file...')
-        
-        // Extract file name from the original request to query for it
-        const fileName = formData.get('fileName') as string
-        
-        if (fileName) {
-          try {
-            const { google } = await import('googleapis')
-            const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
-            let clientEmail: string
-            let privateKey: string
-            const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID?.trim()
-            
-            if (serviceAccountJson) {
-              const parsed = JSON.parse(serviceAccountJson)
-              clientEmail = parsed.client_email
-              privateKey = parsed.private_key
-            } else {
-              clientEmail = process.env.GOOGLE_DRIVE_CLIENT_EMAIL || ''
-              privateKey = process.env.GOOGLE_DRIVE_PRIVATE_KEY?.replace(/\\n/g, '\n') || ''
-            }
-
-            const auth = new google.auth.JWT({
-              email: clientEmail,
-              key: privateKey,
-              scopes: ['https://www.googleapis.com/auth/drive.file'],
-            })
-
-            const drive = google.drive({ version: 'v3', auth })
-            
-            // Query for the file by name in the folder
-            const searchResponse = await drive.files.list({
-              q: `name='${fileName.replace(/'/g, "\\'")}' and '${folderId}' in parents and trashed=false`,
-              fields: 'files(id, name)',
-              orderBy: 'createdTime desc',
-              pageSize: 1,
-            })
-            
-            if (searchResponse.data.files && searchResponse.data.files.length > 0) {
-              fileId = searchResponse.data.files[0].id || null
-              console.log('Found file ID by querying:', fileId)
-            }
-          } catch (queryError) {
-            console.error('Error querying for file:', queryError)
-          }
-        }
-      }
-
-      if (!fileId) {
-        throw new Error(`Upload completed but could not determine file ID. Response: ${responseText}`)
+      // Verify the file ID matches (should always match since we created it in step 1)
+      const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID?.trim()
+      if (fileId === folderId) {
+        throw new Error(`File ID cannot be the same as folder ID. This indicates an error in the upload process.`)
       }
 
       // Make file accessible
@@ -155,12 +95,6 @@ export async function POST(request: NextRequest) {
         })
 
         const drive = google.drive({ version: 'v3', auth })
-        
-        // Double-check we're not using the folder ID as file ID
-        const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID?.trim()
-        if (fileId === folderId) {
-          throw new Error(`File ID cannot be the same as folder ID. This indicates the upload response did not contain a valid file ID.`)
-        }
         
         await drive.permissions.create({
           fileId: fileId,
