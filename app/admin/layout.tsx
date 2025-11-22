@@ -5,10 +5,31 @@ import { PermissionsProvider, usePermissions } from '@/contexts/permissions-cont
 import { useAuth } from '@/contexts/auth-context'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Settings, Music, Sparkles, Cloud, FileText, BarChart3, Home, Users, Shield, Crown, Zap, LogOut } from 'lucide-react'
+import { 
+  Home, 
+  Lock, 
+  User, 
+  FileText, 
+  Newspaper, 
+  Briefcase, 
+  FolderOpen, 
+  GitBranch, 
+  Video, 
+  Crown, 
+  HelpCircle, 
+  Music, 
+  Bell, 
+  Users, 
+  RotateCw,
+  LogOut,
+  Shield,
+  Settings,
+  Upload
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useEffect } from 'react'
 import { getRoleDisplayName, getSpecialAccessDisplayName } from '@/lib/permissions'
+import { AccountMenu } from '@/components/account-menu'
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { mode } = useMode()
@@ -29,94 +50,123 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     )
   }
 
-  const navItems = [
-    { 
-      href: '/admin', 
-      label: 'Dashboard', 
-      icon: Home,
-      permission: 'canViewAdmin' as const,
+  // Theme-aware styling helpers
+  const getBgClass = () => {
+    switch (mode) {
+      case 'chaos': return 'bg-[#1A1A1A]'
+      case 'chill': return 'bg-[#F5E6D3]'
+      case 'code': return 'bg-black'
+      default: return 'bg-[#1A1A1A]'
+    }
+  }
+
+  const getTextClass = () => {
+    switch (mode) {
+      case 'chaos': return 'text-white'
+      case 'chill': return 'text-[#4A1818]'
+      case 'code': return 'text-[#00FF00]'
+      default: return 'text-white'
+    }
+  }
+
+  const getBorderClass = () => {
+    switch (mode) {
+      case 'chaos': return 'border-[#333333]'
+      case 'chill': return 'border-[#8B4444]/30'
+      case 'code': return 'border-[#00FF00]/30'
+      default: return 'border-[#333333]'
+    }
+  }
+
+  const getRoundedClass = (base: string) => {
+    if (mode === 'chaos') return base.replace('rounded', 'rounded-[1.5rem]')
+    if (mode === 'chill') return base.replace('rounded', 'rounded-2xl')
+    return base
+  }
+
+  const getNavItemStyle = (isActive: boolean) => {
+    if (isActive) {
+      switch (mode) {
+        case 'chaos': return 'bg-[#C4F500] text-black'
+        case 'chill': return 'bg-[#FFC043] text-[#4A1818]'
+        case 'code': return 'bg-[#00FF00] text-black'
+        default: return 'bg-primary text-primary-foreground'
+      }
+    } else {
+      return `${getTextClass()}/60 hover:${getTextClass()} hover:bg-black/10`
+    }
+  }
+
+  // Navigation sections matching the old admin structure
+  const navSections = [
+    {
+      title: 'PROFILE',
+      items: [
+        { href: '/admin', label: 'Admin Homepage', icon: Home, permission: null },
+        { href: '/admin/password', label: 'Update Password', icon: Lock, permission: null },
+        { href: '/profile', label: 'Update Profile', icon: User, permission: null },
+      ]
     },
-    { 
-      href: '/admin/playlists', 
-      label: 'Playlists', 
-      icon: Music,
-      permission: 'canManagePlaylists' as const,
+    {
+      title: 'SUBMIT CONTENT',
+      items: [
+        { href: '/admin/must-read', label: 'Submit Must Read', icon: FileText, permission: null },
+        { href: '/admin/news', label: 'Submit News', icon: Newspaper, permission: null },
+        { href: '/admin/work-sample', label: 'Submit Work Sample', icon: Briefcase, permission: null },
+      ]
     },
-    { 
-      href: '/admin/horoscopes', 
-      label: 'Horoscopes', 
-      icon: Sparkles,
-      permission: 'canManageHoroscopes' as const,
+    {
+      title: 'CONTENT MANAGEMENT',
+      items: [
+        { href: '/admin/content', label: 'Resources', icon: FolderOpen, permission: 'canManageContent' as const },
+        { href: '/admin/pipeline', label: 'Pipeline', icon: GitBranch, permission: null },
+        { href: '/admin/recordings', label: 'Meeting Recordings', icon: Video, permission: null },
+        { href: '/admin/beast-babe', label: 'Beast Babe', icon: Crown, permission: 'canPassBeastBabe' as const },
+        { href: '/admin/weekly-question', label: 'Weekly Question', icon: HelpCircle, permission: null },
+        { href: '/admin/playlists', label: 'Playlist', icon: Music, permission: 'canManagePlaylists' as const },
+      ]
     },
-    { 
-      href: '/admin/weather', 
-      label: 'Weather', 
-      icon: Cloud,
-      permission: 'canManageWeather' as const,
-    },
-    { 
-      href: '/admin/content', 
-      label: 'Content Cards', 
-      icon: FileText,
-      permission: 'canManageContent' as const,
-    },
-    { 
-      href: '/admin/stats', 
-      label: 'Stats & Metrics', 
-      icon: BarChart3,
-      permission: 'canViewAdmin' as const,
-    },
-    { 
-      href: '/admin/users', 
-      label: 'User Management', 
-      icon: Users,
-      permission: 'canManageUsers' as const,
-    },
-    { 
-      href: '/admin/beast-babe', 
-      label: 'Beast Babe Torch', 
-      icon: Zap,
-      permission: 'canPassBeastBabe' as const,
-    },
-    { 
-      href: '/admin/settings', 
-      label: 'Settings', 
-      icon: Settings,
-      permission: 'canManageSettings' as const,
-    },
+    {
+      title: 'ADMINISTRATION',
+      items: [
+        { href: '/admin/notifications', label: 'Push Notifications', icon: Bell, permission: 'canManageUsers' as const },
+        { href: '/admin/users', label: 'Set Curator', icon: Users, permission: 'canManageUsers' as const },
+        { href: '/admin/curator-rotation', label: 'Curator Rotation', icon: RotateCw, permission: 'canManageUsers' as const },
+      ]
+    }
   ]
 
-  // Filter nav items based on permissions - show all items but pages will handle access control
-  // Show Dashboard to everyone, other items based on permissions
-  const visibleNavItems = navItems.filter(item => {
-    if (item.href === '/admin') return true // Dashboard accessible to all
-    return permissions?.[item.permission] || false
-  })
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen ${getBgClass()} ${getTextClass()}`}>
       {/* Sidebar Navigation */}
-      <aside className="fixed left-0 top-0 h-full w-64 border-r border-border bg-card p-6">
+      <aside className={`fixed left-0 top-0 h-full w-64 border-r ${getBorderClass()} ${getBgClass()} p-6 overflow-y-auto`}>
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Admin CMS</h1>
-          <p className="text-sm text-muted-foreground mt-1">Content Management</p>
+          <h1 className={`text-2xl font-bold ${getTextClass()} mb-1`}>Admin Panel</h1>
         </div>
 
-        {/* User Role Display */}
-        {user && (
-          <div className="mb-6 p-3 bg-muted rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <Shield className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs font-medium text-foreground">
-                {getRoleDisplayName(user.baseRole)}
-              </span>
+        {/* User Profile Section */}
+        {authUser && (
+          <div className={`mb-6 p-3 ${getRoundedClass('rounded-lg')} border ${getBorderClass()}`}>
+            <div className="flex items-center gap-3 mb-2">
+              <AccountMenu />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Shield className="w-3 h-3" />
+                  <span className={`text-xs font-medium ${getTextClass()}`}>
+                    {user ? getRoleDisplayName(user.baseRole) : 'User'}
+                  </span>
+                </div>
+                <p className={`text-xs ${getTextClass()}/70 truncate`}>
+                  {authUser.user_metadata?.full_name || authUser.email || 'User'}
+                </p>
+              </div>
             </div>
-            {user.specialAccess.length > 0 && (
-              <div className="space-y-1">
+            {user?.specialAccess.length > 0 && (
+              <div className="space-y-1 mt-2">
                 {user.specialAccess.map((access) => (
                   <div key={access} className="flex items-center gap-2">
                     <Crown className="w-3 h-3 text-yellow-500" />
-                    <span className="text-xs text-muted-foreground">
+                    <span className={`text-xs ${getTextClass()}/70`}>
                       {getSpecialAccessDisplayName(access)}
                     </span>
                   </div>
@@ -125,45 +175,66 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             )}
           </div>
         )}
+
+        {/* Admin Tools Button */}
+        <div className="mb-6">
+          <Button
+            onClick={() => router.push('/admin')}
+            className={`w-full ${getRoundedClass('rounded-lg')} ${
+              mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
+              mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
+              'bg-[#00FF00] text-black hover:bg-[#00FF00]/80'
+            }`}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Admin Tools
+          </Button>
+        </div>
         
-        <nav className="space-y-2">
-          {visibleNavItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href || (item.href !== '/admin' && pathname?.startsWith(item.href))
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
-              </Link>
-            )
-          })}
+        {/* Navigation Sections */}
+        <nav className="space-y-6">
+          {navSections.map((section) => (
+            <div key={section.title}>
+              <h2 className={`text-xs font-bold uppercase tracking-wider mb-3 ${getTextClass()}/50`}>
+                {section.title}
+              </h2>
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  // Check permissions if required
+                  if (item.permission && !permissions?.[item.permission]) {
+                    return null
+                  }
+                  
+                  const Icon = item.icon
+                  const isActive = pathname === item.href || (item.href !== '/admin' && pathname?.startsWith(item.href))
+                  
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-3 px-3 py-2 ${getRoundedClass('rounded-lg')} transition-colors text-sm ${
+                        getNavItemStyle(isActive)
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="font-medium">{item.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
-        <div className="mt-8 pt-8 border-t border-border space-y-2">
+        {/* Bottom Actions */}
+        <div className="mt-8 pt-8 border-t space-y-2">
           <Link
             href="/"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className={`flex items-center gap-3 px-3 py-2 ${getRoundedClass('rounded-lg')} ${getTextClass()}/60 hover:${getTextClass()} hover:bg-black/10 transition-colors text-sm`}
           >
-            <Home className="w-5 h-5" />
-            <span className="font-medium">Back to Dashboard</span>
+            <Home className="w-4 h-4" />
+            <span className="font-medium">← Back to Dashboard</span>
           </Link>
-          {authUser && (
-            <button
-              onClick={signOut}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Sign Out</span>
-            </button>
-          )}
         </div>
       </aside>
 
@@ -180,7 +251,6 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  // PermissionsProvider requires AuthProvider, which is already in root layout
   return (
     <PermissionsProvider>
       <AdminLayoutContent>{children}</AdminLayoutContent>
