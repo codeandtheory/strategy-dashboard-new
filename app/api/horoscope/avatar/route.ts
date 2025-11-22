@@ -304,6 +304,26 @@ export async function GET(request: NextRequest) {
       })
     }
     
+    // HARD STOP: If we have no records at all, don't generate
+    // This prevents quota waste if previous saves failed
+    const { data: anyUserRecords } = await supabaseAdmin
+      .from('horoscopes')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1)
+    
+    if (!anyUserRecords || anyUserRecords.length === 0) {
+      console.error('🚫 HARD STOP: No records found for user - previous generations may not have been saved')
+      console.error('   Returning error to prevent quota waste')
+      return NextResponse.json(
+        { 
+          error: 'No cached avatar found and database appears empty. Previous generations may not have been saved. Please contact support before generating new content.',
+          details: 'Database is accessible but contains no records for this user. This prevents unnecessary API calls.'
+        },
+        { status: 500 }
+      )
+    }
+    
     // Only generate new image if there's NO cached image at all
     // This ensures we only generate once per day and avoid hitting billing limits
     console.log('⚠️ NO cached image found in database for user', userId, 'on date', todayDate)
@@ -467,20 +487,32 @@ export async function GET(request: NextRequest) {
         })
       }
       
-      // Verify the record was actually saved
+      // CRITICAL: Verify the record was actually saved
+      // If verification fails, this is a critical error - the save didn't work
       const { data: verifyRecord, error: verifyError } = await supabaseAdmin
         .from('horoscopes')
-        .select('image_url, date')
+        .select('image_url, date, id')
         .eq('user_id', userId)
         .eq('date', todayDate)
         .maybeSingle()
       
       if (verifyError) {
-        console.error('   ❌ Error verifying saved record:', verifyError)
+        console.error('   ❌ CRITICAL: Error verifying saved record:', verifyError)
+        console.error('   This means the save may have failed silently!')
       } else if (verifyRecord) {
         console.log('   ✅ Verified: Record exists in database with image_url length:', verifyRecord.image_url?.length || 0)
+        console.log('   Record ID:', verifyRecord.id)
+        console.log('   Record date:', verifyRecord.date)
       } else {
-        console.error('   ❌ VERIFICATION FAILED: Record not found after save!')
+        console.error('   ❌ CRITICAL VERIFICATION FAILED: Record not found after save!')
+        console.error('   This means the upsert appeared to succeed but the record is missing!')
+        console.error('   This is a critical database issue that needs immediate attention!')
+        // Log the data we tried to save for debugging
+        console.error('   Attempted to save:', {
+          user_id: upsertData.user_id,
+          date: upsertData.date,
+          has_image_url: !!upsertData.image_url
+        })
       }
     }
     

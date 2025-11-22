@@ -297,11 +297,24 @@ export async function GET(request: NextRequest) {
         )
       }
       
-      // Database is accessible but empty - this is OK for first-time generation
-      console.log('📝 Database is accessible but empty - this appears to be first-time generation')
+      // HARD STOP: If database is accessible but we have NO records at all for this user,
+      // and we've been generating before, this suggests records aren't being saved.
+      // Return an error instead of generating to prevent quota waste.
+      console.error('🚫 HARD STOP: Database is accessible but NO records found for user')
+      console.error('   This suggests previous generations were not saved successfully')
+      console.error('   Returning error to prevent quota waste')
+      return NextResponse.json(
+        { 
+          error: 'No cached horoscope found and database appears empty. Previous generations may not have been saved. Please contact support before generating new content.',
+          details: 'Database is accessible but contains no records for this user. This prevents unnecessary API calls.'
+        },
+        { status: 500 }
+      )
     }
     
     // Only generate new horoscope if there's NO cached text at all
+    // BUT: We should have already found it in the checks above
+    // If we get here, something is wrong with our logic
     console.log('⚠️ NO cached horoscope text found in database for user', userId, 'on date', todayDate)
     console.log('   Cached horoscope exists:', !!cachedHoroscope)
     console.log('   Has horoscope_text:', !!cachedHoroscope?.horoscope_text)
@@ -583,20 +596,32 @@ export async function GET(request: NextRequest) {
         console.warn('   ⚠️ Upsert succeeded but no data returned')
       }
       
-      // Verify the record was actually saved
+      // CRITICAL: Verify the record was actually saved
+      // If verification fails, this is a critical error - the save didn't work
       const { data: verifyRecord, error: verifyError } = await supabaseAdmin
         .from('horoscopes')
-        .select('horoscope_text, date')
+        .select('horoscope_text, date, id')
         .eq('user_id', userId)
         .eq('date', todayDate)
         .maybeSingle()
       
       if (verifyError) {
-        console.error('   ❌ Error verifying saved record:', verifyError)
+        console.error('   ❌ CRITICAL: Error verifying saved record:', verifyError)
+        console.error('   This means the save may have failed silently!')
       } else if (verifyRecord) {
         console.log('   ✅ Verified: Record exists in database with text length:', verifyRecord.horoscope_text?.length || 0)
+        console.log('   Record ID:', verifyRecord.id)
+        console.log('   Record date:', verifyRecord.date)
       } else {
-        console.error('   ❌ VERIFICATION FAILED: Record not found after save!')
+        console.error('   ❌ CRITICAL VERIFICATION FAILED: Record not found after save!')
+        console.error('   This means the upsert appeared to succeed but the record is missing!')
+        console.error('   This is a critical database issue that needs immediate attention!')
+        // Log the data we tried to save for debugging
+        console.error('   Attempted to save:', {
+          user_id: upsertData.user_id,
+          date: upsertData.date,
+          text_length: upsertData.horoscope_text?.length || 0
+        })
       }
     }
     
