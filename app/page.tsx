@@ -1236,21 +1236,18 @@ export default function TeamDashboard() {
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
               return (
-                <Card className={`${style.bg} ${style.border} py-8 px-6 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')}`}
-                      style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
-                >
-                  <div className="flex items-baseline justify-between gap-6">
+                <Card className={`${style.bg} ${style.border} py-8 px-6 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')}`}>
+                  <div className="flex items-center justify-end gap-6">
                     <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>WEEKLY REPORT</h2>
-                    <div className="flex items-baseline gap-6 flex-1 justify-end">
+                    <div className="flex items-center gap-6">
                       {[
                         { value: '5', label: 'new business' },
                         { value: '8', label: 'pitches shipped' },
                         { value: '12', label: 'placeholder' },
-                        { value: '3', label: 'placeholder' },
                       ].map((stat, index) => (
                         <div 
                           key={stat.label} 
-                          className="relative group flex items-baseline gap-2"
+                          className="flex items-baseline gap-2"
                           style={{
                             animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
                           }}
@@ -1267,13 +1264,6 @@ export default function TeamDashboard() {
                           <span className={`text-sm font-black uppercase tracking-wider ${style.text} leading-tight`}>
                             {stat.label}
                           </span>
-                          <div 
-                            className="absolute -inset-1 opacity-0 group-hover:opacity-100 transition-all duration-300"
-                            style={{
-                              background: mode === 'chaos' ? 'rgba(0,0,0,0.1)' : mode === 'chill' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.1)',
-                              borderRadius: '4px'
-                            }}
-                          />
                         </div>
                       ))}
                     </div>
