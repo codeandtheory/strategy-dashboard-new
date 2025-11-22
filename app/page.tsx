@@ -1237,7 +1237,7 @@ export default function TeamDashboard() {
               const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
               return (
                 <Card className={`${style.bg} ${style.border} py-8 px-6 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')}`}>
-                  <div className="flex items-center justify-end gap-6">
+                  <div className="flex items-center justify-between gap-6">
                     <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>WEEKLY REPORT</h2>
                     <div className="flex items-center gap-6">
                       {[
@@ -1252,13 +1252,7 @@ export default function TeamDashboard() {
                             animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
                           }}
                         >
-                          <span 
-                            className={`text-5xl font-black ${style.text} leading-none`}
-                            style={{
-                              textShadow: mode === 'chaos' ? '3px 3px 6px rgba(0,0,0,0.4)' : mode === 'chill' ? '3px 3px 6px rgba(74,24,24,0.3)' : '3px 3px 6px rgba(0,0,0,0.6)',
-                              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
-                            }}
-                          >
+                          <span className={`text-5xl font-black ${style.text} leading-none`}>
                             {stat.value}
                           </span>
                           <span className={`text-sm font-black uppercase tracking-wider ${style.text} leading-tight`}>
