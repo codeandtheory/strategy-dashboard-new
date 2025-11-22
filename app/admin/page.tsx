@@ -100,7 +100,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="mb-8">
         <h1 className={`text-4xl font-black uppercase ${getTextClass()} mb-2`}>Welcome to the Admin Panel</h1>
-        <p className={`${getTextClass()}/70 font-bold`}>You have {accessLevel} level access.</p>
+        <p className={`${getTextClass()}/70 font-normal`}>You have {accessLevel} level access.</p>
         <p className={`text-sm ${getTextClass()}/50 mt-2 font-medium`}>
           Use the sidebar to navigate to different sections based on your permissions.
         </p>
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
       {/* Getting Started Guide */}
       <div className="mb-8">
         <h2 className={`text-2xl font-black uppercase tracking-wider ${getTextClass()} mb-2`}>Getting Started Guide</h2>
-        <p className={`${getTextClass()}/70 mb-6 font-bold`}>
+        <p className={`${getTextClass()}/70 mb-6 font-normal`}>
           New to the admin panel? Here's how to get started and make the most of your dashboard.
         </p>
 
@@ -120,26 +120,26 @@ export default function AdminDashboard() {
             <ul className={`space-y-3 ${getCardStyle().text}/90`}>
               <li className="flex items-start gap-2">
                 <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="font-bold">
-                  <strong className="font-black">Must Reads:</strong> Share articles, resources, and important content.
+                <div className="font-normal">
+                  <strong className="font-semibold">Must Reads:</strong> Share articles, resources, and important content.
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <Newspaper className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="font-bold">
-                  <strong className="font-black">News:</strong> Post team announcements and updates.
+                <div className="font-normal">
+                  <strong className="font-semibold">News:</strong> Post team announcements and updates.
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <Briefcase className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="font-bold">
-                  <strong className="font-black">Work Samples:</strong> Showcase completed projects and achievements.
+                <div className="font-normal">
+                  <strong className="font-semibold">Work Samples:</strong> Showcase completed projects and achievements.
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <FolderOpen className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="font-bold">
-                  <strong className="font-black">Team Resources:</strong> Upload documents, guides, and shared materials.
+                <div className="font-normal">
+                  <strong className="font-semibold">Team Resources:</strong> Upload documents, guides, and shared materials.
                 </div>
               </li>
             </ul>
@@ -151,26 +151,26 @@ export default function AdminDashboard() {
             <ul className={`space-y-3 ${getCardStyle().text}/90`}>
               <li className="flex items-start gap-2">
                 <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="font-bold">
-                  <strong className="font-black">Edit & Update:</strong> Modify existing content you've created or been assigned.
+                <div className="font-normal">
+                  <strong className="font-semibold">Edit & Update:</strong> Modify existing content you've created or been assigned.
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <FolderOpen className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="font-bold">
-                  <strong className="font-black">View & Organize:</strong> Browse and organize team resources and pipeline items.
+                <div className="font-normal">
+                  <strong className="font-semibold">View & Organize:</strong> Browse and organize team resources and pipeline items.
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <GitBranch className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="font-bold">
-                  <strong className="font-black">Manage Pipeline:</strong> Track and update new business opportunities.
+                <div className="font-normal">
+                  <strong className="font-semibold">Manage Pipeline:</strong> Track and update new business opportunities.
                 </div>
               </li>
               <li className="flex items-start gap-2">
                 <Video className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="font-bold">
-                  <strong className="font-black">Meeting Recordings:</strong> Access and manage team meeting recordings.
+                <div className="font-normal">
+                  <strong className="font-semibold">Meeting Recordings:</strong> Access and manage team meeting recordings.
                 </div>
               </li>
             </ul>
@@ -183,26 +183,26 @@ export default function AdminDashboard() {
               <ul className={`space-y-3 ${getCardStyle().text}/90`}>
                 <li className="flex items-start gap-2">
                   <Bell className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <div className="font-bold">
-                    <strong className="font-black">Push Notifications:</strong> Send important announcements and updates to the team.
+                  <div className="font-normal">
+                    <strong className="font-semibold">Push Notifications:</strong> Send important announcements and updates to the team.
                   </div>
                 </li>
                 <li className="flex items-start gap-2">
                   <Users className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <div className="font-bold">
-                    <strong className="font-black">Curator Management:</strong> Assign and manage weekly curator responsibilities.
+                  <div className="font-normal">
+                    <strong className="font-semibold">Curator Management:</strong> Assign and manage weekly curator responsibilities.
                   </div>
                 </li>
                 <li className="flex items-start gap-2">
                   <Crown className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <div className="font-bold">
-                    <strong className="font-black">Beast Babe Selection:</strong> Choose and recognize outstanding team members.
+                  <div className="font-normal">
+                    <strong className="font-semibold">Beast Babe Selection:</strong> Choose and recognize outstanding team members.
                   </div>
                 </li>
                 <li className="flex items-start gap-2">
                   <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <div className="font-bold">
-                    <strong className="font-black">System Monitoring:</strong> Monitor dashboard performance and team activity.
+                  <div className="font-normal">
+                    <strong className="font-semibold">System Monitoring:</strong> Monitor dashboard performance and team activity.
                   </div>
                 </li>
               </ul>

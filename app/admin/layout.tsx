@@ -213,7 +213,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                       }`}
                     >
                       <Icon className="w-4 h-4" />
-                      <span className="font-black uppercase tracking-wider text-sm">{item.label}</span>
+                      <span className="font-medium uppercase tracking-wider text-sm">{item.label}</span>
                     </Link>
                   )
                 })}

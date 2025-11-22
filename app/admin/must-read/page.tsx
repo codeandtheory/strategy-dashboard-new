@@ -494,7 +494,7 @@ export default function MustReadAdmin() {
         {/* Header */}
         <div className="mb-8">
           <h1 className={`text-4xl font-black uppercase tracking-wider ${getTextClass()} mb-2`}>Must Reads</h1>
-          <p className={`${getTextClass()}/70 font-bold`}>Manage articles and resources</p>
+          <p className={`${getTextClass()}/70 font-normal`}>Manage articles and resources</p>
         </div>
 
         {/* Actions Bar */}
@@ -815,15 +815,15 @@ export default function MustReadAdmin() {
                           <Pin className={`w-4 h-4`} style={{ color: cardStyle.accent }} />
                         )}
                       </td>
-                      <td className={`p-4 ${cardStyle.text} font-black uppercase`}>
+                      <td className={`p-4 ${cardStyle.text} font-semibold`}>
                         {item.article_title}
                       </td>
-                      <td className={`p-4 ${cardStyle.text}/70 text-sm font-bold`}>
+                      <td className={`p-4 ${cardStyle.text}/70 text-sm font-normal`}>
                         {item.submitted_by && item.submitted_by_profile
                           ? (item.submitted_by_profile.full_name || item.submitted_by_profile.email)
                           : 'None'}
                       </td>
-                      <td className={`p-4 ${cardStyle.text}/70 text-sm font-bold`}>
+                      <td className={`p-4 ${cardStyle.text}/70 text-sm font-normal`}>
                         {new Date(item.created_at).toLocaleDateString()}
                       </td>
                       <td className="p-4">
