@@ -1239,9 +1239,9 @@ export default function TeamDashboard() {
                 <Card className={`${style.bg} ${style.border} py-8 px-6 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')}`}
                       style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
                 >
-                  <div className="flex items-center justify-between gap-6">
-                    <h2 className={`text-3xl font-black uppercase leading-tight ${style.text} whitespace-nowrap`}>WEEKLY REPORT</h2>
-                    <div className="flex items-center gap-6 flex-1">
+                  <div className="flex items-baseline justify-between gap-6">
+                    <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>WEEKLY REPORT</h2>
+                    <div className="flex items-baseline gap-6 flex-1 justify-end">
                       {[
                         { value: '5', label: 'new business' },
                         { value: '8', label: 'pitches shipped' },
@@ -1250,25 +1250,23 @@ export default function TeamDashboard() {
                       ].map((stat, index) => (
                         <div 
                           key={stat.label} 
-                          className="relative group"
+                          className="relative group flex items-baseline gap-2"
                           style={{
                             animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
                           }}
                         >
-                          <div className="flex items-baseline gap-2">
-                            <span 
-                              className={`text-5xl font-black ${style.text} leading-none`}
-                              style={{
-                                textShadow: mode === 'chaos' ? '3px 3px 6px rgba(0,0,0,0.4)' : mode === 'chill' ? '3px 3px 6px rgba(74,24,24,0.3)' : '3px 3px 6px rgba(0,0,0,0.6)',
-                                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
-                              }}
-                            >
-                              {stat.value}
-                            </span>
-                            <span className={`text-sm font-black uppercase tracking-wider ${style.text} leading-tight`}>
-                              {stat.label}
-                            </span>
-                          </div>
+                          <span 
+                            className={`text-5xl font-black ${style.text} leading-none`}
+                            style={{
+                              textShadow: mode === 'chaos' ? '3px 3px 6px rgba(0,0,0,0.4)' : mode === 'chill' ? '3px 3px 6px rgba(74,24,24,0.3)' : '3px 3px 6px rgba(0,0,0,0.6)',
+                              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+                            }}
+                          >
+                            {stat.value}
+                          </span>
+                          <span className={`text-sm font-black uppercase tracking-wider ${style.text} leading-tight`}>
+                            {stat.label}
+                          </span>
                           <div 
                             className="absolute -inset-1 opacity-0 group-hover:opacity-100 transition-all duration-300"
                             style={{
