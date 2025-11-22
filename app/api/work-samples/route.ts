@@ -354,21 +354,15 @@ export async function PUT(request: NextRequest) {
     // Use provided date or default to today
     const finalDate = date || new Date().toISOString().split('T')[0]
 
-    // Handle submitted_by: 
-    // - If explicitly set to empty string, use NULL
-    // - If provided with a value, verify and use it
-    // - If not provided at all, default to user.id
-    let submittedById = user.id // Default to logged-in user
-    if (submitted_by !== undefined && submitted_by !== null) {
-      if (submitted_by.trim() === '') {
-        // Explicitly left blank - use NULL
-        submittedById = null
-      } else {
+    // Handle submitted_by in update
+    let submittedById = undefined // Don't update if not provided
+    if (submitted_by !== undefined) {
+      if (submitted_by && submitted_by.trim() !== '') {
         // Verify submitted_by user exists if specified
         const { data: submittedByProfile, error: submittedByError } = await supabase
           .from('profiles')
           .select('id')
-          .eq('id', submitted_by)
+          .eq('id', submitted_by.trim())
           .single()
 
         if (submittedByError || !submittedByProfile) {
@@ -377,7 +371,10 @@ export async function PUT(request: NextRequest) {
             { status: 400 }
           )
         }
-        submittedById = submitted_by
+        submittedById = submitted_by.trim()
+      } else {
+        // Explicitly set to null to clear the field
+        submittedById = null
       }
     }
 
@@ -387,13 +384,17 @@ export async function PUT(request: NextRequest) {
       client: client || null,
       type_id: type_id || null,
       author_id: authorId,
-      submitted_by: submittedById,
       date: finalDate,
       updated_at: new Date().toISOString(),
       thumbnail_url: thumbnail_url || null,
       file_url: file_url || null,
       file_link: file_link || null,
       file_name: file_name || null,
+    }
+
+    // Only include submitted_by in update if it was explicitly provided
+    if (submitted_by !== undefined) {
+      updateData.submitted_by = submittedById
     }
 
     const { data, error } = await supabase
@@ -425,6 +426,8 @@ export async function PUT(request: NextRequest) {
 
     if (error) {
       console.error('Error updating work sample:', error)
+      console.error('Update data:', updateData)
+      console.error('Request body:', body)
       return NextResponse.json(
         { 
           error: 'Failed to update work sample', 
