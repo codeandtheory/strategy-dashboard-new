@@ -1199,7 +1199,7 @@ export default function TeamDashboard() {
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
               return (
-                <Card className={`${style.bg} ${style.border} p-4 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')}`}
+                <Card className={`${style.bg} ${style.border} py-[26px] px-4 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')}`}
                       style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
                 >
                   <div className="flex items-center justify-between">
