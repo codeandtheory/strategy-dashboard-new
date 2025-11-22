@@ -76,7 +76,8 @@ export async function GET(request: NextRequest) {
 
     // Step 1: Check configuration
     try {
-      const { drive, folderId, auth, clientEmail } = getDriveClient()
+      const { drive, folderId: initialFolderId, auth, clientEmail } = getDriveClient()
+      let folderId = initialFolderId
       results.step1_config = {
         status: 'success',
         message: 'Configuration loaded',
