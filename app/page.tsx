@@ -1238,7 +1238,7 @@ export default function TeamDashboard() {
               return (
                 <Card className={`${style.bg} ${style.border} py-4 px-6 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')}`}>
                   <div className="flex items-center justify-between gap-6">
-                    <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>WEEKLY REPORT</h2>
+                    <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>THIS WEEK</h2>
                     <div className="flex gap-4">
                       {[
                         { value: '5', label: 'new business' },
