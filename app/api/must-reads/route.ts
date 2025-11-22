@@ -421,7 +421,8 @@ export async function PUT(request: NextRequest) {
       updateData.pinned = pinned || false
     }
     if (submitted_by !== undefined) {
-      updateData.submitted_by = submitted_by || null
+      // Convert empty string to null, keep valid UUIDs
+      updateData.submitted_by = (submitted_by && submitted_by.trim() !== '') ? submitted_by : null
     }
 
     // Include week_start_date if provided
@@ -430,7 +431,8 @@ export async function PUT(request: NextRequest) {
     }
 
     if (assigned_to !== undefined) {
-      updateData.assigned_to = assigned_to || null
+      // Convert empty string to null, keep valid UUIDs
+      updateData.assigned_to = (assigned_to && assigned_to.trim() !== '') ? assigned_to : null
     }
 
     // Include new fields if provided
@@ -476,8 +478,10 @@ export async function PUT(request: NextRequest) {
 
     if (error) {
       console.error('Error updating must read:', error)
+      console.error('Update data:', updateData)
+      console.error('Request body:', body)
       return NextResponse.json(
-        { error: 'Failed to update must read', details: error.message, code: error.code },
+        { error: 'Failed to update must read', details: error.message, code: error.code, hint: error.hint },
         { status: 500 }
       )
     }
