@@ -258,10 +258,17 @@ export default function MustReadAdmin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: editingItem.id,
-          ...restFormData,
-          week_start_date: date, // Send date as week_start_date
-          submitted_by: formData.submitted_by || null,
-          assigned_to: formData.assigned_to || null,
+          article_title: formData.article_title,
+          article_url: formData.article_url,
+          notes: formData.notes || null,
+          pinned: formData.pinned,
+          week_start_date: date,
+          category: formData.category || null,
+          source: formData.source || null,
+          summary: formData.summary || null,
+          tags: formData.tags || null,
+          submitted_by: formData.submitted_by && formData.submitted_by.trim() !== '' ? formData.submitted_by : null,
+          assigned_to: formData.assigned_to && formData.assigned_to.trim() !== '' ? formData.assigned_to : null,
         }),
       })
 
