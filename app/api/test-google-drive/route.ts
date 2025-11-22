@@ -176,11 +176,12 @@ export async function GET(request: NextRequest) {
       }
 
       // Now try to access the specific folder
+      // First, let's try to get the folder's driveId to see which shared drive it's in
       try {
         // Try with supportsAllDrives in case it's a shared drive
         const folderInfo = await drive.files.get({
           fileId: folderId,
-          fields: 'id, name, mimeType, driveId',
+          fields: 'id, name, mimeType, driveId, parents',
           supportsAllDrives: true,
         } as any)
 
@@ -198,7 +199,12 @@ export async function GET(request: NextRequest) {
           data: {
             folderName: folderInfo.data.name,
             folderId: folderInfo.data.id,
+            driveId: folderInfo.data.driveId || 'Not in a shared drive',
+            parents: folderInfo.data.parents || [],
             folderListInfo: folderListInfo,
+            note: folderInfo.data.driveId 
+              ? `This folder is in shared drive: ${folderInfo.data.driveId}`
+              : 'This folder is in My Drive (not a shared drive)',
           },
         }
       } catch (error: any) {
@@ -265,25 +271,33 @@ export async function GET(request: NextRequest) {
                   folderListInfo: folderListInfo, // Include what folders the service account CAN see
                 },
                 fix: [
-                  `This appears to be a shared drive (Google Workspace). For shared drives:`,
+                  `The folder ID ${folderId} is within a shared drive. To fix:`,
                   ``,
-                  `1. Go to the shared drive (not just the folder): https://drive.google.com/drive/folders/0AJ0UrK02gPTzUk9PVA`,
-                  `2. Click the shared drive name at the top (or the "i" info icon)`,
-                  `3. Click "Manage members" or go to the Members tab`,
-                  `4. Click "Add members"`,
-                  `5. Add this EXACT email: ${clientEmail}`,
-                  `6. Give it "Content Manager" or "Manager" role (NOT just Viewer)`,
-                  `7. Click "Send"`,
-                  `8. Wait 1-2 minutes for permissions to propagate`,
-                  `9. Try the test again`,
+                  `1. Verify the folder ID is correct:`,
+                  `   - Open the folder: https://drive.google.com/drive/folders/${folderId}`,
+                  `   - Check the URL matches exactly (no trailing period)`,
                   ``,
-                  `Important: The service account must be a MEMBER of the shared drive itself,`,
-                  `not just have access to individual folders within it.`,
+                  `2. Add service account to the SHARED DRIVE (not just the folder):`,
+                  `   - Go to the shared drive: https://drive.google.com/drive/folders/0AJ0UrK02gPTzUk9PVA`,
+                  `   - Click the shared drive name at the top (or the "i" info icon)`,
+                  `   - Click "Manage members" or go to the Members tab`,
+                  `   - Click "Add members"`,
+                  `   - Add this EXACT email: ${clientEmail}`,
+                  `   - Give it "Content Manager" or "Manager" role (NOT Viewer)`,
+                  `   - Uncheck "Notify people"`,
+                  `   - Click "Send"`,
                   ``,
-                  `If you've already done this, verify:`,
-                  `- The service account email is exactly: ${clientEmail}`,
-                  `- The role is "Content Manager" or "Manager" (not "Viewer" or "Commenter")`,
-                  `- The folder ID ${folderId} is correct (check the URL when you open the folder)`,
+                  `3. Verify the service account is in the members list:`,
+                  `   - Go back to "Manage members"`,
+                  `   - You should see ${clientEmail} in the list`,
+                  `   - Verify the role is "Content Manager" or "Manager"`,
+                  ``,
+                  `4. Wait 2-3 minutes for permissions to propagate`,
+                  ``,
+                  `5. Test again`,
+                  ``,
+                  `Important: The service account must be a MEMBER of the shared drive itself.`,
+                  `Once it's a member of the shared drive, it can access all folders within it.`,
                 ],
               }
               return NextResponse.json({ results }, { status: 500 })
