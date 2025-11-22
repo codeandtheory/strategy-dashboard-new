@@ -205,7 +205,7 @@ export default function MustReadAdmin() {
         body: JSON.stringify({
           ...restFormData,
           week_start_date: date, // Send date as week_start_date
-          submitted_by: formData.submitted_by || null, // Can be null/empty
+          submitted_by: user?.id || null, // Always set to logged-in user for new records
           assigned_to: formData.assigned_to || null,
         }),
       })
@@ -335,8 +335,8 @@ export default function MustReadAdmin() {
       article_url: '',
       notes: '',
       pinned: false,
-      assigned_to: '',
-      submitted_by: '', // Can be blank
+      assigned_to: user?.id || '', // Default to logged-in user
+      submitted_by: '', // Not used in add dialog, set automatically
       date: getTodayDate(), // Reset to current date
       category: '',
       source: '',
@@ -656,21 +656,6 @@ export default function MustReadAdmin() {
                       className="w-4 h-4"
                     />
                     <Label htmlFor="pinned-add" className={cardStyle.text}>Pinned</Label>
-                  </div>
-                  <div>
-                    <Label className={cardStyle.text}>Submitted By</Label>
-                    <select
-                      value={formData.submitted_by || ''}
-                      onChange={(e) => setFormData({ ...formData, submitted_by: e.target.value })}
-                      className={`w-full ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} p-2 ${getRoundedClass('rounded-md')}`}
-                    >
-                      <option value="">None</option>
-                      {users.map(u => (
-                        <option key={u.id} value={u.id}>
-                          {u.full_name || u.email}
-                        </option>
-                      ))}
-                    </select>
                   </div>
                   <div>
                     <Label className={cardStyle.text}>Assigned To</Label>
