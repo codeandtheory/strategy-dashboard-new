@@ -1,5 +1,7 @@
--- Must Reads table for storing articles and resources
--- Create table if it doesn't exist (with minimal structure first)
+-- Safe migration for Must Reads table
+-- This will create the table if it doesn't exist, or add missing columns if it does
+
+-- Create table if it doesn't exist
 CREATE TABLE IF NOT EXISTS public.must_reads (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
@@ -55,30 +57,8 @@ BEGIN
     AND table_name = 'must_reads' 
     AND column_name = 'submitted_by'
   ) THEN
-    ALTER TABLE public.must_reads ADD COLUMN submitted_by UUID;
-  END IF;
-
-  -- Add foreign key constraint for submitted_by if it doesn't exist
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.table_constraints 
-    WHERE constraint_schema = 'public' 
-    AND table_name = 'must_reads' 
-    AND constraint_name = 'must_reads_submitted_by_fkey'
-  ) THEN
-    ALTER TABLE public.must_reads 
-      ADD CONSTRAINT must_reads_submitted_by_fkey 
-      FOREIGN KEY (submitted_by) REFERENCES public.profiles(id) ON DELETE CASCADE;
-  END IF;
-
-  -- Try to make submitted_by NOT NULL (only if table is empty)
-  -- Check if column exists and is nullable, and table is empty
-  IF EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_schema = 'public' 
-    AND table_name = 'must_reads' 
-    AND column_name = 'submitted_by'
-    AND is_nullable = 'YES'
-  ) AND (SELECT COUNT(*) FROM public.must_reads) = 0 THEN
+    ALTER TABLE public.must_reads ADD COLUMN submitted_by UUID REFERENCES public.profiles(id) ON DELETE CASCADE;
+    -- Make it NOT NULL after adding (if table is empty)
     ALTER TABLE public.must_reads ALTER COLUMN submitted_by SET NOT NULL;
   END IF;
 
@@ -89,19 +69,7 @@ BEGIN
     AND table_name = 'must_reads' 
     AND column_name = 'assigned_to'
   ) THEN
-    ALTER TABLE public.must_reads ADD COLUMN assigned_to UUID;
-  END IF;
-
-  -- Add foreign key constraint for assigned_to if it doesn't exist
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.table_constraints 
-    WHERE constraint_schema = 'public' 
-    AND table_name = 'must_reads' 
-    AND constraint_name = 'must_reads_assigned_to_fkey'
-  ) THEN
-    ALTER TABLE public.must_reads 
-      ADD CONSTRAINT must_reads_assigned_to_fkey 
-      FOREIGN KEY (assigned_to) REFERENCES public.profiles(id) ON DELETE SET NULL;
+    ALTER TABLE public.must_reads ADD COLUMN assigned_to UUID REFERENCES public.profiles(id) ON DELETE SET NULL;
   END IF;
 
   -- Add updated_at
@@ -116,19 +84,8 @@ BEGIN
 END $$;
 
 -- Remove default values from NOT NULL columns (if they were added)
-DO $$ 
-BEGIN
-  ALTER TABLE public.must_reads ALTER COLUMN article_title DROP DEFAULT;
-EXCEPTION WHEN OTHERS THEN
-  NULL;
-END $$;
-
-DO $$ 
-BEGIN
-  ALTER TABLE public.must_reads ALTER COLUMN article_url DROP DEFAULT;
-EXCEPTION WHEN OTHERS THEN
-  NULL;
-END $$;
+ALTER TABLE public.must_reads ALTER COLUMN article_title DROP DEFAULT;
+ALTER TABLE public.must_reads ALTER COLUMN article_url DROP DEFAULT;
 
 -- Add indexes for faster lookups
 CREATE INDEX IF NOT EXISTS idx_must_reads_submitted_by ON public.must_reads(submitted_by);
