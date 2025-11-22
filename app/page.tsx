@@ -302,9 +302,9 @@ export default function TeamDashboard() {
       try {
         const response = await fetch('/api/work-samples?sortBy=created_at&sortOrder=desc')
         if (response.ok) {
-          const data = await response.json()
-          if (data.work_samples) {
-            setWorkSamples(data.work_samples.slice(0, 3))
+          const result = await response.json()
+          if (result.data && Array.isArray(result.data)) {
+            setWorkSamples(result.data.slice(0, 3))
           }
         }
       } catch (error) {
