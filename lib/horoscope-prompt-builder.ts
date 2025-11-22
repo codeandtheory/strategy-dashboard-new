@@ -19,6 +19,12 @@ export interface UserProfile {
   hobbies?: string[] | null
   starSign?: string
   element?: string
+  // Optional preferences (for future use)
+  likes_fantasy?: boolean
+  likes_scifi?: boolean
+  likes_cute?: boolean
+  likes_minimal?: boolean
+  hates_clowns?: boolean
 }
 
 export interface PromptBuilderContext {
@@ -181,6 +187,88 @@ function getZodiacTheme(starSign?: string, element?: string): {
   }
 
   return themes[elementLower] || {}
+}
+
+/**
+ * Get profile-based weights (Rule 4)
+ * Increases chance for styles and roles that match user preferences
+ * Excludes anything they dislike
+ */
+function getProfileWeights(userProfile: UserProfile): {
+  styleReferenceWeight?: Record<string, number>
+  subjectRoleWeight?: Record<string, number>
+  styleMediumWeight?: Record<string, number>
+  excludeValues?: string[]
+} {
+  const weights: {
+    styleReferenceWeight?: Record<string, number>
+    subjectRoleWeight?: Record<string, number>
+    styleMediumWeight?: Record<string, number>
+    excludeValues?: string[]
+  } = {}
+
+  // Boost fantasy-related if user likes fantasy
+  if (userProfile.likes_fantasy) {
+    weights.styleReferenceWeight = {
+      ...weights.styleReferenceWeight,
+      studio_ghibli_style: 1.3,
+      disney_animation_style: 1.2,
+      adventure_time_style: 1.2,
+    }
+    weights.subjectRoleWeight = {
+      ...weights.subjectRoleWeight,
+      fantasy_wizard: 1.4,
+      hero_in_rpg: 1.3,
+      time_traveler: 1.2,
+    }
+  }
+
+  // Boost sci-fi related if user likes sci-fi
+  if (userProfile.likes_scifi) {
+    weights.styleReferenceWeight = {
+      ...weights.styleReferenceWeight,
+      cyberpunk_concept_art: 1.4,
+      dreamworks_style_cg: 1.2,
+      pixar_style_cg: 1.2,
+    }
+    weights.subjectRoleWeight = {
+      ...weights.subjectRoleWeight,
+      sci_fi_pilot: 1.4,
+      space_explorer: 1.3,
+      robot_version_of_yourself: 1.3,
+    }
+  }
+
+  // Boost cute styles if user likes cute
+  if (userProfile.likes_cute) {
+    weights.styleReferenceWeight = {
+      ...weights.styleReferenceWeight,
+      chibi_anime_style: 1.4,
+      childrens_picture_book: 1.3,
+      studio_ghibli_style: 1.2,
+    }
+    weights.subjectRoleWeight = {
+      ...weights.subjectRoleWeight,
+      tiny_chibi_character: 1.3,
+    }
+  }
+
+  // Boost minimal styles if user likes minimal
+  if (userProfile.likes_minimal) {
+    weights.styleMediumWeight = {
+      ...weights.styleMediumWeight,
+      flat_vector: 1.4,
+      isometric_vector: 1.3,
+      charcoal_sketch: 1.2,
+    }
+  }
+
+  // Exclude clown-related if user hates clowns
+  if (userProfile.hates_clowns) {
+    weights.excludeValues = ['clown', 'circus', 'jester']
+  }
+
+  return weights
 }
 
 /**
@@ -365,6 +453,7 @@ export async function buildHoroscopePrompt(
   const weekdayTheme = getWeekdayTheme(weekday)
   const seasonalTheme = getSeasonalTheme(season)
   const zodiacTheme = getZodiacTheme(userProfile.starSign, userProfile.element)
+  const profileWeights = getProfileWeights(userProfile) // Rule 4: Profile-based weights
 
   // Rule 2: Select style group with rotation
   const selectedStyleGroup = selectStyleGroup(
@@ -377,10 +466,14 @@ export async function buildHoroscopePrompt(
   }
 
   // Select style reference compatible with style group
-  const styleReference = selectStyleReference(
+  // Apply profile weights if available
+  const styleReferenceCandidates = catalogs.style_reference.filter(
+    (c) => c.style_group_id === selectedStyleGroup.id && !userAvatarState.recent_style_reference_ids?.includes(c.id)
+  )
+  const styleReference = selectFromCatalog(
     rng,
-    catalogs.style_reference,
-    selectedStyleGroup.id,
+    styleReferenceCandidates.length > 0 ? styleReferenceCandidates : catalogs.style_reference,
+    profileWeights.styleReferenceWeight,
     userAvatarState.recent_style_reference_ids || []
   )
   if (!styleReference) {
@@ -388,10 +481,14 @@ export async function buildHoroscopePrompt(
   }
 
   // Select style medium (can be random or based on compatible_mediums)
+  // Apply profile weights if available
+  const styleMediumCandidates = profileWeights.excludeValues
+    ? catalogs.style_medium.filter((c) => !profileWeights.excludeValues!.some((exclude) => c.value.toLowerCase().includes(exclude)))
+    : catalogs.style_medium
   const styleMedium = selectFromCatalog(
     rng,
-    catalogs.style_medium,
-    undefined,
+    styleMediumCandidates,
+    profileWeights.styleMediumWeight,
     []
   )
   if (!styleMedium) {
@@ -399,14 +496,18 @@ export async function buildHoroscopePrompt(
   }
 
   // Rule 5: Select other slots avoiding recent repeats
-  // Combine weekday and zodiac theme weights for subject role
+  // Combine weekday, zodiac theme, and profile weights for subject role
   const subjectRoleWeights = {
     ...weekdayTheme.subjectRoleWeight,
     ...zodiacTheme.subjectRoleWeight,
+    ...profileWeights.subjectRoleWeight,
   }
+  const subjectRoleCandidates = profileWeights.excludeValues
+    ? catalogs.subject_role.filter((c) => !profileWeights.excludeValues!.some((exclude) => c.value.toLowerCase().includes(exclude)))
+    : catalogs.subject_role
   const subjectRole = selectFromCatalog(
     rng,
-    catalogs.subject_role,
+    subjectRoleCandidates,
     Object.keys(subjectRoleWeights).length > 0 ? subjectRoleWeights : undefined,
     userAvatarState.recent_subject_role_ids || []
   )

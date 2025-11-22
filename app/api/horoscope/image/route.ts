@@ -42,10 +42,10 @@ export async function GET(request: NextRequest) {
     const userId = user.id
     const userEmail = user.email
 
-    // Fetch user profile to get birthday, discipline, role, name, and hobbies
+    // Fetch user profile to get birthday, discipline, role, name, hobbies, and preferences
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('birthday, discipline, role, full_name')
+      .select('birthday, discipline, role, full_name, hobbies, likes_fantasy, likes_scifi, likes_cute, likes_minimal, hates_clowns')
       .eq('id', userId)
       .single()
 
@@ -146,9 +146,14 @@ export async function GET(request: NextRequest) {
       {
         name: profile.full_name || userEmail || 'User',
         role: profile.role || null,
-        hobbies: null, // TODO: Add hobbies field to profiles table if needed
+        hobbies: profile.hobbies || null,
         starSign: starSign,
         element: userProfile.element,
+        likes_fantasy: profile.likes_fantasy || false,
+        likes_scifi: profile.likes_scifi || false,
+        likes_cute: profile.likes_cute || false,
+        likes_minimal: profile.likes_minimal || false,
+        hates_clowns: profile.hates_clowns || false,
       },
       userProfile.weekday,
       userProfile.season

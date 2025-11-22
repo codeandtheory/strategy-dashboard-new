@@ -96,6 +96,11 @@ export async function generateHoroscopeImage(
     hobbies?: string[] | null
     starSign?: string
     element?: string
+    likes_fantasy?: boolean
+    likes_scifi?: boolean
+    likes_cute?: boolean
+    likes_minimal?: boolean
+    hates_clowns?: boolean
   },
   weekday: string,
   season: string
@@ -110,6 +115,11 @@ export async function generateHoroscopeImage(
     hobbies: userProfile.hobbies || null,
     starSign: userProfile.starSign,
     element: userProfile.element,
+    likes_fantasy: userProfile.likes_fantasy,
+    likes_scifi: userProfile.likes_scifi,
+    likes_cute: userProfile.likes_cute,
+    likes_minimal: userProfile.likes_minimal,
+    hates_clowns: userProfile.hates_clowns,
   }
 
   const { prompt, slots } = await buildHoroscopePrompt(
