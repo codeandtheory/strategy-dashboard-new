@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
             const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
             let clientEmail: string
             let privateKey: string
-            const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
+            const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID?.trim()
             
             if (serviceAccountJson) {
               const parsed = JSON.parse(serviceAccountJson)
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
         const drive = google.drive({ version: 'v3', auth })
         
         // Double-check we're not using the folder ID as file ID
-        const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
+        const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID?.trim()
         if (fileId === folderId) {
           throw new Error(`File ID cannot be the same as folder ID. This indicates the upload response did not contain a valid file ID.`)
         }

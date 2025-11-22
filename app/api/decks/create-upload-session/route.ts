@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 
 // Initialize Google Drive API (supports both service account JSON and individual vars)
 function getDriveClient() {
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID?.trim()
   if (!folderId) {
     throw new Error('GOOGLE_DRIVE_FOLDER_ID is required')
   }
@@ -82,6 +82,17 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Create resumable upload session
     // POST to Google Drive API to initialize resumable upload
+    const metadata = {
+      name: fileName,
+    }
+    
+    // Only add parents if folderId is valid and not empty
+    if (folderId && folderId.trim() && !folderId.includes('.')) {
+      metadata.parents = [folderId]
+    }
+    
+    console.log('Creating resumable session with metadata:', { ...metadata, parents: metadata.parents ? '[REDACTED]' : undefined })
+    
     const initResponse = await fetch(
       'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
       {
@@ -92,15 +103,14 @@ export async function POST(request: NextRequest) {
           'X-Upload-Content-Type': mimeType,
           'X-Upload-Content-Length': fileSize.toString(),
         },
-        body: JSON.stringify({
-          name: fileName,
-          parents: [folderId],
-        }),
+        body: JSON.stringify(metadata),
       }
     )
 
     if (!initResponse.ok) {
       const errorText = await initResponse.text()
+      console.error('Failed to create resumable session:', initResponse.status, errorText)
+      console.error('Request metadata was:', JSON.stringify(metadata))
       throw new Error(`Failed to create resumable session: ${initResponse.status} ${errorText}`)
     }
 
