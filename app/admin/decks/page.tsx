@@ -186,6 +186,7 @@ export default function DeckAdmin() {
         uploadFormData.append('endByte', chunkEnd.toString())
         uploadFormData.append('fileSize', fileSize.toString())
         uploadFormData.append('mimeType', selectedFile.type || 'application/pdf')
+        uploadFormData.append('fileName', selectedFile.name)
 
         const uploadResponse = await fetch('/api/decks/upload-chunk', {
           method: 'POST',

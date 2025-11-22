@@ -57,19 +57,74 @@ export async function POST(request: NextRequest) {
     if (uploadResponse.status === 200 || uploadResponse.status === 201) {
       // Upload complete - get file ID from response
       const responseText = await uploadResponse.text()
+      console.log('Upload response status:', uploadResponse.status)
+      console.log('Upload response text:', responseText)
+      
       let result: any = {}
+      let fileId: string | null = null
       
       if (responseText) {
         try {
           result = JSON.parse(responseText)
+          fileId = result.id
+          console.log('Parsed file ID from response:', fileId)
         } catch (e) {
-          console.warn('Failed to parse upload response as JSON:', responseText)
+          console.warn('Failed to parse upload response as JSON:', responseText, e)
         }
       }
 
-      const fileId = result.id
+      // If no file ID in response body, try to get it from the upload URL or query the file
       if (!fileId) {
-        throw new Error(`Upload completed but no file ID in response: ${responseText}`)
+        console.log('No file ID in response, attempting to query for file...')
+        
+        // Extract file name from the original request to query for it
+        const fileName = formData.get('fileName') as string
+        
+        if (fileName) {
+          try {
+            const { google } = await import('googleapis')
+            const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+            let clientEmail: string
+            let privateKey: string
+            const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
+            
+            if (serviceAccountJson) {
+              const parsed = JSON.parse(serviceAccountJson)
+              clientEmail = parsed.client_email
+              privateKey = parsed.private_key
+            } else {
+              clientEmail = process.env.GOOGLE_DRIVE_CLIENT_EMAIL || ''
+              privateKey = process.env.GOOGLE_DRIVE_PRIVATE_KEY?.replace(/\\n/g, '\n') || ''
+            }
+
+            const auth = new google.auth.JWT({
+              email: clientEmail,
+              key: privateKey,
+              scopes: ['https://www.googleapis.com/auth/drive.file'],
+            })
+
+            const drive = google.drive({ version: 'v3', auth })
+            
+            // Query for the file by name in the folder
+            const searchResponse = await drive.files.list({
+              q: `name='${fileName.replace(/'/g, "\\'")}' and '${folderId}' in parents and trashed=false`,
+              fields: 'files(id, name)',
+              orderBy: 'createdTime desc',
+              pageSize: 1,
+            })
+            
+            if (searchResponse.data.files && searchResponse.data.files.length > 0) {
+              fileId = searchResponse.data.files[0].id || null
+              console.log('Found file ID by querying:', fileId)
+            }
+          } catch (queryError) {
+            console.error('Error querying for file:', queryError)
+          }
+        }
+      }
+
+      if (!fileId) {
+        throw new Error(`Upload completed but could not determine file ID. Response: ${responseText}`)
       }
 
       // Make file accessible
