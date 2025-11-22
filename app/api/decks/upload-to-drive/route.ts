@@ -2,14 +2,35 @@ import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { createClient } from '@/lib/supabase/server'
 
-// Initialize Google Drive API (exact copy from work-samples)
+// Initialize Google Drive API (supports both service account JSON and individual vars)
 function getDriveClient() {
-  const clientEmail = process.env.GOOGLE_DRIVE_CLIENT_EMAIL
-  const privateKey = process.env.GOOGLE_DRIVE_PRIVATE_KEY?.replace(/\\n/g, '\n')
   const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
+  if (!folderId) {
+    throw new Error('GOOGLE_DRIVE_FOLDER_ID is required')
+  }
 
-  if (!clientEmail || !privateKey || !folderId) {
-    throw new Error('Missing Google Drive configuration. Please set GOOGLE_DRIVE_CLIENT_EMAIL, GOOGLE_DRIVE_PRIVATE_KEY, and GOOGLE_DRIVE_FOLDER_ID environment variables.')
+  // Try service account JSON first, then fallback to individual vars
+  let clientEmail: string
+  let privateKey: string
+  
+  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+  if (serviceAccountJson) {
+    try {
+      const parsed = JSON.parse(serviceAccountJson)
+      clientEmail = parsed.client_email
+      privateKey = parsed.private_key
+    } catch (error) {
+      throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON is invalid JSON')
+    }
+  } else {
+    clientEmail = process.env.GOOGLE_DRIVE_CLIENT_EMAIL || ''
+    privateKey = process.env.GOOGLE_DRIVE_PRIVATE_KEY?.replace(/\\n/g, '\n') || ''
+  }
+
+  if (!clientEmail || !privateKey) {
+    throw new Error(
+      'Google Drive authentication required: either GOOGLE_SERVICE_ACCOUNT_JSON or both GOOGLE_DRIVE_CLIENT_EMAIL and GOOGLE_DRIVE_PRIVATE_KEY must be set'
+    )
   }
 
   const auth = new google.auth.JWT({
