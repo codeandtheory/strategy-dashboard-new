@@ -250,7 +250,7 @@ export default function ProfilePage() {
       
       // Provide helpful error message for schema issues
       if (errorMessage.includes('schema') || errorMessage.includes('column')) {
-        errorMessage = 'Database schema needs to be updated. Please run the migration script: supabase/add-profile-fields-extended.sql in your Supabase SQL Editor.'
+        errorMessage = 'Database schema needs to be updated. Please run the migration script: supabase/add-all-profile-fields.sql in your Supabase SQL Editor.'
       }
       
       setError(errorMessage)
