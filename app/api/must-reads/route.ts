@@ -423,6 +423,19 @@ export async function PUT(request: NextRequest) {
     if (submitted_by !== undefined) {
       // Allow setting to null to clear the field, or set to a valid UUID
       if (submitted_by && submitted_by.trim() !== '') {
+        // Verify submitted_by user exists if specified
+        const { data: submittedProfile, error: submittedError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', submitted_by.trim())
+          .single()
+
+        if (submittedError || !submittedProfile) {
+          return NextResponse.json(
+            { error: 'Submitted by user profile not found', details: submittedError?.message },
+            { status: 400 }
+          )
+        }
         updateData.submitted_by = submitted_by.trim()
       } else {
         // Explicitly set to null to clear the field
@@ -437,7 +450,24 @@ export async function PUT(request: NextRequest) {
 
     if (assigned_to !== undefined) {
       // Convert empty string to null, keep valid UUIDs
-      updateData.assigned_to = (assigned_to && assigned_to.trim() !== '') ? assigned_to : null
+      if (assigned_to && assigned_to.trim() !== '') {
+        // Verify assigned_to user exists if specified
+        const { data: assignedProfile, error: assignedError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', assigned_to.trim())
+          .single()
+
+        if (assignedError || !assignedProfile) {
+          return NextResponse.json(
+            { error: 'Assigned user profile not found', details: assignedError?.message },
+            { status: 400 }
+          )
+        }
+        updateData.assigned_to = assigned_to.trim()
+      } else {
+        updateData.assigned_to = null
+      }
     }
 
     // Include new fields if provided

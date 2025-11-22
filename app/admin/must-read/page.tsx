@@ -205,7 +205,7 @@ export default function MustReadAdmin() {
         body: JSON.stringify({
           ...restFormData,
           week_start_date: date, // Send date as week_start_date
-          submitted_by: user?.id || null, // Always set to logged-in user for new records
+          submitted_by: formData.submitted_by && formData.submitted_by.trim() !== '' ? formData.submitted_by : null,
           assigned_to: formData.assigned_to || null,
         }),
       })
@@ -521,6 +521,19 @@ export default function MustReadAdmin() {
               <DialogHeader>
                 <DialogTitle className={cardStyle.text}>Add New Must Read</DialogTitle>
               </DialogHeader>
+              {/* Pinned at the top */}
+              <div className="mb-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="pinned-add"
+                    checked={formData.pinned}
+                    onChange={(e) => setFormData({ ...formData, pinned: e.target.checked })}
+                    className="w-4 h-4"
+                  />
+                  <Label htmlFor="pinned-add" className={cardStyle.text}>Pinned</Label>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Left Column */}
                 <div className="space-y-4">
@@ -543,6 +556,41 @@ export default function MustReadAdmin() {
                       type="url"
                     />
                   </div>
+                  <div>
+                    <Label className={cardStyle.text}>Summary (optional)</Label>
+                    <div className="flex gap-2">
+                      <Textarea
+                        value={formData.summary}
+                        onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                        className={`flex-1 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
+                        placeholder="AI-generated summary will appear here..."
+                        rows={3}
+                      />
+                      <Button
+                        type="button"
+                        onClick={handleGenerateSummary}
+                        disabled={!formData.article_url || generatingSummary}
+                        variant="outline"
+                        className={`${cardStyle.border} border ${cardStyle.text} whitespace-nowrap`}
+                      >
+                        {generatingSummary ? 'Generating...' : 'Generate'}
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className={cardStyle.text}>Notes (optional)</Label>
+                    <Textarea
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
+                      placeholder="Add any notes about this article"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-4">
                   <div>
                     <Label className={cardStyle.text}>Category (optional)</Label>
                     <select
@@ -569,31 +617,6 @@ export default function MustReadAdmin() {
                     <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
                       Source is automatically extracted from the URL, but you can edit it
                     </p>
-                  </div>
-                </div>
-
-                {/* Right Column */}
-                <div className="space-y-4">
-                  <div>
-                    <Label className={cardStyle.text}>Summary (optional)</Label>
-                    <div className="flex gap-2">
-                      <Textarea
-                        value={formData.summary}
-                        onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                        className={`flex-1 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
-                        placeholder="AI-generated summary will appear here..."
-                        rows={3}
-                      />
-                      <Button
-                        type="button"
-                        onClick={handleGenerateSummary}
-                        disabled={!formData.article_url || generatingSummary}
-                        variant="outline"
-                        className={`${cardStyle.border} border ${cardStyle.text} whitespace-nowrap`}
-                      >
-                        {generatingSummary ? 'Generating...' : 'Generate'}
-                      </Button>
-                    </div>
                   </div>
                   <div>
                     <Label className={cardStyle.text}>Tags (optional)</Label>
@@ -636,16 +659,6 @@ export default function MustReadAdmin() {
                     </p>
                   </div>
                   <div>
-                    <Label className={cardStyle.text}>Notes (optional)</Label>
-                    <Textarea
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
-                      placeholder="Add any notes about this article"
-                      rows={3}
-                    />
-                  </div>
-                  <div>
                     <Label className={cardStyle.text}>Date</Label>
                     <Input
                       type="date"
@@ -654,15 +667,20 @@ export default function MustReadAdmin() {
                       className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="pinned-add"
-                      checked={formData.pinned}
-                      onChange={(e) => setFormData({ ...formData, pinned: e.target.checked })}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="pinned-add" className={cardStyle.text}>Pinned</Label>
+                  <div>
+                    <Label className={cardStyle.text}>Submitted By</Label>
+                    <select
+                      value={formData.submitted_by || ''}
+                      onChange={(e) => setFormData({ ...formData, submitted_by: e.target.value })}
+                      className={`w-full ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} p-2 ${getRoundedClass('rounded-md')}`}
+                    >
+                      <option value="">None</option>
+                      {users.map(u => (
+                        <option key={u.id} value={u.id}>
+                          {u.full_name || u.email}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <Label className={cardStyle.text}>Assigned To</Label>
@@ -868,6 +886,19 @@ export default function MustReadAdmin() {
             <DialogHeader>
               <DialogTitle className={cardStyle.text}>Edit Must Read</DialogTitle>
             </DialogHeader>
+            {/* Pinned at the top */}
+            <div className="mb-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="pinned-edit"
+                  checked={formData.pinned}
+                  onChange={(e) => setFormData({ ...formData, pinned: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="pinned-edit" className={cardStyle.text}>Pinned</Label>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Left Column */}
               <div className="space-y-4">
@@ -890,6 +921,41 @@ export default function MustReadAdmin() {
                     type="url"
                   />
                 </div>
+                <div>
+                  <Label className={cardStyle.text}>Summary (optional)</Label>
+                  <div className="flex gap-2">
+                    <Textarea
+                      value={formData.summary}
+                      onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                      className={`flex-1 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
+                      placeholder="AI-generated summary will appear here..."
+                      rows={3}
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleGenerateSummary}
+                      disabled={!formData.article_url || generatingSummary}
+                      variant="outline"
+                      className={`${cardStyle.border} border ${cardStyle.text} whitespace-nowrap`}
+                    >
+                      {generatingSummary ? 'Generating...' : 'Generate'}
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label className={cardStyle.text}>Notes (optional)</Label>
+                  <Textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
+                    placeholder="Add any notes about this article"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-4">
                 <div>
                   <Label className={cardStyle.text}>Category (optional)</Label>
                   <select
@@ -916,31 +982,6 @@ export default function MustReadAdmin() {
                   <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
                     Source is automatically extracted from the URL, but you can edit it
                   </p>
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-4">
-                <div>
-                  <Label className={cardStyle.text}>Summary (optional)</Label>
-                  <div className="flex gap-2">
-                    <Textarea
-                      value={formData.summary}
-                      onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                      className={`flex-1 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
-                      placeholder="AI-generated summary will appear here..."
-                      rows={3}
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleGenerateSummary}
-                      disabled={!formData.article_url || generatingSummary}
-                      variant="outline"
-                      className={`${cardStyle.border} border ${cardStyle.text} whitespace-nowrap`}
-                    >
-                      {generatingSummary ? 'Generating...' : 'Generate'}
-                    </Button>
-                  </div>
                 </div>
                 <div>
                   <Label className={cardStyle.text}>Tags (optional)</Label>
@@ -983,16 +1024,6 @@ export default function MustReadAdmin() {
                   </p>
                 </div>
                 <div>
-                  <Label className={cardStyle.text}>Notes (optional)</Label>
-                  <Textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
-                    placeholder="Add any notes about this article"
-                    rows={3}
-                  />
-                </div>
-                <div>
                   <Label className={cardStyle.text}>Date</Label>
                   <Input
                     type="date"
@@ -1000,16 +1031,6 @@ export default function MustReadAdmin() {
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
                   />
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="pinned-edit"
-                    checked={formData.pinned}
-                    onChange={(e) => setFormData({ ...formData, pinned: e.target.checked })}
-                    className="w-4 h-4"
-                  />
-                  <Label htmlFor="pinned-edit" className={cardStyle.text}>Pinned</Label>
                 </div>
                 <div>
                   <Label className={cardStyle.text}>Submitted By</Label>
