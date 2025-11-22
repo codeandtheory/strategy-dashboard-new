@@ -216,22 +216,22 @@ body {
 [data-mode="code"] {
   /* Terminal Colors */
   --mode-bg: #000000; /* Pure Black - CRT screen */
-  --mode-text: #00FF00; /* DOS Green - Primary text */
+  --mode-text: #FFFFFF; /* White - Primary text */
   --mode-text-secondary: rgba(255, 255, 255, 0.7); /* White at 70% opacity */
   --mode-card-bg: #000000; /* Pure Black */
-  --mode-card-border: #00FF00; /* DOS Green borders */
-  --mode-primary: #00FF00; /* DOS Green */
-  --mode-primary-text: #000000; /* Black text on green */
+  --mode-card-border: #FFFFFF; /* White borders */
+  --mode-primary: #FFFFFF; /* White */
+  --mode-primary-text: #000000; /* Black text on white */
   --mode-muted: #808080; /* Gray for inactive */
-  --mode-border: #00FF00; /* DOS Green */
+  --mode-border: #FFFFFF; /* White */
   
-  /* Section accents - all DOS Green */
-  --mode-hero-accent: #00FF00;
-  --mode-recognition-accent: #00FF00;
-  --mode-work-accent: #00FF00;
-  --mode-team-accent: #00FF00;
-  --mode-vibes-accent: #00FF00;
-  --mode-community-accent: #00FF00;
+  /* Section accents - all White */
+  --mode-hero-accent: #FFFFFF;
+  --mode-recognition-accent: #FFFFFF;
+  --mode-work-accent: #FFFFFF;
+  --mode-team-accent: #FFFFFF;
+  --mode-vibes-accent: #FFFFFF;
+  --mode-community-accent: #FFFFFF;
   
   /* Font family - Monospace only */
   --font-mono: "Courier New", "Monaco", "Consolas", monospace;

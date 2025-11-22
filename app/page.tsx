@@ -19,6 +19,7 @@ import { AudioEQ } from '@/components/audio-eq'
 import { PlaylistData } from '@/lib/spotify-player-types'
 import { ProfileSetupModal } from '@/components/profile-setup-modal'
 import { createClient } from '@/lib/supabase/client'
+import { imageToAscii } from '@/lib/ascii-art'
 
 // Force dynamic rendering to avoid SSR issues with context
 export const dynamic = 'force-dynamic'
@@ -46,6 +47,7 @@ export default function TeamDashboard() {
     horoscope_donts?: string[]
   } | null>(null)
   const [horoscopeImage, setHoroscopeImage] = useState<string | null>(null)
+  const [horoscopeAscii, setHoroscopeAscii] = useState<string | null>(null)
   const [horoscopeImagePrompt, setHoroscopeImagePrompt] = useState<string | null>(null)
   const [horoscopeImageConfig, setHoroscopeImageConfig] = useState<{
     userProfile?: {
@@ -374,6 +376,25 @@ export default function TeamDashboard() {
     fetchHoroscopeData()
   }, [user])
 
+  // Convert horoscope image to ASCII art when image is loaded
+  useEffect(() => {
+    async function convertToAscii() {
+      if (horoscopeImage) {
+        try {
+          const ascii = await imageToAscii(horoscopeImage, 50, 30)
+          setHoroscopeAscii(ascii)
+        } catch (error) {
+          console.error('Error converting image to ASCII:', error)
+          setHoroscopeAscii(null)
+        }
+      } else {
+        setHoroscopeAscii(null)
+      }
+    }
+    
+    convertToAscii()
+  }, [horoscopeImage])
+
   // Comprehensive mode-aware card styling
   type CardSection = 'hero' | 'recognition' | 'work' | 'team' | 'vibes' | 'community' | 'default'
   type SpecificCard = 'hero-large' | 'launch-pad' | 'horoscope' | 'weather' | 'timezones' | 'playlist' | 'friday-drop' | 'brand-redesign' | 'stats' | 'events' | 'pipeline' | 'who-needs-what' | 'snaps' | 'beast-babe' | 'wins-wall' | 'must-reads' | 'ask-hive' | 'team-pulse' | 'loom-standup' | 'inspiration-war' | 'categories' | 'search'
@@ -442,13 +463,13 @@ export default function TeamDashboard() {
       return chillColors[section] || chillColors.default
     } else { // code mode - DOS/Terminal aesthetic
       const codeColors: Record<CardSection, { bg: string; border: string; glow: string; text: string; accent: string }> = {
-        hero: { bg: 'bg-[#000000]', border: 'border border-[#00FF00]', glow: '', text: 'text-[#00FF00]', accent: '#00FF00' },
-        recognition: { bg: 'bg-[#000000]', border: 'border border-[#00FF00]', glow: '', text: 'text-[#00FF00]', accent: '#00FF00' },
-        work: { bg: 'bg-[#000000]', border: 'border border-[#00FF00]', glow: '', text: 'text-[#00FF00]', accent: '#00FF00' },
-        team: { bg: 'bg-[#000000]', border: 'border border-[#00FF00]', glow: '', text: 'text-[#00FF00]', accent: '#00FF00' },
-        vibes: { bg: 'bg-[#000000]', border: 'border border-[#00FF00]', glow: '', text: 'text-[#00FF00]', accent: '#00FF00' },
-        community: { bg: 'bg-[#000000]', border: 'border border-[#00FF00]', glow: '', text: 'text-[#00FF00]', accent: '#00FF00' },
-        default: { bg: 'bg-[#000000]', border: 'border border-[#00FF00]', glow: '', text: 'text-[#00FF00]', accent: '#00FF00' },
+        hero: { bg: 'bg-[#000000]', border: 'border border-[#FFFFFF]', glow: '', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
+        recognition: { bg: 'bg-[#000000]', border: 'border border-[#FFFFFF]', glow: '', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
+        work: { bg: 'bg-[#000000]', border: 'border border-[#FFFFFF]', glow: '', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
+        team: { bg: 'bg-[#000000]', border: 'border border-[#FFFFFF]', glow: '', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
+        vibes: { bg: 'bg-[#000000]', border: 'border border-[#FFFFFF]', glow: '', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
+        community: { bg: 'bg-[#000000]', border: 'border border-[#FFFFFF]', glow: '', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
+        default: { bg: 'bg-[#000000]', border: 'border border-[#FFFFFF]', glow: '', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
       }
       return codeColors[section] || codeColors.default
     }
@@ -468,7 +489,7 @@ export default function TeamDashboard() {
     switch (mode) {
       case 'chaos': return 'text-white'
       case 'chill': return 'text-[#4A1818]'
-      case 'code': return 'text-[#00FF00]'
+      case 'code': return 'text-[#FFFFFF]'
       default: return 'text-white'
     }
   }
@@ -477,7 +498,7 @@ export default function TeamDashboard() {
     switch (mode) {
       case 'chaos': return 'border-[#333333]'
       case 'chill': return 'border-[#4A1818]/20'
-      case 'code': return 'border-[#00FF00]'
+      case 'code': return 'border-[#FFFFFF]'
       default: return 'border-[#333333]'
     }
   }
@@ -488,14 +509,14 @@ export default function TeamDashboard() {
       switch (mode) {
         case 'chaos': return `${base} text-white hover:text-[#C4F500]`
         case 'chill': return `${base} text-[#4A1818] hover:text-[#FFC043]`
-        case 'code': return `${base} text-[#00FF00] hover:text-[#00FF00]`
+        case 'code': return `${base} text-[#FFFFFF] hover:text-[#FFFFFF]`
         default: return `${base} text-white hover:text-[#C4F500]`
       }
     } else {
       switch (mode) {
         case 'chaos': return `${base} text-[#666666] hover:text-white`
         case 'chill': return `${base} text-[#8B4444] hover:text-[#4A1818]`
-        case 'code': return `${base} text-[#808080] hover:text-[#00FF00]`
+        case 'code': return `${base} text-[#808080] hover:text-[#FFFFFF]`
         default: return `${base} text-[#666666] hover:text-white`
       }
     }
@@ -505,7 +526,7 @@ export default function TeamDashboard() {
     switch (mode) {
       case 'chaos': return 'bg-[#C4F500]'
       case 'chill': return 'bg-[#FFC043]'
-      case 'code': return 'bg-[#00FF00]'
+      case 'code': return 'bg-[#FFFFFF]'
       default: return 'bg-[#C4F500]'
     }
   }
@@ -534,7 +555,7 @@ export default function TeamDashboard() {
 
   const getCodeText = (text: string, opacity = 1) => {
     if (mode === 'code') {
-      const opacityClass = opacity < 1 ? `text-white/70` : 'text-[#00FF00]'
+      const opacityClass = opacity < 1 ? `text-white/70` : 'text-[#FFFFFF]'
       return <span className={opacityClass}>{text}</span>
     }
     return text
@@ -706,14 +727,15 @@ export default function TeamDashboard() {
                       <div className="w-full h-full flex items-center justify-center p-8">
                         <p className="text-white text-sm text-center">{horoscopeImageError}</p>
                       </div>
+                    ) : horoscopeAscii ? (
+                      <div className="relative w-full h-full flex items-center justify-center p-4 overflow-auto">
+                        <pre className="text-[8px] leading-[0.7] font-mono text-white whitespace-pre">
+                          {horoscopeAscii}
+                        </pre>
+                      </div>
                     ) : horoscopeImage ? (
-                      <div className="relative w-full h-full">
-                        <img 
-                          src={horoscopeImage} 
-                          alt="Horoscope portrait"
-                          className="w-full h-full object-cover"
-                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                        />
+                      <div className="relative w-full h-full flex items-center justify-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-white" />
                       </div>
                     ) : null}
                   </div>
@@ -730,21 +752,22 @@ export default function TeamDashboard() {
                       <div className="w-full h-full flex items-center justify-center p-8">
                         <p className="text-white text-sm text-center">{horoscopeImageError}</p>
                       </div>
+                    ) : horoscopeAscii ? (
+                      <div className="relative w-full h-full flex items-center justify-center p-4 overflow-auto">
+                        <pre className="text-[8px] leading-[0.7] font-mono text-white whitespace-pre">
+                          {horoscopeAscii}
+                        </pre>
+                      </div>
                     ) : horoscopeImage ? (
-                      <div className="relative w-full h-full">
-                        <img 
-                          src={horoscopeImage} 
-                          alt="Horoscope portrait"
-                          className="w-full h-full object-cover"
-                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                        />
+                      <div className="relative w-full h-full flex items-center justify-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-white" />
                       </div>
                     ) : null}
                   </div>
                 )}
                 <div className="relative z-10 p-8 md:p-12 h-full flex flex-col justify-between">
                   <div>
-                    <Badge className={`${mode === 'chaos' ? 'bg-black text-[#FFE500]' : mode === 'chill' ? 'bg-[#4A1818] text-[#FFC043]' : mode === 'code' ? 'bg-[#00FF00] text-black border border-[#00FF00]' : 'bg-white text-black'} hover:opacity-90 ${mode === 'code' ? 'border-0' : 'border-0'} ${getRoundedClass('rounded-full')} font-black mb-4 md:mb-6 text-xs md:text-sm uppercase tracking-[0.2em] ${mode === 'code' ? 'font-mono' : ''} px-4 md:px-6 py-2 md:py-3`}>
+                    <Badge className={`${mode === 'chaos' ? 'bg-black text-[#FFE500]' : mode === 'chill' ? 'bg-[#4A1818] text-[#FFC043]' : mode === 'code' ? 'bg-[#FFFFFF] text-black border border-[#FFFFFF]' : 'bg-white text-black'} hover:opacity-90 ${mode === 'code' ? 'border-0' : 'border-0'} ${getRoundedClass('rounded-full')} font-black mb-4 md:mb-6 text-xs md:text-sm uppercase tracking-[0.2em] ${mode === 'code' ? 'font-mono' : ''} px-4 md:px-6 py-2 md:py-3`}>
                       {mode === 'code' ? '[AI CHAOS AGENT]' : mode === 'chaos' ? 'QUICK ACTIONS' : 'AI Chaos Agent'}
                     </Badge>
                     <h1 className={`text-[clamp(3rem,8vw+1rem,10rem)] font-black mb-4 md:mb-6 leading-[0.85] tracking-tight uppercase text-black ${mode === 'code' ? 'font-mono' : ''}`}>
@@ -766,7 +789,7 @@ export default function TeamDashboard() {
                   </div>
                   <div className="relative z-10 flex items-center gap-3 md:gap-4 flex-wrap">
                     {['Give Snap', 'Need Help', 'Add Win'].map((label) => (
-                      <Button key={label} className={`${mode === 'chaos' ? 'bg-black text-[#FFE500] hover:bg-[#0F0F0F] hover:scale-105' : mode === 'chill' ? 'bg-[#4A1818] text-[#FFC043] hover:bg-[#3A1414]' : mode === 'code' ? 'bg-[#00FF00] text-black border border-[#00FF00] hover:bg-[#00CC00]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black ${getRoundedClass('rounded-full')} py-3 md:py-4 px-6 md:px-8 text-base md:text-lg uppercase tracking-wider transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}>
+                      <Button key={label} className={`${mode === 'chaos' ? 'bg-black text-[#FFE500] hover:bg-[#0F0F0F] hover:scale-105' : mode === 'chill' ? 'bg-[#4A1818] text-[#FFC043] hover:bg-[#3A1414]' : mode === 'code' ? 'bg-[#FFFFFF] text-black border border-[#FFFFFF] hover:bg-[#CCCCCC]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black ${getRoundedClass('rounded-full')} py-3 md:py-4 px-6 md:px-8 text-base md:text-lg uppercase tracking-wider transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}>
                         {mode === 'code' ? `[${label.toUpperCase().replace(' ', ' ')}]` : label} {mode !== 'code' && <ArrowRight className="w-4 h-4 ml-2" />}
                   </Button>
                     ))}
@@ -813,7 +836,7 @@ export default function TeamDashboard() {
                               ? 'ring-2 ring-[#C4F500] ring-offset-2 ring-offset-black' 
                               : mode === 'chill'
                               ? 'ring-2 ring-[#FFC043] ring-offset-2 ring-offset-[#F5E6D3]'
-                              : 'ring-2 ring-[#00FF00] ring-offset-2 ring-offset-black'
+                              : 'ring-2 ring-[#FFFFFF] ring-offset-2 ring-offset-black'
                             : ''
                         }`}
                         style={{
@@ -866,9 +889,9 @@ export default function TeamDashboard() {
         <p className={`text-xs uppercase tracking-widest font-black mb-6 flex items-center gap-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : mode === 'code' ? 'text-[#808080] font-mono' : 'text-[#808080]'}`}>
           {mode === 'code' ? (
             <>
-              <span className="text-[#00FF00]">════════════════════════════════════════</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
               <span className="text-[#808080]">PERSONALIZED INFORMATION</span>
-              <span className="text-[#00FF00]">════════════════════════════════════════</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
             </>
           ) : (
             <>
@@ -1141,9 +1164,9 @@ export default function TeamDashboard() {
         <p className={`text-xs uppercase tracking-widest font-black mb-6 flex items-center gap-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : mode === 'code' ? 'text-[#808080] font-mono' : 'text-[#808080]'}`}>
           {mode === 'code' ? (
             <>
-              <span className="text-[#00FF00]">════════════════════════════════════════</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
               <span className="text-[#808080]">WORK UPDATES</span>
-              <span className="text-[#00FF00]">════════════════════════════════════════</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
             </>
           ) : (
             <>
@@ -1237,7 +1260,7 @@ export default function TeamDashboard() {
           {/* Stats */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('stats') : getCardStyle('team')
-            const growthColor = mode === 'chaos' ? '#00FF87' : mode === 'chill' ? '#C8D961' : '#00FF00'
+            const growthColor = mode === 'chaos' ? '#00FF87' : mode === 'chill' ? '#C8D961' : '#FFFFFF'
             return (
               <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
@@ -1266,9 +1289,9 @@ export default function TeamDashboard() {
         <p className={`text-xs uppercase tracking-widest font-black mb-6 flex items-center gap-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : mode === 'code' ? 'text-[#808080] font-mono' : 'text-[#808080]'}`}>
           {mode === 'code' ? (
             <>
-              <span className="text-[#00FF00]">════════════════════════════════════════</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
               <span className="text-[#808080]">WORK UPDATES CONTINUED</span>
-              <span className="text-[#00FF00]">════════════════════════════════════════</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
             </>
           ) : (
             <>
@@ -1371,9 +1394,9 @@ export default function TeamDashboard() {
         <p className={`text-xs uppercase tracking-widest font-black mb-6 flex items-center gap-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : mode === 'code' ? 'text-[#808080] font-mono' : 'text-[#808080]'}`}>
           {mode === 'code' ? (
             <>
-              <span className="text-[#00FF00]">════════════════════════════════════════</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
               <span className="text-[#808080]">RECOGNITION & CULTURE</span>
-              <span className="text-[#00FF00]">════════════════════════════════════════</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
             </>
           ) : (
             <>
@@ -1491,9 +1514,9 @@ export default function TeamDashboard() {
         <p className={`text-xs uppercase tracking-widest font-black mb-6 flex items-center gap-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : mode === 'code' ? 'text-[#808080] font-mono' : 'text-[#808080]'}`}>
           {mode === 'code' ? (
             <>
-              <span className="text-[#00FF00]">════════════════════════════════════════</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
               <span className="text-[#808080]">MORE MODULES</span>
-              <span className="text-[#00FF00]">════════════════════════════════════════</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
             </>
           ) : (
             <>
@@ -1694,9 +1717,9 @@ export default function TeamDashboard() {
         <p className={`text-xs uppercase tracking-widest font-black mb-6 flex items-center gap-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : mode === 'code' ? 'text-[#808080] font-mono' : 'text-[#808080]'}`}>
           {mode === 'code' ? (
             <>
-              <span className="text-[#00FF00]">════════════════════════════════════════</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
               <span className="text-[#808080]">BROWSE CATEGORIES</span>
-              <span className="text-[#00FF00]">════════════════════════════════════════</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
             </>
           ) : (
             <>

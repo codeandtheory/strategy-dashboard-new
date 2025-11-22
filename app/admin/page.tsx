@@ -60,7 +60,7 @@ export default function AdminDashboard() {
     switch (mode) {
       case 'chaos': return 'text-white'
       case 'chill': return 'text-[#4A1818]'
-      case 'code': return 'text-[#00FF00]'
+      case 'code': return 'text-[#FFFFFF]'
       default: return 'text-white'
     }
   }
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
     switch (mode) {
       case 'chaos': return 'border-[#333333]'
       case 'chill': return 'border-[#8B4444]/30'
-      case 'code': return 'border-[#00FF00]/30'
+      case 'code': return 'border-[#FFFFFF]/30'
       default: return 'border-[#333333]'
     }
   }
@@ -99,10 +99,10 @@ export default function AdminDashboard() {
       return colors[color]
     } else { // code
       const colors = {
-        purple: { bg: 'bg-black', border: 'border-[#00FF00]', text: 'text-[#00FF00]', accent: '#00FF00' },
-        green: { bg: 'bg-black', border: 'border-[#00FF00]', text: 'text-[#00FF00]', accent: '#00FF00' },
-        orange: { bg: 'bg-black', border: 'border-[#00FF00]', text: 'text-[#00FF00]', accent: '#00FF00' },
-        pink: { bg: 'bg-black', border: 'border-[#00FF00]', text: 'text-[#00FF00]', accent: '#00FF00' },
+        purple: { bg: 'bg-black', border: 'border-[#FFFFFF]', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
+        green: { bg: 'bg-black', border: 'border-[#FFFFFF]', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
+        orange: { bg: 'bg-black', border: 'border-[#FFFFFF]', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
+        pink: { bg: 'bg-black', border: 'border-[#FFFFFF]', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
       }
       return colors[color]
     }
@@ -289,7 +289,7 @@ export default function AdminDashboard() {
               className={`${getRoundedClass('rounded-lg')} ${
                 mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
                 mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
-                'bg-[#00FF00] text-black hover:bg-[#00FF00]/80'
+                'bg-[#FFFFFF] text-black hover:bg-[#FFFFFF]/80'
               }`}
             >
               <Lock className="w-4 h-4 mr-2" />
@@ -301,7 +301,7 @@ export default function AdminDashboard() {
               className={`${getRoundedClass('rounded-lg')} ${
                 mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
                 mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
-                'bg-[#00FF00] text-black hover:bg-[#00FF00]/80'
+                'bg-[#FFFFFF] text-black hover:bg-[#FFFFFF]/80'
               }`}
             >
               <User className="w-4 h-4 mr-2" />
@@ -313,7 +313,7 @@ export default function AdminDashboard() {
               className={`${getRoundedClass('rounded-lg')} ${
                 mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
                 mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
-                'bg-[#00FF00] text-black hover:bg-[#00FF00]/80'
+                'bg-[#FFFFFF] text-black hover:bg-[#FFFFFF]/80'
               }`}
             >
               <FileText className="w-4 h-4 mr-2" />

@@ -64,7 +64,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     switch (mode) {
       case 'chaos': return 'text-white'
       case 'chill': return 'text-[#4A1818]'
-      case 'code': return 'text-[#00FF00]'
+      case 'code': return 'text-[#FFFFFF]'
       default: return 'text-white'
     }
   }
@@ -73,7 +73,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     switch (mode) {
       case 'chaos': return 'border-[#333333]'
       case 'chill': return 'border-[#8B4444]/30'
-      case 'code': return 'border-[#00FF00]/30'
+      case 'code': return 'border-[#FFFFFF]/30'
       default: return 'border-[#333333]'
     }
   }
@@ -89,7 +89,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       switch (mode) {
         case 'chaos': return 'bg-[#C4F500] text-black'
         case 'chill': return 'bg-[#FFC043] text-[#4A1818]'
-        case 'code': return 'bg-[#00FF00] text-black'
+        case 'code': return 'bg-[#FFFFFF] text-black'
         default: return 'bg-primary text-primary-foreground'
       }
     } else {
@@ -183,7 +183,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             className={`w-full ${getRoundedClass('rounded-lg')} ${
               mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
               mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
-              'bg-[#00FF00] text-black hover:bg-[#00FF00]/80'
+              'bg-[#FFFFFF] text-black hover:bg-[#FFFFFF]/80'
             }`}
           >
             <Settings className="w-4 h-4 mr-2" />
