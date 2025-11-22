@@ -1236,10 +1236,10 @@ export default function TeamDashboard() {
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
               return (
-                <Card className={`${style.bg} ${style.border} py-6 px-6 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')}`}>
-                  <div className="flex items-baseline justify-between gap-6">
+                <Card className={`${style.bg} ${style.border} py-4 px-6 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')}`}>
+                  <div className="flex items-center justify-between gap-6">
                     <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>WEEKLY REPORT</h2>
-                    <div className="flex items-baseline gap-6">
+                    <div className="flex gap-4">
                       {[
                         { value: '5', label: 'new business' },
                         { value: '8', label: 'pitches shipped' },
@@ -1247,15 +1247,16 @@ export default function TeamDashboard() {
                       ].map((stat, index) => (
                         <div 
                           key={stat.label} 
-                          className="flex items-baseline gap-2"
+                          className={`flex flex-col items-center justify-center px-4 py-3 ${getRoundedClass('rounded-2xl')}`}
                           style={{
+                            backgroundColor: mode === 'chaos' ? 'rgba(0,0,0,0.2)' : mode === 'chill' ? 'rgba(74,24,24,0.15)' : 'rgba(0,0,0,0.25)',
                             animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
                           }}
                         >
-                          <span className={`text-6xl font-black ${style.text} leading-none`}>
+                          <span className={`text-4xl font-black ${style.text} leading-none`}>
                             {stat.value}
                           </span>
-                          <span className={`text-sm font-black uppercase tracking-wider ${style.text} leading-tight`}>
+                          <span className={`text-xs font-black uppercase tracking-wider ${style.text} mt-1`}>
                             {stat.label}
                           </span>
                         </div>
