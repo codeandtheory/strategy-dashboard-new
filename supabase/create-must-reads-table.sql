@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS public.must_reads (
   article_url TEXT NOT NULL,
   notes TEXT,
   pinned BOOLEAN DEFAULT false,
-  submitted_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  assigned_to UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  submitted_by UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  assigned_to UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );

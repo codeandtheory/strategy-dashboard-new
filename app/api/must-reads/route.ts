@@ -55,9 +55,7 @@ export async function GET(request: NextRequest) {
         submitted_by,
         assigned_to,
         created_at,
-        updated_at,
-        submitted_by_profile:submitted_by(id, email, full_name),
-        assigned_to_profile:assigned_to(id, email, full_name)
+        updated_at
       `)
       .order('pinned', { ascending: false })
       .order('created_at', { ascending: false })
@@ -82,7 +80,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Error fetching must reads:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch must reads' },
+        { error: 'Failed to fetch must reads', details: error.message },
         { status: 500 }
       )
     }
@@ -102,7 +100,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error in must-reads API:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch must reads' },
+      { error: error.message || 'Failed to fetch must reads', details: error.toString() },
       { status: 500 }
     )
   }
@@ -151,16 +149,14 @@ export async function POST(request: NextRequest) {
         submitted_by,
         assigned_to,
         created_at,
-        updated_at,
-        submitted_by_profile:submitted_by(id, email, full_name),
-        assigned_to_profile:assigned_to(id, email, full_name)
+        updated_at
       `)
       .single()
 
     if (error) {
       console.error('Error creating must read:', error)
       return NextResponse.json(
-        { error: 'Failed to create must read' },
+        { error: 'Failed to create must read', details: error.message, code: error.code },
         { status: 500 }
       )
     }
@@ -169,7 +165,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error in must-reads API:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to create must read' },
+      { error: error.message || 'Failed to create must read', details: error.toString() },
       { status: 500 }
     )
   }
@@ -230,16 +226,14 @@ export async function PUT(request: NextRequest) {
         submitted_by,
         assigned_to,
         created_at,
-        updated_at,
-        submitted_by_profile:submitted_by(id, email, full_name),
-        assigned_to_profile:assigned_to(id, email, full_name)
+        updated_at
       `)
       .single()
 
     if (error) {
       console.error('Error updating must read:', error)
       return NextResponse.json(
-        { error: 'Failed to update must read' },
+        { error: 'Failed to update must read', details: error.message, code: error.code },
         { status: 500 }
       )
     }
@@ -248,7 +242,7 @@ export async function PUT(request: NextRequest) {
   } catch (error: any) {
     console.error('Error in must-reads API:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to update must read' },
+      { error: error.message || 'Failed to update must read', details: error.toString() },
       { status: 500 }
     )
   }
@@ -293,7 +287,7 @@ export async function DELETE(request: NextRequest) {
     if (error) {
       console.error('Error deleting must read(s):', error)
       return NextResponse.json(
-        { error: 'Failed to delete must read(s)' },
+        { error: 'Failed to delete must read(s)', details: error.message, code: error.code },
         { status: 500 }
       )
     }
@@ -302,7 +296,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error: any) {
     console.error('Error in must-reads API:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to delete must read(s)' },
+      { error: error.message || 'Failed to delete must read(s)', details: error.toString() },
       { status: 500 }
     )
   }
