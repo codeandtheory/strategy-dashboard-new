@@ -26,6 +26,7 @@ export default function ProfilePage() {
   
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [fullName, setFullName] = useState('')
+  const [pronouns, setPronouns] = useState('')
   const [birthday, setBirthday] = useState('') // MM/DD format
   const [startDate, setStartDate] = useState('') // YYYY-MM-DD format
   const [bio, setBio] = useState('')
@@ -49,7 +50,7 @@ export default function ProfilePage() {
       try {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('birthday, discipline, role, avatar_url, full_name, start_date, bio, location, website')
+          .select('birthday, discipline, role, avatar_url, full_name, pronouns, start_date, bio, location, website')
           .eq('id', user.id)
           .maybeSingle()
         
@@ -62,6 +63,7 @@ export default function ProfilePage() {
           setDiscipline(profile.discipline || '')
           setAvatarUrl(profile.avatar_url || null)
           setFullName(profile.full_name || user.user_metadata?.full_name || '')
+          setPronouns(profile.pronouns || '')
           setBio(profile.bio || '')
           setLocation(profile.location || '')
           setWebsite(profile.website || '')
@@ -207,6 +209,7 @@ export default function ProfilePage() {
           location: location || null,
           website: website || null,
           full_name: fullName || null,
+          pronouns: pronouns || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user?.id)
@@ -224,6 +227,7 @@ export default function ProfilePage() {
             location: location || null,
             website: website || null,
             full_name: fullName || null,
+            pronouns: pronouns || null,
             email: user?.email || null,
             updated_at: new Date().toISOString(),
           })
@@ -386,6 +390,23 @@ export default function ProfilePage() {
                 placeholder="Your full name"
                 className="w-full"
               />
+            </div>
+
+            <div>
+              <Label htmlFor="pronouns" className="mb-2 block">
+                Pronouns
+              </Label>
+              <Input
+                id="pronouns"
+                type="text"
+                value={pronouns}
+                onChange={(e) => setPronouns(e.target.value)}
+                placeholder="e.g., she/her, he/him, they/them"
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Your pronouns (optional)
+              </p>
             </div>
 
             <div>
