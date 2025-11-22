@@ -1326,28 +1326,28 @@ export default function TeamDashboard() {
                               src={sample.thumbnail_url} 
                               alt={sample.project_name}
                               className={`w-full aspect-video object-contain ${getRoundedClass('rounded-lg')} mb-3 bg-gray-100`}
+                              onError={(e) => {
+                                // Hide broken image and show placeholder
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                const placeholder = target.nextElementSibling as HTMLElement
+                                if (placeholder) {
+                                  placeholder.style.display = 'flex'
+                                }
+                              }}
                             />
-                          ) : (
-                            <div className={`w-full aspect-video ${getRoundedClass('rounded-lg')} mb-3 bg-gray-200 flex items-center justify-center`}>
-                              <span className="text-gray-400 text-xs">No Image</span>
-                            </div>
-                          )}
+                          ) : null}
+                          <div className={`w-full aspect-video ${getRoundedClass('rounded-lg')} mb-3 bg-gray-200 flex items-center justify-center ${sample.thumbnail_url ? 'hidden' : ''}`}>
+                            <span className="text-gray-400 text-xs">No Image</span>
+                          </div>
                           <div className="flex flex-col gap-2">
                             {/* Date */}
                             <p className={`text-xs ${textStyle}/70`}>
                               {sample.date ? new Date(sample.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
                             </p>
                             
-                            {/* Title with external link */}
-                            <div className="flex items-start justify-between gap-2">
-                              <h3 className={`text-base font-black uppercase flex-1 ${textStyle}`}>{sample.project_name}</h3>
-                              <Link 
-                                href={`/work-samples/${sample.id}`}
-                                className={`${textStyle}/70 hover:${textStyle} transition-colors`}
-                              >
-                                <ExternalLink className="w-4 h-4" />
-                              </Link>
-                            </div>
+                            {/* Title */}
+                            <h3 className={`text-base font-black uppercase ${textStyle}`}>{sample.project_name}</h3>
                             
                             {/* Client as badge */}
                             {sample.client && (
