@@ -1236,7 +1236,7 @@ export default function TeamDashboard() {
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
               return (
-                <Card className={`${style.bg} ${style.border} py-[26px] px-4 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')}`}
+                <Card className={`${style.bg} ${style.border} py-8 px-6 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')}`}
                       style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
                 >
                   <div className="flex items-center justify-between">
@@ -1250,7 +1250,7 @@ export default function TeamDashboard() {
                         { value: '8', label: 'SHIPPED' },
                         { value: '12', label: 'IN QA' },
                       ].map((stat) => (
-                        <div key={stat.label} className={`bg-black/30 ${getRoundedClass('rounded-lg')} p-3 text-center`}>
+                        <div key={stat.label} className={`bg-black/30 ${getRoundedClass('rounded-[2.5rem]')} p-3 text-center`}>
                           <p className={`text-xl font-black mb-1 ${style.text}`}>{stat.value}</p>
                           <p className={`text-xs font-bold uppercase tracking-wide ${style.text}`}>{stat.label}</p>
                         </div>
