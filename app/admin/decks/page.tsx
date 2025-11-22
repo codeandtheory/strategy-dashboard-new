@@ -43,12 +43,14 @@ export default function DeckAdmin() {
       return
     }
 
-    // Validate file size (25MB default limit)
-    const maxSize = 25 * 1024 * 1024
+    // Validate file size
+    // Note: Vercel has a 4.5MB limit for serverless functions
+    // For larger files, consider splitting the upload process
+    const maxSize = 4 * 1024 * 1024 // 4MB to stay under Vercel's 4.5MB limit
     if (file.size > maxSize) {
       setUploadStatus({
         type: 'error',
-        message: 'File size exceeds 25MB limit'
+        message: `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds the 4MB limit. Vercel serverless functions have a 4.5MB body size limit. Please use a smaller file or compress the PDF.`
       })
       return
     }
@@ -108,9 +110,18 @@ export default function DeckAdmin() {
       }, 2000)
     } catch (error: any) {
       console.error('Error uploading deck:', error)
+      
+      // Handle 413 (Content Too Large) error specifically
+      let errorMessage = error.message || 'Failed to upload deck'
+      if (errorMessage.includes('413') || errorMessage.includes('Content Too Large') || errorMessage.includes('Request Entity Too Large')) {
+        errorMessage = 'File is too large. Vercel has a 4.5MB limit for serverless functions. Please use a smaller file (under 4MB) or compress the PDF.'
+      } else if (errorMessage.includes('Unexpected token') && errorMessage.includes('Request En')) {
+        errorMessage = 'File is too large. The server rejected the request. Please use a file under 4MB.'
+      }
+      
       setUploadStatus({
         type: 'error',
-        message: error.message || 'Failed to upload deck'
+        message: errorMessage
       })
     } finally {
       setUploading(false)
@@ -274,7 +285,7 @@ export default function DeckAdmin() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
                 <span className="font-semibold">1.</span>
-                <span>Upload a PDF presentation deck (max 25MB, 100 pages)</span>
+                <span>Upload a PDF presentation deck (max 4MB due to Vercel limits, 100 pages)</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-semibold">2.</span>

@@ -1,3 +1,9 @@
 {
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "functions": {
+    "app/api/upload-deck/route.ts": {
+      "maxDuration": 300,
+      "memory": 3008
+    }
+  }
 }

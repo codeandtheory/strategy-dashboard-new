@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getEnv } from '@/lib/decks/config/env'
-import { uploadFileToDrive } from '@/lib/decks/services/googleDriveService'
+import { downloadFileFromDrive, getDriveFileMetadata } from '@/lib/decks/services/googleDriveDownloadService'
 import { extractSlidesFromPdf } from '@/lib/decks/services/pdfExtractionService'
 import { generateDeckMetadata, generateTopics, labelSlide } from '@/lib/decks/llm/llmService'
 import {
@@ -10,39 +10,34 @@ import {
 } from '@/lib/decks/services/ingestionService'
 
 export const runtime = 'nodejs'
+export const maxDuration = 300 // 5 minutes for processing large PDFs
 
 export async function POST(request: NextRequest) {
   try {
     const config = getEnv()
 
-    // Parse multipart form data
-    const formData = await request.formData()
-    const file = formData.get('file') as File | null
-    const titleOverride = formData.get('title') as string | null
+    // Parse JSON body (expecting Google Drive file ID)
+    const body = await request.json()
+    const gdriveFileId = body.gdrive_file_id as string | null
+    const titleOverride = body.title as string | null
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 })
-    }
-
-    // Validate file type (PDF only)
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      return NextResponse.json({ error: 'File must be a PDF' }, { status: 400 })
-    }
-
-    // Validate file size
-    const maxSizeBytes = config.maxDeckSizeMB * 1024 * 1024
-    if (file.size > maxSizeBytes) {
+    if (!gdriveFileId) {
       return NextResponse.json(
-        {
-          error: `File size exceeds limit of ${config.maxDeckSizeMB}MB. Please use a smaller file.`,
-        },
+        { error: 'Google Drive file ID is required. Upload the file to Drive first using /api/decks/upload-to-drive' },
         { status: 400 }
       )
     }
 
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    // Get file metadata from Google Drive
+    const fileMetadata = await getDriveFileMetadata(gdriveFileId)
+
+    // Validate file type (PDF only)
+    if (fileMetadata.mimeType !== 'application/pdf' && !fileMetadata.name.toLowerCase().endsWith('.pdf')) {
+      return NextResponse.json({ error: 'File must be a PDF' }, { status: 400 })
+    }
+
+    // Download file from Google Drive
+    const buffer = await downloadFileFromDrive(gdriveFileId)
 
     // Extract PDF to check page count
     const slides = await extractSlidesFromPdf(buffer)
@@ -57,13 +52,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    // Upload to Google Drive
-    const driveResult = await uploadFileToDrive({
-      fileName: file.name,
-      mimeType: file.type || 'application/pdf',
-      buffer,
-    })
 
     // Build deck text from slides
     const deckText = slides
