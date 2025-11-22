@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const typeId = searchParams.get('type_id')
     const authorId = searchParams.get('author_id')
 
-    // Build query
+    // Build query - fetch base data first, then enrich with related data
     let query = supabase
       .from('work_samples')
       .select(`
@@ -31,17 +31,12 @@ export async function GET(request: NextRequest) {
         author_id,
         date,
         created_by,
-        submitted_by,
         created_at,
         updated_at,
         thumbnail_url,
         file_url,
         file_link,
-        file_name,
-        type:work_sample_types(id, name),
-        author:profiles!author_id(id, email, full_name),
-        created_by_profile:profiles!created_by(id, email, full_name),
-        submitted_by_profile:profiles!submitted_by(id, email, full_name)
+        file_name
       `)
       .order('date', { ascending: false })
       .order('created_at', { ascending: false })
@@ -55,18 +50,69 @@ export async function GET(request: NextRequest) {
       query = query.eq('author_id', authorId)
     }
 
-    const { data, error } = await query
+    const { data: workSamplesData, error } = await query
 
     if (error) {
       console.error('Error fetching work samples:', error)
+      console.error('Error details:', JSON.stringify(error, null, 2))
       return NextResponse.json(
-        { error: 'Failed to fetch work samples', details: error.message },
+        { error: 'Failed to fetch work samples', details: error.message, code: error.code, hint: error.hint },
         { status: 500 }
       )
     }
 
+    console.log(`Fetched ${workSamplesData?.length || 0} work samples`)
+
+    // Fetch related data separately
+    const typeIds = [...new Set((workSamplesData || []).map((item: any) => item.type_id).filter(Boolean))]
+    const authorIds = [...new Set((workSamplesData || []).map((item: any) => item.author_id).filter(Boolean))]
+    const createdByIds = [...new Set((workSamplesData || []).map((item: any) => item.created_by).filter(Boolean))]
+
+    // Fetch related data with proper error handling
+    let typesResult = { data: [] as any[], error: null as any }
+    let authorsResult = { data: [] as any[], error: null as any }
+    let createdByResult = { data: [] as any[], error: null as any }
+
+    if (typeIds.length > 0) {
+      const result = await supabase.from('work_sample_types').select('id, name').in('id', typeIds)
+      if (result.error) {
+        console.error('Error fetching work sample types:', result.error)
+      } else {
+        typesResult = result
+      }
+    }
+
+    if (authorIds.length > 0) {
+      const result = await supabase.from('profiles').select('id, email, full_name').in('id', authorIds)
+      if (result.error) {
+        console.error('Error fetching authors:', result.error)
+      } else {
+        authorsResult = result
+      }
+    }
+
+    if (createdByIds.length > 0) {
+      const result = await supabase.from('profiles').select('id, email, full_name').in('id', createdByIds)
+      if (result.error) {
+        console.error('Error fetching created by profiles:', result.error)
+      } else {
+        createdByResult = result
+      }
+    }
+
+    const typesMap = new Map((typesResult.data || []).map((t: any) => [t.id, t]))
+    const authorsMap = new Map((authorsResult.data || []).map((a: any) => [a.id, a]))
+    const createdByMap = new Map((createdByResult.data || []).map((c: any) => [c.id, c]))
+
+    const enrichedData = (workSamplesData || []).map((item: any) => ({
+      ...item,
+      type: item.type_id ? typesMap.get(item.type_id) : null,
+      author: item.author_id ? authorsMap.get(item.author_id) : null,
+      created_by_profile: item.created_by ? createdByMap.get(item.created_by) : null
+    }))
+
     // Apply search filter in memory (for project_name, description, client)
-    let filteredData = data || []
+    let filteredData = enrichedData
     if (search) {
       const searchLower = search.toLowerCase()
       filteredData = filteredData.filter((item: any) => 

@@ -165,7 +165,9 @@ export default function WorkSampleAdmin() {
       if (response.ok) {
         setWorkSamples(result.data || [])
       } else {
-        console.error('Error fetching work samples:', result.error)
+        console.error('Error fetching work samples:', result)
+        console.error('Full error details:', result.details, result.code, result.hint)
+        alert(`Error fetching work samples: ${result.error || 'Unknown error'}\n${result.details || ''}`)
       }
     } catch (error) {
       console.error('Error fetching work samples:', error)
