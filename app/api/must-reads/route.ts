@@ -118,9 +118,9 @@ export async function GET(request: NextRequest) {
       // Prioritize article_title/article_url (what table actually uses)
       article_title: item.article_title || item.title || '',
       article_url: item.article_url || item.url || '',
-      // Ensure created_by is included if it exists
-      created_by: item.created_by || item.submitted_by,
-      submitted_by: item.submitted_by || item.created_by,
+      // Use submitted_by as-is (don't mix with created_by)
+      submitted_by: item.submitted_by || null,
+      created_by: item.created_by || null,
     }))
 
     // Apply search filter in memory (search all fields)
@@ -338,9 +338,9 @@ export async function POST(request: NextRequest) {
       // Prioritize article_title/article_url (what table actually uses)
       data.article_title = data.article_title || data.title || ''
       data.article_url = data.article_url || data.url || ''
-      // Ensure created_by is included
-      data.created_by = data.created_by || data.submitted_by
-      data.submitted_by = data.submitted_by || data.created_by
+      // Use submitted_by as-is (don't mix with created_by)
+      data.submitted_by = data.submitted_by || null
+      data.created_by = data.created_by || null
     }
 
     if (error) {
@@ -487,9 +487,9 @@ export async function PUT(request: NextRequest) {
       // Prioritize article_title/article_url (what table actually uses)
       data.article_title = data.article_title || data.title || ''
       data.article_url = data.article_url || data.url || ''
-      // Ensure created_by is included
-      data.created_by = data.created_by || data.submitted_by
-      data.submitted_by = data.submitted_by || data.created_by
+      // Use submitted_by as-is (don't mix with created_by)
+      data.submitted_by = data.submitted_by || null
+      data.created_by = data.created_by || null
     }
 
     return NextResponse.json({ data })
