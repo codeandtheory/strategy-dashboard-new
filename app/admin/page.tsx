@@ -78,31 +78,28 @@ export default function AdminDashboard() {
     return base
   }
 
-  const getCardStyle = (color: 'purple' | 'green' | 'orange' | 'pink') => {
+  const getCardStyle = () => {
     if (mode === 'chaos') {
-      const colors = {
-        purple: { bg: 'bg-[#9D4EFF]/20', border: 'border-[#9D4EFF]/40', text: 'text-white', accent: '#9D4EFF' },
-        green: { bg: 'bg-[#C4F500]/20', border: 'border-[#C4F500]/40', text: 'text-white', accent: '#C4F500' },
-        orange: { bg: 'bg-[#FF6B35]/20', border: 'border-[#FF6B35]/40', text: 'text-white', accent: '#FF6B35' },
-        pink: { bg: 'bg-[#FF4081]/20', border: 'border-[#FF4081]/40', text: 'text-white', accent: '#FF4081' },
+      return { 
+        bg: 'bg-[#000000]', 
+        border: 'border border-[#C4F500]', 
+        text: 'text-white', 
+        accent: '#C4F500' 
       }
-      return colors[color]
     } else if (mode === 'chill') {
-      const colors = {
-        purple: { bg: 'bg-[#C8D961]/20', border: 'border-[#C8D961]/40', text: 'text-[#4A1818]', accent: '#C8D961' },
-        green: { bg: 'bg-[#FFC043]/20', border: 'border-[#FFC043]/40', text: 'text-[#4A1818]', accent: '#FFC043' },
-        orange: { bg: 'bg-[#FF6B35]/20', border: 'border-[#FF6B35]/40', text: 'text-[#4A1818]', accent: '#FF6B35' },
-        pink: { bg: 'bg-[#FFB5D8]/20', border: 'border-[#FFB5D8]/40', text: 'text-[#4A1818]', accent: '#FFB5D8' },
+      return { 
+        bg: 'bg-white', 
+        border: 'border border-[#FFC043]/30', 
+        text: 'text-[#4A1818]', 
+        accent: '#FFC043' 
       }
-      return colors[color]
     } else { // code
-      const colors = {
-        purple: { bg: 'bg-black', border: 'border-[#FFFFFF]', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
-        green: { bg: 'bg-black', border: 'border-[#FFFFFF]', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
-        orange: { bg: 'bg-black', border: 'border-[#FFFFFF]', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
-        pink: { bg: 'bg-black', border: 'border-[#FFFFFF]', text: 'text-[#FFFFFF]', accent: '#FFFFFF' },
+      return { 
+        bg: 'bg-[#000000]', 
+        border: 'border border-[#FFFFFF]', 
+        text: 'text-[#FFFFFF]', 
+        accent: '#FFFFFF' 
       }
-      return colors[color]
     }
   }
 
@@ -158,23 +155,10 @@ export default function AdminDashboard() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* PROFILE MANAGEMENT */}
-          <Card className={`${getCardStyle('purple').bg} ${getCardStyle('purple').border} border-2 p-6 ${getRoundedClass('rounded-xl')}`}>
-            <h3 className={`text-xl font-bold ${getCardStyle('purple').text} mb-4`}>PROFILE MANAGEMENT</h3>
-            <ul className={`space-y-3 ${getCardStyle('purple').text}/90`}>
-              <li className="flex items-start gap-2">
-                <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  <strong>View Permissions:</strong> See your current access level and capabilities.
-                </div>
-              </li>
-            </ul>
-          </Card>
-
           {/* PUBLISH CONTENT */}
-          <Card className={`${getCardStyle('green').bg} ${getCardStyle('green').border} border-2 p-6 ${getRoundedClass('rounded-xl')}`}>
-            <h3 className={`text-xl font-bold ${getCardStyle('green').text} mb-4`}>PUBLISH CONTENT</h3>
-            <ul className={`space-y-3 ${getCardStyle('green').text}/90`}>
+          <Card className={`${getCardStyle().bg} ${getCardStyle().border} border p-6 ${getRoundedClass('rounded-xl')}`}>
+            <h3 className={`text-xl font-bold ${getCardStyle().text} mb-4`}>PUBLISH CONTENT</h3>
+            <ul className={`space-y-3 ${getCardStyle().text}/90`}>
               <li className="flex items-start gap-2">
                 <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <div>
@@ -203,9 +187,9 @@ export default function AdminDashboard() {
           </Card>
 
           {/* CONTENT MANAGEMENT */}
-          <Card className={`${getCardStyle('orange').bg} ${getCardStyle('orange').border} border-2 p-6 ${getRoundedClass('rounded-xl')}`}>
-            <h3 className={`text-xl font-bold ${getCardStyle('orange').text} mb-4`}>CONTENT MANAGEMENT</h3>
-            <ul className={`space-y-3 ${getCardStyle('orange').text}/90`}>
+          <Card className={`${getCardStyle().bg} ${getCardStyle().border} border p-6 ${getRoundedClass('rounded-xl')}`}>
+            <h3 className={`text-xl font-bold ${getCardStyle().text} mb-4`}>CONTENT MANAGEMENT</h3>
+            <ul className={`space-y-3 ${getCardStyle().text}/90`}>
               <li className="flex items-start gap-2">
                 <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <div>
@@ -235,9 +219,9 @@ export default function AdminDashboard() {
 
           {/* ADMIN FUNCTIONS */}
           {permissions?.canManageUsers && (
-            <Card className={`${getCardStyle('pink').bg} ${getCardStyle('pink').border} border-2 p-6 ${getRoundedClass('rounded-xl')}`}>
-              <h3 className={`text-xl font-bold ${getCardStyle('pink').text} mb-4`}>ADMIN FUNCTIONS</h3>
-              <ul className={`space-y-3 ${getCardStyle('pink').text}/90`}>
+            <Card className={`${getCardStyle().bg} ${getCardStyle().border} border p-6 ${getRoundedClass('rounded-xl')}`}>
+              <h3 className={`text-xl font-bold ${getCardStyle().text} mb-4`}>ADMIN FUNCTIONS</h3>
+              <ul className={`space-y-3 ${getCardStyle().text}/90`}>
                 <li className="flex items-start gap-2">
                   <Bell className="w-4 h-4 mt-0.5 flex-shrink-0" />
                   <div>
@@ -278,7 +262,7 @@ export default function AdminDashboard() {
                 mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
                 mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
                 'bg-[#FFFFFF] text-black hover:bg-[#FFFFFF]/80'
-              }`}
+              } font-black`}
             >
               <FileText className="w-4 h-4 mr-2" />
               Add a Must Read
@@ -288,15 +272,15 @@ export default function AdminDashboard() {
       </div>
 
       {/* Need Help Section */}
-      <Card className={`${mode === 'chaos' ? 'bg-red-500/20 border-red-500/40' : mode === 'chill' ? 'bg-red-500/10 border-red-500/30' : 'bg-red-500/20 border-red-500/40'} border-2 p-6 ${getRoundedClass('rounded-xl')}`}>
+      <Card className={`${getCardStyle().bg} ${getCardStyle().border} border p-6 ${getRoundedClass('rounded-xl')}`}>
         <div className="flex items-start gap-3">
-          <AlertCircle className={`w-6 h-6 ${mode === 'chaos' ? 'text-red-400' : mode === 'chill' ? 'text-red-600' : 'text-red-500'} flex-shrink-0`} />
+          <AlertCircle className={`w-6 h-6`} style={{ color: getCardStyle().accent }} />
           <div>
-            <h3 className={`text-xl font-bold ${getTextClass()} mb-2`}>Need Help?</h3>
-            <p className={`${getTextClass()}/70 mb-3`}>
+            <h3 className={`text-xl font-bold ${getCardStyle().text} mb-2`}>Need Help?</h3>
+            <p className={`${getCardStyle().text}/70 mb-3`}>
               If you're having trouble or need assistance with any feature:
             </p>
-            <ul className={`space-y-1 ${getTextClass()}/70 text-sm`}>
+            <ul className={`space-y-1 ${getCardStyle().text}/70 text-sm`}>
               <li>• Use the sidebar navigation to explore different sections.</li>
               <li>• Contact Karen for technical support.</li>
             </ul>
