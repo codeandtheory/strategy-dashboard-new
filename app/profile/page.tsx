@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Loader2, Calendar, Briefcase, Users, ArrowLeft, Upload, MapPin, Globe, FileText } from 'lucide-react'
 import Link from 'next/link'
+import { LocationAutocomplete } from '@/components/location-autocomplete'
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth()
@@ -476,14 +477,14 @@ export default function ProfilePage() {
                 <MapPin className="w-4 h-4" />
                 Location
               </Label>
-              <Input
-                id="location"
-                type="text"
+              <LocationAutocomplete
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g., New York, NY"
-                className="w-full"
+                onChange={setLocation}
+                placeholder="Start typing a city or location..."
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Start typing to see location suggestions
+              </p>
             </div>
 
             <div>
