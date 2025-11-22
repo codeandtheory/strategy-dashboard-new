@@ -43,14 +43,12 @@ export default function DeckAdmin() {
       return
     }
 
-    // Validate file size
-    // Note: Vercel has a 4.5MB limit for serverless functions
-    // For larger files, consider splitting the upload process
-    const maxSize = 4 * 1024 * 1024 // 4MB to stay under Vercel's 4.5MB limit
+    // Validate file size (100MB limit - files upload directly to Google Drive)
+    const maxSize = 100 * 1024 * 1024 // 100MB
     if (file.size > maxSize) {
       setUploadStatus({
         type: 'error',
-        message: `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds the 4MB limit. Vercel serverless functions have a 4.5MB body size limit. Please use a smaller file or compress the PDF.`
+        message: `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds the 100MB limit. Please use a smaller file.`
       })
       return
     }
@@ -77,26 +75,111 @@ export default function DeckAdmin() {
     setUploadStatus({ type: 'idle', message: '' })
 
     try {
-      const formData = new FormData()
-      formData.append('file', selectedFile)
-      if (title.trim()) {
-        formData.append('title', title.trim())
+      let fileId: string
+      let fileUrl: string
+
+      // Try resumable upload for large files (>4MB)
+      if (selectedFile.size > 4 * 1024 * 1024) {
+        try {
+          // Step 1: Create resumable upload session
+          const sessionResponse = await fetch('/api/decks/create-upload-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              fileName: selectedFile.name,
+              mimeType: selectedFile.type || 'application/pdf',
+              fileSize: selectedFile.size,
+            }),
+          })
+
+          const sessionResult = await sessionResponse.json()
+
+          if (!sessionResponse.ok) {
+            throw new Error(sessionResult.error || 'Failed to create upload session')
+          }
+
+          // Step 2: Upload file directly to Google Drive using resumable URL
+          const uploadResponse = await fetch(sessionResult.uploadUrl, {
+            method: 'PUT',
+            body: selectedFile,
+            headers: {
+              'Content-Type': sessionResult.mimeType,
+            },
+          })
+
+          if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text()
+            throw new Error(`Upload failed: ${uploadResponse.status}`)
+          }
+
+          // Parse response to get file ID
+          const uploadText = await uploadResponse.text()
+          let uploadResult: any
+          try {
+            uploadResult = JSON.parse(uploadText)
+          } catch {
+            // If response is not JSON, try to extract file ID from headers or use alternative method
+            throw new Error('Could not parse upload response. File may be too large for direct upload.')
+          }
+
+          fileId = uploadResult.id
+          fileUrl = `https://drive.google.com/file/d/${fileId}/view`
+        } catch (resumableError: any) {
+          // Fallback: Show instructions for manual upload
+          setUploadStatus({
+            type: 'error',
+            message: `File is too large (${(selectedFile.size / 1024 / 1024).toFixed(2)}MB) for direct upload. Please upload the file manually to Google Drive, then use the ingestion endpoint with the file ID. Error: ${resumableError.message}`
+          })
+          setUploading(false)
+          return
+        }
+      } else {
+        // For smaller files, use the standard upload endpoint
+        const uploadFormData = new FormData()
+        uploadFormData.append('file', selectedFile)
+
+        const uploadResponse = await fetch('/api/decks/upload-to-drive', {
+          method: 'POST',
+          body: uploadFormData,
+        })
+
+        const uploadResult = await uploadResponse.json()
+
+        if (!uploadResponse.ok) {
+          // If we get a 413, suggest manual upload
+          if (uploadResponse.status === 413) {
+            throw new Error('File is too large. Please upload manually to Google Drive and use the ingestion endpoint with the file ID.')
+          }
+          throw new Error(uploadResult.error || 'Failed to upload file to Google Drive')
+        }
+
+        fileId = uploadResult.fileId
+        fileUrl = uploadResult.fileUrl
       }
 
-      const response = await fetch('/api/upload-deck', {
+      // Step 3: Ingest the deck from Google Drive
+      const ingestResponse = await fetch('/api/upload-deck', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gdrive_file_id: fileId,
+          title: title.trim() || undefined,
+        }),
       })
 
-      const result = await response.json()
+      const ingestResult = await ingestResponse.json()
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to upload deck')
+      if (!ingestResponse.ok) {
+        throw new Error(ingestResult.error || 'Failed to process deck')
       }
 
       setUploadStatus({
         type: 'success',
-        message: `Deck uploaded successfully! Processed ${result.slides_count} slides and ${result.topics_count} topics.`
+        message: `Deck uploaded successfully! Processed ${ingestResult.slides_count} slides and ${ingestResult.topics_count} topics.`
       })
 
       // Reset form
@@ -110,18 +193,9 @@ export default function DeckAdmin() {
       }, 2000)
     } catch (error: any) {
       console.error('Error uploading deck:', error)
-      
-      // Handle 413 (Content Too Large) error specifically
-      let errorMessage = error.message || 'Failed to upload deck'
-      if (errorMessage.includes('413') || errorMessage.includes('Content Too Large') || errorMessage.includes('Request Entity Too Large')) {
-        errorMessage = 'File is too large. Vercel has a 4.5MB limit for serverless functions. Please use a smaller file (under 4MB) or compress the PDF.'
-      } else if (errorMessage.includes('Unexpected token') && errorMessage.includes('Request En')) {
-        errorMessage = 'File is too large. The server rejected the request. Please use a file under 4MB.'
-      }
-      
       setUploadStatus({
         type: 'error',
-        message: errorMessage
+        message: error.message || 'Failed to upload deck'
       })
     } finally {
       setUploading(false)
@@ -285,7 +359,7 @@ export default function DeckAdmin() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
                 <span className="font-semibold">1.</span>
-                <span>Upload a PDF presentation deck (max 4MB due to Vercel limits, 100 pages)</span>
+                <span>Upload a PDF presentation deck (max 100MB, 100 pages)</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-semibold">2.</span>

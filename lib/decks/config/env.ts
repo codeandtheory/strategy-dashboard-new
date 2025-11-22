@@ -70,9 +70,9 @@ export function getEnv(): DeckConfig {
   const openaiChatModel = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini'
   const openaiEmbeddingModel = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small'
   const maxDeckPages = parseInt(process.env.MAX_DECK_PAGES || '100', 10)
-  // Note: Vercel has a 4.5MB body size limit for serverless functions
-  // Setting default to 4MB to stay safely under the limit
-  const maxDeckSizeMB = parseInt(process.env.MAX_DECK_SIZE_MB || '4', 10)
+  // Note: Files are uploaded to Google Drive first, so no Vercel body size limit applies
+  // This limit is now only used for validation/documentation
+  const maxDeckSizeMB = parseInt(process.env.MAX_DECK_SIZE_MB || '100', 10)
 
   cachedConfig = {
     openaiApiKey,

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     if (!gdriveFileId) {
       return NextResponse.json(
-        { error: 'Google Drive file ID is required. Upload the file to Drive first using /api/decks/upload-to-drive' },
+        { error: 'Google Drive file ID is required. Upload the file to Drive first using /api/decks/upload-to-drive, or provide gdrive_file_id in the request body.' },
         { status: 400 }
       )
     }
@@ -78,9 +78,9 @@ export async function POST(request: NextRequest) {
 
     // Create deck record
     const deckRecord = await createDeckRecord({
-      title: titleOverride || file.name,
-      gdriveFileId: driveResult.fileId,
-      gdriveFileUrl: driveResult.webViewLink,
+      title: titleOverride || fileMetadata.name,
+      gdriveFileId: gdriveFileId,
+      gdriveFileUrl: fileMetadata.webViewLink,
       deckMetadata,
     })
 

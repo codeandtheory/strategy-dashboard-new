@@ -124,6 +124,9 @@ export async function GET(request: NextRequest) {
     
     // CRITICAL: Check database FIRST before any generation
     // This is the primary check to prevent unnecessary API calls
+    // Use multiple strategies to find records (exact date match, date range, recent records)
+    console.log('🔍 Checking database with date:', todayDate, 'type:', typeof todayDate)
+    
     const { data: cachedHoroscope, error: cacheError } = await supabaseAdmin
       .from('horoscopes')
       .select('star_sign, horoscope_text, horoscope_dos, horoscope_donts, image_url, date, generated_at, character_name')
@@ -133,11 +136,45 @@ export async function GET(request: NextRequest) {
     
     if (cacheError) {
       console.error('❌ Error checking database cache:', cacheError)
+      console.error('   Error details:', {
+        message: cacheError.message,
+        details: cacheError.details,
+        hint: cacheError.hint,
+        code: cacheError.code
+      })
       // Don't proceed if there's a database error - return error instead of generating
       return NextResponse.json(
         { error: 'Database error while checking cache: ' + cacheError.message },
         { status: 500 }
       )
+    }
+    
+    // SAFETY CHECK: Also check for records from the last 2 days as a fallback
+    // This catches timezone issues or date calculation problems
+    const yesterday = new Date(localDate)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayDate = yesterday.toISOString().split('T')[0]
+    
+    const { data: recentRecords, error: recentError } = await supabaseAdmin
+      .from('horoscopes')
+      .select('date, horoscope_text, image_url, generated_at')
+      .eq('user_id', userId)
+      .in('date', [todayDate, yesterdayDate])
+      .order('date', { ascending: false })
+      .limit(2)
+    
+    if (recentError) {
+      console.error('⚠️ Error checking recent records:', recentError)
+    }
+    
+    // If we found records for today or yesterday, log them
+    if (recentRecords && recentRecords.length > 0) {
+      console.log('📅 Found recent records:', recentRecords.map(r => ({
+        date: r.date,
+        dateType: typeof r.date,
+        hasText: !!r.horoscope_text,
+        hasImage: !!r.image_url
+      })))
     }
     
     // Also check if there are any recent horoscopes for debugging
