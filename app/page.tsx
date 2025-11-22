@@ -55,6 +55,8 @@ export default function TeamDashboard() {
     client?: string | null
     date: string
     thumbnail_url?: string | null
+    file_url?: string | null
+    file_link?: string | null
   }>>([])
   const [workSamplesSearchQuery, setWorkSamplesSearchQuery] = useState('')
   const [horoscopeImage, setHoroscopeImage] = useState<string | null>(null)
@@ -589,7 +591,7 @@ export default function TeamDashboard() {
               <a href="#" className={getNavLinkClass(true)}>HOME</a>
               <a href="#" className={getNavLinkClass()}>SNAPS</a>
               <a href="#" className={getNavLinkClass()}>RESOURCES</a>
-              <a href="#" className={getNavLinkClass()}>WORK</a>
+              <Link href="/work-samples" className={getNavLinkClass()}>WORK</Link>
               <a href="#" className={getNavLinkClass()}>TEAM</a>
               <a href="#" className={getNavLinkClass()}>VIBES</a>
             </nav>
@@ -1348,8 +1350,20 @@ export default function TeamDashboard() {
                               {sample.date ? new Date(sample.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
                             </p>
                             
-                            {/* Title */}
-                            <h3 className={`text-base font-black uppercase ${textStyle}`}>{sample.project_name}</h3>
+                            {/* Title with external link */}
+                            {(sample.file_link || sample.file_url) ? (
+                              <a
+                                href={sample.file_link || sample.file_url || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`text-base font-black uppercase ${textStyle} hover:opacity-70 transition-opacity flex items-center gap-1`}
+                              >
+                                {sample.project_name}
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            ) : (
+                              <h3 className={`text-base font-black uppercase ${textStyle}`}>{sample.project_name}</h3>
+                            )}
                             
                             {/* Client as badge */}
                             {sample.client && (
