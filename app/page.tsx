@@ -1323,7 +1323,9 @@ export default function TeamDashboard() {
                         <div key={sample.id} className="flex flex-col">
                           {sample.thumbnail_url ? (
                             <img 
-                              src={sample.thumbnail_url} 
+                              src={sample.thumbnail_url.startsWith('http') && sample.thumbnail_url.includes('supabase') 
+                                ? `/api/work-samples/thumbnail?url=${encodeURIComponent(sample.thumbnail_url)}`
+                                : sample.thumbnail_url} 
                               alt={sample.project_name}
                               className={`w-full aspect-video object-contain ${getRoundedClass('rounded-lg')} mb-3 bg-gray-100`}
                               onError={(e) => {
