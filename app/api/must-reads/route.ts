@@ -420,12 +420,15 @@ export async function PUT(request: NextRequest) {
     if (pinned !== undefined) {
       updateData.pinned = pinned || false
     }
-    if (submitted_by !== undefined && submitted_by !== null && submitted_by.trim() !== '') {
-      // Only update if a valid UUID is provided
-      updateData.submitted_by = submitted_by.trim()
+    if (submitted_by !== undefined) {
+      // Allow setting to null to clear the field, or set to a valid UUID
+      if (submitted_by && submitted_by.trim() !== '') {
+        updateData.submitted_by = submitted_by.trim()
+      } else {
+        // Explicitly set to null to clear the field
+        updateData.submitted_by = null
+      }
     }
-    // If submitted_by is undefined, null, or empty, don't include it in the update
-    // This prevents trying to set it to null if there's a NOT NULL constraint
 
     // Include week_start_date if provided
     if (week_start_date) {
@@ -496,6 +499,13 @@ export async function PUT(request: NextRequest) {
       // Use submitted_by as-is (don't mix with created_by)
       data.submitted_by = data.submitted_by || null
       data.created_by = data.created_by || null
+      // Preserve profile relationships
+      if (data.submitted_by_profile) {
+        data.submitted_by_profile = data.submitted_by_profile
+      }
+      if (data.assigned_to_profile) {
+        data.assigned_to_profile = data.assigned_to_profile
+      }
     }
 
     return NextResponse.json({ data })
