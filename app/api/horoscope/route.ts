@@ -198,6 +198,22 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId)
       .limit(1)
     
+    // CRITICAL: Check if table is accessible and working
+    // If we can't query the database properly, we should NOT generate
+    if (cacheError || recentError || allRecordsError) {
+      console.error('❌ DATABASE ERROR: Cannot verify cache - DO NOT GENERATE')
+      console.error('   Cache error:', cacheError?.message)
+      console.error('   Recent error:', recentError?.message)
+      console.error('   All records error:', allRecordsError?.message)
+      return NextResponse.json(
+        { 
+          error: 'Database connection error. Cannot verify if horoscope already exists. Please try again or contact support.',
+          details: cacheError?.message || recentError?.message || allRecordsError?.message
+        },
+        { status: 500 }
+      )
+    }
+    
     console.log('📊 Database cache check result:', {
       found: !!cachedHoroscope,
       hasText: !!cachedHoroscope?.horoscope_text,
@@ -214,8 +230,7 @@ export async function GET(request: NextRequest) {
         hasImage: !!h.image_url
       })),
       anyRecordsForUser: !!allUserRecords && allUserRecords.length > 0,
-      recentError: recentError?.message,
-      allRecordsError: allRecordsError?.message
+      recentRecordsCount: recentRecords?.length || 0
     })
     
     // IMPORTANT: Only regenerate if there's NO cached text at all
@@ -257,11 +272,38 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // CRITICAL SAFETY CHECK: Before generating, verify database is working
+    // If we can't find records and can't verify the database is accessible, don't generate
+    if (!cachedHoroscope && (!allUserRecords || allUserRecords.length === 0)) {
+      // Check if this is the first time ever (no records at all) vs database issue
+      // Try a simple test query to verify database connectivity
+      const { data: testQuery, error: testError } = await supabaseAdmin
+        .from('horoscopes')
+        .select('id')
+        .limit(1)
+      
+      if (testError) {
+        console.error('❌ CRITICAL: Cannot query horoscopes table - database may be inaccessible')
+        console.error('   Test query error:', testError)
+        return NextResponse.json(
+          { 
+            error: 'Database connection error. Cannot verify if horoscope exists. Please try again or contact support.',
+            details: testError.message
+          },
+          { status: 500 }
+        )
+      }
+      
+      // Database is accessible but empty - this is OK for first-time generation
+      console.log('📝 Database is accessible but empty - this appears to be first-time generation')
+    }
+    
     // Only generate new horoscope if there's NO cached text at all
     console.log('⚠️ NO cached horoscope text found in database for user', userId, 'on date', todayDate)
     console.log('   Cached horoscope exists:', !!cachedHoroscope)
     console.log('   Has horoscope_text:', !!cachedHoroscope?.horoscope_text)
     console.log('   Text value:', cachedHoroscope?.horoscope_text || 'null/empty')
+    console.log('   Any records for user:', !!allUserRecords && allUserRecords.length > 0)
     console.log('   ⚠️ PROCEEDING TO GENERATE NEW HOROSCOPE (this will call OpenAI API)')
     console.log('   ⚠️ THIS IS THE ONLY GENERATION FOR TODAY - NO MORE WILL BE GENERATED')
     
