@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 
 // Initialize Google Drive API (supports both service account JSON and individual vars)
 function getDriveClient() {
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID?.trim()
   if (!folderId) {
     throw new Error('GOOGLE_DRIVE_FOLDER_ID is required')
   }
