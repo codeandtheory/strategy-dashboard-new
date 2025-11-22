@@ -113,14 +113,19 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
+      console.error('Auth error:', authError)
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       )
     }
 
+    console.log('User authenticated:', user.id)
+
     const body = await request.json()
     const { article_title, article_url, notes, pinned, assigned_to } = body
+
+    console.log('Request body:', { article_title, article_url, notes, pinned, assigned_to })
 
     if (!article_title || !article_url) {
       return NextResponse.json(
@@ -143,6 +148,30 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    console.log('Profile check passed')
+
+    // Test if table is accessible (try a simple select)
+    const { error: tableTestError } = await supabase
+      .from('must_reads')
+      .select('id')
+      .limit(1)
+
+    if (tableTestError) {
+      console.error('Table access test failed:', tableTestError)
+      return NextResponse.json(
+        { 
+          error: 'Cannot access must_reads table', 
+          details: tableTestError.message,
+          code: tableTestError.code,
+          hint: tableTestError.hint,
+          fullError: tableTestError
+        },
+        { status: 500 }
+      )
+    }
+
+    console.log('Table access test passed')
 
     // Verify assigned_to user exists if specified
     const assignedToId = (assigned_to && assigned_to.trim() !== '') ? assigned_to : user.id
