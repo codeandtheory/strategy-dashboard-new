@@ -1265,8 +1265,8 @@ export default function TeamDashboard() {
               const textStyle = mode === 'chaos' ? 'text-white' : mode === 'chill' ? 'text-[#4A1818]' : 'text-[#FFFFFF]'
               return (
                 <div className="flex-1 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <p className={`text-xs uppercase tracking-wider font-black ${textStyle}`}>WORK SAMPLES</p>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className={`text-3xl font-black uppercase leading-tight ${textStyle}`}>WORK SAMPLES</h2>
                     <div className="flex items-center gap-3">
                       <Link 
                         href="/work-samples"
@@ -1282,7 +1282,7 @@ export default function TeamDashboard() {
                       </Link>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-8">
                     {workSamples.length > 0 ? (
                       workSamples.map((sample) => (
                         <div key={sample.id} className="flex flex-col">
