@@ -77,15 +77,35 @@ export function PlaylistCard({
             <div className={`vinyl ${getRoundedClass('rounded-full')} bg-black/90 ring-1 ring-black/40 pointer-events-none`}>
               {/* center label avatar */}
               {curatorAvatar ? (
-                <img
-                  src={curatorAvatar}
-                  alt={curator}
-                  className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 md:w-14 md:h-14 ${getRoundedClass('rounded-full')} ring-2 object-cover`}
-                  style={{
-                    ringColor: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#10b981'
-                  }}
-                  aria-hidden="true"
-                />
+                <>
+                  <img
+                    src={curatorAvatar}
+                    alt={curator}
+                    className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 md:w-14 md:h-14 ${getRoundedClass('rounded-full')} ring-2 object-cover`}
+                    style={{
+                      ringColor: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#10b981'
+                    }}
+                    aria-hidden="true"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.style.display = 'none'
+                      const parent = target.parentElement
+                      if (parent) {
+                        const fallback = parent.querySelector('.playlist-curator-avatar-fallback') as HTMLElement
+                        if (fallback) fallback.style.display = 'flex'
+                      }
+                    }}
+                  />
+                  <div 
+                    className={`playlist-curator-avatar-fallback absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 md:w-14 md:h-14 ${getRoundedClass('rounded-full')} flex items-center justify-center text-white font-semibold text-xs hidden`}
+                    style={{
+                      backgroundColor: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#10b981',
+                      color: mode === 'chaos' || mode === 'code' ? '#000000' : mode === 'chill' ? '#4A1818' : '#000000'
+                    }}
+                  >
+                    {curator.charAt(0).toUpperCase()}
+                  </div>
+                </>
               ) : (
                 <div 
                   className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 md:w-14 md:h-14 ${getRoundedClass('rounded-full')} flex items-center justify-center text-white font-semibold text-xs`}

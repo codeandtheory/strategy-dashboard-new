@@ -607,11 +607,27 @@ export default function SnapsPage() {
                       <div className="flex items-start gap-2">
                         <div className="flex-shrink-0" style={{ padding: '4px', width: '100px', height: '100px' }}>
                           {profilePicture ? (
-                            <img 
-                              src={profilePicture} 
-                              alt={activeFilter === 'all' ? toName : activeFilter === 'about-me' ? fromName : toName}
-                              className={`${getRoundedClass('rounded-lg')} w-full h-full object-cover`}
-                            />
+                            <>
+                              <img 
+                                src={profilePicture} 
+                                alt={activeFilter === 'all' ? toName : activeFilter === 'about-me' ? fromName : toName}
+                                className={`${getRoundedClass('rounded-lg')} w-full h-full object-cover`}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement
+                                  target.style.display = 'none'
+                                  const parent = target.parentElement
+                                  if (parent) {
+                                    const fallback = parent.querySelector('.snaps-page-avatar-fallback') as HTMLElement
+                                    if (fallback) fallback.style.display = 'flex'
+                                  }
+                                }}
+                              />
+                              <div className="snaps-page-avatar-fallback w-full h-full rounded-full flex items-center justify-center hidden" style={{ 
+                                backgroundColor: style.accent
+                              }}>
+                                <Users className={`w-10 h-10 ${mode === 'chaos' || mode === 'code' ? 'text-black' : mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`} />
+                              </div>
+                            </>
                           ) : (
                             <div className="w-full h-full rounded-full flex items-center justify-center" style={{ 
                               backgroundColor: style.accent

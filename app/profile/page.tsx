@@ -26,6 +26,7 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState<string | null>(null)
   
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [fullName, setFullName] = useState('')
   const [pronouns, setPronouns] = useState('')
   const [birthday, setBirthday] = useState('') // MM/DD format
@@ -113,6 +114,13 @@ export default function ProfilePage() {
       return
     }
 
+    // Show preview immediately
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+
     setUploading(true)
     setError(null)
 
@@ -151,6 +159,7 @@ export default function ProfilePage() {
       }
 
       setAvatarUrl(publicUrl)
+      setAvatarPreview(null) // Clear preview now that we have the real URL
       setSuccess('Profile photo updated successfully!')
       setTimeout(() => setSuccess(null), 3000)
     } catch (err: any) {
@@ -287,7 +296,8 @@ export default function ProfilePage() {
   }
 
   const initials = getInitials(fullName, user.email || '')
-  const displayAvatarUrl = avatarUrl || user.user_metadata?.avatar_url || null
+  // Show preview if available, otherwise show saved avatar URL
+  const displayAvatarUrl = avatarPreview || avatarUrl || user.user_metadata?.avatar_url || null
   
   return (
     <div className="min-h-screen bg-background p-4">

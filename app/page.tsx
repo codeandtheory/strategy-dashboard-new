@@ -1921,11 +1921,27 @@ export default function TeamDashboard() {
                           <div className="flex items-start gap-2">
                             <div className="flex-shrink-0" style={{ padding: '2px', width: '50px', height: '50px' }}>
                               {profilePicture ? (
-                                <img 
-                                  src={profilePicture} 
-                                  alt={avatarName || 'User'}
-                                  className={`rounded-lg w-full h-full object-cover`}
-                                />
+                                <>
+                                  <img 
+                                    src={profilePicture} 
+                                    alt={avatarName || 'User'}
+                                    className={`rounded-lg w-full h-full object-cover`}
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement
+                                      target.style.display = 'none'
+                                      const parent = target.parentElement
+                                      if (parent) {
+                                        const fallback = parent.querySelector('.snap-avatar-fallback') as HTMLElement
+                                        if (fallback) fallback.style.display = 'flex'
+                                      }
+                                    }}
+                                  />
+                                  <div className="snap-avatar-fallback w-full h-full rounded-full flex items-center justify-center hidden" style={{ 
+                                    backgroundColor: style.accent
+                                  }}>
+                                    <User className={`w-5 h-5 ${mode === 'chaos' || mode === 'code' ? 'text-black' : mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`} />
+                                  </div>
+                                </>
                               ) : (
                                 <div className="w-full h-full rounded-full flex items-center justify-center" style={{ 
                                   backgroundColor: style.accent

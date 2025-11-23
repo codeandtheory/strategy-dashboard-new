@@ -435,11 +435,25 @@ export default function VibesPage() {
                         {/* Profile Picture - No glitch effects */}
                         <div className="absolute inset-[3px] rounded-full overflow-hidden z-10">
                           {beastBabe?.avatar_url ? (
-                            <img
-                              src={beastBabe.avatar_url}
-                              alt={beastBabe.full_name || 'Beast Babe'}
-                              className="w-full h-full object-cover"
-                            />
+                            <>
+                              <img
+                                src={beastBabe.avatar_url}
+                                alt={beastBabe.full_name || 'Beast Babe'}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement
+                                  target.style.display = 'none'
+                                  const parent = target.parentElement
+                                  if (parent) {
+                                    const fallback = parent.querySelector('.vibes-beast-babe-avatar-fallback') as HTMLElement
+                                    if (fallback) fallback.style.display = 'flex'
+                                  }
+                                }}
+                              />
+                              <div className="vibes-beast-babe-avatar-fallback w-full h-full flex items-center justify-center hidden" style={{ backgroundColor: redColors.primary }}>
+                                <Trophy className="w-24 h-24" style={{ color: redColors.accent }} />
+                              </div>
+                            </>
                           ) : (
                             <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: redColors.primary }}>
                               <Trophy className="w-24 h-24" style={{ color: redColors.accent }} />

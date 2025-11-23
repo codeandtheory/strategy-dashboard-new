@@ -292,11 +292,25 @@ export default function UsersAdminPage() {
               >
                 <div className="flex items-center gap-3">
                   {user.avatar_url ? (
-                    <img
-                      src={user.avatar_url}
-                      alt={user.full_name || 'User'}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
+                    <>
+                      <img
+                        src={user.avatar_url}
+                        alt={user.full_name || 'User'}
+                        className="w-10 h-10 rounded-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                          const parent = target.parentElement
+                          if (parent) {
+                            const fallback = parent.querySelector('.admin-user-avatar-fallback') as HTMLElement
+                            if (fallback) fallback.style.display = 'flex'
+                          }
+                        }}
+                      />
+                      <div className="admin-user-avatar-fallback w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center hidden">
+                        <User className="w-5 h-5 text-gray-600" />
+                      </div>
+                    </>
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
                       <User className="w-5 h-5 text-gray-600" />
