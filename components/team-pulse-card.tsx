@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { useMode } from '@/contexts/mode-context'
 import { useAuth } from '@/contexts/auth-context'
-import { Lock, ArrowRight, CheckCircle, Users, TrendingUp } from 'lucide-react'
+import { Lock, ArrowRight, CheckCircle, Users, TrendingUp, TrendingDown, Minus, Calendar, Target, Briefcase, Heart, Zap, ChevronUp, ChevronDown } from 'lucide-react'
 
 interface PulseQuestion {
   question_key: string
@@ -27,9 +27,65 @@ interface AggregatedData {
   average: number
   responseCount: number
   commentThemes: { theme: string; count: number }[]
+  change?: number | null
+  prevAverage?: number | null
+}
+
+interface QuestionSummary {
+  questionKey: string
+  questionText?: string
+  average: number
 }
 
 const FIXED_HEIGHT = 'h-[600px]'
+
+// Question icons mapping
+const QUESTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  week: Calendar,
+  priorities: Target,
+  workload: Briefcase,
+  support: Heart,
+  energy: Zap,
+  collaboration: Users,
+  feedback: TrendingUp,
+  balance: Heart,
+  growth: TrendingUp,
+  satisfaction: CheckCircle,
+}
+
+// Score interpretation helper
+const getScoreInterpretation = (score: number) => {
+  if (score >= 70) {
+    return { 
+      label: 'Great!', 
+      emoji: '🎉', 
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200'
+    }
+  } else if (score >= 50) {
+    return { 
+      label: 'Good', 
+      emoji: '👍', 
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200'
+    }
+  } else {
+    return { 
+      label: 'Needs attention', 
+      emoji: '⚠️', 
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-200'
+    }
+  }
+}
+
+// Get icon for question
+const getQuestionIcon = (questionKey: string) => {
+  return QUESTION_ICONS[questionKey] || TrendingUp
+}
 
 export function TeamPulseCard() {
   const { mode } = useMode()
@@ -42,6 +98,9 @@ export function TeamPulseCard() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [aggregatedData, setAggregatedData] = useState<AggregatedData[]>([])
   const [totalResponses, setTotalResponses] = useState(0)
+  const [overallTeamMood, setOverallTeamMood] = useState<number>(0)
+  const [highestQuestion, setHighestQuestion] = useState<QuestionSummary | null>(null)
+  const [lowestQuestion, setLowestQuestion] = useState<QuestionSummary | null>(null)
 
   // Load 2 random questions on mount
   useEffect(() => {
@@ -97,6 +156,9 @@ export function TeamPulseCard() {
         const data = await response.json()
         setAggregatedData(data.aggregatedData || [])
         setTotalResponses(data.totalResponses || 0)
+        setOverallTeamMood(data.overallTeamMood || 0)
+        setHighestQuestion(data.highestQuestion || null)
+        setLowestQuestion(data.lowestQuestion || null)
       }
     } catch (error) {
       console.error('Error loading aggregated data:', error)
@@ -126,17 +188,28 @@ export function TeamPulseCard() {
     
     // Validate both questions have scores
     const allAnswered = questions.every(q => responses[q.question_key]?.score !== undefined)
-    if (!allAnswered) return
+    if (!allAnswered) {
+      console.error('Not all questions answered')
+      return
+    }
 
     setIsSubmitting(true)
     
     try {
       // Prepare responses with comments
-      const responseData = questions.map(q => ({
-        questionKey: q.question_key,
-        score: responses[q.question_key].score,
-        comment: comments[q.question_key]?.trim() || undefined,
-      }))
+      const responseData = questions.map(q => {
+        const score = responses[q.question_key]?.score
+        if (score === undefined || score === null) {
+          throw new Error(`Missing score for question: ${q.question_key}`)
+        }
+        return {
+          questionKey: q.question_key,
+          score: Number(score),
+          comment: comments[q.question_key]?.trim() || undefined,
+        }
+      })
+
+      console.log('Submitting responses:', responseData)
 
       const response = await fetch('/api/team-pulse/submit', {
         method: 'POST',
@@ -144,13 +217,19 @@ export function TeamPulseCard() {
         body: JSON.stringify({ responses: responseData }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
         setHasSubmitted(true)
         await loadAggregatedData()
         setCurrentStep('results')
+      } else {
+        console.error('Submit failed:', data)
+        alert(`Failed to submit: ${data.error || 'Unknown error'}. ${data.details || ''}`)
       }
     } catch (error) {
       console.error('Error submitting pulse:', error)
+      alert(`Error submitting: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -174,9 +253,23 @@ export function TeamPulseCard() {
 
   // Show results if submitted
   if (currentStep === 'results' && hasSubmitted) {
+    const overallInterpretation = getScoreInterpretation(overallTeamMood)
+    
     return (
-      <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] ${FIXED_HEIGHT} flex flex-col overflow-hidden`}>
-        <div className="p-8 pb-6 flex-shrink-0">
+      <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] ${FIXED_HEIGHT} flex flex-col overflow-hidden relative`}>
+        {/* Subtle gradient background based on overall mood */}
+        <div 
+          className="absolute inset-0 opacity-5 pointer-events-none transition-opacity duration-1000"
+          style={{
+            background: overallTeamMood >= 70 
+              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+              : overallTeamMood >= 50
+              ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+              : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+          }}
+        />
+        
+        <div className="p-8 pb-6 flex-shrink-0 relative z-10">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-xl ${mode === 'chaos' ? 'bg-[#00FF87]/20' : mode === 'chill' ? 'bg-[#C8D961]/20' : 'bg-white/20'}`}>
@@ -191,28 +284,98 @@ export function TeamPulseCard() {
               {totalResponses} {totalResponses === 1 ? 'response' : 'responses'}
             </Badge>
           </div>
+
+          {/* Overall Team Mood Summary */}
+          {overallTeamMood > 0 && (
+            <div className={`mb-6 p-4 rounded-xl border-2 ${overallInterpretation.borderColor} ${overallInterpretation.bgColor} transition-all duration-500`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{overallInterpretation.emoji}</span>
+                  <div>
+                    <p className={`text-xs font-medium ${overallInterpretation.color} mb-1`}>Team Health</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className={`text-3xl font-black ${overallInterpretation.color}`}>{overallTeamMood}</span>
+                      <span className={`text-sm ${overallInterpretation.color}/60`}>/100</span>
+                      <span className={`text-sm font-bold ${overallInterpretation.color} ml-2`}>{overallInterpretation.label}</span>
+                    </div>
+                  </div>
+                </div>
+                {(highestQuestion || lowestQuestion) && (
+                  <div className="text-right">
+                    {highestQuestion && (
+                      <p className={`text-xs ${style.text}/60 mb-1`}>
+                        <span className="font-medium">↑ Highest:</span> {highestQuestion.average}
+                      </p>
+                    )}
+                    {lowestQuestion && (
+                      <p className={`text-xs ${style.text}/60`}>
+                        <span className="font-medium">↓ Lowest:</span> {lowestQuestion.average}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         
-        <div className="flex-1 overflow-y-auto px-8 pb-8">
+        <div className="flex-1 overflow-y-auto px-8 pb-8 relative z-10">
           <div className="space-y-6">
             {aggregatedData.length > 0 ? (
-              aggregatedData.map((data) => {
+              aggregatedData.map((data, index) => {
                 const question = questions.find(q => q.question_key === data.questionKey)
                 const questionText = question?.question_text || data.questionText || data.questionKey
+                const QuestionIcon = getQuestionIcon(data.questionKey)
+                const interpretation = getScoreInterpretation(data.average)
+                const roundedAverage = Math.round(data.average)
                 
                 return (
-                  <div key={data.questionKey} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className={`text-sm font-bold ${style.text} leading-tight`}>{questionText}</p>
-                      <div className="flex items-baseline gap-2">
-                        <span className={`text-3xl font-black ${style.text}`}>{Math.round(data.average)}</span>
+                  <div 
+                    key={data.questionKey} 
+                    className="space-y-3 transition-all duration-300"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className={`p-2 rounded-lg ${mode === 'chaos' ? 'bg-black/5' : mode === 'chill' ? 'bg-[#4A1818]/5' : 'bg-white/10'} mt-0.5`}>
+                          <QuestionIcon className={`w-4 h-4 ${style.text}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-bold ${style.text} leading-tight mb-1`}>{questionText}</p>
+                          {data.change !== null && data.change !== undefined && (
+                            <div className="flex items-center gap-1.5">
+                              {data.change > 0 ? (
+                                <ChevronUp className={`w-3 h-3 text-green-600`} />
+                              ) : data.change < 0 ? (
+                                <ChevronDown className={`w-3 h-3 text-red-600`} />
+                              ) : (
+                                <Minus className={`w-3 h-3 ${style.text}/40`} />
+                              )}
+                              <span className={`text-xs font-medium ${
+                                data.change > 0 ? 'text-green-600' : data.change < 0 ? 'text-red-600' : style.text + '/60'
+                              }`}>
+                                {data.change > 0 ? '+' : ''}{data.change} from last week
+                                {data.prevAverage !== null && data.prevAverage !== undefined && (
+                                  <span className={`${style.text}/40 ml-1`}>(was {data.prevAverage})</span>
+                                )}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-baseline gap-2 flex-shrink-0">
+                        <span className={`text-3xl font-black ${style.text}`}>{roundedAverage}</span>
                         <span className={`text-xs ${style.text}/60`}>/100</span>
+                        <span className="text-lg ml-1" title={interpretation.label}>{interpretation.emoji}</span>
                       </div>
                     </div>
-                    <div className={`w-full rounded-full h-3 ${mode === 'chaos' ? 'bg-black/10' : mode === 'chill' ? 'bg-[#4A1818]/10' : 'bg-white/20'}`}>
+                    <div className={`w-full rounded-full h-3 ${mode === 'chaos' ? 'bg-black/10' : mode === 'chill' ? 'bg-[#4A1818]/10' : 'bg-white/20'} overflow-hidden`}>
                       <div 
-                        className="h-3 rounded-full transition-all duration-500" 
-                        style={{ width: `${data.average}%`, backgroundColor: barColor }} 
+                        className="h-3 rounded-full transition-all duration-700 ease-out" 
+                        style={{ 
+                          width: `${data.average}%`, 
+                          backgroundColor: barColor
+                        }} 
                       />
                     </div>
                     {data.commentThemes.length > 0 && (
@@ -220,7 +383,7 @@ export function TeamPulseCard() {
                         {data.commentThemes.map((theme, idx) => (
                           <Badge
                             key={idx}
-                            className={`text-xs font-medium ${mode === 'chaos' ? 'bg-black/10 text-black border border-black/20' : mode === 'chill' ? 'bg-[#4A1818]/10 text-[#4A1818] border border-[#4A1818]/20' : 'bg-white/10 text-white border border-white/20'}`}
+                            className={`text-xs font-medium transition-all hover:scale-105 ${mode === 'chaos' ? 'bg-black/10 text-black border border-black/20' : mode === 'chill' ? 'bg-[#4A1818]/10 text-[#4A1818] border border-[#4A1818]/20' : 'bg-white/10 text-white border border-white/20'}`}
                           >
                             {theme.theme} ({theme.count})
                           </Badge>
@@ -239,6 +402,7 @@ export function TeamPulseCard() {
             )}
           </div>
         </div>
+
       </Card>
     )
   }

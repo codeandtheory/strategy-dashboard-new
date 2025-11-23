@@ -18,11 +18,22 @@ export async function GET() {
     weekStart.setHours(0, 0, 0, 0)
     const weekKey = weekStart.toISOString().split('T')[0]
 
+    // Get previous week start (7 days ago)
+    const prevWeekStart = new Date(weekStart)
+    prevWeekStart.setDate(prevWeekStart.getDate() - 7)
+    const prevWeekKey = prevWeekStart.toISOString().split('T')[0]
+
     // Get all responses for this week
     const { data: responses, error } = await supabase
       .from('team_pulse_responses')
       .select('question_key, score, comment')
       .eq('week_key', weekKey)
+
+    // Get previous week responses for comparison
+    const { data: prevWeekResponses } = await supabase
+      .from('team_pulse_responses')
+      .select('question_key, score')
+      .eq('week_key', prevWeekKey)
 
     if (error) {
       console.error('Error fetching aggregated data:', error)
@@ -72,10 +83,34 @@ export async function GET() {
       console.log('Questions table not found, using question keys only')
     }
 
+    // Aggregate previous week by question
+    const prevWeekGroups: Record<string, number[]> = {}
+    prevWeekResponses?.forEach((r) => {
+      if (!prevWeekGroups[r.question_key]) {
+        prevWeekGroups[r.question_key] = []
+      }
+      prevWeekGroups[r.question_key].push(r.score)
+    })
+
+    // Calculate previous week averages
+    const prevWeekAverages: Record<string, number> = {}
+    Object.entries(prevWeekGroups).forEach(([questionKey, scores]) => {
+      prevWeekAverages[questionKey] = scores.reduce((sum, score) => sum + score, 0) / scores.length
+    })
+
+    // Calculate overall team mood (average of all question averages)
+    let overallTeamMood = 0
+    let questionCount = 0
+
     // Calculate averages and extract comment themes
     const aggregatedData = Object.entries(questionGroups).map(([questionKey, data]) => {
       const average = data.scores.reduce((sum, score) => sum + score, 0) / data.scores.length
+      const prevAverage = prevWeekAverages[questionKey]
+      const change = prevAverage !== undefined ? average - prevAverage : null
       
+      overallTeamMood += average
+      questionCount++
+
       // Simple theme extraction (group similar words/phrases)
       const commentThemes: Record<string, number> = {}
       data.comments.forEach((comment) => {
@@ -104,12 +139,33 @@ export async function GET() {
         average,
         responseCount: data.scores.length,
         commentThemes: themes,
+        change: change !== null ? Math.round(change) : null,
+        prevAverage: prevAverage !== undefined ? Math.round(prevAverage) : null,
       }
     })
+
+    // Calculate overall team mood
+    overallTeamMood = questionCount > 0 ? overallTeamMood / questionCount : 0
+
+    // Find highest and lowest scoring questions
+    const sortedByScore = [...aggregatedData].sort((a, b) => b.average - a.average)
+    const highestQuestion = sortedByScore[0] || null
+    const lowestQuestion = sortedByScore[sortedByScore.length - 1] || null
 
     return NextResponse.json({
       totalResponses,
       aggregatedData,
+      overallTeamMood: Math.round(overallTeamMood),
+      highestQuestion: highestQuestion ? {
+        questionKey: highestQuestion.questionKey,
+        questionText: highestQuestion.questionText,
+        average: Math.round(highestQuestion.average),
+      } : null,
+      lowestQuestion: lowestQuestion ? {
+        questionKey: lowestQuestion.questionKey,
+        questionText: lowestQuestion.questionText,
+        average: Math.round(lowestQuestion.average),
+      } : null,
     })
   } catch (error) {
     console.error('Error in aggregated:', error)

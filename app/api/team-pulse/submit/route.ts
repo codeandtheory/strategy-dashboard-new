@@ -26,39 +26,61 @@ export async function POST(request: NextRequest) {
     const weekKey = weekStart.toISOString().split('T')[0]
 
     // Check if user already submitted this week
-    const { data: existing } = await supabase
+    const { data: existing, error: checkError } = await supabase
       .from('team_pulse_responses')
       .select('id')
       .eq('user_id', user.id)
       .eq('week_key', weekKey)
-      .single()
+      .limit(1)
 
-    if (existing) {
+    // If there's an error other than "not found", log it
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing submission:', checkError)
+    }
+
+    // If user already submitted, return error
+    if (existing && existing.length > 0) {
       return NextResponse.json({ error: 'Already submitted this week' }, { status: 400 })
     }
 
-    // Insert responses
-    const responseData = responses.map((r: any) => ({
-      user_id: user.id,
-      week_key: weekKey,
-      question_key: r.questionKey,
-      score: r.score,
-      comment: r.comment || null,
-    }))
+    // Validate response data
+    const responseData = responses.map((r: any) => {
+      if (!r.questionKey || r.score === undefined || r.score === null) {
+        throw new Error(`Invalid response data: ${JSON.stringify(r)}`)
+      }
+      return {
+        user_id: user.id,
+        week_key: weekKey,
+        question_key: r.questionKey,
+        score: Number(r.score),
+        comment: r.comment && r.comment.trim() ? r.comment.trim() : null,
+      }
+    })
 
-    const { error } = await supabase
+    const { error, data: insertedData } = await supabase
       .from('team_pulse_responses')
       .insert(responseData)
+      .select()
 
     if (error) {
       console.error('Error inserting pulse responses:', error)
-      return NextResponse.json({ error: 'Failed to save responses' }, { status: 500 })
+      console.error('Response data attempted:', responseData)
+      return NextResponse.json({ 
+        error: 'Failed to save responses', 
+        details: error.message 
+      }, { status: 500 })
     }
+
+    console.log('Successfully inserted responses:', insertedData?.length)
 
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in team-pulse submit:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ 
+      error: 'Internal server error', 
+      details: errorMessage 
+    }, { status: 500 })
   }
 }
 
