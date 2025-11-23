@@ -1690,12 +1690,12 @@ export default function TeamDashboard() {
           )}
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12 items-stretch">
           {/* Snaps */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('snaps') : getCardStyle('recognition')
             return (
-              <Card className={`lg:col-span-2 ${style.bg} ${style.border} p-8 ${getRoundedClass('rounded-[2.5rem]')}`}
+              <Card className={`lg:col-span-2 ${style.bg} ${style.border} p-8 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
                 <div className="flex items-center justify-between mb-6">
@@ -1756,7 +1756,7 @@ export default function TeamDashboard() {
                     </Button>
                   </Link>
                 </div>
-                <div className="space-y-2 mb-6">
+                <div className="space-y-3 mb-6">
                   {snaps.length === 0 ? (
                     <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/40'} rounded-xl p-5 border-2`} style={{ borderColor: `${style.accent}66` }}>
                       <p className={`text-sm ${style.text}/80 text-center`}>No snaps yet. Be the first to recognize someone!</p>
@@ -1766,7 +1766,7 @@ export default function TeamDashboard() {
                       const senderName = snap.submitted_by_profile?.full_name || snap.submitted_by_profile?.email || null
                       const recipientName = snap.mentioned_user_profile?.full_name || snap.mentioned_user_profile?.email || snap.mentioned || 'Team'
                       return (
-                        <div key={snap.id} className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/40'} rounded-xl p-4 border-2 transition-all hover:opacity-80 relative`} style={{ borderColor: `${style.accent}66`, borderLeftWidth: '10px', borderLeftColor: style.accent }}>
+                        <div key={snap.id} className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/40'} rounded-xl p-3 border-2 transition-all hover:opacity-80 relative`} style={{ borderColor: `${style.accent}66`, borderLeftWidth: '10px', borderLeftColor: style.accent }}>
                           <div className="flex-1">
                             <p className={`text-lg mb-2 leading-relaxed ${style.text}`}>{snap.snap_content}</p>
                             {snapViewType === 'received' && senderName && (
