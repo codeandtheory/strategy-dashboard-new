@@ -2023,7 +2023,7 @@ export default function TeamDashboard() {
           })()}
 
           {/* Pipeline with This Week stats bar above it */}
-          <div className={`${eventsExpanded ? 'md:col-span-1' : 'md:col-span-3'} flex flex-col gap-6`}>
+          <div className={`${eventsExpanded ? 'md:col-span-1' : 'md:col-span-3'} flex flex-col ${eventsExpanded ? 'gap-4 h-full' : 'gap-6'}`}>
             {/* This Week Stats Bar */}
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
@@ -2033,33 +2033,49 @@ export default function TeamDashboard() {
                 { value: '12', label: 'placeholder' },
               ]
               return (
-                <Card className={`${style.bg} ${style.border} py-6 px-6 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300`} style={{ height: '200px', maxHeight: '200px', minHeight: '200px' }}>
-                  <div className={`flex items-center ${eventsExpanded ? 'justify-center gap-2' : 'justify-between gap-6'} h-full`}>
-                    {!eventsExpanded && (
-                      <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>THIS WEEK</h2>
-                    )}
-                    <div className={`flex ${eventsExpanded ? 'gap-2' : 'gap-4'} items-center`}>
+                <Card 
+                  className={`${style.bg} ${style.border} ${eventsExpanded ? 'p-8 flex-1' : 'py-3 px-6 flex-[0_0_auto]'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300`} 
+                  style={eventsExpanded ? { minHeight: '0' } : { height: '80px', maxHeight: '80px', minHeight: '80px' }}
+                >
+                  {eventsExpanded ? (
+                    /* Vertical stats view when expanded */
+                    <div className="flex flex-col gap-6 h-full justify-center">
                       {stats.map((stat, index) => (
-                        <div 
-                          key={stat.label} 
-                          className={`flex flex-row items-center justify-center ${eventsExpanded ? 'px-3 py-1.5 gap-2' : 'px-4 py-3 gap-3'} ${getRoundedClass('rounded-2xl')} transition-all duration-300`}
-                          style={{
-                            backgroundColor: mode === 'chaos' ? 'rgba(0,0,0,0.2)' : mode === 'chill' ? 'rgba(74,24,24,0.15)' : 'rgba(0,0,0,0.25)',
-                            animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
-                          }}
-                        >
-                          <span className={`${eventsExpanded ? 'text-2xl' : 'text-4xl'} font-black ${style.text} leading-none transition-all duration-300`}>
+                        <div key={stat.label} className="flex items-center justify-between">
+                          <div className={`text-sm font-medium ${style.text} opacity-70`}>
+                            {stat.label}
+                          </div>
+                          <div className={`text-4xl font-black ${style.text}`}>
                             {stat.value}
-                          </span>
-                          {!eventsExpanded && (
-                            <span className={`text-xs font-black uppercase tracking-wider ${style.text} transition-opacity duration-300 whitespace-nowrap`}>
-                              {stat.label}
-                            </span>
-                          )}
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </div>
+                  ) : (
+                    /* Horizontal view when not expanded */
+                    <div className="flex items-center justify-between gap-6 h-full">
+                      <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>THIS WEEK</h2>
+                      <div className="flex gap-4 items-center">
+                        {stats.map((stat, index) => (
+                          <div 
+                            key={stat.label} 
+                            className={`flex flex-row items-center justify-center px-4 py-3 gap-3 ${getRoundedClass('rounded-2xl')} transition-all duration-300`}
+                            style={{
+                              backgroundColor: mode === 'chaos' ? 'rgba(0,0,0,0.2)' : mode === 'chill' ? 'rgba(74,24,24,0.15)' : 'rgba(0,0,0,0.25)',
+                              animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
+                            }}
+                          >
+                            <span className={`text-4xl font-black ${style.text} leading-none transition-all duration-300`}>
+                              {stat.value}
+                            </span>
+                            <span className={`text-xs font-black uppercase tracking-wider ${style.text} transition-opacity duration-300 whitespace-nowrap`}>
+                              {stat.label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <style jsx>{`
                     @keyframes fadeInUp {
                       from {
@@ -2133,44 +2149,46 @@ export default function TeamDashboard() {
               return (
                 <>
                   <Card 
-                    className={`${eventsExpanded ? 'p-4' : 'p-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 overflow-hidden`}
+                    className={`${eventsExpanded ? 'p-8 flex-1' : 'p-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 overflow-hidden`}
                     style={{
                       backgroundColor: '#1a1a1a',
                       borderColor: borderColor,
                       borderWidth: '2px',
                     }}
                   >
-                    <h2 className={`${eventsExpanded ? 'text-xl mb-2' : 'text-3xl mb-3'} font-black uppercase text-white transition-all duration-300`}>PIPELINE</h2>
+                    {!eventsExpanded && (
+                      <h2 className="text-3xl mb-3 font-black uppercase text-white transition-all duration-300">PIPELINE</h2>
+                    )}
                     
                     {eventsExpanded ? (
-                      /* Stats view when events expanded - Vertical and larger */
+                      /* Stats view when events expanded - Vertical and refined */
                       <div className="flex flex-col gap-6 h-full justify-center">
                         <div className="flex items-center justify-between">
-                          <div className="text-sm text-white/60">In Progress</div>
+                          <div className="text-sm text-white/70 font-medium">In Progress</div>
                           <div className={`text-4xl font-black ${getTextClass()}`}>
                             {pipelineLoading ? '0' : statusCounts['In Progress']}
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="text-sm text-white/60">Pending</div>
+                          <div className="text-sm text-white/70 font-medium">Pending</div>
                           <div className={`text-4xl font-black ${getTextClass()}`}>
                             {pipelineLoading ? '0' : statusCounts['Pending Decision']}
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="text-sm text-white/60">Long Lead</div>
+                          <div className="text-sm text-white/70 font-medium">Long Lead</div>
                           <div className={`text-4xl font-black ${getTextClass()}`}>
                             {pipelineLoading ? '0' : statusCounts['Long Lead']}
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="text-sm text-white/60">Won</div>
+                          <div className="text-sm text-white/70 font-medium">Won</div>
                           <div className={`text-4xl font-black ${getTextClass()}`}>
                             {pipelineLoading ? '0' : statusCounts['Won']}
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="text-sm text-white/60">Lost</div>
+                          <div className="text-sm text-white/70 font-medium">Lost</div>
                           <div className={`text-4xl font-black ${getTextClass()}`}>
                             {pipelineLoading ? '0' : statusCounts['Lost']}
                           </div>
@@ -2265,6 +2283,7 @@ export default function TeamDashboard() {
                         backgroundColor: '#1a1a1a',
                         borderColor: borderColor,
                         borderWidth: '2px',
+                        opacity: 1,
                       }}
                     >
                       <DialogHeader>
