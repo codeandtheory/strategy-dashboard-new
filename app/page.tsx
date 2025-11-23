@@ -148,9 +148,9 @@ export default function TeamDashboard() {
     summary: string
     selected?: boolean
   }>>([])
-  // Set to true to automatically use all calendars the logged-in user has access to
-  // Set to false to use the hardcoded calendar IDs above
-  const [useDynamicCalendars, setUseDynamicCalendars] = useState(true) // Change to false to use hardcoded calendars
+  // Set to false to use only the hardcoded calendar IDs (OOO, Holidays, Strategy team, Office events)
+  // We're not using dynamic calendars to avoid personal calendars
+  const [useDynamicCalendars, setUseDynamicCalendars] = useState(false)
 
   // Format today's date in user's timezone
   useEffect(() => {
