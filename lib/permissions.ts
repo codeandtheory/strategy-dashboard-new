@@ -100,7 +100,8 @@ export function getPermissions(user: UserPermissions): PermissionConfig {
     permissions.canManageContent = true
   }
 
-  if (isBeastBabe) {
+  // Beast babe can pass the torch, and admins can also pass it
+  if (isBeastBabe || baseRole === 'admin') {
     permissions.canPassBeastBabe = true
   }
 
