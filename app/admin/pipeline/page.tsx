@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { useMode } from '@/contexts/mode-context'
-import { Plus, TrendingUp } from 'lucide-react'
+import { Plus, TrendingUp, Check, X } from 'lucide-react'
 
 interface PipelineProject {
   id: string
@@ -24,14 +26,27 @@ interface PipelineProject {
   updated_at: string
 }
 
+type KanbanColumn = 'In Progress' | 'Pending Decision' | 'Long Lead'
+
 export default function PipelinePage() {
   const { mode } = useMode()
   const [projects, setProjects] = useState<PipelineProject[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [completedFilter, setCompletedFilter] = useState<'Pending Decision' | 'Long Lead' | 'Won' | 'Lost'>('Pending Decision')
-  const [selectedProject, setSelectedProject] = useState<PipelineProject | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [draggedProject, setDraggedProject] = useState<PipelineProject | null>(null)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    type: '',
+    description: '',
+    due_date: '',
+    lead: '',
+    notes: '',
+    status: 'In Progress' as KanbanColumn,
+    team: '',
+    url: '',
+    tier: '',
+  })
 
   useEffect(() => {
     fetchProjects()
@@ -55,6 +70,93 @@ export default function PipelinePage() {
     }
   }
 
+  const updateProjectStatus = async (projectId: string, newStatus: string) => {
+    try {
+      const response = await fetch('/api/pipeline', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: projectId, status: newStatus }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update project status')
+      }
+
+      // Update local state
+      setProjects(prev => 
+        prev.map(p => p.id === projectId ? { ...p, status: newStatus } : p)
+      )
+    } catch (err: any) {
+      console.error('Error updating project status:', err)
+      alert('Failed to update project status')
+    }
+  }
+
+  const createProject = async () => {
+    try {
+      if (!formData.name.trim()) {
+        alert('Project name is required')
+        return
+      }
+
+      const response = await fetch('/api/pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          tier: formData.tier ? parseInt(formData.tier) : null,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create project')
+      }
+
+      const result = await response.json()
+      setProjects(prev => [...prev, result.data])
+      setIsAddDialogOpen(false)
+      setFormData({
+        name: '',
+        type: '',
+        description: '',
+        due_date: '',
+        lead: '',
+        notes: '',
+        status: 'In Progress',
+        team: '',
+        url: '',
+        tier: '',
+      })
+    } catch (err: any) {
+      console.error('Error creating project:', err)
+      alert('Failed to create project')
+    }
+  }
+
+  const handleDragStart = (e: React.DragEvent, project: PipelineProject) => {
+    setDraggedProject(project)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = async (e: React.DragEvent, targetStatus: KanbanColumn) => {
+    e.preventDefault()
+    if (!draggedProject) return
+
+    if (draggedProject.status !== targetStatus) {
+      await updateProjectStatus(draggedProject.id, targetStatus)
+    }
+    setDraggedProject(null)
+  }
+
+  const handleWonLost = async (projectId: string, status: 'Won' | 'Lost') => {
+    await updateProjectStatus(projectId, status)
+  }
+
   const getBorderColor = () => {
     switch (mode) {
       case 'chaos':
@@ -64,7 +166,7 @@ export default function PipelinePage() {
       case 'code':
         return '#FFFFFF'
       default:
-        return '#00FF87' // Default bright green
+        return '#00FF87'
     }
   }
 
@@ -81,63 +183,17 @@ export default function PipelinePage() {
     }
   }
 
-  const handleProjectClick = (project: PipelineProject) => {
-    setSelectedProject(project)
-    setIsDialogOpen(true)
-  }
-
   const formatDate = (dateString: string | null) => {
     if (!dateString) return null
     const date = new Date(dateString)
     return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`
   }
 
-  const inProgressProjects = projects.filter(p => p.status === 'In Progress')
-  const completedProjects = projects.filter(p => p.status === completedFilter)
+  const columns: KanbanColumn[] = ['In Progress', 'Pending Decision', 'Long Lead']
+  const borderColor = getBorderColor()
 
-  const renderProjectItem = (project: PipelineProject, index: number, total: number) => {
-    const date = formatDate(project.due_date)
-    const displayText = project.type || project.description || 'Unknown'
-    const borderColor = getBorderColor()
-
-    return (
-      <div key={project.id} className="relative flex items-start gap-3 py-2">
-        {/* Left side with dot and connector line */}
-        <div className="relative flex flex-col items-center shrink-0">
-          {/* Dot */}
-          <div 
-            className="relative z-10 size-2 rounded-full mt-2" 
-            style={{ backgroundColor: borderColor }}
-          />
-          {/* Dotted line connector - only show if not last item */}
-          {index < total - 1 && (
-            <div 
-              className="absolute top-4 left-1/2 bottom-0 w-px border-l border-dashed -translate-x-1/2" 
-              style={{ borderColor: `${borderColor}40` }}
-            />
-          )}
-        </div>
-        
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          {date && (
-            <div className={`text-sm mb-1 ${getTextClass()} opacity-60`}>{date}</div>
-          )}
-          <div className={`font-semibold ${getTextClass()}`}>{project.name}</div>
-          <div className={`text-sm ${getTextClass()} opacity-60`}>{displayText}</div>
-        </div>
-        
-        {/* Add button */}
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="shrink-0 rounded-full bg-white/10 hover:bg-white/20 border border-white/20"
-          onClick={() => handleProjectClick(project)}
-        >
-          <Plus className="size-4 text-white" />
-        </Button>
-      </div>
-    )
+  const getProjectsByStatus = (status: string) => {
+    return projects.filter(p => p.status === status)
   }
 
   if (loading) {
@@ -158,197 +214,258 @@ export default function PipelinePage() {
     )
   }
 
-  const borderColor = getBorderColor()
-
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-2">
-        <TrendingUp className="size-6" style={{ color: borderColor }} />
-        <h1 className={`text-3xl font-bold ${getTextClass()}`}>
-          NEW BUSINESS PIPELINE
-        </h1>
-      </div>
-
-      {/* Single card split in half */}
-      <Card 
-        className="overflow-hidden"
-        style={{
-          backgroundColor: '#1a1a1a',
-          borderColor: borderColor,
-          borderWidth: '2px',
-        }}
-      >
-        <div className="grid grid-cols-1 lg:grid-cols-2 divide-x" style={{ borderColor: `${borderColor}40` }}>
-          {/* Left Half - IN PROGRESS */}
-          <div className="flex flex-col h-[calc(100vh-12rem)]">
-            <div className="p-6 border-b" style={{ borderColor: `${borderColor}40` }}>
-              <div className="flex items-center gap-3">
-                <h2 className={`text-xl font-semibold ${getTextClass()}`}>
-                  IN PROGRESS
-                </h2>
-                <Badge 
-                  variant="secondary" 
-                  className="text-xs"
-                  style={{ 
-                    backgroundColor: `${borderColor}20`,
-                    color: borderColor,
-                    borderColor: borderColor
-                  }}
-                >
-                  {inProgressProjects.length} {inProgressProjects.length === 1 ? 'project' : 'projects'}
-                </Badge>
-              </div>
-            </div>
-            
-            {/* Scrollable project list */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-1">
-                {inProgressProjects.length > 0 ? (
-                  inProgressProjects.map((project, index) => 
-                    renderProjectItem(project, index, inProgressProjects.length)
-                  )
-                ) : (
-                  <div className={`${getTextClass()} opacity-60 text-sm py-4`}>
-                    No projects in progress
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Half - COMPLETED */}
-          <div className="flex flex-col h-[calc(100vh-12rem)]">
-            <div className="p-6 border-b" style={{ borderColor: `${borderColor}40` }}>
-              <h2 className={`text-xl font-semibold mb-4 ${getTextClass()}`}>
-                COMPLETED
-              </h2>
-              
-              {/* Tabs */}
-              <div className="flex flex-wrap gap-2">
-                {(['Pending Decision', 'Long Lead', 'Won', 'Lost'] as const).map((status) => (
-                  <Button
-                    key={status}
-                    size="sm"
-                    onClick={() => setCompletedFilter(status)}
-                    className="text-xs"
-                    style={{
-                      backgroundColor: completedFilter === status ? borderColor : 'transparent',
-                      color: completedFilter === status ? '#000' : borderColor,
-                      borderColor: borderColor,
-                      borderWidth: '1px',
-                    }}
-                  >
-                    {status === 'Pending Decision' ? 'Pending' : status}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Scrollable project list */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-1">
-                {completedProjects.length > 0 ? (
-                  completedProjects.map((project, index) => 
-                    renderProjectItem(project, index, completedProjects.length)
-                  )
-                ) : (
-                  <div className={`${getTextClass()} opacity-60 text-sm py-4`}>
-                    No projects with status: {completedFilter}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="size-6" style={{ color: borderColor }} />
+          <h1 className={`text-3xl font-bold ${getTextClass()}`}>
+            NEW BUSINESS PIPELINE
+          </h1>
         </div>
-      </Card>
-
-      {/* Project Details Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent 
-          className="max-w-2xl"
-          style={{
-            backgroundColor: '#1a1a1a',
-            borderColor: borderColor,
-            borderWidth: '2px',
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle className={getTextClass()}>
-              {selectedProject?.name}
-            </DialogTitle>
-            <DialogDescription className="text-white/60">
-              {selectedProject?.type || selectedProject?.description || 'No description'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedProject && (
+        
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              style={{
+                backgroundColor: borderColor,
+                color: '#000',
+              }}
+              className="font-black uppercase"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Project
+            </Button>
+          </DialogTrigger>
+          <DialogContent
+            style={{
+              backgroundColor: '#1a1a1a',
+              borderColor: borderColor,
+              borderWidth: '2px',
+            }}
+            className="max-w-2xl max-h-[90vh] overflow-y-auto"
+          >
+            <DialogHeader>
+              <DialogTitle className={getTextClass()}>Add New Project</DialogTitle>
+            </DialogHeader>
             <div className="space-y-4 mt-4">
+              <div>
+                <Label className={getTextClass()}>Project Name *</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="mt-1 bg-white/10 border-white/20 text-white"
+                  placeholder="Enter project name"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className={`text-sm font-semibold ${getTextClass()} mb-1`}>Status</p>
-                  <p className="text-white/80">{selectedProject.status}</p>
+                  <Label className={getTextClass()}>Type</Label>
+                  <Input
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    className="mt-1 bg-white/10 border-white/20 text-white"
+                    placeholder="e.g., Platform Work"
+                  />
                 </div>
-                {selectedProject.due_date && (
-                  <div>
-                    <p className={`text-sm font-semibold ${getTextClass()} mb-1`}>Due Date</p>
-                    <p className="text-white/80">{formatDate(selectedProject.due_date)}</p>
+                <div>
+                  <Label className={getTextClass()}>Status</Label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as KanbanColumn })}
+                    className="mt-1 w-full h-9 rounded-md border border-white/20 bg-white/10 text-white px-3"
+                  >
+                    <option value="In Progress">In Progress</option>
+                    <option value="Pending Decision">Pending Decision</option>
+                    <option value="Long Lead">Long Lead</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <Label className={getTextClass()}>Description</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="mt-1 bg-white/10 border-white/20 text-white"
+                  placeholder="Project description"
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className={getTextClass()}>Due Date</Label>
+                  <Input
+                    type="date"
+                    value={formData.due_date}
+                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                    className="mt-1 bg-white/10 border-white/20 text-white"
+                  />
+                </div>
+                <div>
+                  <Label className={getTextClass()}>Tier (0-3)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="3"
+                    value={formData.tier}
+                    onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
+                    className="mt-1 bg-white/10 border-white/20 text-white"
+                    placeholder="0-3"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className={getTextClass()}>Lead</Label>
+                <Input
+                  value={formData.lead}
+                  onChange={(e) => setFormData({ ...formData, lead: e.target.value })}
+                  className="mt-1 bg-white/10 border-white/20 text-white"
+                  placeholder="Lead name"
+                />
+              </div>
+              <div>
+                <Label className={getTextClass()}>Team</Label>
+                <Input
+                  value={formData.team}
+                  onChange={(e) => setFormData({ ...formData, team: e.target.value })}
+                  className="mt-1 bg-white/10 border-white/20 text-white"
+                  placeholder="Comma-separated team members"
+                />
+              </div>
+              <div>
+                <Label className={getTextClass()}>URL</Label>
+                <Input
+                  type="url"
+                  value={formData.url}
+                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                  className="mt-1 bg-white/10 border-white/20 text-white"
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <Label className={getTextClass()}>Notes</Label>
+                <Textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="mt-1 bg-white/10 border-white/20 text-white"
+                  placeholder="Additional notes"
+                  rows={3}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(false)}
+                  style={{ borderColor: borderColor, color: borderColor }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={createProject}
+                  style={{ backgroundColor: borderColor, color: '#000' }}
+                >
+                  Create Project
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Kanban Board */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {columns.map((columnStatus) => {
+          const columnProjects = getProjectsByStatus(columnStatus)
+          
+          return (
+            <Card
+              key={columnStatus}
+              className="flex flex-col h-[calc(100vh-12rem)]"
+              style={{
+                backgroundColor: '#1a1a1a',
+                borderColor: borderColor,
+                borderWidth: '2px',
+              }}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, columnStatus)}
+            >
+              {/* Column Header */}
+              <div className="p-4 border-b" style={{ borderColor: `${borderColor}40` }}>
+                <h2 className={`text-lg font-semibold ${getTextClass()}`}>
+                  {columnStatus}
+                </h2>
+                <p className={`text-sm ${getTextClass()} opacity-60`}>
+                  {columnProjects.length} {columnProjects.length === 1 ? 'project' : 'projects'}
+                </p>
+              </div>
+
+              {/* Column Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {columnProjects.map((project) => {
+                  const date = formatDate(project.due_date)
+                  const displayText = project.type || project.description || 'Unknown'
+                  
+                  return (
+                    <Card
+                      key={project.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, project)}
+                      className="p-3 cursor-move hover:opacity-80 transition-opacity"
+                      style={{
+                        backgroundColor: `${borderColor}10`,
+                        borderColor: `${borderColor}40`,
+                        borderWidth: '1px',
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          {date && (
+                            <div className={`text-xs ${getTextClass()} opacity-60 mb-1`}>
+                              {date}
+                            </div>
+                          )}
+                          <div className={`font-semibold ${getTextClass()} mb-1`}>
+                            {project.name}
+                          </div>
+                          <div className={`text-xs ${getTextClass()} opacity-60 truncate`}>
+                            {displayText}
+                          </div>
+                          {project.lead && (
+                            <div className={`text-xs ${getTextClass()} opacity-50 mt-1`}>
+                              Lead: {project.lead}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-1 shrink-0">
+                          <button
+                            onClick={() => handleWonLost(project.id, 'Won')}
+                            className="w-5 h-5 rounded-full bg-green-500/20 hover:bg-green-500/40 flex items-center justify-center transition-colors"
+                            title="Mark as Won"
+                          >
+                            <Check className="w-3 h-3 text-green-500" />
+                          </button>
+                          <button
+                            onClick={() => handleWonLost(project.id, 'Lost')}
+                            className="w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/40 flex items-center justify-center transition-colors"
+                            title="Mark as Lost"
+                          >
+                            <X className="w-3 h-3 text-red-500" />
+                          </button>
+                        </div>
+                      </div>
+                    </Card>
+                  )
+                })}
+                {columnProjects.length === 0 && (
+                  <div className={`text-center py-8 ${getTextClass()} opacity-40 text-sm`}>
+                    Drop projects here
                   </div>
                 )}
               </div>
-              
-              {selectedProject.lead && (
-                <div>
-                  <p className={`text-sm font-semibold ${getTextClass()} mb-1`}>Lead</p>
-                  <p className="text-white/80">{selectedProject.lead}</p>
-                </div>
-              )}
-              
-              {selectedProject.team && (
-                <div>
-                  <p className={`text-sm font-semibold ${getTextClass()} mb-1`}>Team</p>
-                  <p className="text-white/80">{selectedProject.team}</p>
-                </div>
-              )}
-              
-              {selectedProject.description && (
-                <div>
-                  <p className={`text-sm font-semibold ${getTextClass()} mb-1`}>Description</p>
-                  <p className="text-white/80 whitespace-pre-wrap">{selectedProject.description}</p>
-                </div>
-              )}
-              
-              {selectedProject.notes && (
-                <div>
-                  <p className={`text-sm font-semibold ${getTextClass()} mb-1`}>Notes</p>
-                  <p className="text-white/80 whitespace-pre-wrap">{selectedProject.notes}</p>
-                </div>
-              )}
-              
-              {selectedProject.tier !== null && (
-                <div>
-                  <p className={`text-sm font-semibold ${getTextClass()} mb-1`}>Tier</p>
-                  <p className="text-white/80">{selectedProject.tier}</p>
-                </div>
-              )}
-              
-              {selectedProject.url && (
-                <div>
-                  <p className={`text-sm font-semibold ${getTextClass()} mb-1`}>URL</p>
-                  <a 
-                    href={selectedProject.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-white/80 hover:text-white underline"
-                  >
-                    {selectedProject.url}
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            </Card>
+          )
+        })}
+      </div>
     </div>
   )
 }
-

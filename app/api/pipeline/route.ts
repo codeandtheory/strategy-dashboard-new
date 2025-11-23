@@ -67,3 +67,132 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// PUT - Update pipeline project status
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { id, status } = body
+
+    if (!id || !status) {
+      return NextResponse.json(
+        { error: 'Project ID and status are required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate status
+    const validStatuses = ['In Progress', 'Pending Decision', 'Long Lead', 'Won', 'Lost']
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status' },
+        { status: 400 }
+      )
+    }
+
+    const { data, error } = await supabase
+      .from('pipeline_projects')
+      .update({ 
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating pipeline project:', error)
+      return NextResponse.json(
+        { error: 'Failed to update project', details: error.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ data })
+  } catch (error: any) {
+    console.error('Error in pipeline API:', error)
+    return NextResponse.json(
+      { error: error.message || 'Failed to update project', details: error.toString() },
+      { status: 500 }
+    )
+  }
+}
+
+// POST - Create new pipeline project
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { name, type, description, due_date, lead, notes, status, team, url, tier } = body
+
+    if (!name || !status) {
+      return NextResponse.json(
+        { error: 'Project name and status are required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate status
+    const validStatuses = ['In Progress', 'Pending Decision', 'Long Lead', 'Won', 'Lost']
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status' },
+        { status: 400 }
+      )
+    }
+
+    const { data, error } = await supabase
+      .from('pipeline_projects')
+      .insert({
+        name,
+        type: type || null,
+        description: description || null,
+        due_date: due_date || null,
+        lead: lead || null,
+        notes: notes || null,
+        status,
+        team: team || null,
+        url: url || null,
+        tier: tier !== undefined ? tier : null,
+        created_by: user.id,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating pipeline project:', error)
+      return NextResponse.json(
+        { error: 'Failed to create project', details: error.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ data })
+  } catch (error: any) {
+    console.error('Error in pipeline API:', error)
+    return NextResponse.json(
+      { error: error.message || 'Failed to create project', details: error.toString() },
+      { status: 500 }
+    )
+  }
+}
+

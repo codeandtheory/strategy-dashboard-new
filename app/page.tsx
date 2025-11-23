@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info, ExternalLink, User, ChevronDown, ChevronUp } from 'lucide-react'
+import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info, ExternalLink, User, ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { AccountMenu } from '@/components/account-menu'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -14,6 +14,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { getStarSignEmoji } from '@/lib/horoscope-utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { generateSillyCharacterName } from '@/lib/silly-names'
 import { SpotifyPlayer } from '@/components/spotify-player'
 import { AudioEQ } from '@/components/audio-eq'
@@ -122,6 +123,9 @@ export default function TeamDashboard() {
     tier: number | null
   }>>([])
   const [pipelineLoading, setPipelineLoading] = useState(true)
+  const [selectedPipelineProject, setSelectedPipelineProject] = useState<typeof pipelineData[0] | null>(null)
+  const [isPipelineDialogOpen, setIsPipelineDialogOpen] = useState(false)
+  const [completedFilter, setCompletedFilter] = useState<'Pending Decision' | 'Long Lead' | 'Won' | 'Lost'>('Pending Decision')
   
   // Get Google Calendar access token using the user's existing Google session
   const { accessToken: googleCalendarToken, loading: tokenLoading, error: tokenError } = useGoogleCalendarToken()
@@ -2074,30 +2078,10 @@ export default function TeamDashboard() {
 
             {/* Pipeline */}
             {(() => {
-              const style = mode === 'chaos' ? getSpecificCardStyle('pipeline') : getCardStyle('work')
-              const mintColor = '#00FF87'
+              const borderColor = mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : mode === 'code' ? '#FFFFFF' : '#00FF87'
               
-              // Get projects for each category
-              const newBusinessProjects = pipelineData.filter(p => 
-                p.status === 'Pending Decision' || p.status === 'Long Lead'
-              ).slice(0, 3) // Show top 3
-              const inProgressProjects = pipelineData.filter(p => 
-                p.status === 'In Progress'
-              ).slice(0, 3) // Show top 3
-              const completedProjects = pipelineData.filter(p => 
-                p.status === 'Won' || p.status === 'Lost'
-              ).slice(0, 3) // Show top 3
-              
-              // Calculate counts
-              const newBusinessCount = pipelineData.filter(p => 
-                p.status === 'Pending Decision' || p.status === 'Long Lead'
-              ).length
-              const inProgressCount = pipelineData.filter(p => 
-                p.status === 'In Progress'
-              ).length
-              const completedCount = pipelineData.filter(p => 
-                p.status === 'Won' || p.status === 'Lost'
-              ).length
+              const inProgressProjects = pipelineData.filter(p => p.status === 'In Progress')
+              const completedProjects = pipelineData.filter(p => p.status === completedFilter)
               
               const formatDate = (dateString: string | null) => {
                 if (!dateString) return null
@@ -2105,7 +2089,12 @@ export default function TeamDashboard() {
                 return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`
               }
               
-              const renderProjectPreview = (project: typeof pipelineData[0], index: number, total: number) => {
+              const handleProjectClick = (project: typeof pipelineData[0]) => {
+                setSelectedPipelineProject(project)
+                setIsPipelineDialogOpen(true)
+              }
+              
+              const renderProjectItem = (project: typeof pipelineData[0], index: number, total: number) => {
                 const date = formatDate(project.due_date)
                 const displayText = project.type || project.description || 'Unknown'
                 
@@ -2114,94 +2103,212 @@ export default function TeamDashboard() {
                     {/* Left side with dot and connector line */}
                     <div className="relative flex flex-col items-center shrink-0">
                       {/* Dot */}
-                      <div className="relative z-10 mt-1.5 size-1.5 rounded-full shrink-0" style={{ backgroundColor: '#000' }} />
+                      <div className="relative z-10 mt-1.5 size-1.5 rounded-full shrink-0 bg-white" />
                       {/* Dotted line connector */}
                       {index < total - 1 && (
-                        <div className="absolute left-0.5 top-3 bottom-0 w-px border-l border-dashed opacity-30" style={{ borderColor: '#000' }} />
+                        <div className="absolute left-0.5 top-3 bottom-0 w-px border-l border-dashed opacity-30 border-white" />
                       )}
                     </div>
                     {/* Content */}
                     <div className="flex-1 min-w-0 text-xs">
                       {date && (
-                        <div className="text-gray-600 mb-0.5">{date}</div>
+                        <div className="text-white/60 mb-0.5">{date}</div>
                       )}
-                      <div className="font-bold text-black truncate">{project.name}</div>
-                      <div className="text-gray-600 truncate">{displayText}</div>
+                      <div className="font-bold text-white truncate">{project.name}</div>
+                      <div className="text-white/60 truncate">{displayText}</div>
                     </div>
+                    {/* Plus button */}
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="shrink-0 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 h-6 w-6"
+                      onClick={() => handleProjectClick(project)}
+                    >
+                      <Plus className="size-3 text-white" />
+                    </Button>
                   </div>
                 )
               }
               
               return (
-                <Card className={`${style.bg} ${style.border} ${eventsExpanded ? 'p-4' : 'p-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300`}
-                      style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
-                >
-                  {!eventsExpanded && (
-                    <p className={`text-xs uppercase tracking-wider mb-4 font-black ${style.text} transition-opacity duration-300`}>WORK</p>
-                  )}
-                  <h2 className={`${eventsExpanded ? 'text-xl mb-3' : 'text-3xl mb-6'} font-black uppercase ${style.text} transition-all duration-300`}>PIPELINE</h2>
-                  
-                  <div className={`${eventsExpanded ? 'space-y-3' : 'space-y-4'} transition-all duration-300`}>
-                    {/* New Business */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <FileText className={`${eventsExpanded ? 'w-3 h-3' : 'w-4 h-4'}`} style={{ color: '#FFE500' }} />
-                          <span className={`${eventsExpanded ? 'text-xs' : 'text-sm'} font-black ${style.text}`}>New Business</span>
-                        </div>
-                        <span className={`${eventsExpanded ? 'text-sm' : 'text-base'} font-black ${style.text}`}>{pipelineLoading ? '0' : newBusinessCount}</span>
-                      </div>
-                      {!pipelineLoading && newBusinessProjects.length > 0 && (
-                        <div className="space-y-0.5 pl-3">
-                          {newBusinessProjects.map((project, index) => 
-                            renderProjectPreview(project, index, newBusinessProjects.length)
-                          )}
-                        </div>
-                      )}
-                    </div>
+                <>
+                  <Card 
+                    className={`${eventsExpanded ? 'p-4' : 'p-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 overflow-hidden`}
+                    style={{
+                      backgroundColor: '#1a1a1a',
+                      borderColor: borderColor,
+                      borderWidth: '2px',
+                    }}
+                  >
+                    {!eventsExpanded && (
+                      <p className="text-xs uppercase tracking-wider mb-4 font-black text-white transition-opacity duration-300">WORK</p>
+                    )}
+                    <h2 className={`${eventsExpanded ? 'text-xl mb-3' : 'text-3xl mb-6'} font-black uppercase text-white transition-all duration-300`}>PIPELINE</h2>
                     
-                    {/* In Progress */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Zap className={`${eventsExpanded ? 'w-3 h-3' : 'w-4 h-4'}`} style={{ color: '#9D4EFF' }} />
-                          <span className={`${eventsExpanded ? 'text-xs' : 'text-sm'} font-black ${style.text}`}>In Progress</span>
+                    {/* Split in half */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 divide-x" style={{ borderColor: `${borderColor}40` }}>
+                      {/* Left Half - IN PROGRESS */}
+                      <div className="flex flex-col pr-4">
+                        <div className="flex items-center gap-3 mb-4">
+                          <h3 className="text-lg font-semibold text-white">IN PROGRESS</h3>
+                          <Badge 
+                            variant="secondary" 
+                            className="text-xs"
+                            style={{ 
+                              backgroundColor: `${borderColor}20`,
+                              color: borderColor,
+                              borderColor: borderColor
+                            }}
+                          >
+                            {pipelineLoading ? '0' : inProgressProjects.length} {inProgressProjects.length === 1 ? 'project' : 'projects'}
+                          </Badge>
                         </div>
-                        <span className={`${eventsExpanded ? 'text-sm' : 'text-base'} font-black ${style.text}`}>{pipelineLoading ? '0' : inProgressCount}</span>
-                      </div>
-                      {!pipelineLoading && inProgressProjects.length > 0 && (
-                        <div className="space-y-0.5 pl-3">
-                          {inProgressProjects.map((project, index) => 
-                            renderProjectPreview(project, index, inProgressProjects.length)
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Completed */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={`${eventsExpanded ? 'text-xs' : 'text-sm'} font-black ${style.text}`}>Completed</span>
-                        <span className={`${eventsExpanded ? 'text-sm' : 'text-base'} font-black ${style.text}`}>{pipelineLoading ? '0' : completedCount}</span>
-                      </div>
-                      {!pipelineLoading && completedProjects.length > 0 ? (
-                        <div className="space-y-0.5 pl-3">
-                          {completedProjects.map((project, index) => 
-                            renderProjectPreview(project, index, completedProjects.length)
-                          )}
-                        </div>
-                      ) : (
-                        !pipelineLoading && (
-                          <div className="pl-3">
-                            <Link href="/admin/pipeline" className="inline-flex items-center gap-1 text-xs font-black text-black hover:opacity-70 transition-opacity">
-                              View All <ChevronRight className="w-3 h-3" />
-                            </Link>
+                        
+                        {/* Scrollable list */}
+                        <div className="flex-1 overflow-y-auto max-h-[400px]">
+                          <div className="space-y-1">
+                            {!pipelineLoading && inProgressProjects.length > 0 ? (
+                              inProgressProjects.map((project, index) => 
+                                renderProjectItem(project, index, inProgressProjects.length)
+                              )
+                            ) : (
+                              <div className="text-white/60 text-sm py-4">
+                                No projects in progress
+                              </div>
+                            )}
                           </div>
-                        )
-                      )}
+                        </div>
+                      </div>
+
+                      {/* Right Half - COMPLETED */}
+                      <div className="flex flex-col pl-4">
+                        <h3 className="text-lg font-semibold text-white mb-4">COMPLETED</h3>
+                        
+                        {/* Tabs */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {(['Pending Decision', 'Long Lead', 'Won', 'Lost'] as const).map((status) => (
+                            <Button
+                              key={status}
+                              size="sm"
+                              onClick={() => setCompletedFilter(status)}
+                              className="text-xs h-7"
+                              style={{
+                                backgroundColor: completedFilter === status ? borderColor : 'transparent',
+                                color: completedFilter === status ? '#000' : borderColor,
+                                borderColor: borderColor,
+                                borderWidth: '1px',
+                              }}
+                            >
+                              {status === 'Pending Decision' ? 'Pending' : status}
+                            </Button>
+                          ))}
+                        </div>
+                        
+                        {/* Scrollable list */}
+                        <div className="flex-1 overflow-y-auto max-h-[400px]">
+                          <div className="space-y-1">
+                            {!pipelineLoading && completedProjects.length > 0 ? (
+                              completedProjects.map((project, index) => 
+                                renderProjectItem(project, index, completedProjects.length)
+                              )
+                            ) : (
+                              <div className="text-white/60 text-sm py-4">
+                                No projects with status: {completedFilter}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
+
+                  {/* Project Details Dialog */}
+                  <Dialog open={isPipelineDialogOpen} onOpenChange={setIsPipelineDialogOpen}>
+                    <DialogContent 
+                      className="max-w-2xl"
+                      style={{
+                        backgroundColor: '#1a1a1a',
+                        borderColor: borderColor,
+                        borderWidth: '2px',
+                      }}
+                    >
+                      <DialogHeader>
+                        <DialogTitle className="text-white">
+                          {selectedPipelineProject?.name}
+                        </DialogTitle>
+                        <DialogDescription className="text-white/60">
+                          {selectedPipelineProject?.type || selectedPipelineProject?.description || 'No description'}
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      {selectedPipelineProject && (
+                        <div className="space-y-4 mt-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm font-semibold text-white mb-1">Status</p>
+                              <p className="text-white/80">{selectedPipelineProject.status}</p>
+                            </div>
+                            {selectedPipelineProject.due_date && (
+                              <div>
+                                <p className="text-sm font-semibold text-white mb-1">Due Date</p>
+                                <p className="text-white/80">{formatDate(selectedPipelineProject.due_date)}</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {selectedPipelineProject.lead && (
+                            <div>
+                              <p className="text-sm font-semibold text-white mb-1">Lead</p>
+                              <p className="text-white/80">{selectedPipelineProject.lead}</p>
+                            </div>
+                          )}
+                          
+                          {selectedPipelineProject.team && (
+                            <div>
+                              <p className="text-sm font-semibold text-white mb-1">Team</p>
+                              <p className="text-white/80">{selectedPipelineProject.team}</p>
+                            </div>
+                          )}
+                          
+                          {selectedPipelineProject.description && (
+                            <div>
+                              <p className="text-sm font-semibold text-white mb-1">Description</p>
+                              <p className="text-white/80 whitespace-pre-wrap">{selectedPipelineProject.description}</p>
+                            </div>
+                          )}
+                          
+                          {selectedPipelineProject.notes && (
+                            <div>
+                              <p className="text-sm font-semibold text-white mb-1">Notes</p>
+                              <p className="text-white/80 whitespace-pre-wrap">{selectedPipelineProject.notes}</p>
+                            </div>
+                          )}
+                          
+                          {selectedPipelineProject.tier !== null && (
+                            <div>
+                              <p className="text-sm font-semibold text-white mb-1">Tier</p>
+                              <p className="text-white/80">{selectedPipelineProject.tier}</p>
+                            </div>
+                          )}
+                          
+                          {selectedPipelineProject.url && (
+                            <div>
+                              <p className="text-sm font-semibold text-white mb-1">URL</p>
+                              <a 
+                                href={selectedPipelineProject.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-white/80 hover:text-white underline"
+                              >
+                                {selectedPipelineProject.url}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </DialogContent>
+                  </Dialog>
+                </>
               )
             })()}
           </div>
