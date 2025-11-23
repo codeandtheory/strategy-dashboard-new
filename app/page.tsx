@@ -459,11 +459,33 @@ export default function TeamDashboard() {
           if (result.failedCalendars > 0) {
             console.warn(`${result.failedCalendars} calendar(s) failed to load. Check server logs for details.`)
             const failedDetails = result.failedCalendarDetails || []
-            const failedMessages = failedDetails.map((f: any) => `${f.id}: ${f.error}`).join('; ')
-            if (result.count === 0) {
-              // Only show error if no events were loaded at all
-              setCalendarError(`Some calendars are not accessible. ${failedMessages}`)
+            
+            if (result.count === 0 && result.successfulCalendars === 0) {
+              // Only show error if no events were loaded at all (all calendars failed)
+              // Create a more user-friendly error message
+              const failedCount = failedDetails.length
+              const hasCodeAndTheoryCalendars = failedDetails.some((f: any) => 
+                f.id.includes('codeandtheory.com_')
+              )
+              
+              // Create a user-friendly summary
+              let errorSummary = ''
+              if (hasCodeAndTheoryCalendars && failedCount <= 3) {
+                errorSummary = `${failedCount} Code and Theory calendar${failedCount > 1 ? 's' : ''}`
+              } else {
+                errorSummary = `${failedCount} calendar${failedCount > 1 ? 's' : ''}`
+              }
+              
+              setCalendarError(`Some calendars are not accessible. ${errorSummary}: Calendar not found or not accessible`)
+            } else {
+              // Some calendars worked, so clear any previous error
+              // We'll just log a warning in the console instead of showing an error
+              setCalendarError(null)
+              console.info(`Successfully loaded events from ${result.successfulCalendars} calendar(s). ${result.failedCalendars} calendar(s) could not be accessed.`)
             }
+          } else {
+            // No failed calendars, clear any previous error
+            setCalendarError(null)
           }
           
           if (result.authInfo) {

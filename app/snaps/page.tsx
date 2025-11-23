@@ -585,18 +585,36 @@ export default function SnapsPage() {
                   const toName = getDisplayName(snap.mentioned_user_profile) || snap.mentioned || 'Team'
                   const isAnonymous = !snap.submitted_by_profile
                   
+                  // Determine which profile picture to show based on filter
+                  let profilePicture: string | null = null
+                  if (activeFilter === 'all') {
+                    profilePicture = snap.mentioned_user_profile?.avatar_url || null
+                  } else if (activeFilter === 'about-me') {
+                    profilePicture = snap.submitted_by_profile?.avatar_url || null
+                  } else if (activeFilter === 'i-gave') {
+                    profilePicture = snap.mentioned_user_profile?.avatar_url || null
+                  }
+                  
                   return (
                     <Card
                       key={snap.id}
                       className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}
                     >
                       <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ 
-                            backgroundColor: style.accent
-                          }}>
-                            <Users className={`w-5 h-5 ${mode === 'chaos' || mode === 'code' ? 'text-black' : mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`} />
-                          </div>
+                        <div className="flex-shrink-0" style={{ padding: '5px' }}>
+                          {profilePicture ? (
+                            <img 
+                              src={profilePicture} 
+                              alt={activeFilter === 'all' ? toName : activeFilter === 'about-me' ? fromName : toName}
+                              className={`${getRoundedClass('rounded-lg')} w-10 h-10 object-cover`}
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ 
+                              backgroundColor: style.accent
+                            }}>
+                              <Users className={`w-5 h-5 ${mode === 'chaos' || mode === 'code' ? 'text-black' : mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`} />
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           {activeFilter === 'all' && (
@@ -618,12 +636,12 @@ export default function SnapsPage() {
                           <p className={`text-lg mb-2 leading-relaxed ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                             {snap.snap_content}
                           </p>
-                          {activeFilter === 'all' && (
+                          {activeFilter === 'all' && !isAnonymous && (
                             <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-gray-500'}`}>
                               From: {fromName}
                             </p>
                           )}
-                          {activeFilter === 'about-me' && (
+                          {activeFilter === 'about-me' && !isAnonymous && (
                             <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-gray-500'}`}>
                               From {fromName}
                             </p>
