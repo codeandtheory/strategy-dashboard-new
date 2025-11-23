@@ -1,6 +1,9 @@
 /**
- * Proxy service for OpenAI API calls through n8n or Elvex
+ * Proxy service for OpenAI API calls through Elvex (or n8n)
  * This allows processing to happen through external services to avoid rate limits
+ * 
+ * Elvex is a simple API proxy that forwards requests directly to OpenAI.
+ * The proxy accepts OpenAI's native format and returns OpenAI's native format.
  */
 
 import { getEnv } from '../config/env'
@@ -33,7 +36,10 @@ export interface EmbeddingResponse {
 }
 
 /**
- * Call OpenAI chat completion through proxy (n8n/Elvex)
+ * Call OpenAI chat completion through proxy (Elvex/n8n)
+ * 
+ * Elvex expects OpenAI's native format directly.
+ * For n8n, we wrap it with a "type" field.
  */
 export async function proxyChatCompletion(
   request: ChatCompletionRequest
@@ -45,15 +51,21 @@ export async function proxyChatCompletion(
   }
 
   try {
+    // Check if this is Elvex (simple proxy) or n8n (needs type wrapper)
+    // Elvex typically uses /v1/chat/completions endpoint pattern
+    const isElvex = config.openaiProxyUrl.includes('/v1/chat/completions') || 
+                    config.openaiProxyUrl.includes('elvex')
+    
+    const requestBody = isElvex 
+      ? request  // Elvex: send OpenAI format directly
+      : { type: 'chat', ...request }  // n8n: wrap with type field
+
     const response = await fetch(config.openaiProxyUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        type: 'chat',
-        ...request,
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     if (!response.ok) {
@@ -70,7 +82,10 @@ export async function proxyChatCompletion(
 }
 
 /**
- * Call OpenAI embeddings through proxy (n8n/Elvex)
+ * Call OpenAI embeddings through proxy (Elvex/n8n)
+ * 
+ * Note: For embeddings, you may need separate endpoints for Elvex.
+ * Elvex typically requires separate URLs for chat vs embeddings.
  */
 export async function proxyEmbedding(
   request: EmbeddingRequest
@@ -82,15 +97,26 @@ export async function proxyEmbedding(
   }
 
   try {
-    const response = await fetch(config.openaiProxyUrl, {
+    // Check if this is Elvex (simple proxy) or n8n (needs type wrapper)
+    const isElvex = config.openaiProxyUrl.includes('/v1/embeddings') || 
+                    config.openaiProxyUrl.includes('elvex')
+    
+    // For Elvex embeddings, you might need a separate endpoint
+    // If using the same URL, Elvex should handle routing based on the request body
+    const embeddingUrl = isElvex && config.openaiProxyUrl.includes('/v1/chat/completions')
+      ? config.openaiProxyUrl.replace('/v1/chat/completions', '/v1/embeddings')
+      : config.openaiProxyUrl
+
+    const requestBody = isElvex 
+      ? request  // Elvex: send OpenAI format directly
+      : { type: 'embedding', ...request }  // n8n: wrap with type field
+
+    const response = await fetch(embeddingUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        type: 'embedding',
-        ...request,
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     if (!response.ok) {

@@ -1,44 +1,63 @@
-# Setting Up n8n or Elvex as OpenAI Proxy
+# Setting Up Elvex as OpenAI Proxy
 
-This guide explains how to route OpenAI API calls through n8n or Elvex to avoid rate limits and manage API keys centrally.
+This guide explains how to route OpenAI API calls through Elvex to avoid rate limits and manage API keys centrally.
 
 ## Overview
 
-Instead of calling OpenAI directly from the Next.js app, you can configure it to call through n8n or Elvex workflows. This provides:
+Instead of calling OpenAI directly from the Next.js app, you can configure it to call through Elvex. This provides:
 - Better rate limit management
 - Centralized API key management
 - Ability to use different API keys without code changes
 - Better monitoring and logging
+- **Simpler than n8n** - No workflow setup needed, just a proxy endpoint
 
 ## Configuration
 
-### Option 1: Use n8n/Elvex Proxy
+### Use Elvex Proxy (Recommended)
 
-Set the `OPENAI_PROXY_URL` environment variable to your n8n or Elvex workflow endpoint:
+Set the `OPENAI_PROXY_URL` environment variable to your Elvex endpoint:
 
 ```bash
 # In Vercel or .env.local
-OPENAI_PROXY_URL=https://your-n8n-instance.com/webhook/openai-proxy
-# OR
-OPENAI_PROXY_URL=https://your-elvex-instance.com/api/openai
+# For chat completions:
+OPENAI_PROXY_URL=https://api.elvex.ai/v1/chat/completions
+# OR your custom Elvex endpoint
+OPENAI_PROXY_URL=https://your-elvex-instance.com/v1/chat/completions
 ```
 
-When `OPENAI_PROXY_URL` is set, the app will automatically route all OpenAI calls through the proxy instead of calling OpenAI directly.
+**Note:** Elvex typically uses OpenAI's native API format, so the endpoint should match OpenAI's structure:
+- Chat: `/v1/chat/completions`
+- Embeddings: `/v1/embeddings` (handled automatically)
+
+When `OPENAI_PROXY_URL` is set, the app will automatically route all OpenAI calls through Elvex instead of calling OpenAI directly.
 
 ### Option 2: Direct OpenAI (Default)
 
 If `OPENAI_PROXY_URL` is not set, the app will call OpenAI directly using `OPENAI_API_KEY` (with fallback to `OPENAI_API_KEY_FALLBACK` if configured).
 
-## n8n Workflow Setup
+## Elvex Setup
 
-### Expected Request Format
+### Step 1: Get Your Elvex Endpoint
 
-Your n8n workflow should accept POST requests with this format:
+Elvex provides proxy endpoints that match OpenAI's API format. You'll need:
+
+1. **Chat Completions Endpoint**: `https://api.elvex.ai/v1/chat/completions` (or your custom Elvex URL)
+2. **Embeddings Endpoint**: `https://api.elvex.ai/v1/embeddings` (automatically derived from chat endpoint)
+
+### Step 2: Configure Elvex
+
+1. Log into your Elvex account
+2. Add your OpenAI API key to Elvex (Elvex will use this to forward requests)
+3. Get your Elvex API endpoint URL
+4. Set it as `OPENAI_PROXY_URL` in your environment variables
+
+### Step 3: Request Format
+
+Elvex accepts OpenAI's native format directly. The app automatically sends:
 
 **For Chat Completions:**
 ```json
 {
-  "type": "chat",
   "model": "gpt-4o-mini",
   "messages": [
     { "role": "system", "content": "You are a helpful assistant." },
@@ -53,15 +72,14 @@ Your n8n workflow should accept POST requests with this format:
 **For Embeddings:**
 ```json
 {
-  "type": "embedding",
   "model": "text-embedding-3-small",
   "input": "Text to embed"
 }
 ```
 
-### Expected Response Format
+### Step 4: Response Format
 
-Your n8n workflow should return responses in OpenAI's format:
+Elvex returns responses in OpenAI's native format:
 
 **Chat Completion Response:**
 ```json
@@ -87,58 +105,43 @@ Your n8n workflow should return responses in OpenAI's format:
 }
 ```
 
-### n8n Workflow Steps
+## Alternative: n8n Setup (If Needed)
 
-1. **Webhook Trigger** - Accept POST requests
-2. **Switch Node** - Route based on `type` field ("chat" vs "embedding")
-3. **HTTP Request Node** - Call OpenAI API with the appropriate endpoint:
-   - Chat: `https://api.openai.com/v1/chat/completions`
-   - Embeddings: `https://api.openai.com/v1/embeddings`
-4. **Set Headers** - Include `Authorization: Bearer YOUR_OPENAI_API_KEY`
-5. **Return Response** - Format and return the OpenAI response
-
-### Example n8n Workflow Structure
-
-```
-Webhook (POST)
-  ↓
-Switch (on type)
-  ├─ "chat" → HTTP Request (POST /v1/chat/completions)
-  └─ "embedding" → HTTP Request (POST /v1/embeddings)
-  ↓
-Return Response
-```
-
-## Elvex Setup
-
-If using Elvex, configure it similarly:
-1. Create an API endpoint that accepts the same request format
-2. Forward requests to OpenAI with your API key
-3. Return responses in OpenAI's format
-4. Set `OPENAI_PROXY_URL` to your Elvex endpoint
+If you prefer n8n for more complex workflows, the system also supports n8n. The request format includes a `type` field to distinguish between chat and embedding requests. See the code in `lib/decks/services/openaiProxyService.ts` for details.
 
 ## Testing
 
-1. Set up your n8n/Elvex workflow
+1. Set up your Elvex endpoint
 2. Test it directly with a curl command:
    ```bash
-   curl -X POST https://your-proxy-url \
+   # Test chat completions
+   curl -X POST https://api.elvex.ai/v1/chat/completions \
      -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_ELVEX_API_KEY" \
      -d '{
-       "type": "chat",
        "model": "gpt-4o-mini",
        "messages": [{"role": "user", "content": "Hello"}]
      }'
+   
+   # Test embeddings
+   curl -X POST https://api.elvex.ai/v1/embeddings \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_ELVEX_API_KEY" \
+     -d '{
+       "model": "text-embedding-3-small",
+       "input": "Test text"
+     }'
    ```
-3. Set `OPENAI_PROXY_URL` in your environment variables
-4. Try uploading a deck - it should use the proxy automatically
+3. Set `OPENAI_PROXY_URL` in your environment variables (Vercel dashboard or `.env.local`)
+4. Try uploading a deck - it should use Elvex automatically
 
 ## Benefits
 
-- **No Rate Limits**: n8n/Elvex can handle rate limiting and retries
-- **Centralized Keys**: Manage API keys in one place
-- **Monitoring**: Track all OpenAI usage through n8n/Elvex logs
+- **No Rate Limits**: Elvex handles rate limiting and retries automatically
+- **Centralized Keys**: Manage API keys in Elvex dashboard
+- **Monitoring**: Track all OpenAI usage through Elvex logs
 - **Flexibility**: Switch API keys or add processing without code changes
+- **Simple**: No workflow setup needed - just a proxy endpoint
 
 ## Fallback Behavior
 

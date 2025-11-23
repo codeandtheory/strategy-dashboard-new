@@ -28,18 +28,19 @@ This can easily hit OpenAI rate limits (typically 60 requests/minute for tier 1 
 - Slightly slower processing (adds ~15-30 seconds for a 30-slide deck)
 - But prevents rate limit errors
 
-### 2. n8n/Elvex Proxy (Recommended) ✅
+### 2. Elvex Proxy (Recommended) ✅
 
-**Already implemented!** Set `OPENAI_PROXY_URL` to route through n8n/Elvex:
+**Already implemented!** Set `OPENAI_PROXY_URL` to route through Elvex:
 
 ```bash
-OPENAI_PROXY_URL=https://your-n8n-instance.com/webhook/openai-proxy
+OPENAI_PROXY_URL=https://api.elvex.ai/v1/chat/completions
 ```
 
 **Benefits:**
-- n8n/Elvex can handle rate limiting and retries
+- Elvex handles rate limiting and retries automatically
 - Can use different API keys
 - Better monitoring and logging
+- No workflow setup needed - simpler than n8n
 - No code changes needed
 
 **Setup:**
