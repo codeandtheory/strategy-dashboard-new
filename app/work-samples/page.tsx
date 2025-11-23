@@ -202,7 +202,7 @@ export default function WorkSamplesPage() {
 
   return (
     <div className={`flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
-      <header className={`border-b ${getBorderClass()} px-6 py-4`}>
+      <header className={`border-b ${getBorderClass()} px-6 py-4 fixed top-0 left-0 right-0 z-50 ${getBgClass()}`}>
         <div className="max-w-[1200px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/">
@@ -227,7 +227,7 @@ export default function WorkSamplesPage() {
         </div>
       </header>
 
-      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1">
+      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-20">
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">

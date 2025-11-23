@@ -5,8 +5,10 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { usePermissions } from '@/contexts/permissions-context'
-import { Crown, ShieldOff, Users, ArrowRight, Loader2, History, Calendar } from 'lucide-react'
+import { Crown, ShieldOff, Users, ArrowRight, Loader2, History, Calendar, Search } from 'lucide-react'
 
 interface User {
   id: string
@@ -15,6 +17,7 @@ interface User {
   avatar_url: string | null
   role: string | null
   discipline: string | null
+  is_active: boolean | null
 }
 
 interface BeastBabeHistory {
@@ -44,6 +47,9 @@ export default function BeastBabeAdmin() {
   const [beastBabeData, setBeastBabeData] = useState<BeastBabeData | null>(null)
   const [allUsers, setAllUsers] = useState<User[]>([])
   const [loadingUsers, setLoadingUsers] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showBrowseDialog, setShowBrowseDialog] = useState(false)
+  const [browseSearchQuery, setBrowseSearchQuery] = useState('')
 
   useEffect(() => {
     fetchBeastBabeData()
@@ -83,11 +89,14 @@ export default function BeastBabeAdmin() {
       const result = await response.json()
       const users = result.data || []
       
-      // Filter out current beast babe from available users
+      // Filter out current beast babe and inactive users from available users
       const currentBeastBabeId = beastBabeData?.currentBeastBabe?.id
-      const availableUsers = currentBeastBabeId
-        ? users.filter((u: User) => u.id !== currentBeastBabeId)
-        : users
+      const availableUsers = users.filter((u: any) => {
+        // Exclude current beast babe
+        if (currentBeastBabeId && u.id === currentBeastBabeId) return false
+        // Only include active users (is_active !== false)
+        return u.is_active !== false
+      })
       
       setAllUsers(availableUsers)
     } catch (err: any) {
@@ -173,6 +182,36 @@ export default function BeastBabeAdmin() {
   const currentBeastBabe = beastBabeData?.currentBeastBabe
   const history = beastBabeData?.history || []
 
+  // Filter users based on search query
+  const filteredUsers = allUsers.filter(user => {
+    if (!searchQuery.trim()) return true
+    const query = searchQuery.toLowerCase()
+    return (
+      user.full_name?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query) ||
+      user.role?.toLowerCase().includes(query) ||
+      user.discipline?.toLowerCase().includes(query)
+    )
+  })
+
+  // Filter users for browse dialog
+  const filteredBrowseUsers = allUsers.filter(user => {
+    if (!browseSearchQuery.trim()) return true
+    const query = browseSearchQuery.toLowerCase()
+    return (
+      user.full_name?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query) ||
+      user.role?.toLowerCase().includes(query) ||
+      user.discipline?.toLowerCase().includes(query)
+    )
+  })
+
+  const handleSelectFromDialog = (userId: string) => {
+    setSelectedUserId(userId)
+    setShowBrowseDialog(false)
+    setBrowseSearchQuery('')
+  }
+
   return (
     <div className="space-y-6">
       <div className="mb-8">
@@ -250,19 +289,43 @@ export default function BeastBabeAdmin() {
 
         <div className="space-y-4">
           <div>
-            <Label className="block text-sm font-medium text-foreground mb-2">
-              Select Next Beast Babe
-            </Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="block text-sm font-medium text-foreground">
+                Select Next Beast Babe
+              </Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBrowseDialog(true)}
+                className="flex items-center gap-2"
+              >
+                <Users className="w-4 h-4" />
+                Browse Team
+              </Button>
+            </div>
+            
+            {/* Search Bar */}
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by name, email, or role..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
             {loadingUsers ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
             ) : (
               <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {allUsers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">No users available</p>
+                {filteredUsers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">No users found</p>
                 ) : (
-                  allUsers.map((user) => (
+                  filteredUsers.map((user) => (
                     <button
                       key={user.id}
                       onClick={() => setSelectedUserId(user.id)}
@@ -279,12 +342,20 @@ export default function BeastBabeAdmin() {
                               src={user.avatar_url}
                               alt={user.full_name || 'User'}
                               className="w-10 h-10 rounded-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                const parent = target.parentElement
+                                if (parent) {
+                                  const fallback = parent.querySelector('.beast-babe-user-fallback') as HTMLElement
+                                  if (fallback) fallback.style.display = 'flex'
+                                }
+                              }}
                             />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                              <Users className="w-5 h-5 text-muted-foreground" />
-                            </div>
-                          )}
+                          ) : null}
+                          <div className={`beast-babe-user-fallback w-10 h-10 rounded-full bg-muted flex items-center justify-center ${user.avatar_url ? 'hidden' : ''}`}>
+                            <Users className="w-5 h-5 text-muted-foreground" />
+                          </div>
                           <div>
                             <span className="font-medium text-foreground block">
                               {user.full_name || user.email || 'Unknown'}
@@ -402,6 +473,96 @@ export default function BeastBabeAdmin() {
           </div>
         </Card>
       )}
+
+      {/* Browse Team Dialog */}
+      <Dialog open={showBrowseDialog} onOpenChange={setShowBrowseDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Browse Team</DialogTitle>
+            <DialogDescription>
+              Select a team member to pass the Beast Babe torch to
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Search in Dialog */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by name, email, role, or discipline..."
+              value={browseSearchQuery}
+              onChange={(e) => setBrowseSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Team List */}
+          <div className="flex-1 overflow-y-auto space-y-2">
+            {loadingUsers ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredBrowseUsers.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No team members found</p>
+            ) : (
+              filteredBrowseUsers.map((user) => (
+                <button
+                  key={user.id}
+                  onClick={() => handleSelectFromDialog(user.id)}
+                  className={`w-full p-4 border rounded-lg text-left transition-colors ${
+                    selectedUserId === user.id
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:bg-muted'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {user.avatar_url ? (
+                        <img
+                          src={user.avatar_url}
+                          alt={user.full_name || 'User'}
+                          className="w-12 h-12 rounded-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                            const parent = target.parentElement
+                            if (parent) {
+                              const fallback = parent.querySelector('.browse-dialog-user-fallback') as HTMLElement
+                              if (fallback) fallback.style.display = 'flex'
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div className={`browse-dialog-user-fallback w-12 h-12 rounded-full bg-muted flex items-center justify-center ${user.avatar_url ? 'hidden' : ''}`}>
+                        <Users className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <span className="font-medium text-foreground block">
+                          {user.full_name || user.email || 'Unknown'}
+                        </span>
+                        <div className="flex items-center gap-2 mt-1">
+                          {user.discipline && (
+                            <span className="text-xs text-muted-foreground">{user.discipline}</span>
+                          )}
+                          {user.role && (
+                            <>
+                              {user.discipline && <span className="text-xs text-muted-foreground">•</span>}
+                              <span className="text-xs text-muted-foreground">{user.role}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {selectedUserId === user.id && (
+                      <Crown className="w-5 h-5 text-yellow-500" />
+                    )}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

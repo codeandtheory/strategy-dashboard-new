@@ -202,8 +202,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={`min-h-screen ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
-      {/* Main Navigation Header */}
-      <header className={`border-b ${getBorderClass()} px-6 py-4`}>
+      {/* Main Navigation Header - Fixed */}
+      <header className={`border-b ${getBorderClass()} px-6 py-4 fixed top-0 left-0 right-0 z-50 ${getBgClass()}`}>
         <div className="max-w-[1200px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/">
@@ -229,12 +229,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content Area - Centered */}
-      <main className="max-w-[1200px] mx-auto px-6 py-10">
+      <main className="max-w-[1200px] mx-auto px-6 py-10 mt-20">
         <div className="flex gap-6">
-          {/* Left Sidebar Card - 1/4 width */}
-          <Card className={`w-1/4 ${mode === 'chaos' ? 'bg-[#1a1a1a]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-4 flex flex-col h-fit`} style={{ 
-            borderColor: mode === 'chaos' ? '#E8FF00' : mode === 'chill' ? '#C8D961' : '#FFFFFF',
-            borderWidth: '2px'
+          {/* Left Sidebar Card - 1/4 width - Fixed */}
+          <Card className={`w-1/4 ${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-4 flex flex-col sticky top-24 h-[calc(100vh-8rem)] overflow-y-auto`} style={{ 
+            borderColor: mode === 'chaos' ? '#00C896' : mode === 'chill' ? '#C8D961' : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
           }}>
             <div className="mb-4">
               <h1 className={`text-xl font-black uppercase tracking-wider ${getTextClass()} mb-1`}>Admin Panel</h1>

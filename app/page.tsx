@@ -1203,7 +1203,7 @@ export default function TeamDashboard() {
 
   return (
     <div className={`flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
-      <header className={`border-b ${getBorderClass()} px-6 py-4`}>
+      <header className={`border-b ${getBorderClass()} px-6 py-4 fixed top-0 left-0 right-0 z-50 ${getBgClass()}`}>
         <div className="max-w-[1200px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className={`w-10 h-10 ${getLogoBg()} ${getLogoText()} ${getRoundedClass('rounded-xl')} flex items-center justify-center font-black text-lg ${mode === 'code' ? 'font-mono' : ''}`}>
@@ -1416,7 +1416,7 @@ export default function TeamDashboard() {
         </div>
       </header>
 
-      <main className="max-w-[1200px] mx-auto px-6 py-4 flex-1 pb-0">
+      <main className="max-w-[1200px] mx-auto px-6 py-4 flex-1 pb-0 pt-20">
         {/* Hero Section - Full Width */}
         <section className="mb-12">
           {(() => {
@@ -2162,40 +2162,42 @@ export default function TeamDashboard() {
               <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} ${eventsExpanded ? 'md:col-span-2' : 'md:col-span-1'}`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : { borderColor: style.accent }}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <p className={`text-xs uppercase tracking-wider font-black`} style={{ color: mintColor }}>
-                    {eventsExpanded ? 'THIS WEEK' : 'TODAY'}
-                  </p>
-                  <button
-                    onClick={() => setEventsExpanded(!eventsExpanded)}
-                    className={`${getRoundedClass('rounded-lg')} px-3 py-1.5 flex items-center gap-1 text-xs font-black transition-all`}
-                    style={{ 
-                      backgroundColor: style.accent,
-                      color: mode === 'chaos' ? '#000000' : mode === 'chill' ? '#4A1818' : '#FFFFFF'
-                    }}
-                  >
-                    {eventsExpanded ? (
-                      <>
-                        <ChevronUp className="w-3 h-3" />
-                        Collapse
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-3 h-3" />
-                        Expand
-                      </>
-                    )}
-                  </button>
-                </div>
-                <h2 className={`text-3xl font-black mb-6 uppercase ${style.text}`}>EVENTS</h2>
-                
-                {calendarLoading ? (
+                {/* White Container */}
+                <div className="bg-white rounded-[2rem] p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <p className={`text-xs uppercase tracking-wider font-black`} style={{ color: mintColor }}>
+                      {eventsExpanded ? 'THIS WEEK' : 'TODAY'}
+                    </p>
+                    <button
+                      onClick={() => setEventsExpanded(!eventsExpanded)}
+                      className={`${getRoundedClass('rounded-lg')} px-3 py-1.5 flex items-center gap-1 text-xs font-black transition-all`}
+                      style={{ 
+                        backgroundColor: style.accent,
+                        color: mode === 'chaos' ? '#000000' : mode === 'chill' ? '#4A1818' : '#FFFFFF'
+                      }}
+                    >
+                      {eventsExpanded ? (
+                        <>
+                          <ChevronUp className="w-3 h-3" />
+                          Collapse
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-3 h-3" />
+                          Expand
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <h2 className={`text-3xl font-black mb-6 uppercase text-black`}>EVENTS</h2>
+                  
+                  {calendarLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className={`w-6 h-6 animate-spin ${style.text}`} />
+                    <Loader2 className="w-6 h-6 animate-spin text-black" />
                   </div>
                 ) : calendarError ? (
                   <div className={`${getRoundedClass('rounded-lg')} p-4 space-y-2`} style={{ backgroundColor: `${mintColor}33` }}>
-                    <p className={`text-sm font-black ${style.text}`}>Calendar Connection Issue</p>
+                    <p className="text-sm font-black text-black">Calendar Connection Issue</p>
                     {calendarError.includes('Google Calendar API has not been used') || calendarError.includes('disabled') ? (
                       <div className={`text-xs ${style.text}/80 space-y-1`}>
                         <p>The Google Calendar API needs to be enabled in your Google Cloud project.</p>
@@ -2288,23 +2290,23 @@ export default function TeamDashboard() {
                   <div className="space-y-4">
                     {/* Key/Legend */}
                     <div className={`${getRoundedClass('rounded-lg')} p-3 mb-4`} style={{ backgroundColor: `${mintColor}22` }}>
-                      <p className={`text-xs font-black uppercase mb-2 ${style.text}`}>Key:</p>
+                      <p className="text-xs font-black uppercase mb-2 text-black">Key:</p>
                       <div className="flex flex-wrap gap-3">
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded" style={{ backgroundColor: '#FF6B6B' }}></div>
-                          <span className={`text-[10px] ${style.text}/80`}>Out of Office</span>
+                          <span className="text-[10px] text-black/80">Out of Office</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded" style={{ backgroundColor: mode === 'chaos' ? '#1E3A8A' : '#9D4EFF' }}></div>
-                          <span className={`text-[10px] ${style.text}/80`}>Strategy Team</span>
+                          <span className="text-[10px] text-black/80">Strategy Team</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded" style={{ backgroundColor: mode === 'chaos' ? '#EAB308' : '#FFC043' }}></div>
-                          <span className={`text-[10px] ${style.text}/80`}>Holidays</span>
+                          <span className="text-[10px] text-black/80">Holidays</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded" style={{ backgroundColor: mode === 'chaos' ? '#0EA5E9' : '#00FF87' }}></div>
-                          <span className={`text-[10px] ${style.text}/80`}>Office Events</span>
+                          <span className="text-[10px] text-black/80">Office Events</span>
                         </div>
                       </div>
                     </div>
@@ -2441,7 +2443,7 @@ export default function TeamDashboard() {
                       if (oooPeople.length > 0) {
                         return (
                           <div className="space-y-2">
-                            <p className={`text-xs uppercase tracking-wider font-black ${style.text}/70 mb-2`}>Out of Office Today</p>
+                            <p className="text-xs uppercase tracking-wider font-black text-black/70 mb-2">Out of Office Today</p>
                             <div className={`${getRoundedClass('rounded-lg')} p-3`} style={{ backgroundColor: '#FF6B6B33' }}>
                               <div className="flex flex-wrap gap-2">
                                 {oooPeople.map((name, idx) => (
@@ -2473,18 +2475,19 @@ export default function TeamDashboard() {
                           <div key={event.id} className={`${getRoundedClass('rounded-lg')} p-3 flex items-center gap-2`} style={{ backgroundColor: `${eventColor}33` }}>
                             <Clock className="w-4 h-4" style={{ color: eventColor }} />
                             <div className="flex-1 min-w-0">
-                              <p className={`text-sm font-black ${style.text} truncate`}>{event.summary}</p>
-                              <p className={`text-xs ${style.text}/60`}>{formatEventTime(event)}</p>
+                              <p className="text-sm font-black text-black truncate">{event.summary}</p>
+                              <p className="text-xs text-black/60">{formatEventTime(event)}</p>
                             </div>
                           </div>
                         )
                       })
                     ) : (
-                      <p className={`text-sm ${style.text}/80 text-center py-4`}>No events today</p>
+                      <p className="text-sm text-black/80 text-center py-4">No events today</p>
                     )}
                     </div>
                   </div>
                 )}
+                </div>
               </Card>
             )
           })()}
