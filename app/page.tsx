@@ -1756,22 +1756,24 @@ export default function TeamDashboard() {
                     Given
                   </button>
                 </div>
-                <div className="space-y-3 mb-6">
+                <div className="space-y-2 mb-6">
                   {snaps.length === 0 ? (
                     <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/40'} rounded-xl p-5 border-2`} style={{ borderColor: `${style.accent}66` }}>
                       <p className={`text-sm ${style.text}/80 text-center`}>No snaps yet. Be the first to recognize someone!</p>
                     </div>
                   ) : (
                     snaps.map((snap, idx) => {
-                      const fromName = snap.submitted_by_profile?.full_name || snap.submitted_by_profile?.email || 'Anonymous'
+                      const senderName = snap.submitted_by_profile?.full_name || snap.submitted_by_profile?.email || 'Anonymous'
+                      const recipientName = snap.mentioned_user_profile?.full_name || snap.mentioned_user_profile?.email || snap.mentioned || 'Team'
+                      const displayName = snapViewType === 'given' ? recipientName : senderName
                       return (
-                        <div key={snap.id} className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/40'} rounded-xl p-5 border-2 transition-all hover:opacity-80`} style={{ borderColor: `${style.accent}66` }}>
+                        <div key={snap.id} className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/40'} rounded-xl p-4 border-2 transition-all hover:opacity-80`} style={{ borderColor: `${style.accent}66` }}>
                           <div className="flex items-start gap-3">
-                            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-2" style={{ backgroundColor: style.accent }}></div>
+                            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: style.accent }}></div>
                             <div className="flex-1">
-                              <p className={`text-lg font-black mb-3 leading-snug ${style.text}`}>{snap.snap_content}</p>
+                              <p className={`text-base mb-2 leading-relaxed ${style.text}`}>{snap.snap_content}</p>
                               <p className={`text-xs ${style.text}/60`}>
-                                {fromName}
+                                {displayName}
                               </p>
                             </div>
                           </div>
