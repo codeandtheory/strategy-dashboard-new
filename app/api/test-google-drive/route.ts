@@ -359,11 +359,29 @@ export async function GET(request: NextRequest) {
 
         // Step 6: Test resumable upload URL
         try {
+          // Wait a moment for the file to be fully created/indexed
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          // Verify the file exists first
+          try {
+            const fileCheck = await drive.files.get({
+              fileId: fileId,
+              fields: 'id, name',
+              supportsAllDrives: true,
+            } as any)
+            console.log('File verified before getting upload URL:', fileCheck.data)
+          } catch (checkError: any) {
+            throw new Error(`File not accessible before getting upload URL: ${checkError.message}`)
+          }
+          
           const tokenResponse = await auth.getAccessToken()
           // For shared drives, include supportsAllDrives in the query
           const updateUrl = new URL(`https://www.googleapis.com/upload/drive/v3/files/${fileId}`)
           updateUrl.searchParams.set('uploadType', 'resumable')
           updateUrl.searchParams.set('supportsAllDrives', 'true')
+          
+          console.log('Requesting resumable upload URL for file:', fileId)
+          console.log('Request URL:', updateUrl.toString())
           
           const updateResponse = await fetch(updateUrl.toString(), {
             method: 'PATCH',
