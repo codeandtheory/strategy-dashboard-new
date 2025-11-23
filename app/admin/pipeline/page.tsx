@@ -196,6 +196,9 @@ export default function PipelinePage() {
     return projects.filter(p => p.status === status)
   }
 
+  const wonProjects = getProjectsByStatus('Won')
+  const lostProjects = getProjectsByStatus('Lost')
+
   if (loading) {
     return (
       <div className="container mx-auto p-6">
@@ -219,11 +222,11 @@ export default function PipelinePage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <TrendingUp className="size-6" style={{ color: borderColor }} />
-          <h1 className={`text-3xl font-bold ${getTextClass()}`}>
+        <h1 className={`text-3xl font-bold ${getTextClass()}`}>
             NEW BUSINESS PIPELINE
-          </h1>
-        </div>
-        
+        </h1>
+      </div>
+
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button
@@ -373,7 +376,7 @@ export default function PipelinePage() {
       </div>
 
       {/* Kanban Board */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {columns.map((columnStatus) => {
           const columnProjects = getProjectsByStatus(columnStatus)
           
@@ -403,7 +406,7 @@ export default function PipelinePage() {
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {columnProjects.map((project) => {
                   const date = formatDate(project.due_date)
-                  const displayText = project.type || project.description || 'Unknown'
+                  const displayText = project.type || 'Unknown'
                   
                   return (
                     <Card
@@ -427,9 +430,16 @@ export default function PipelinePage() {
                           <div className={`font-semibold ${getTextClass()} mb-1`}>
                             {project.name}
                           </div>
-                          <div className={`text-xs ${getTextClass()} opacity-60 truncate`}>
-                            {displayText}
-                          </div>
+                          {displayText && (
+                            <div className={`text-xs ${getTextClass()} opacity-60 mb-1`}>
+                              {displayText}
+                            </div>
+                          )}
+                          {project.description && (
+                            <div className={`text-xs ${getTextClass()} opacity-70 mt-1 line-clamp-2`}>
+                              {project.description}
+                            </div>
+                          )}
                           {project.lead && (
                             <div className={`text-xs ${getTextClass()} opacity-50 mt-1`}>
                               Lead: {project.lead}
@@ -465,6 +475,163 @@ export default function PipelinePage() {
             </Card>
           )
         })}
+
+        {/* 4th Column - Won/Lost Split */}
+        <Card
+          className="flex flex-col h-[calc(100vh-12rem)]"
+          style={{
+            backgroundColor: '#1a1a1a',
+            borderColor: borderColor,
+            borderWidth: '2px',
+          }}
+        >
+          {/* Won Section - Top Half */}
+          <div 
+            className="flex flex-col flex-1 min-h-0 border-b" 
+            style={{ borderColor: `${borderColor}40` }}
+            onDragOver={handleDragOver}
+            onDrop={(e) => {
+              e.preventDefault()
+              if (draggedProject && draggedProject.status !== 'Won') {
+                updateProjectStatus(draggedProject.id, 'Won')
+              }
+              setDraggedProject(null)
+            }}
+          >
+            <div className="p-4 border-b" style={{ borderColor: `${borderColor}40` }}>
+              <h2 className={`text-lg font-semibold ${getTextClass()}`}>
+                Won
+              </h2>
+              <p className={`text-sm ${getTextClass()} opacity-60`}>
+                {wonProjects.length} {wonProjects.length === 1 ? 'project' : 'projects'}
+              </p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {wonProjects.map((project) => {
+                const date = formatDate(project.due_date)
+                const displayText = project.type || 'Unknown'
+                
+                return (
+                  <Card
+                    key={project.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, project)}
+                    className="p-3 cursor-move hover:opacity-80 transition-opacity"
+                    style={{
+                      backgroundColor: `${borderColor}10`,
+                      borderColor: `${borderColor}40`,
+                      borderWidth: '1px',
+                    }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      {date && (
+                        <div className={`text-xs ${getTextClass()} opacity-60 mb-1`}>
+                          {date}
+                        </div>
+                      )}
+                      <div className={`font-semibold ${getTextClass()} mb-1`}>
+                        {project.name}
+                      </div>
+                      {displayText && (
+                        <div className={`text-xs ${getTextClass()} opacity-60 mb-1`}>
+                          {displayText}
+                        </div>
+                      )}
+                      {project.description && (
+                        <div className={`text-xs ${getTextClass()} opacity-70 mt-1 line-clamp-2`}>
+                          {project.description}
+                        </div>
+                      )}
+                      {project.lead && (
+                        <div className={`text-xs ${getTextClass()} opacity-50 mt-1`}>
+                          Lead: {project.lead}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                )
+              })}
+              {wonProjects.length === 0 && (
+                <div className={`text-center py-4 ${getTextClass()} opacity-40 text-sm`}>
+                  No won projects
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Lost Section - Bottom Half */}
+          <div 
+            className="flex flex-col flex-1 min-h-0"
+            onDragOver={handleDragOver}
+            onDrop={(e) => {
+              e.preventDefault()
+              if (draggedProject && draggedProject.status !== 'Lost') {
+                updateProjectStatus(draggedProject.id, 'Lost')
+              }
+              setDraggedProject(null)
+            }}
+          >
+            <div className="p-4 border-b" style={{ borderColor: `${borderColor}40` }}>
+              <h2 className={`text-lg font-semibold ${getTextClass()}`}>
+                Lost
+          </h2>
+              <p className={`text-sm ${getTextClass()} opacity-60`}>
+                {lostProjects.length} {lostProjects.length === 1 ? 'project' : 'projects'}
+              </p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {lostProjects.map((project) => {
+                const date = formatDate(project.due_date)
+                const displayText = project.type || 'Unknown'
+                
+                return (
+                  <Card
+                    key={project.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, project)}
+                    className="p-3 cursor-move hover:opacity-80 transition-opacity"
+                    style={{
+                      backgroundColor: `${borderColor}10`,
+                      borderColor: `${borderColor}40`,
+                      borderWidth: '1px',
+                    }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      {date && (
+                        <div className={`text-xs ${getTextClass()} opacity-60 mb-1`}>
+                          {date}
+                        </div>
+                      )}
+                      <div className={`font-semibold ${getTextClass()} mb-1`}>
+                        {project.name}
+                      </div>
+                      {displayText && (
+                        <div className={`text-xs ${getTextClass()} opacity-60 mb-1`}>
+                          {displayText}
+                        </div>
+                      )}
+                      {project.description && (
+                        <div className={`text-xs ${getTextClass()} opacity-70 mt-1 line-clamp-2`}>
+                          {project.description}
+                        </div>
+                      )}
+                      {project.lead && (
+                        <div className={`text-xs ${getTextClass()} opacity-50 mt-1`}>
+                          Lead: {project.lead}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                )
+              })}
+              {lostProjects.length === 0 && (
+                <div className={`text-center py-4 ${getTextClass()} opacity-40 text-sm`}>
+                  No lost projects
+                </div>
+              )}
+            </div>
+        </div>
+      </Card>
       </div>
     </div>
   )

@@ -2140,10 +2140,7 @@ export default function TeamDashboard() {
                       borderWidth: '2px',
                     }}
                   >
-                    {!eventsExpanded && (
-                      <p className="text-xs uppercase tracking-wider mb-4 font-black text-white transition-opacity duration-300">WORK</p>
-                    )}
-                    <h2 className={`${eventsExpanded ? 'text-xl mb-3' : 'text-3xl mb-6'} font-black uppercase text-white transition-all duration-300`}>PIPELINE</h2>
+                    <h2 className={`${eventsExpanded ? 'text-xl mb-3' : 'text-3xl mb-4'} font-black uppercase text-white transition-all duration-300`}>PIPELINE</h2>
                     
                     {/* Split in half */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 divide-x" style={{ borderColor: `${borderColor}40` }}>
@@ -2182,26 +2179,28 @@ export default function TeamDashboard() {
 
                       {/* Right Half - COMPLETED */}
                       <div className="flex flex-col pl-4">
-                        <h3 className="text-lg font-semibold text-white mb-4">COMPLETED</h3>
-                        
-                        {/* Tabs */}
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {(['Pending Decision', 'Long Lead', 'Won', 'Lost'] as const).map((status) => (
-                            <Button
-                              key={status}
-                              size="sm"
-                              onClick={() => setCompletedFilter(status)}
-                              className="text-xs h-7"
-                              style={{
-                                backgroundColor: completedFilter === status ? borderColor : 'transparent',
-                                color: completedFilter === status ? '#000' : borderColor,
-                                borderColor: borderColor,
-                                borderWidth: '1px',
-                              }}
-                            >
-                              {status === 'Pending Decision' ? 'Pending' : status}
-                            </Button>
-                          ))}
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-white">COMPLETED</h3>
+                          
+                          {/* Tabs - Right aligned */}
+                          <div className="flex flex-wrap gap-2">
+                            {(['Pending Decision', 'Long Lead', 'Won', 'Lost'] as const).map((status) => (
+                              <Button
+                                key={status}
+                                size="sm"
+                                onClick={() => setCompletedFilter(status)}
+                                className="text-xs h-7"
+                                style={{
+                                  backgroundColor: completedFilter === status ? borderColor : 'transparent',
+                                  color: completedFilter === status ? '#000' : borderColor,
+                                  borderColor: borderColor,
+                                  borderWidth: '1px',
+                                }}
+                              >
+                                {status === 'Pending Decision' ? 'Pending' : status}
+                              </Button>
+                            ))}
+                          </div>
                         </div>
                         
                         {/* Scrollable list */}
