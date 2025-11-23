@@ -2746,7 +2746,7 @@ export default function TeamDashboard() {
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('ask-hive') : getCardStyle('community')
             return (
-              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
+              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} md:col-span-1`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
                 <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
@@ -2773,8 +2773,12 @@ export default function TeamDashboard() {
           })()}
 
           {/* Team Pulse */}
-          <TeamPulseCard />
+          <div className="md:col-span-2">
+            <TeamPulseCard />
+          </div>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Weekly Playlist */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('playlist') : getCardStyle('vibes')
