@@ -142,10 +142,10 @@ export async function GET(request: NextRequest) {
 
     // Fetch events from each calendar
     for (const calendarId of calendarIds) {
+      // Decode the calendar ID in case it's URL encoded
+      const decodedCalendarId = decodeURIComponent(calendarId)
+      
       try {
-        // Decode the calendar ID in case it's URL encoded
-        const decodedCalendarId = decodeURIComponent(calendarId)
-        
         console.log(`Fetching events from calendar: ${decodedCalendarId}`)
         
         const response = await calendar.events.list({

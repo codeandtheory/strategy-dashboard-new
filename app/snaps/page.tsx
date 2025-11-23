@@ -10,7 +10,7 @@ import { ModeSwitcher } from '@/components/mode-switcher'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader2, Plus, Users, TrendingUp, Calendar, ChevronDown, Sparkles } from 'lucide-react'
+import { Loader2, Plus, Users, TrendingUp, Calendar, ChevronDown, Sparkles, ArrowUp } from 'lucide-react'
 import Link from 'next/link'
 import { AddSnapDialog } from '@/components/add-snap-dialog'
 
@@ -135,7 +135,7 @@ export default function SnapsPage() {
     return mode === 'code' ? 'rounded-none' : defaultClass
   }
 
-  // Get card style for snaps using dashboard system
+  // Get card style for snaps using dashboard system - matching dashboard snap colors
   const getCardStyle = () => {
     if (mode === 'chaos') {
       return { bg: 'bg-[#000000]', border: 'border-0', text: 'text-white', accent: '#E8FF00' }
@@ -417,12 +417,16 @@ export default function SnapsPage() {
         </div>
       </header>
 
-      <div className="flex h-screen">
-        {/* Left Sidebar */}
-        <div className={`w-80 ${style.bg} ${style.border} ${getRoundedClass('rounded-r-[2.5rem]')} p-6 flex flex-col`} style={{ borderRightWidth: mode === 'code' ? '1px' : '0' }}>
+      <main className="max-w-[1600px] mx-auto px-6 py-10">
+        <div className="flex gap-6">
+          {/* Left Sidebar Card */}
+          <Card className={`w-80 ${mode === 'chaos' ? 'bg-[#1a1a1a]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
+            borderColor: mode === 'chaos' ? '#E8FF00' : mode === 'chill' ? '#C8D961' : '#FFFFFF',
+            borderWidth: '2px'
+          }}>
           {/* Filters Section */}
           <div className="mb-6">
-            <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${style.text}`}>
+            <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
               ▼ FILTERS
             </h3>
             <div className="space-y-2">
@@ -436,13 +440,13 @@ export default function SnapsPage() {
                       ? 'bg-[#C8D961] text-[#4A1818]'
                       : 'bg-white text-black'
                     : mode === 'chaos'
-                    ? 'bg-black/40 text-white/60 hover:bg-black/60'
+                    ? 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                     : mode === 'chill'
-                    ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50'
-                    : 'bg-black/40 text-white/60 hover:bg-black/60'
+                    ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                    : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                 }`}
               >
-                <Sparkles className="w-4 h-4" />
+                <Users className="w-4 h-4" />
                 <span className="font-black uppercase text-sm">All Snaps</span>
               </button>
               <button
@@ -455,10 +459,10 @@ export default function SnapsPage() {
                       ? 'bg-[#C8D961] text-[#4A1818]'
                       : 'bg-white text-black'
                     : mode === 'chaos'
-                    ? 'bg-black/40 text-white/60 hover:bg-black/60'
+                    ? 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                     : mode === 'chill'
-                    ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50'
-                    : 'bg-black/40 text-white/60 hover:bg-black/60'
+                    ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                    : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                 }`}
               >
                 <Users className="w-4 h-4" />
@@ -474,13 +478,13 @@ export default function SnapsPage() {
                       ? 'bg-[#C8D961] text-[#4A1818]'
                       : 'bg-white text-black'
                     : mode === 'chaos'
-                    ? 'bg-black/40 text-white/60 hover:bg-black/60'
+                    ? 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                     : mode === 'chill'
-                    ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50'
-                    : 'bg-black/40 text-white/60 hover:bg-black/60'
+                    ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                    : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                 }`}
               >
-                <TrendingUp className="w-4 h-4" />
+                <ArrowUp className="w-4 h-4" />
                 <span className="font-black uppercase text-sm">Snaps I Gave</span>
               </button>
             </div>
@@ -491,12 +495,9 @@ export default function SnapsPage() {
 
           {/* Time Filter */}
           <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="w-4 h-4" style={{ color: style.accent }} />
-              <h3 className={`text-xs uppercase tracking-wider font-black ${style.text}`}>
-                Time Filter
-              </h3>
-            </div>
+            <h3 className={`text-xs uppercase tracking-wider font-black mb-3 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
+              Time Filter
+            </h3>
             <div className="relative">
               <button
                 onClick={() => setShowTimeDropdown(!showTimeDropdown)}
@@ -506,7 +507,10 @@ export default function SnapsPage() {
                     : mode === 'chill'
                     ? 'bg-white text-[#4A1818]'
                     : 'bg-black/40 text-white'
-                } flex items-center justify-between`}
+                } flex items-center justify-between border`}
+                style={{
+                  borderColor: mode === 'chaos' ? 'rgba(255,255,255,0.2)' : mode === 'chill' ? 'rgba(74,24,24,0.2)' : 'rgba(255,255,255,0.2)'
+                }}
               >
                 <span className="font-black uppercase text-sm">
                   {timeFilter === 'all-time' ? 'All Time' :
@@ -553,7 +557,9 @@ export default function SnapsPage() {
           </div>
 
           {/* This Month Summary */}
-          <div className={`mt-auto ${getRoundedClass('rounded-xl')} p-4`} style={{ backgroundColor: mode === 'chaos' ? '#FF6B6B' : mode === 'chill' ? '#FF6B35' : '#FF6B6B' }}>
+          <div className={`mt-auto ${getRoundedClass('rounded-xl')} p-4`} style={{ 
+            backgroundColor: mode === 'chaos' ? '#FF6B35' : mode === 'chill' ? '#FF6B35' : '#FF6B6B' 
+          }}>
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="w-4 h-4 text-white" />
               <h3 className="text-xs uppercase tracking-wider font-black text-white">THIS MONTH</h3>
@@ -577,24 +583,24 @@ export default function SnapsPage() {
               </div>
             )}
           </div>
-        </div>
+          </Card>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <div className={`${style.bg} ${style.border} p-6 flex items-center justify-between`} style={{ borderBottomWidth: mode === 'code' ? '1px' : '0' }}>
-            <h1 className={`text-4xl font-black uppercase ${style.text}`}>Snaps</h1>
-            <Button
-              onClick={() => setShowAddDialog(true)}
-              className={`${mode === 'chaos' ? 'bg-gradient-to-r from-[#00FF87] to-[#00E676] hover:from-[#00FF87] hover:to-[#00FF87] text-black' : mode === 'chill' ? 'bg-gradient-to-r from-[#C8D961] to-[#FFC043] hover:from-[#C8D961] hover:to-[#C8D961] text-[#4A1818]' : 'bg-gradient-to-r from-[#cccccc] to-[#e5e5e5] hover:from-[#cccccc] hover:to-[#cccccc] text-black'} font-black ${getRoundedClass('rounded-full')} h-10 px-6 text-sm uppercase`}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Snap
-            </Button>
-          </div>
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col">
+            {/* Header */}
+            <div className="mb-6 flex items-center justify-between">
+              <h1 className={`text-4xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Snaps</h1>
+              <Button
+                onClick={() => setShowAddDialog(true)}
+                className={`${mode === 'chaos' ? 'bg-gradient-to-r from-[#00FF87] to-[#00E676] hover:from-[#00FF87] hover:to-[#00FF87] text-black' : mode === 'chill' ? 'bg-gradient-to-r from-[#C8D961] to-[#FFC043] hover:from-[#C8D961] hover:to-[#C8D961] text-[#4A1818]' : 'bg-gradient-to-r from-[#cccccc] to-[#e5e5e5] hover:from-[#cccccc] hover:to-[#cccccc] text-black'} font-black ${getRoundedClass('rounded-full')} h-10 px-6 text-sm uppercase`}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Snap
+              </Button>
+            </div>
 
-          {/* Snaps List */}
-          <div className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: mode === 'chill' ? '#F5E6D3' : 'transparent' }}>
+            {/* Snaps List */}
+            <div className="space-y-4">
             {error && (
               <div className={`mb-4 p-4 ${getRoundedClass('rounded-xl')} border-2`} style={{ backgroundColor: mode === 'chaos' ? 'rgba(255, 0, 0, 0.1)' : mode === 'chill' ? 'rgba(255, 0, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)', borderColor: '#ef4444' }}>
                 <p className="text-sm" style={{ color: '#ef4444' }}>{error}</p>
@@ -608,7 +614,7 @@ export default function SnapsPage() {
                 </p>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <>
                 {filteredSnaps.map((snap) => {
                   const fromName = getDisplayName(snap.submitted_by_profile)
                   const toName = getDisplayName(snap.mentioned_user_profile) || snap.mentioned || 'Team'
@@ -617,32 +623,35 @@ export default function SnapsPage() {
                   return (
                     <Card
                       key={snap.id}
-                      className={`${style.bg} ${style.border} ${getRoundedClass('rounded-xl')} p-4 relative`}
-                      style={{
-                        borderLeftWidth: '10px',
-                        borderLeftColor: style.accent
-                      }}
+                      className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}
                     >
                       <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 mt-1">
-                          <Sparkles className="w-5 h-5" style={{ color: style.accent }} />
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ 
+                            backgroundColor: style.accent
+                          }}>
+                            <Users className={`w-5 h-5 ${mode === 'chaos' || mode === 'code' ? 'text-black' : mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`} />
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className={`text-sm font-black ${style.text}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-black text-black">
                               {fromName} → {toName}
                             </p>
                             {isAnonymous && (
-                              <span className={`px-2 py-1 ${getRoundedClass('rounded-full')} text-xs font-black uppercase flex items-center gap-1`} style={{ backgroundColor: style.accent, color: mode === 'chaos' || mode === 'code' ? '#000000' : '#4A1818' }}>
+                              <span className={`px-2 py-1 ${getRoundedClass('rounded-full')} text-xs font-black uppercase flex items-center gap-1`} style={{ 
+                                backgroundColor: style.accent,
+                                color: mode === 'chaos' || mode === 'code' ? '#000000' : mode === 'chill' ? '#4A1818' : '#000000'
+                              }}>
                                 <Users className="w-3 h-3" />
                                 Anonymous
                               </span>
                             )}
                           </div>
-                          <p className={`text-xs ${style.text}/60 mb-3`}>
+                          <p className="text-xs text-gray-500 mb-2">
                             {formatTimeAgo(snap.date)}
                           </p>
-                          <p className={`text-base leading-relaxed ${style.text}`}>
+                          <p className="text-base leading-relaxed text-black">
                             {snap.snap_content}
                           </p>
                         </div>
@@ -650,11 +659,12 @@ export default function SnapsPage() {
                     </Card>
                   )
                 })}
-              </div>
+              </>
             )}
+            </div>
           </div>
         </div>
-      </div>
+      </main>
 
       <AddSnapDialog
         open={showAddDialog}
