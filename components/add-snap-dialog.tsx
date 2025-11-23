@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/auth-context'
+import { createClient } from '@/lib/supabase/client'
 import {
   Dialog,
   DialogContent,
@@ -21,24 +22,124 @@ interface AddSnapDialogProps {
   onSuccess: () => void
 }
 
+interface Profile {
+  id: string
+  full_name: string | null
+  email: string | null
+}
+
 export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogProps) {
   const { user } = useAuth()
+  const supabase = createClient()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
   const [snapContent, setSnapContent] = useState('')
   const [mentioned, setMentioned] = useState('')
   const [submitAnonymously, setSubmitAnonymously] = useState(false)
+  const [suggestions, setSuggestions] = useState<Profile[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
   
   // Make overlay fully opaque (no transparency)
   useEffect(() => {
     if (open) {
       const overlay = document.querySelector('[data-radix-dialog-overlay]')
       if (overlay) {
-        ;(overlay as HTMLElement).style.backgroundColor = 'rgb(0, 0, 0)'
+        const overlayEl = overlay as HTMLElement
+        overlayEl.style.backgroundColor = 'rgb(0, 0, 0)'
+        overlayEl.style.opacity = '1'
+        overlayEl.classList.remove('bg-black/80')
+        overlayEl.classList.add('bg-black')
       }
     }
   }, [open])
+  
+  // Fetch team members for autocomplete
+  useEffect(() => {
+    async function fetchProfiles() {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .order('full_name', { ascending: true })
+        
+        if (!error && data) {
+          // Store all profiles for filtering
+          setAllProfiles(data)
+        }
+      } catch (err) {
+        console.error('Error fetching profiles:', err)
+      }
+    }
+    
+    if (open) {
+      fetchProfiles()
+    }
+  }, [open, supabase])
+  
+  const [allProfiles, setAllProfiles] = useState<Profile[]>([])
+  
+  // Debounced search for autocomplete
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+    }
+    
+    if (mentioned.length < 1) {
+      setSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      const searchLower = mentioned.toLowerCase()
+      const filtered = allProfiles.filter(profile => {
+        const name = profile.full_name?.toLowerCase() || ''
+        const email = profile.email?.toLowerCase() || ''
+        return name.includes(searchLower) || email.includes(searchLower)
+      }).slice(0, 5)
+      
+      setSuggestions(filtered)
+      setShowSuggestions(filtered.length > 0)
+      setSelectedIndex(-1)
+    }, 200)
+    
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+    }
+  }, [mentioned, allProfiles])
+  
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return
+    
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIndex(prev => (prev > 0 ? prev - 1 : -1))
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault()
+      const selected = suggestions[selectedIndex]
+      setMentioned(selected.full_name || selected.email || '')
+      setShowSuggestions(false)
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false)
+    }
+  }
+  
+  const handleSelectSuggestion = (profile: Profile) => {
+    setMentioned(profile.full_name || profile.email || '')
+    setShowSuggestions(false)
+    inputRef.current?.blur()
+  }
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -115,18 +216,48 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
             />
           </div>
           
-          <div>
+          <div className="relative">
             <Label htmlFor="mentioned" className="mb-2 block">
               Mentioned (Recipient)
             </Label>
             <Input
+              ref={inputRef}
               id="mentioned"
               type="text"
               value={mentioned}
               onChange={(e) => setMentioned(e.target.value)}
-              placeholder="Enter the person's name"
+              onKeyDown={handleKeyDown}
+              onFocus={() => {
+                if (suggestions.length > 0) {
+                  setShowSuggestions(true)
+                }
+              }}
+              onBlur={() => {
+                // Delay to allow click on suggestion
+                setTimeout(() => setShowSuggestions(false), 200)
+              }}
+              placeholder="Start typing a name..."
               className="w-full"
             />
+            {showSuggestions && suggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto"
+              >
+                {suggestions.map((profile, idx) => (
+                  <button
+                    key={profile.id}
+                    type="button"
+                    onClick={() => handleSelectSuggestion(profile)}
+                    className={`w-full text-left px-4 py-2 hover:bg-accent hover:text-accent-foreground ${
+                      idx === selectedIndex ? 'bg-accent text-accent-foreground' : ''
+                    }`}
+                  >
+                    {profile.full_name || profile.email}
+                  </button>
+                ))}
+              </div>
+            )}
             <p className="text-xs text-muted-foreground mt-1">
               The person this snap is for (optional)
             </p>

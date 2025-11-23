@@ -129,11 +129,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare snap data
+    // Always set from_user_id to the logged-in user (even if anonymous, we still track who sent it)
     const snapData: any = {
       snap_content: snap_content.trim(),
       mentioned: mentioned?.trim() || null,
       mentioned_user_id: mentionedUserId,
       submitted_by: submit_anonymously ? null : user.id,
+      from_user_id: user.id, // Always record the logged-in user as the giver
+      to_user_id: mentionedUserId || user.id, // Recipient or fallback to user
+      message: snap_content.trim(), // Also set message field
       date: date || new Date().toISOString().split('T')[0], // Use provided date or today
     }
 
