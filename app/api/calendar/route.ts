@@ -2,8 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
 
 // Initialize Google Calendar API
+// Supports both OAuth2 (for shared calendars) and Service Account authentication
 function getCalendarClient() {
-  // Try service account JSON first, then fallback to individual vars
+  // Try OAuth2 first (better for shared calendars)
+  const oauthClientId = process.env.GOOGLE_OAUTH_CLIENT_ID
+  const oauthClientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET
+  const oauthRefreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN
+
+  if (oauthClientId && oauthClientSecret && oauthRefreshToken) {
+    console.log('Using OAuth2 authentication for Google Calendar')
+    const oauth2Client = new google.auth.OAuth2(
+      oauthClientId,
+      oauthClientSecret
+    )
+    oauth2Client.setCredentials({
+      refresh_token: oauthRefreshToken,
+    })
+    return google.calendar({ version: 'v3', auth: oauth2Client })
+  }
+
+  // Fallback to service account
+  console.log('Using Service Account authentication for Google Calendar')
   let clientEmail: string
   let privateKey: string
   
@@ -23,7 +42,7 @@ function getCalendarClient() {
 
   if (!clientEmail || !privateKey) {
     throw new Error(
-      'Google Calendar authentication required: either GOOGLE_SERVICE_ACCOUNT_JSON or both GOOGLE_DRIVE_CLIENT_EMAIL and GOOGLE_DRIVE_PRIVATE_KEY must be set'
+      'Google Calendar authentication required: either OAuth2 credentials (GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REFRESH_TOKEN) or Service Account credentials (GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_DRIVE_CLIENT_EMAIL + GOOGLE_DRIVE_PRIVATE_KEY) must be set'
     )
   }
 
@@ -75,21 +94,45 @@ export async function GET(request: NextRequest) {
     const timeMax = searchParams.get('timeMax') || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
     const maxResults = parseInt(searchParams.get('maxResults') || '10')
 
-    const calendar = getCalendarClient()
-    const allEvents: CalendarEvent[] = []
+    // Check if an access token was provided (from client-side OAuth)
+    const accessToken = searchParams.get('accessToken')
+    let calendar
     
-    // Get service account email for error messages
-    let clientEmail: string
+    if (accessToken) {
+      // Use the provided access token (from user's Google OAuth session)
+      console.log('Using provided Google OAuth access token')
+      const oauth2Client = new google.auth.OAuth2()
+      oauth2Client.setCredentials({ access_token: accessToken })
+      calendar = google.calendar({ version: 'v3', auth: oauth2Client })
+    } else {
+      // Use server-side authentication (OAuth2 refresh token or service account)
+      calendar = getCalendarClient()
+    }
+    const allEvents: CalendarEvent[] = []
+    const successfulCalendars: string[] = []
+    const failedCalendars: Array<{ id: string; error: string }> = []
+    
+    // Get authentication info for error messages
+    let authInfo: string
+    let usingOAuth2 = false
     try {
-      const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
-      if (serviceAccountJson) {
-        const parsed = JSON.parse(serviceAccountJson)
-        clientEmail = parsed.client_email
+      if (accessToken) {
+        authInfo = 'OAuth2 (user session token)'
+        usingOAuth2 = true
+      } else if (process.env.GOOGLE_OAUTH_REFRESH_TOKEN) {
+        authInfo = 'OAuth2 (refresh token)'
+        usingOAuth2 = true
       } else {
-        clientEmail = process.env.GOOGLE_DRIVE_CLIENT_EMAIL || 'service account email'
+        const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+        if (serviceAccountJson) {
+          const parsed = JSON.parse(serviceAccountJson)
+          authInfo = parsed.client_email || 'Service Account'
+        } else {
+          authInfo = process.env.GOOGLE_DRIVE_CLIENT_EMAIL || 'Service Account'
+        }
       }
     } catch {
-      clientEmail = process.env.GOOGLE_DRIVE_CLIENT_EMAIL || 'service account email'
+      authInfo = process.env.GOOGLE_DRIVE_CLIENT_EMAIL || 'Service Account'
     }
 
     // Fetch events from each calendar
@@ -143,6 +186,7 @@ export async function GET(request: NextRequest) {
         }))
 
         allEvents.push(...transformedEvents)
+        successfulCalendars.push(decodedCalendarId)
       } catch (error: any) {
         const errorDetails = {
           message: error.message,
@@ -153,20 +197,38 @@ export async function GET(request: NextRequest) {
         console.error(`Error fetching events from calendar ${decodedCalendarId}:`, error)
         console.error(`Error details:`, errorDetails)
         
+        let errorMessage = error.message || 'Unknown error'
+        
         // Provide helpful error messages for common issues
         if (error.code === 403 || error.status === 403) {
           if (error.message?.includes('not been used') || error.message?.includes('disabled')) {
+            errorMessage = 'Google Calendar API is not enabled'
             console.error(`⚠️  Google Calendar API is not enabled. Enable it at: https://console.developers.google.com/apis/api/calendar-json.googleapis.com/overview?project=141888268813`)
           } else {
-            console.error(`⚠️  Permission denied. The service account may need to be shared with this calendar.`)
-            console.error(`   Service account email: ${clientEmail}`)
+            if (process.env.GOOGLE_OAUTH_REFRESH_TOKEN) {
+              errorMessage = 'Permission denied - calendar not accessible with your account'
+              console.error(`⚠️  Permission denied. Make sure you have access to this calendar in your Google account.`)
+            } else {
+              errorMessage = 'Permission denied - calendar not shared with service account'
+              console.error(`⚠️  Permission denied. The service account may need to be shared with this calendar.`)
+              console.error(`   Service account email: ${authInfo}`)
+              console.error(`   To fix: Share the calendar with the service account email, make the calendar public, or switch to OAuth2 authentication.`)
+            }
             console.error(`   Calendar ID: ${decodedCalendarId}`)
-            console.error(`   To fix: Share the calendar with the service account email or make the calendar public.`)
           }
         } else if (error.code === 404 || error.status === 404) {
-          console.error(`⚠️  Calendar not found. Check that the calendar ID is correct: ${decodedCalendarId}`)
+          errorMessage = 'Calendar not found or not accessible'
+          console.error(`⚠️  Calendar not found (404).`)
+          console.error(`   Calendar ID: ${decodedCalendarId}`)
+          if (process.env.GOOGLE_OAUTH_REFRESH_TOKEN) {
+            console.error(`   Using OAuth2 authentication. Make sure you have access to this calendar in your Google account.`)
+          } else {
+            console.error(`   Authentication: ${authInfo}`)
+            console.error(`   To fix: Share the calendar "${decodedCalendarId}" with "${authInfo}" in Google Calendar settings, or switch to OAuth2 authentication.`)
+          }
         }
         
+        failedCalendars.push({ id: decodedCalendarId, error: errorMessage })
         // Continue with other calendars even if one fails
       }
     }
@@ -181,6 +243,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       events: allEvents,
       count: allEvents.length,
+      successfulCalendars: successfulCalendars.length,
+      failedCalendars: failedCalendars.length,
+      failedCalendarDetails: failedCalendars,
+      authInfo: authInfo, // Include auth info for debugging
+      usingOAuth2: usingOAuth2,
     })
   } catch (error: any) {
     console.error('Error fetching calendar events:', error)

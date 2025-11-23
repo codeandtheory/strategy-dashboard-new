@@ -22,6 +22,7 @@ import { ProfileSetupModal } from '@/components/profile-setup-modal'
 import { createClient } from '@/lib/supabase/client'
 import { AddSnapDialog } from '@/components/add-snap-dialog'
 import { SpotifyOEmbedPlayer } from '@/components/spotify-oembed-player'
+import { useGoogleCalendarToken } from '@/hooks/useGoogleCalendarToken'
 
 // Force dynamic rendering to avoid SSR issues with context
 export const dynamic = 'force-dynamic'
@@ -123,15 +124,27 @@ export default function TeamDashboard() {
   const [calendarLoading, setCalendarLoading] = useState(true)
   const [calendarError, setCalendarError] = useState<string | null>(null)
   const [eventsExpanded, setEventsExpanded] = useState(false)
+  const [serviceAccountEmail, setServiceAccountEmail] = useState<string | null>(null)
+  
+  // Get Google Calendar access token using the user's existing Google session
+  const { accessToken: googleCalendarToken, loading: tokenLoading, error: tokenError } = useGoogleCalendarToken()
 
-  // Calendar IDs from the provided embed URLs (stored decoded)
-  const calendarIds = [
+  // Calendar IDs - can be hardcoded or dynamically fetched
+  const [calendarIds, setCalendarIds] = useState<string[]>([
     'codeandtheory.com_6elnqlt8ok3kmcpim2vge0qqqk@group.calendar.google.com', // Out of office 1
     'codeandtheory.com_ojeuiov0bhit2k17g8d6gj4i68@group.calendar.google.com', // Out of office 2
     'codeandtheory.com_5b18ulcjgibgffc35hbtmv6sfs@group.calendar.google.com', // Office events
     'en.usa#holiday@group.v.calendar.google.com', // Holidays
     'c_6236655ee40ad4fcbedc4e96ce72c39783f27645dbdd22714ca9bc90fcc551ac@group.calendar.google.com', // Strategy team
-  ]
+  ])
+  const [userCalendars, setUserCalendars] = useState<Array<{
+    id: string
+    summary: string
+    selected?: boolean
+  }>>([])
+  // Set to true to automatically use all calendars the logged-in user has access to
+  // Set to false to use the hardcoded calendar IDs above
+  const [useDynamicCalendars, setUseDynamicCalendars] = useState(true) // Change to false to use hardcoded calendars
 
   // Format today's date in user's timezone
   useEffect(() => {
@@ -355,6 +368,59 @@ export default function TeamDashboard() {
     fetchSnaps()
   }, [user, snapViewType])
 
+  // Fetch user's calendars dynamically (if token is available)
+  useEffect(() => {
+    async function fetchUserCalendars() {
+      if (!googleCalendarToken || tokenLoading) return
+      
+      try {
+        const response = await fetch(
+          `/api/calendars/list?accessToken=${encodeURIComponent(googleCalendarToken)}`
+        )
+        
+        if (response.ok) {
+          const result = await response.json()
+          if (result.calendars && Array.isArray(result.calendars)) {
+            setUserCalendars(result.calendars)
+            
+            // Filter calendars - you can customize this filter
+            const filteredCalendars = result.calendars
+              .filter((cal: any) => {
+                // By default, include all calendars that are selected/enabled
+                // You can customize this filter to only include specific calendars
+                const summary = cal.summary?.toLowerCase() || ''
+                
+                // Example filters (uncomment to use):
+                // - Only include calendars with specific keywords:
+                // return summary.includes('office') || summary.includes('holiday') || summary.includes('team')
+                // - Only include calendars the user owns:
+                // return cal.accessRole === 'owner'
+                // - Exclude specific calendars:
+                // return !summary.includes('birthday') && !summary.includes('contacts')
+                
+                // Default: include all selected calendars
+                return cal.selected !== false
+              })
+              .map((cal: any) => cal.id)
+            
+            // Automatically use dynamic calendars if available and enabled
+            // Set useDynamicCalendars to true to enable this feature
+            if (useDynamicCalendars && filteredCalendars.length > 0) {
+              setCalendarIds(filteredCalendars)
+              console.log(`Using ${filteredCalendars.length} dynamically fetched calendars:`, filteredCalendars)
+            } else if (filteredCalendars.length > 0) {
+              console.log(`Found ${filteredCalendars.length} accessible calendars (not using - enable useDynamicCalendars to use them)`)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user calendars:', error)
+      }
+    }
+    
+    fetchUserCalendars()
+  }, [googleCalendarToken, tokenLoading, useDynamicCalendars])
+
   // Fetch calendar events
   useEffect(() => {
     async function fetchCalendarEvents() {
@@ -371,16 +437,44 @@ export default function TeamDashboard() {
 
         // Encode calendar IDs for the API (they're already decoded in the array)
         const calendarIdsParam = calendarIds.map(id => encodeURIComponent(id)).join(',')
-        const response = await fetch(
-          `/api/calendar?calendarIds=${calendarIdsParam}&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&maxResults=50`
-        )
+        
+        // Build API URL with optional access token
+        let apiUrl = `/api/calendar?calendarIds=${calendarIdsParam}&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&maxResults=50`
+        if (googleCalendarToken) {
+          apiUrl += `&accessToken=${encodeURIComponent(googleCalendarToken)}`
+        }
+        
+        const response = await fetch(apiUrl)
 
         if (response.ok) {
           const result = await response.json()
-          console.log('Calendar API response:', { eventCount: result.count, events: result.events })
+          console.log('Calendar API response:', { 
+            eventCount: result.count, 
+            events: result.events,
+            successfulCalendars: result.successfulCalendars,
+            failedCalendars: result.failedCalendars,
+            failedDetails: result.failedCalendarDetails
+          })
+          
+          if (result.failedCalendars > 0) {
+            console.warn(`${result.failedCalendars} calendar(s) failed to load. Check server logs for details.`)
+            const failedDetails = result.failedCalendarDetails || []
+            const failedMessages = failedDetails.map((f: any) => `${f.id}: ${f.error}`).join('; ')
+            if (result.count === 0) {
+              // Only show error if no events were loaded at all
+              setCalendarError(`Some calendars are not accessible. ${failedMessages}`)
+            }
+          }
+          
+          if (result.authInfo) {
+            setServiceAccountEmail(result.authInfo)
+            console.log(`Authentication method: ${result.usingOAuth2 ? 'OAuth2' : 'Service Account'}`)
+            console.log(`Auth info: ${result.authInfo}`)
+          }
+          
           if (result.events && Array.isArray(result.events)) {
             setCalendarEvents(result.events)
-            console.log(`Loaded ${result.events.length} calendar events`)
+            console.log(`Loaded ${result.events.length} calendar events from ${result.successfulCalendars} calendar(s)`)
           } else {
             console.warn('No events array in response:', result)
             setCalendarEvents([])
@@ -398,8 +492,11 @@ export default function TeamDashboard() {
       }
     }
 
-    fetchCalendarEvents()
-  }, [user, eventsExpanded])
+    // Only fetch if we're not waiting for the token, or if we have a token
+    if (!tokenLoading) {
+      fetchCalendarEvents()
+    }
+  }, [user, eventsExpanded, googleCalendarToken, tokenLoading, calendarIds])
 
   const handleSnapAdded = async () => {
     // Refresh snaps list for the logged-in user
@@ -1612,9 +1709,35 @@ export default function TeamDashboard() {
                         </a>
                       </div>
                     ) : calendarError.includes('Not Found') || calendarError.includes('404') ? (
-                      <div className={`text-xs ${style.text}/80 space-y-1`}>
-                        <p>Some calendars are not accessible. They may need to be shared with the service account.</p>
-                        <p className="mt-2">Check server logs for details on which calendars failed.</p>
+                      <div className={`text-xs ${style.text}/80 space-y-2`}>
+                        <p>Some calendars are not accessible. The app is using your Google account to access calendars.</p>
+                        {tokenError && (
+                          <div className={`${getRoundedClass('rounded-lg')} p-2 mt-2`} style={{ backgroundColor: `${mintColor}22` }}>
+                            <p className="font-semibold mb-1 text-red-400">Token Error:</p>
+                            <p className="text-[10px]">{tokenError}</p>
+                            {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+                              <p className="text-[10px] mt-1">Make sure NEXT_PUBLIC_GOOGLE_CLIENT_ID is set in your environment variables.</p>
+                            )}
+                          </div>
+                        )}
+                        {!googleCalendarToken && !tokenLoading && (
+                          <div className={`${getRoundedClass('rounded-lg')} p-2 mt-2`} style={{ backgroundColor: `${mintColor}22` }}>
+                            <p className="font-semibold mb-1">No Google Calendar Access</p>
+                            <p className="text-[10px]">The app needs permission to access your Google Calendar. A consent dialog should appear, or refresh the page.</p>
+                          </div>
+                        )}
+                        {serviceAccountEmail && !serviceAccountEmail.includes('OAuth2') && (
+                          <div className={`${getRoundedClass('rounded-lg')} p-2 mt-2`} style={{ backgroundColor: `${mintColor}22` }}>
+                            <p className="font-semibold mb-1">Fallback Authentication:</p>
+                            <p className="font-mono text-[10px] break-all">{serviceAccountEmail}</p>
+                          </div>
+                        )}
+                        <p className="mt-2 font-semibold">To fix shared calendar access:</p>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Make sure you're logged in with the Google account that has access to these calendars</li>
+                          <li>Grant calendar access when prompted (the consent dialog should appear automatically)</li>
+                          <li>If calendars still don't load, verify you can see them in your Google Calendar app</li>
+                        </ol>
                       </div>
                     ) : (
                       <p className={`text-xs ${style.text}/80`}>{calendarError}</p>
