@@ -282,19 +282,19 @@ export function TeamPulseCard() {
           }}
         />
         
-        <div className="p-6 pb-4 flex-shrink-0 relative z-10">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${mode === 'chaos' ? 'bg-[#00FF87]/20' : mode === 'chill' ? 'bg-[#C8D961]/20' : 'bg-white/20'}`}>
-                <TrendingUp className={`w-5 h-5 ${style.text}`} />
+        <div className="p-4 pb-3 flex-shrink-0 relative z-10">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className={`p-1.5 rounded-lg ${mode === 'chaos' ? 'bg-[#00FF87]/20' : mode === 'chill' ? 'bg-[#C8D961]/20' : 'bg-white/20'}`}>
+                <TrendingUp className={`w-4 h-4 ${style.text}`} />
               </div>
               <div>
-                <h2 className={`text-2xl font-black uppercase ${style.text} tracking-tighter`}>Team Pulse</h2>
+                <h2 className={`text-xl font-black uppercase ${style.text} tracking-tighter`}>Team Pulse</h2>
                 <p className={`text-xs font-bold ${style.text}/70 mt-0.5 uppercase tracking-wider`}>This week's results</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Badge className={`${mode === 'chaos' ? 'bg-[#00FF87] text-black' : mode === 'chill' ? 'bg-[#C8D961] text-[#4A1818]' : 'bg-white text-black'} border-0 font-black text-xs px-3 py-1`}>
+            <div className="flex items-center gap-2">
+              <Badge className={`${mode === 'chaos' ? 'bg-[#00FF87] text-black' : mode === 'chill' ? 'bg-[#C8D961] text-[#4A1818]' : 'bg-white text-black'} border-0 font-black text-xs px-2 py-0.5`}>
                 {totalResponses} {totalResponses === 1 ? 'response' : 'responses'}
               </Badge>
               <Button
@@ -318,7 +318,7 @@ export function TeamPulseCard() {
                     .catch(err => console.error('Error loading questions:', err))
                 }}
                 variant="outline"
-                className={`${getRoundedClass('rounded-lg')} text-xs h-8 px-4 ${
+                className={`${getRoundedClass('rounded-lg')} text-xs h-7 px-3 ${
                   mode === 'chaos' 
                     ? 'bg-black/10 border-black/20 text-black hover:bg-black/20' 
                     : mode === 'chill'
@@ -332,8 +332,8 @@ export function TeamPulseCard() {
           </div>
         </div>
         
-        <div className="flex-1 px-6 pb-6 relative z-10">
-          <div className="space-y-3">
+        <div className="flex-1 px-4 pb-4 relative z-10">
+          <div className="space-y-2">
             {aggregatedData.length > 0 ? (
               aggregatedData.map((data, index) => {
                 const question = questions.find(q => q.question_key === data.questionKey)
@@ -347,25 +347,25 @@ export function TeamPulseCard() {
                 return (
                   <div 
                     key={data.questionKey} 
-                    className={`p-3 rounded-xl border-2 ${interpretation.borderColor} ${resultTint} transition-all duration-300 backdrop-blur-sm`}
+                    className={`p-2 rounded-lg border-2 ${interpretation.borderColor} ${resultTint} transition-all duration-300 backdrop-blur-sm`}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                        <div className={`p-1.5 rounded-lg ${interpretation.bgColor} flex-shrink-0`}>
-                          <QuestionIcon className={`w-4 h-4 ${interpretation.color}`} />
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className={`p-1 rounded-md ${interpretation.bgColor} flex-shrink-0`}>
+                          <QuestionIcon className={`w-3 h-3 ${interpretation.color}`} />
                         </div>
                         <p className={`text-xs font-black ${interpretation.color} leading-tight truncate`}>{questionText}</p>
                       </div>
-                      <div className="flex items-baseline gap-1.5 flex-shrink-0">
-                        <span className={`text-2xl font-black ${interpretation.color}`}>{roundedAverage}</span>
+                      <div className="flex items-baseline gap-1 flex-shrink-0">
+                        <span className={`text-lg font-black ${interpretation.color}`}>{roundedAverage}</span>
                         <span className={`text-xs font-bold ${interpretation.color}/70`}>/100</span>
-                        <span className="text-base ml-1.5" title={interpretation.label}>{interpretation.emoji}</span>
+                        <span className="text-sm ml-1" title={interpretation.label}>{interpretation.emoji}</span>
                       </div>
                     </div>
-                    <div className={`w-full rounded-full h-2.5 ${mode === 'chaos' ? 'bg-black/10' : mode === 'chill' ? 'bg-[#4A1818]/10' : 'bg-white/20'} overflow-hidden shadow-inner`}>
+                    <div className={`w-full rounded-full h-2 ${mode === 'chaos' ? 'bg-black/10' : mode === 'chill' ? 'bg-[#4A1818]/10' : 'bg-white/20'} overflow-hidden shadow-inner`}>
                       <div 
-                        className="h-2.5 rounded-full transition-all duration-700 ease-out shadow-lg" 
+                        className="h-2 rounded-full transition-all duration-700 ease-out shadow-lg" 
                         style={{ 
                           width: `${data.average}%`, 
                           background: getSliderColor(data.average)
@@ -376,10 +376,10 @@ export function TeamPulseCard() {
                 )
               })
             ) : (
-              <div className={`text-center py-12 ${style.text}/70`}>
-                <Users className={`w-16 h-16 mx-auto mb-6 ${style.text}/40`} />
-                <p className="text-lg font-black uppercase tracking-wider mb-2">No data yet</p>
-                <p className="text-sm font-bold mt-2">Results will appear here once responses are submitted.</p>
+              <div className={`text-center py-6 ${style.text}/70`}>
+                <Users className={`w-10 h-10 mx-auto mb-3 ${style.text}/40`} />
+                <p className="text-sm font-black uppercase tracking-wider mb-1">No data yet</p>
+                <p className="text-xs font-bold">Results will appear here once responses are submitted.</p>
               </div>
             )}
           </div>
