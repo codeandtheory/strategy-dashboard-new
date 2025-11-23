@@ -24,6 +24,7 @@ import { createClient } from '@/lib/supabase/client'
 import { AddSnapDialog } from '@/components/add-snap-dialog'
 import { useGoogleCalendarToken } from '@/hooks/useGoogleCalendarToken'
 import { TeamPulseCard } from '@/components/team-pulse-card'
+import { Footer } from '@/components/footer'
 
 // Force dynamic rendering to avoid SSR issues with context
 export const dynamic = 'force-dynamic'
@@ -140,6 +141,7 @@ export default function TeamDashboard() {
     spotify_url: string
   } | null>(null)
   const [playlistLoading, setPlaylistLoading] = useState(true)
+  const [isPlaylistDialogOpen, setIsPlaylistDialogOpen] = useState(false)
   
   // Get Google Calendar access token using the user's existing Google session
   const { accessToken: googleCalendarToken, loading: tokenLoading, error: tokenError } = useGoogleCalendarToken()
@@ -917,7 +919,7 @@ export default function TeamDashboard() {
   }
 
   return (
-    <div className={`min-h-screen ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
+    <div className={`min-h-screen flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       <header className={`border-b ${getBorderClass()} px-6 py-4`}>
         <div className="max-w-[1600px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
@@ -1132,7 +1134,7 @@ export default function TeamDashboard() {
         </div>
       </header>
 
-      <main className="max-w-[1600px] mx-auto px-6 py-4">
+      <main className="max-w-[1600px] mx-auto px-6 py-4 flex-1">
         {/* Hero Section - Full Width */}
         <section className="mb-12">
           {(() => {
@@ -1233,6 +1235,12 @@ export default function TeamDashboard() {
                         {mode === 'code' ? `[${label.toUpperCase().replace(' ', ' ')}]` : label} {mode !== 'code' && <ArrowRight className="w-4 h-4 ml-2" />}
                   </Button>
                     ))}
+                    <Button 
+                      onClick={() => setIsPlaylistDialogOpen(true)}
+                      className={`${mode === 'chaos' ? 'bg-black text-[#FFE500] hover:bg-[#0F0F0F] hover:scale-105' : mode === 'chill' ? 'bg-[#4A1818] text-[#FFC043] hover:bg-[#3A1414]' : mode === 'code' ? 'bg-[#FFFFFF] text-black border border-[#FFFFFF] hover:bg-[#CCCCCC]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black ${getRoundedClass('rounded-full')} py-3 md:py-4 px-6 md:px-8 text-base md:text-lg uppercase tracking-wider transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}
+                    >
+                      {mode === 'code' ? '[PLAYLIST]' : 'Playlist'} {mode !== 'code' && <Music className="w-4 h-4 ml-2" />}
+                    </Button>
                 </div>
               </div>
             </Card>
@@ -1351,10 +1359,7 @@ export default function TeamDashboard() {
           )}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 relative">
-          {/* Centered Divider Line - 40% height, vertically centered */}
-          <div className="hidden md:block absolute left-[calc(66.666%+48px)] top-1/2 -translate-y-1/2 h-[40%] w-px bg-white"></div>
-          
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Horoscope - 2 columns */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('horoscope') : getCardStyle('vibes')
@@ -1441,44 +1446,10 @@ export default function TeamDashboard() {
             )
           })()}
 
-          {/* Right Column: Playlist */}
-          {(() => {
-            const [isPlaying, setIsPlaying] = useState(false)
-            
-            // Example playlist data - replace with actual Spotify API data
-            const playlistData: PlaylistData = {
-              title: 'Halloween Prom',
-              curator: 'Rebecca Smith',
-              curatorPhotoUrl: '/placeholder-user.jpg',
-              coverUrl: 'https://i.scdn.co/image/ab67616d0000b273c5649add07ed3720be9d5526',
-              description: 'macabre mingling, bone-chilling bops, spooky sl dances, and spiked punch - vampy vibes include',
-              spotifyUrl: 'https://open.spotify.com/playlist/example',
-              trackCount: 20,
-              totalDuration: '73:48',
-              tracks: [
-                { name: 'Thriller', artist: 'Michael Jackson', duration: '5:57' },
-                { name: 'Monster Mash', artist: 'Bobby Pickett', duration: '3:12' },
-                { name: 'Ghostbusters', artist: 'Ray Parker Jr.', duration: '4:05' },
-                { name: 'This Is Halloween', artist: 'Danny Elfman', duration: '3:16' },
-                { name: 'Time Warp', artist: 'Richard O\'Brien', duration: '3:19' },
-                { name: 'Somebody\'s Watching Me', artist: 'Rockwell', duration: '3:57' },
-                { name: 'Bad Moon Rising', artist: 'Creedence Clearwater Revival', duration: '2:21' },
-                { name: 'I Put a Spell on You', artist: 'Screamin\' Jay Hawkins', duration: '2:24' },
-                { name: 'Witch Doctor', artist: 'David Seville', duration: '2:25' },
-                { name: 'The Addams Family Theme', artist: 'Vic Mizzy', duration: '1:49' },
-              ],
-            }
-            
-            return (
-              <div className="pl-[50px]">
-                <SpotifyPlayer
-                  playlist={playlistData}
-                  isPlaying={isPlaying}
-                  onPlayPause={() => setIsPlaying(!isPlaying)}
-                />
-              </div>
-            )
-          })()}
+          {/* Right Column: Team Pulse */}
+          <div className="md:col-span-1">
+            <TeamPulseCard />
+          </div>
         </div>
 
         <p className={`text-xs uppercase tracking-widest font-black mb-6 flex items-center gap-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : mode === 'code' ? 'text-[#808080] font-mono' : 'text-[#808080]'}`}>
@@ -2029,69 +2000,90 @@ export default function TeamDashboard() {
                       </div>
                     </div>
                     
-                    {/* Day headers */}
-                    <div className="grid grid-cols-7 gap-2 mb-4">
-                      {getWeekDays().map((day, index) => {
-                        const isToday = day.toDateString() === now.toDateString()
-                        const dayName = day.toLocaleDateString('en-US', { weekday: 'short' })
-                        const dayNumber = day.getDate()
-                      return (
-                          <div key={index} className="text-center">
-                            <p className={`text-xs font-black uppercase ${style.text} mb-1`} style={{ color: isToday ? mintColor : style.text }}>
-                              {isToday ? 'TODAY' : dayName}
-                            </p>
-                            <p className={`text-sm font-black ${style.text}`}>{dayNumber}</p>
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    {/* Events as Gantt bars */}
-                    <div className="space-y-2">
-                      {filteredEvents.map((event) => {
-                            const eventColor = getEventColor(event)
-                        const span = getEventSpan(event)
-                        const colSpan = span.endDay - span.startDay + 1
-                        const startCol = span.startDay + 1
-                        
-                            return (
-                          <div key={event.id} className="relative mb-2">
-                            {/* Event bar spanning days - merged boxes */}
-                            <div className="flex">
-                              {getWeekDays().map((day, index) => {
-                                const isInSpan = index >= span.startDay && index <= span.endDay
-                                if (!isInSpan) {
-                                  return <div key={index} className="flex-1 h-12"></div>
-                                }
-                                
-                                const isStart = index === span.startDay
-                                const isEnd = index === span.endDay
-                                
-                                return (
-                                  <div
-                                    key={index}
-                                    className={`flex-1 h-12 ${getRoundedClass(isStart && isEnd ? 'rounded-lg' : isStart ? 'rounded-l-lg' : isEnd ? 'rounded-r-lg' : '')} flex items-center px-2`}
-                                    style={{ 
-                                      backgroundColor: `${eventColor}66`,
-                                      borderLeft: isStart ? `3px solid ${eventColor}` : 'none',
-                                    }}
-                                  >
-                                    {isStart && (
-                                <div className="flex-1 min-w-0">
-                                        <p className={`text-xs font-black ${style.text} truncate`}>{event.summary}</p>
-                                        <p className={`text-[10px] ${style.text}/70`}>{formatEventTime(event)}</p>
-                                </div>
-                                    )}
-                              </div>
-                            )
-                          })}
+                    {/* Calendar Container with darker background */}
+                    <div className={`${getRoundedClass('rounded-xl')} p-4 border-2`} style={{ 
+                      backgroundColor: mode === 'chaos' ? '#1E3A8A' : mode === 'chill' ? 'rgba(255, 255, 255, 0.5)' : '#000000',
+                      borderColor: mode === 'chaos' ? '#0EA5E9' : mode === 'chill' ? 'rgba(74, 24, 24, 0.2)' : '#FFFFFF'
+                    }}>
+                      {/* Day headers with dividers */}
+                      <div className="grid grid-cols-7 mb-3 pb-3" style={{ borderBottom: `1px solid ${mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.2)' : 'rgba(255, 255, 255, 0.3)'}` }}>
+                        {getWeekDays().map((day, index) => {
+                          const isToday = day.toDateString() === now.toDateString()
+                          const dayName = day.toLocaleDateString('en-US', { weekday: 'short' })
+                          const dayNumber = day.getDate()
+                          return (
+                            <div 
+                              key={index} 
+                              className="text-center relative"
+                              style={{ 
+                                borderRight: index < 6 ? `1px solid ${mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.2)' : 'rgba(255, 255, 255, 0.3)'}` : 'none'
+                              }}
+                            >
+                              <p className={`text-xs font-black uppercase mb-1`} style={{ color: isToday ? mintColor : (mode === 'chaos' ? '#FFFFFF' : mode === 'chill' ? '#4A1818' : '#FFFFFF') }}>
+                                {isToday ? 'TODAY' : dayName}
+                              </p>
+                              <p className={`text-sm font-black`} style={{ color: mode === 'chaos' ? '#FFFFFF' : mode === 'chill' ? '#4A1818' : '#FFFFFF' }}>{dayNumber}</p>
                             </div>
-                        </div>
-                      )
-                    })}
-                      {filteredEvents.length === 0 && (
-                      <p className={`text-sm ${style.text}/80 text-center py-4`}>No events this week</p>
-                    )}
+                          )
+                        })}
+                      </div>
+
+                      {/* Events as Gantt bars */}
+                      <div className="space-y-2">
+                        {filteredEvents.map((event) => {
+                          const eventColor = getEventColor(event)
+                          const span = getEventSpan(event)
+                          const colSpan = span.endDay - span.startDay + 1
+                          const startCol = span.startDay + 1
+                          
+                          return (
+                            <div key={event.id} className="relative mb-2">
+                              {/* Event bar spanning days - merged boxes */}
+                              <div className="flex">
+                                {getWeekDays().map((day, index) => {
+                                  const isInSpan = index >= span.startDay && index <= span.endDay
+                                  if (!isInSpan) {
+                                    return (
+                                      <div 
+                                        key={index} 
+                                        className="flex-1 h-12"
+                                        style={{ 
+                                          borderRight: index < 6 ? `1px solid ${mode === 'chaos' ? 'rgba(14, 165, 233, 0.2)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.15)' : 'rgba(255, 255, 255, 0.2)'}` : 'none'
+                                        }}
+                                      ></div>
+                                    )
+                                  }
+                                  
+                                  const isStart = index === span.startDay
+                                  const isEnd = index === span.endDay
+                                  
+                                  return (
+                                    <div
+                                      key={index}
+                                      className={`flex-1 h-12 ${getRoundedClass(isStart && isEnd ? 'rounded-lg' : isStart ? 'rounded-l-lg' : isEnd ? 'rounded-r-lg' : '')} flex items-center px-2`}
+                                      style={{ 
+                                        backgroundColor: `${eventColor}88`,
+                                        borderLeft: isStart ? `3px solid ${eventColor}` : 'none',
+                                        borderRight: index < 6 ? `1px solid ${mode === 'chaos' ? 'rgba(14, 165, 233, 0.2)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.15)' : 'rgba(255, 255, 255, 0.2)'}` : 'none',
+                                      }}
+                                    >
+                                      {isStart && (
+                                        <div className="flex-1 min-w-0">
+                                          <p className={`text-xs font-black truncate`} style={{ color: mode === 'chaos' ? '#000000' : mode === 'chill' ? '#4A1818' : '#FFFFFF' }}>{event.summary}</p>
+                                          <p className={`text-[10px]`} style={{ color: mode === 'chaos' ? 'rgba(0, 0, 0, 0.7)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.7)' : 'rgba(255, 255, 255, 0.7)' }}>{formatEventTime(event)}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )
+                        })}
+                        {filteredEvents.length === 0 && (
+                          <p className={`text-sm text-center py-4`} style={{ color: mode === 'chaos' ? 'rgba(255, 255, 255, 0.8)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.8)' : 'rgba(255, 255, 255, 0.8)' }}>No events this week</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -2780,79 +2772,6 @@ export default function TeamDashboard() {
             )
           })()}
 
-          {/* Team Pulse */}
-          <div className="md:col-span-2">
-            <TeamPulseCard />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {/* Weekly Playlist */}
-          {(() => {
-            const style = mode === 'chaos' ? getSpecificCardStyle('playlist') : getCardStyle('vibes')
-            return (
-              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
-                    style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : style.border.includes('border-2') ? { borderColor: style.accent } : {}}
-              >
-                <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
-                  <Music className="w-4 h-4" />
-                  <span className="uppercase tracking-wider font-black text-xs">Weekly</span>
-                </div>
-                <h2 className={`text-3xl font-black mb-4 uppercase ${style.text}`}>PLAYLIST</h2>
-                {playlistLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin" style={{ color: style.accent }} />
-                  </div>
-                ) : weeklyPlaylist ? (
-                  <div className="space-y-4">
-                    {weeklyPlaylist.cover_url && (
-                      <div className="relative">
-                        <img
-                          src={weeklyPlaylist.cover_url}
-                          alt={weeklyPlaylist.title || 'Playlist'}
-                          className={`w-full ${getRoundedClass('rounded-xl')} object-cover`}
-                          style={{ maxHeight: '200px' }}
-                        />
-                        {weeklyPlaylist.curator_photo_url && (
-                          <div className="absolute bottom-2 right-2">
-                            <img
-                              src={weeklyPlaylist.curator_photo_url}
-                              alt={weeklyPlaylist.curator}
-                              className={`w-12 h-12 ${getRoundedClass('rounded-full')} ring-2 ring-white object-cover`}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div>
-                      <p className={`text-lg font-black mb-1 ${style.text}`}>
-                        {weeklyPlaylist.title || 'Untitled Playlist'}
-                      </p>
-                      <p className={`text-sm ${style.text}/70 mb-3`}>
-                        Curated by {weeklyPlaylist.curator}
-                      </p>
-                      {weeklyPlaylist.description && (
-                        <p className={`text-xs ${style.text}/60 line-clamp-2 mb-4`}>
-                          {weeklyPlaylist.description}
-                        </p>
-                      )}
-                    </div>
-                    <Button
-                      onClick={() => weeklyPlaylist.spotify_url && window.open(weeklyPlaylist.spotify_url, '_blank')}
-                      className={`w-full ${mode === 'chaos' ? 'bg-black text-[#9333EA] hover:bg-[#0F0F0F]' : mode === 'chill' ? 'bg-[#4A1818] text-[#C8D961] hover:bg-[#3A1414]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black rounded-full h-10 text-sm uppercase flex items-center justify-center gap-2`}
-                    >
-                      <Play className="w-4 h-4" />
-                      Play on Spotify
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className={`text-sm ${style.text}/60`}>No playlist this week</p>
-                  </div>
-                )}
-              </Card>
-            )
-          })()}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
@@ -2960,37 +2879,7 @@ export default function TeamDashboard() {
           })()}
         </div>
 
-        <footer className={`border-t pt-8 mt-12 ${getBorderClass()}`}>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div>
-              <h3 className={`text-xl font-black mb-2 ${getTextClass()}`}>Team Dashboard</h3>
-              <p className={`text-sm ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : 'text-[#808080]'}`}>Built with love and way too much coffee</p>
-            </div>
-            <div>
-              <p className={`text-xs uppercase tracking-wider font-black mb-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : 'text-[#808080]'}`}>Totally Real Stats</p>
-              <p className={`text-sm ${mode === 'chaos' ? 'text-[#808080]' : mode === 'chill' ? 'text-[#8B4444]/80' : 'text-[#999999]'}`}>347 cups of coffee consumed</p>
-              <p className={`text-sm ${mode === 'chaos' ? 'text-[#808080]' : mode === 'chill' ? 'text-[#8B4444]/80' : 'text-[#999999]'}`}>48 good vibes generated</p>
-              <p className={`text-sm ${mode === 'chaos' ? 'text-[#808080]' : mode === 'chill' ? 'text-[#8B4444]/80' : 'text-[#999999]'}`}>100% team awesomeness</p>
-            </div>
-            <div>
-              <p className={`text-xs uppercase tracking-wider font-black mb-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : 'text-[#808080]'}`}>Fun Fact</p>
-              <p className={`text-sm ${mode === 'chaos' ? 'text-[#808080]' : mode === 'chill' ? 'text-[#8B4444]/80' : 'text-[#999999]'}`}>We put the 'fun' in 'functional' and also in 'funnel', but we don't talk about that</p>
-            </div>
-            <div>
-              <p className={`text-xs uppercase tracking-wider font-black mb-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : 'text-[#808080]'}`}>Good Morning</p>
-              <p className={`text-sm ${mode === 'chaos' ? 'text-[#808080]' : mode === 'chill' ? 'text-[#8B4444]/80' : 'text-[#999999]'}`}>Time to make today awesome! After coffee, obviously</p>
-            </div>
-          </div>
-          <div className={`flex items-center justify-between text-xs pt-6 border-t ${getBorderClass()}`} style={{ color: mode === 'chaos' ? '#666666' : mode === 'chill' ? '#8B4444' : '#808080' }}>
-            <p>© 2025 Team Dashboard. Made with questionable decisions and great intentions.</p>
-            <div className="flex items-center gap-4">
-              <a href="#" className={`transition-colors ${mode === 'chaos' ? 'hover:text-[#808080]' : mode === 'chill' ? 'hover:text-[#8B4444]/80' : 'hover:text-[#999999]'}`}>Privacy lol we're a team!</a>
-              <a href="#" className={`transition-colors ${mode === 'chaos' ? 'hover:text-[#808080]' : mode === 'chill' ? 'hover:text-[#8B4444]/80' : 'hover:text-[#999999]'}`}>Terms just be cool</a>
-              <a href="#" className={`transition-colors ${mode === 'chaos' ? 'hover:text-[#808080]' : mode === 'chill' ? 'hover:text-[#8B4444]/80' : 'hover:text-[#999999]'}`}>Contact we're right here</a>
-            </div>
-          </div>
-          <p className={`text-center text-[10px] mt-4 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]/70' : 'text-[#666666]'}`}>v1.2.3-beta-test.beta</p>
-        </footer>
+        <Footer />
       </main>
       
       {/* Profile Setup Modal - Shows only for users missing required profile details */}
@@ -3009,6 +2898,79 @@ export default function TeamDashboard() {
         onOpenChange={setShowAddSnapDialog}
         onSuccess={handleSnapAdded}
       />
+
+      {/* Weekly Playlist Dialog */}
+      <Dialog open={isPlaylistDialogOpen} onOpenChange={setIsPlaylistDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          {(() => {
+            const style = mode === 'chaos' ? getSpecificCardStyle('playlist') : getCardStyle('vibes')
+            return (
+              <div>
+                <DialogHeader>
+                  <DialogTitle className={`text-3xl font-black mb-4 uppercase ${style.text}`}>
+                    <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
+                      <Music className="w-4 h-4" />
+                      <span className="uppercase tracking-wider font-black text-xs">Weekly</span>
+                    </div>
+                    PLAYLIST
+                  </DialogTitle>
+                </DialogHeader>
+                {playlistLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin" style={{ color: style.accent }} />
+                  </div>
+                ) : weeklyPlaylist ? (
+                  <div className="space-y-4">
+                    {weeklyPlaylist.cover_url && (
+                      <div className="relative">
+                        <img
+                          src={weeklyPlaylist.cover_url}
+                          alt={weeklyPlaylist.title || 'Playlist'}
+                          className={`w-full ${getRoundedClass('rounded-xl')} object-cover`}
+                          style={{ maxHeight: '200px' }}
+                        />
+                        {weeklyPlaylist.curator_photo_url && (
+                          <div className="absolute bottom-2 right-2">
+                            <img
+                              src={weeklyPlaylist.curator_photo_url}
+                              alt={weeklyPlaylist.curator}
+                              className={`w-12 h-12 ${getRoundedClass('rounded-full')} ring-2 ring-white object-cover`}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div>
+                      <p className={`text-lg font-black mb-1 ${style.text}`}>
+                        {weeklyPlaylist.title || 'Untitled Playlist'}
+                      </p>
+                      <p className={`text-sm ${style.text}/70 mb-3`}>
+                        Curated by {weeklyPlaylist.curator}
+                      </p>
+                      {weeklyPlaylist.description && (
+                        <p className={`text-xs ${style.text}/60 mb-4`}>
+                          {weeklyPlaylist.description}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      onClick={() => weeklyPlaylist.spotify_url && window.open(weeklyPlaylist.spotify_url, '_blank')}
+                      className={`w-full ${mode === 'chaos' ? 'bg-black text-[#9333EA] hover:bg-[#0F0F0F]' : mode === 'chill' ? 'bg-[#4A1818] text-[#C8D961] hover:bg-[#3A1414]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black rounded-full h-10 text-sm uppercase flex items-center justify-center gap-2`}
+                    >
+                      <Play className="w-4 h-4" />
+                      Play on Spotify
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className={`text-sm ${style.text}/60`}>No playlist this week</p>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+        </DialogContent>
+      </Dialog>
 
     </div>
   )
