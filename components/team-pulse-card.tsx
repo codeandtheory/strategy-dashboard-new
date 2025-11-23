@@ -59,26 +59,40 @@ const getScoreInterpretation = (score: number) => {
     return { 
       label: 'Great!', 
       emoji: '🎉', 
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200'
+      color: 'text-green-700',
+      bgColor: 'bg-green-100',
+      borderColor: 'border-green-300',
+      tintBg: 'bg-green-50/80'
     }
   } else if (score >= 50) {
     return { 
       label: 'Good', 
       emoji: '👍', 
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200'
+      color: 'text-yellow-700',
+      bgColor: 'bg-yellow-100',
+      borderColor: 'border-yellow-300',
+      tintBg: 'bg-yellow-50/80'
     }
   } else {
     return { 
       label: 'Needs attention', 
       emoji: '⚠️', 
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      borderColor: 'border-orange-200'
+      color: 'text-red-700',
+      bgColor: 'bg-red-100',
+      borderColor: 'border-red-300',
+      tintBg: 'bg-red-50/80'
     }
+  }
+}
+
+// Get slider color based on score
+const getSliderColor = (score: number) => {
+  if (score >= 70) {
+    return 'linear-gradient(90deg, #10b981 0%, #059669 100%)'
+  } else if (score >= 50) {
+    return 'linear-gradient(90deg, #eab308 0%, #ca8a04 100%)'
+  } else {
+    return 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
   }
 }
 
@@ -275,8 +289,8 @@ export function TeamPulseCard() {
                 <TrendingUp className={`w-5 h-5 ${style.text}`} />
               </div>
               <div>
-                <h2 className={`text-2xl font-black uppercase ${style.text}`}>Team Pulse</h2>
-                <p className={`text-xs ${style.text}/60 mt-1`}>This week's results</p>
+                <h2 className={`text-3xl font-black uppercase ${style.text} tracking-tighter`}>Team Pulse</h2>
+                <p className={`text-xs font-bold ${style.text}/70 mt-1 uppercase tracking-wider`}>This week's results</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -324,11 +338,11 @@ export function TeamPulseCard() {
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{overallInterpretation.emoji}</span>
                   <div>
-                    <p className={`text-xs font-medium ${overallInterpretation.color} mb-1`}>Team Health</p>
+                    <p className={`text-xs font-black ${overallInterpretation.color} mb-2 uppercase tracking-wider`}>Team Health</p>
                     <div className="flex items-baseline gap-2">
-                      <span className={`text-3xl font-black ${overallInterpretation.color}`}>{overallTeamMood}</span>
-                      <span className={`text-sm ${overallInterpretation.color}/60`}>/100</span>
-                      <span className={`text-sm font-bold ${overallInterpretation.color} ml-2`}>{overallInterpretation.label}</span>
+                      <span className={`text-5xl font-black ${overallInterpretation.color}`}>{overallTeamMood}</span>
+                      <span className={`text-base font-bold ${overallInterpretation.color}/70`}>/100</span>
+                      <span className={`text-base font-black ${overallInterpretation.color} ml-3 uppercase tracking-wider`}>{overallInterpretation.label}</span>
                     </div>
                   </div>
                 </div>
@@ -361,34 +375,36 @@ export function TeamPulseCard() {
                 const interpretation = getScoreInterpretation(data.average)
                 const roundedAverage = Math.round(data.average)
                 
+                const resultTint = interpretation.tintBg
+                
                 return (
                   <div 
                     key={data.questionKey} 
-                    className="space-y-3 transition-all duration-300"
+                    className={`p-5 rounded-2xl border-2 ${interpretation.borderColor} ${resultTint} transition-all duration-300 backdrop-blur-sm`}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="flex items-start gap-3 flex-1">
-                        <div className={`p-2 rounded-lg ${mode === 'chaos' ? 'bg-black/5' : mode === 'chill' ? 'bg-[#4A1818]/5' : 'bg-white/10'} mt-0.5`}>
-                          <QuestionIcon className={`w-4 h-4 ${style.text}`} />
+                        <div className={`p-2.5 rounded-xl ${interpretation.bgColor} mt-0.5`}>
+                          <QuestionIcon className={`w-5 h-5 ${interpretation.color}`} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-bold ${style.text} leading-tight mb-1`}>{questionText}</p>
+                          <p className={`text-base font-black ${interpretation.color} leading-tight mb-2`}>{questionText}</p>
                           {data.change !== null && data.change !== undefined && (
                             <div className="flex items-center gap-1.5">
                               {data.change > 0 ? (
-                                <ChevronUp className={`w-3 h-3 text-green-600`} />
+                                <ChevronUp className={`w-4 h-4 text-green-700 font-bold`} />
                               ) : data.change < 0 ? (
-                                <ChevronDown className={`w-3 h-3 text-red-600`} />
+                                <ChevronDown className={`w-4 h-4 text-red-700 font-bold`} />
                               ) : (
-                                <Minus className={`w-3 h-3 ${style.text}/40`} />
+                                <Minus className={`w-4 h-4 ${interpretation.color}/60`} />
                               )}
-                              <span className={`text-xs font-medium ${
-                                data.change > 0 ? 'text-green-600' : data.change < 0 ? 'text-red-600' : style.text + '/60'
+                              <span className={`text-xs font-black ${
+                                data.change > 0 ? 'text-green-700' : data.change < 0 ? 'text-red-700' : interpretation.color + '/60'
                               }`}>
                                 {data.change > 0 ? '+' : ''}{data.change} from last week
                                 {data.prevAverage !== null && data.prevAverage !== undefined && (
-                                  <span className={`${style.text}/40 ml-1`}>(was {data.prevAverage})</span>
+                                  <span className={`${interpretation.color}/60 ml-1 font-normal`}>(was {data.prevAverage})</span>
                                 )}
                               </span>
                             </div>
@@ -396,26 +412,26 @@ export function TeamPulseCard() {
                         </div>
                       </div>
                       <div className="flex items-baseline gap-2 flex-shrink-0">
-                        <span className={`text-3xl font-black ${style.text}`}>{roundedAverage}</span>
-                        <span className={`text-xs ${style.text}/60`}>/100</span>
-                        <span className="text-lg ml-1" title={interpretation.label}>{interpretation.emoji}</span>
+                        <span className={`text-4xl font-black ${interpretation.color}`}>{roundedAverage}</span>
+                        <span className={`text-sm font-bold ${interpretation.color}/70`}>/100</span>
+                        <span className="text-2xl ml-2" title={interpretation.label}>{interpretation.emoji}</span>
                       </div>
                     </div>
-                    <div className={`w-full rounded-full h-3 ${mode === 'chaos' ? 'bg-black/10' : mode === 'chill' ? 'bg-[#4A1818]/10' : 'bg-white/20'} overflow-hidden`}>
+                    <div className={`w-full rounded-full h-4 ${mode === 'chaos' ? 'bg-black/10' : mode === 'chill' ? 'bg-[#4A1818]/10' : 'bg-white/20'} overflow-hidden shadow-inner`}>
                       <div 
-                        className="h-3 rounded-full transition-all duration-700 ease-out" 
+                        className="h-4 rounded-full transition-all duration-700 ease-out shadow-lg" 
                         style={{ 
                           width: `${data.average}%`, 
-                          backgroundColor: barColor
+                          background: getSliderColor(data.average)
                         }} 
                       />
                     </div>
                     {data.commentThemes.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3">
+                      <div className="flex flex-wrap gap-2 mt-4">
                         {data.commentThemes.map((theme, idx) => (
                           <Badge
                             key={idx}
-                            className={`text-xs font-medium transition-all hover:scale-105 ${mode === 'chaos' ? 'bg-black/10 text-black border border-black/20' : mode === 'chill' ? 'bg-[#4A1818]/10 text-[#4A1818] border border-[#4A1818]/20' : 'bg-white/10 text-white border border-white/20'}`}
+                            className={`text-xs font-black transition-all hover:scale-105 ${interpretation.bgColor} ${interpretation.color} border-2 ${interpretation.borderColor}`}
                           >
                             {theme.theme} ({theme.count})
                           </Badge>
@@ -427,9 +443,9 @@ export function TeamPulseCard() {
               })
             ) : (
               <div className={`text-center py-12 ${style.text}/70`}>
-                <Users className={`w-12 h-12 mx-auto mb-4 ${style.text}/40`} />
-                <p className="text-sm">No data yet</p>
-                <p className="text-xs mt-2">Results will appear here once responses are submitted.</p>
+                <Users className={`w-16 h-16 mx-auto mb-6 ${style.text}/40`} />
+                <p className="text-lg font-black uppercase tracking-wider mb-2">No data yet</p>
+                <p className="text-sm font-bold mt-2">Results will appear here once responses are submitted.</p>
               </div>
             )}
           </div>
@@ -443,8 +459,8 @@ export function TeamPulseCard() {
   if (questions.length === 0) {
     return (
       <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] ${FIXED_HEIGHT} flex items-center justify-center`}>
-        <div className={`text-center ${style.text}/60`}>
-          <p className="text-sm">Loading questions...</p>
+        <div className={`text-center ${style.text}/70`}>
+          <p className="text-base font-black uppercase tracking-wider">Loading questions...</p>
         </div>
       </Card>
     )
@@ -457,22 +473,32 @@ export function TeamPulseCard() {
       <style>{`
         .pulse-slider-wrapper [class*="bg-secondary"],
         .pulse-slider-wrapper [class*="rounded-full"][class*="bg-"]:first-child {
-          background-color: ${trackBg} !important;
-          height: 12px !important;
+          background: linear-gradient(90deg, ${trackBg} 0%, ${trackBg} 100%) !important;
+          height: 16px !important;
+          border-radius: 12px !important;
+          box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
         }
         .pulse-slider-wrapper [class*="bg-primary"],
         .pulse-slider-wrapper [class*="absolute"][class*="h-full"] {
-          background-color: ${barColor} !important;
-          height: 12px !important;
+          background: var(--slider-gradient) !important;
+          height: 16px !important;
+          border-radius: 12px !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
         }
         .pulse-slider-wrapper button,
         .pulse-slider-wrapper [role="slider"] {
-          background-color: ${barColor} !important;
-          border-color: ${thumbBorder} !important;
-          height: 24px !important;
-          width: 24px !important;
-          border-width: 4px !important;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+          background: var(--slider-gradient) !important;
+          border-color: ${mode === 'chaos' ? '#000' : mode === 'chill' ? '#4A1818' : '#fff'} !important;
+          height: 32px !important;
+          width: 32px !important;
+          border-width: 5px !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 0 2px ${mode === 'chaos' ? 'rgba(255,255,255,0.3)' : mode === 'chill' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.1)'} !important;
+          transition: all 0.2s ease !important;
+        }
+        .pulse-slider-wrapper button:hover,
+        .pulse-slider-wrapper [role="slider"]:hover {
+          transform: scale(1.1) !important;
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), 0 0 0 3px ${mode === 'chaos' ? 'rgba(255,255,255,0.4)' : mode === 'chill' ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)'} !important;
         }
       `}</style>
       <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] ${FIXED_HEIGHT} flex flex-col overflow-hidden`}>
@@ -502,7 +528,7 @@ export function TeamPulseCard() {
             )}
           </div>
           
-          <h2 className={`text-2xl font-black mb-6 uppercase ${style.text}`}>Team Pulse</h2>
+          <h2 className={`text-3xl font-black mb-6 uppercase ${style.text} tracking-tighter`}>Team Pulse</h2>
           {hasSubmitted && (
             <div className={`mb-4 p-3 ${getRoundedClass('rounded-lg')} ${
               mode === 'chaos' 
@@ -525,18 +551,38 @@ export function TeamPulseCard() {
               const score = response?.score ?? 50
               const comment = comments[question.question_key] || ''
 
+              const scoreInterpretation = getScoreInterpretation(score)
+              
               return (
-                <div key={question.question_key} className="space-y-4">
+                <div key={question.question_key} className="space-y-6">
                   <div>
-                    <p className={`text-lg font-medium mb-6 text-center ${style.text}`}>
+                    <p className={`text-2xl font-black mb-8 text-center ${style.text} tracking-tight`}>
                       {question.question_text}
                     </p>
-                    <div className="px-2">
-                      <div className="mb-4">
-                        <div className={`text-center mb-4`}>
-                          <span className={`text-4xl font-black ${style.text}`}>{score}</span>
+                    <div className="px-4">
+                      <div className="mb-6">
+                        <div className={`text-center mb-6`}>
+                          <span 
+                            className={`text-6xl font-black ${scoreInterpretation.color} drop-shadow-lg`}
+                            style={{ 
+                              textShadow: mode === 'code' ? 'none' : '0 2px 8px rgba(0,0,0,0.1)'
+                            }}
+                          >
+                            {score}
+                          </span>
+                          <div className="mt-2">
+                            <span className={`text-sm font-black ${scoreInterpretation.color} uppercase tracking-wider`}>
+                              {scoreInterpretation.label}
+                            </span>
+                          </div>
                         </div>
-                        <div className="pulse-slider-wrapper">
+                        <div 
+                          className="pulse-slider-wrapper"
+                          data-score={score}
+                          style={{
+                            '--slider-gradient': getSliderColor(score)
+                          } as React.CSSProperties}
+                        >
                           <Slider
                             value={[score]}
                             onValueChange={(value) => handleScoreChange(question.question_key, value)}
@@ -547,34 +593,34 @@ export function TeamPulseCard() {
                           />
                         </div>
                       </div>
-                      <div className="flex justify-between mt-2">
-                        <span className={`text-xs ${style.text}/60`}>Low</span>
-                        <span className={`text-xs ${style.text}/60`}>High</span>
+                      <div className="flex justify-between mt-3">
+                        <span className={`text-xs font-black ${style.text}/70 uppercase tracking-wider`}>Low</span>
+                        <span className={`text-xs font-black ${style.text}/70 uppercase tracking-wider`}>High</span>
                       </div>
                     </div>
                   </div>
                   
                   {/* Optional comment */}
                   <div>
-                    <label className={`text-xs font-medium mb-2 block ${style.text}/80`}>
+                    <label className={`text-sm font-black mb-3 block ${style.text} uppercase tracking-wider`}>
                       Optional comment
                     </label>
                     <Textarea
                       value={comment}
                       onChange={(e) => handleCommentChange(question.question_key, e.target.value)}
                       placeholder="Share your thoughts..."
-                      className={`${getRoundedClass('rounded-lg')} min-h-[80px] resize-none ${
+                      className={`${getRoundedClass('rounded-xl')} min-h-[100px] resize-none font-medium ${
                         mode === 'chaos' 
-                          ? 'bg-white border-2 border-black/20 text-black placeholder:text-black/40 focus:border-black/40' 
+                          ? 'bg-white border-2 border-black/30 text-black placeholder:text-black/50 focus:border-black/50 focus:ring-2 focus:ring-black/20' 
                           : mode === 'chill' 
-                          ? 'bg-white border-2 border-[#4A1818]/20 text-[#4A1818] placeholder:text-[#4A1818]/40 focus:border-[#4A1818]/40' 
-                          : 'bg-white/10 border-2 border-white/20 text-white placeholder:text-white/40 focus:border-white/40'
+                          ? 'bg-white border-2 border-[#4A1818]/30 text-[#4A1818] placeholder:text-[#4A1818]/50 focus:border-[#4A1818]/50 focus:ring-2 focus:ring-[#4A1818]/20' 
+                          : 'bg-white/10 border-2 border-white/30 text-white placeholder:text-white/50 focus:border-white/50 focus:ring-2 focus:ring-white/20'
                       }`}
                     />
                   </div>
                   
                   {index < questions.length - 1 && (
-                    <div className={`h-px ${mode === 'chaos' ? 'bg-black/10' : mode === 'chill' ? 'bg-[#4A1818]/10' : 'bg-white/10'}`} />
+                    <div className={`h-0.5 ${mode === 'chaos' ? 'bg-black/20' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`} />
                   )}
                 </div>
               )
