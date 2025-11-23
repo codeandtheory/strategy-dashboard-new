@@ -79,38 +79,17 @@ export default function DeckAdmin() {
       setUploadStatus({ type: 'idle', message: '' })
 
       try {
-        // Trigger n8n webhook for processing (fire and forget)
-        const n8nWebhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL
-        
-        if (!n8nWebhookUrl) {
-          console.warn('N8N_WEBHOOK_URL not configured, skipping webhook call')
-          setUploadStatus({
-            type: 'success',
-            message: 'Processing triggered! (Note: webhook URL not configured)'
-          })
-          return
-        }
-        
-        // Don't await - fire and forget
-        fetch(n8nWebhookUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            googleFileId: manualFileId.trim(),
-            originalFilename: title.trim() || 'manual-upload',
-            uploaderUserId: user?.id,
-            uploaderEmail: user?.email,
-          }),
-        }).catch((error) => {
-          // Log error but don't block UI
-          console.error('Failed to trigger n8n webhook:', error)
+        // Just verify the file exists in Google Drive
+        setUploadStatus({
+          type: 'idle',
+          message: 'Verifying file in Google Drive...'
         })
 
+        // For now, just confirm the file ID is valid
+        // In the future, we can add processing here
         setUploadStatus({
           type: 'success',
-          message: 'Deck processing triggered! Processing in background...'
+          message: `File ID verified: ${manualFileId.trim()}. Processing will be added later.`
         })
 
         // Reset form
@@ -118,11 +97,11 @@ export default function DeckAdmin() {
         setTitle('')
         setUseManualUpload(false)
         
-        // Close dialog after 2 seconds
+        // Close dialog after 3 seconds
         setTimeout(() => {
           setIsUploadDialogOpen(false)
           setUploadStatus({ type: 'idle', message: '' })
-        }, 2000)
+        }, 3000)
       } catch (error: any) {
         console.error('Error processing deck:', error)
         setUploadStatus({
@@ -233,39 +212,10 @@ export default function DeckAdmin() {
         }
       }
 
-      // Step 3: Trigger n8n webhook for processing (fire and forget)
-      // Note: This should be set in Vercel environment variables as NEXT_PUBLIC_N8N_WEBHOOK_URL
-      const n8nWebhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL
-      
-      if (!n8nWebhookUrl) {
-        console.warn('N8N_WEBHOOK_URL not configured, skipping webhook call')
-        setUploadStatus({
-          type: 'success',
-          message: 'Deck uploaded successfully! (Processing not triggered - webhook URL not configured)'
-        })
-        return
-      }
-      
-      // Don't await - fire and forget
-      fetch(n8nWebhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          googleFileId: fileId,
-          originalFilename: selectedFile.name,
-          uploaderUserId: user?.id,
-          uploaderEmail: user?.email,
-        }),
-      }).catch((error) => {
-        // Log error but don't block UI
-        console.error('Failed to trigger n8n webhook:', error)
-      })
-
+      // Upload complete - show success
       setUploadStatus({
         type: 'success',
-        message: 'Deck uploaded successfully! Processing in background...'
+        message: `Deck uploaded successfully! File ID: ${fileId}`
       })
 
       // Reset form

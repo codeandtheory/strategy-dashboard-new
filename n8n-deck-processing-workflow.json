@@ -1,0 +1,506 @@
+{
+  "name": "Deck Processing Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "work-sample-uploaded",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "deck-processing-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BACKEND_URL }}/api/internal/decks/extract-slides",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-INTERNAL-TOKEN",
+              "value": "={{ $env.INTERNAL_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"googleFileId\": \"{{ $json['googleFileId'] }}\"\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "extract-slides",
+      "name": "Extract Slides",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "continueOnFail": false
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "complete",
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.3,
+          "responseFormat": {
+            "type": "json_object"
+          }
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are analyzing a presentation deck. Extract structured information about the deck, its topics, and individual slides.\n\nReturn a JSON object with this exact structure:\n{\n  \"deck\": {\n    \"deck_title\": \"cleaned up title\",\n    \"deck_summary\": \"2-4 sentence overview\",\n    \"main_themes\": [\"theme1\", \"theme2\"],\n    \"primary_audiences\": [\"audience1\", \"audience2\"],\n    \"use_cases\": [\"use case 1\", \"use case 2\"]\n  },\n  \"topics\": [\n    {\n      \"topic_title\": \"short name\",\n      \"topic_summary\": \"3-5 sentence description\",\n      \"story_context\": \"one of: credibility, market_problem, solution_vision, implementation, results, other\",\n      \"topics\": [\"keyword1\", \"keyword2\"],\n      \"reuse_suggestions\": [\"suggestion1\"],\n      \"slide_numbers\": [1, 2, 3]\n    }\n  ],\n  \"slides\": [\n    {\n      \"slide_number\": 1,\n      \"slide_type\": \"one of: case_study, vision, market_context, data_chart, model, process, roadmap, cover, credits, other\",\n      \"slide_caption\": \"one sentence description\",\n      \"topics\": [\"keyword1\"],\n      \"reusable\": \"yes or no or needs_edit\"\n    }\n  ]\n}"
+            },
+            {
+              "role": "user",
+              "content": "=Analyze this presentation deck:\n\n{{#each $json['slides']}}\nSlide {{slide_number}}:\n{{text}}\n\n{{/each}}\n\nExtract deck metadata, segment into topics, and label each slide. Return only valid JSON."
+            }
+          ]
+        }
+      },
+      "id": "llm-analysis",
+      "name": "OpenAI LLM Analysis",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.3,
+      "position": [680, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      },
+      "continueOnFail": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get LLM result - OpenAI node returns response in choices[0].message.content\nconst llmOutput = $input.item.json;\nlet llmResult = llmOutput;\n\n// Extract content from OpenAI response structure\nif (llmOutput.choices && llmOutput.choices[0] && llmOutput.choices[0].message) {\n  llmResult = llmOutput.choices[0].message.content;\n}\n\n// Parse JSON if it's a string\nlet parsedResult = llmResult;\nif (typeof llmResult === 'string') {\n  try {\n    parsedResult = JSON.parse(llmResult);\n  } catch (e) {\n    // If parsing fails, try to extract JSON from text\n    const jsonMatch = llmResult.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      parsedResult = JSON.parse(jsonMatch[0]);\n    } else {\n      throw new Error('Could not parse LLM response as JSON');\n    }\n  }\n}\n\n// Extract topics for embedding\nconst topics = parsedResult.topics || [];\nconst topicTexts = topics.map(topic => ({\n  topic: topic,\n  text: `${topic.topic_title}. ${topic.topic_summary}`\n}));\n\nreturn topicTexts.map(item => ({ json: item }));"
+      },
+      "id": "prepare-topics",
+      "name": "Prepare Topics for Embedding",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-topics",
+      "name": "Split Topics",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "resource": "textEmbedding",
+        "operation": "textEmbedding",
+        "model": "text-embedding-3-small",
+        "text": "={{ $json['text'] }}"
+      },
+      "id": "topic-embeddings",
+      "name": "Generate Topic Embeddings",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.3,
+      "position": [1340, 200],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge embedding back into topic\nconst topic = $json['topic'];\n// OpenAI embeddings node returns data in data[0].embedding format\nconst embeddingData = $json['data'] || [];\nconst embedding = embeddingData[0]?.embedding || $json['embedding'] || [];\n\nif (!embedding || embedding.length === 0) {\n  throw new Error('No embedding found in OpenAI response');\n}\n\nreturn {\n  json: {\n    ...topic,\n    embedding: embedding\n  }\n};"
+      },
+      "id": "merge-topic-embedding",
+      "name": "Merge Topic Embedding",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get LLM result - OpenAI node returns response in choices[0].message.content\nconst llmOutput = $('OpenAI LLM Analysis').item.json;\nlet llmResult = llmOutput;\n\n// Extract content from OpenAI response structure\nif (llmOutput.choices && llmOutput.choices[0] && llmOutput.choices[0].message) {\n  llmResult = llmOutput.choices[0].message.content;\n}\n\n// Parse JSON if it's a string\nlet parsedResult = llmResult;\nif (typeof llmResult === 'string') {\n  try {\n    parsedResult = JSON.parse(llmResult);\n  } catch (e) {\n    const jsonMatch = llmResult.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      parsedResult = JSON.parse(jsonMatch[0]);\n    } else {\n      throw new Error('Could not parse LLM response as JSON');\n    }\n  }\n}\n\n// Extract slides for embedding\nconst slides = parsedResult.slides || [];\nconst slideTexts = slides.map(slide => ({\n  slide: slide,\n  text: slide.slide_caption || `Slide ${slide.slide_number}`\n}));\n\nreturn slideTexts.map(item => ({ json: item }));"
+      },
+      "id": "prepare-slides",
+      "name": "Prepare Slides for Embedding",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-slides",
+      "name": "Split Slides",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "resource": "textEmbedding",
+        "operation": "textEmbedding",
+        "model": "text-embedding-3-small",
+        "text": "={{ $json['text'] }}"
+      },
+      "id": "slide-embeddings",
+      "name": "Generate Slide Embeddings",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.3,
+      "position": [1340, 400],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge embedding back into slide\nconst slide = $json['slide'];\n// OpenAI embeddings node returns data in data[0].embedding format\nconst embeddingData = $json['data'] || [];\nconst embedding = embeddingData[0]?.embedding || $json['embedding'] || [];\n\nif (!embedding || embedding.length === 0) {\n  throw new Error('No embedding found in OpenAI response');\n}\n\nreturn {\n  json: {\n    ...slide,\n    embedding: embedding\n  }\n};"
+      },
+      "id": "merge-slide-embedding",
+      "name": "Merge Slide Embedding",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 400]
+    },
+    {
+      "parameters": {
+        "mode": "wait",
+        "options": {}
+      },
+      "id": "merge-loops",
+      "name": "Merge Loops",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get original webhook data\nconst webhookData = $('Webhook').item.json;\nconst googleFileId = webhookData.googleFileId;\n\n// Get LLM analysis result - OpenAI node returns response in choices[0].message.content\nconst llmOutput = $('OpenAI LLM Analysis').item.json;\nlet llmResult = llmOutput;\n\n// Extract content from OpenAI response structure\nif (llmOutput.choices && llmOutput.choices[0] && llmOutput.choices[0].message) {\n  llmResult = llmOutput.choices[0].message.content;\n}\n\n// Parse JSON if it's a string\nlet parsedResult = llmResult;\nif (typeof llmResult === 'string') {\n  try {\n    parsedResult = JSON.parse(llmResult);\n  } catch (e) {\n    const jsonMatch = llmResult.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      parsedResult = JSON.parse(jsonMatch[0]);\n    } else {\n      throw new Error('Could not parse LLM response as JSON');\n    }\n  }\n}\n\n// Get topics with embeddings (from split batches loop)\n// Split In Batches stores all processed items in the loop\nconst topicsWithEmbeddings = $('Split Topics').all().map(item => item.json);\n\n// Get slides with embeddings (from split batches loop)\nconst slidesWithEmbeddings = $('Split Slides').all().map(item => item.json);\n\n// Assemble final payload\nreturn {\n  json: {\n    googleFileId: googleFileId,\n    deck: parsedResult.deck,\n    topics: topicsWithEmbeddings,\n    slides: slidesWithEmbeddings\n  }\n};"
+      },
+      "id": "assemble-payload",
+      "name": "Assemble Final Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BACKEND_URL }}/api/internal/decks/ingest-ready",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-INTERNAL-TOKEN",
+              "value": "={{ $env.INTERNAL_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "submit-backend",
+      "name": "Submit to Backend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2220, 300],
+      "continueOnFail": false
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"message\": \"Deck processed successfully\"\n}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BACKEND_URL }}/api/internal/decks/error-notification",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-INTERNAL-TOKEN",
+              "value": "={{ $env.INTERNAL_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"googleFileId\": \"{{ $('Webhook').item.json.googleFileId }}\",\n  \"error\": \"{{ $json.error?.message || $json.error || 'Unknown error' }}\",\n  \"nodeName\": \"{{ $json.node?.name || 'Unknown node' }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "id": "error-notification",
+      "name": "Error Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 500]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Slides",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Response": {
+      "main": [
+        []
+      ]
+    },
+    "Extract Slides": {
+      "main": [
+        [
+          {
+            "node": "OpenAI LLM Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI LLM Analysis": {
+      "main": [
+        [
+          {
+            "node": "Prepare Topics for Embedding",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Slides for Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Topics for Embedding": {
+      "main": [
+        [
+          {
+            "node": "Split Topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Topics": {
+      "main": [
+        [
+          {
+            "node": "Generate Topic Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Loops",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Topic Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Merge Topic Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Topic Embedding": {
+      "main": [
+        [
+          {
+            "node": "Split Topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Slides for Embedding": {
+      "main": [
+        [
+          {
+            "node": "Split Slides",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Slides": {
+      "main": [
+        [
+          {
+            "node": "Generate Slide Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Loops",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Generate Slide Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Merge Slide Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Slide Embedding": {
+      "main": [
+        [
+          {
+            "node": "Split Slides",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Loops": {
+      "main": [
+        [
+          {
+            "node": "Assemble Final Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Final Payload": {
+      "main": [
+        [
+          {
+            "node": "Submit to Backend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit to Backend": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+
