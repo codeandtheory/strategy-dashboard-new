@@ -720,10 +720,10 @@ export default function TeamDashboard() {
         'snaps': { bg: 'bg-[#1E293B]', border: 'border-2', glow: '', text: 'text-white', accent: '#10B981' }, // Slate Grey bg with Emerald accent and border
         
         // Work - BLUE SYSTEM: Ocean Blue, Navy Blue, Sky Blue, Golden Yellow
-        'events': { bg: 'bg-[#000000]', border: 'border-2', glow: '', text: 'text-white', accent: '#0EA5E9' }, // Black bg with Ocean Blue border and accent
+        'events': { bg: 'bg-[#0EA5E9]', border: 'border-0', glow: '', text: 'text-black', accent: '#1E3A8A' }, // Ocean Blue bg with Navy Blue accent
         'pipeline': { bg: 'bg-[#1E3A8A]', border: 'border-0', glow: '', text: 'text-white', accent: '#38BDF8' }, // Navy Blue bg with Sky Blue accent
-        'friday-drop': { bg: 'bg-[#F4F4F5]', border: 'border-0', glow: '', text: 'text-black', accent: '#0EA5E9' }, // Zinc (light grey) bg with Ocean Blue accent
-        'who-needs-what': { bg: 'bg-[#0EA5E9]', border: 'border-0', glow: '', text: 'text-black', accent: '#1E3A8A' }, // Ocean Blue bg with Navy Blue accent
+        'friday-drop': { bg: 'bg-[#EAB308]', border: 'border-0', glow: '', text: 'text-black', accent: '#0EA5E9' }, // Golden Yellow bg with Ocean Blue accent
+        'who-needs-what': { bg: 'bg-[#38BDF8]', border: 'border-0', glow: '', text: 'text-black', accent: '#1E3A8A' }, // Sky Blue bg with Navy Blue accent
         
         // Team - ORANGE SYSTEM: Orange, Brown, Tan, Purple
         'timezones': { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#F97316' }, // Black bg with Orange accent
@@ -732,9 +732,9 @@ export default function TeamDashboard() {
         'horoscope': { bg: 'bg-[#9333EA]', border: 'border-0', glow: '', text: 'text-white', accent: '#C084FC' }, // Purple bg with Lavender accent
         'playlist': { bg: 'bg-[#000000]', border: 'border-2', glow: '', text: 'text-white', accent: '#9333EA' }, // Black bg with Purple border and accent
         
-        // Community 1: Hive/Pulse - MAGENTA SYSTEM: Hot Pink, Magenta, Pink, Emerald
-        'ask-hive': { bg: 'bg-[#EC4899]', border: 'border-0', glow: '', text: 'text-white', accent: '#C026D3' }, // Hot Pink bg with Magenta accent
-        'team-pulse': { bg: 'bg-[#F4F4F5]', border: 'border-0', glow: '', text: 'text-black', accent: '#EC4899' }, // Zinc bg with Hot Pink accent
+        // Community 1: Hive/Pulse - RED SYSTEM: Coral Red, Crimson, Peach, Ocean Blue
+        'ask-hive': { bg: 'bg-[#F87171]', border: 'border-0', glow: '', text: 'text-black', accent: '#DC2626' }, // Coral Red bg with Crimson accent
+        'team-pulse': { bg: 'bg-[#F4F4F5]', border: 'border-0', glow: '', text: 'text-black', accent: '#F87171' }, // Zinc bg with Coral Red accent
         
         // Community 2: Loop/Inspo War/Search - YELLOW SYSTEM: Golden Yellow, Gold, Light Yellow, Deep Purple
         'loom-standup': { bg: 'bg-[#EAB308]', border: 'border-0', glow: '', text: 'text-black', accent: '#D97706' }, // Golden Yellow bg with Gold accent
@@ -773,7 +773,7 @@ export default function TeamDashboard() {
         work: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#0EA5E9' }, // BLUE SYSTEM - Ocean Blue accent
         team: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#F97316' }, // ORANGE SYSTEM - Orange accent
         vibes: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#9333EA' }, // PURPLE SYSTEM - Purple accent
-        community: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#EC4899' }, // MAGENTA SYSTEM - Hot Pink accent
+        community: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#F87171' }, // RED SYSTEM - Coral Red accent
         community2: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#EAB308' }, // YELLOW SYSTEM - Golden Yellow accent
         default: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#10B981' },
       }
@@ -815,7 +815,7 @@ export default function TeamDashboard() {
         work: '#38BDF8', // Sky Blue (BLUE SYSTEM)
         team: '#FCD34D', // Tan (ORANGE SYSTEM)
         vibes: '#C084FC', // Lavender (PURPLE SYSTEM)
-        community: '#F9A8D4', // Pink (MAGENTA SYSTEM)
+        community: '#FED7AA', // Peach (RED SYSTEM)
         community2: '#FEF08A', // Light Yellow (YELLOW SYSTEM)
         hero: '#C4F500', // Lime
         default: '#EAB308',
@@ -1132,7 +1132,7 @@ export default function TeamDashboard() {
         </div>
       </header>
 
-      <main className="max-w-[1600px] mx-auto px-6 py-10">
+      <main className="max-w-[1600px] mx-auto px-6 py-4">
         {/* Hero Section - Full Width */}
         <section className="mb-12">
           {(() => {
@@ -2215,7 +2215,7 @@ export default function TeamDashboard() {
                           <div 
                             className={`text-5xl font-black ${style.text} px-4 py-2 rounded-lg`}
                             style={{
-                              backgroundColor: mode === 'chaos' ? 'rgba(0,0,0,0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
+                              backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
                             }}
                           >
                             {stat.value}
@@ -2233,7 +2233,7 @@ export default function TeamDashboard() {
                           key={stat.label} 
                             className={`flex flex-row items-center justify-center px-4 py-3 gap-3 ${getRoundedClass('rounded-2xl')} transition-all duration-300`}
                           style={{
-                            backgroundColor: mode === 'chaos' ? 'rgba(0,0,0,0.2)' : mode === 'chill' ? 'rgba(74,24,24,0.15)' : 'rgba(0,0,0,0.25)',
+                            backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.25)' : mode === 'chill' ? 'rgba(74,24,24,0.15)' : 'rgba(0,0,0,0.25)',
                             animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
                           }}
                         >
@@ -2266,7 +2266,8 @@ export default function TeamDashboard() {
 
             {/* Pipeline */}
             {(() => {
-              const borderColor = mode === 'chaos' ? '#0EA5E9' : mode === 'chill' ? '#FFC043' : mode === 'code' ? '#FFFFFF' : '#00FF87' // Work section uses Ocean Blue from BLUE SYSTEM
+              const pipelineStyle = mode === 'chaos' ? getSpecificCardStyle('pipeline') : getCardStyle('work')
+              const borderColor = pipelineStyle.accent
               
               const inProgressProjects = pipelineData.filter(p => p.status === 'In Progress')
               const completedProjects = pipelineData.filter(p => p.status === completedFilter)
@@ -2294,25 +2295,28 @@ export default function TeamDashboard() {
               const renderProjectItem = (project: typeof pipelineData[0], index: number, total: number) => {
                 const date = formatDate(project.due_date)
                 const displayText = project.type || project.description || 'Unknown'
-                
               return (
                   <div key={project.id} className="flex items-start gap-3 py-2">
                     {/* Plus button on the left */}
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      className="shrink-0 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 h-7 w-7 mt-0.5"
+                      className={`shrink-0 rounded-full border h-7 w-7 mt-0.5`}
+                      style={{
+                        backgroundColor: `${pipelineStyle.accent}20`,
+                        borderColor: `${pipelineStyle.accent}40`,
+                      }}
                       onClick={() => handleProjectClick(project)}
                     >
-                      <Plus className="size-4 text-white" />
+                      <Plus className={`size-4 ${pipelineStyle.text}`} />
                     </Button>
                     {/* Content */}
                     <div className="flex-1 min-w-0 text-sm">
                       {date && (
-                        <div className="text-white/60 mb-1 text-xs">{date}</div>
+                        <div className={`${pipelineStyle.text}/60 mb-1 text-xs`}>{date}</div>
                       )}
-                      <div className="font-bold text-white truncate">{project.name}</div>
-                      <div className="text-white/60 truncate text-xs">{displayText}</div>
+                      <div className={`font-bold ${pipelineStyle.text} truncate`}>{project.name}</div>
+                      <div className={`${pipelineStyle.text}/60 truncate text-xs`}>{displayText}</div>
                     </div>
                   </div>
                 )
@@ -2321,71 +2325,67 @@ export default function TeamDashboard() {
                       return (
                 <>
                   <Card 
-                    className={`${eventsExpanded ? 'p-6 flex-[2]' : 'p-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 overflow-hidden`}
-                    style={{
-                      backgroundColor: '#1a1a1a',
-                      borderColor: borderColor,
-                      borderWidth: '2px',
-                    }}
+                    className={`${pipelineStyle.bg} ${pipelineStyle.border} ${eventsExpanded ? 'p-6 flex-[2]' : 'p-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 overflow-hidden`}
+                    style={pipelineStyle.glow ? { boxShadow: `0 0 40px ${pipelineStyle.glow}` } : {}}
                   >
                     {!eventsExpanded && (
-                      <h2 className="text-3xl mb-3 font-black uppercase text-white transition-all duration-300">PIPELINE</h2>
+                      <h2 className={`text-3xl mb-3 font-black uppercase ${pipelineStyle.text} transition-all duration-300`}>PIPELINE</h2>
                     )}
                     
                     {eventsExpanded ? (
                       /* Stats view when events expanded - Clean vertical layout */
                       <div className="flex flex-col gap-2 h-full">
-                        <h2 className="text-2xl mb-3 font-black uppercase text-white">PIPELINE</h2>
+                        <h2 className={`text-2xl mb-3 font-black uppercase ${pipelineStyle.text}`}>PIPELINE</h2>
                         <div className="flex items-center justify-between">
-                          <div className="text-base text-white font-normal tracking-wide">In Progress</div>
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>In Progress</div>
                           <div 
-                            className="text-5xl font-black text-white px-4 py-2 rounded-lg"
+                            className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
                             style={{
-                              backgroundColor: 'rgba(0,0,0,0.4)',
+                              backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
                             }}
                           >
                             {pipelineLoading ? '0' : statusCounts['In Progress']}
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="text-base text-white font-normal tracking-wide">Pending</div>
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Pending</div>
                           <div 
-                            className="text-5xl font-black text-white px-4 py-2 rounded-lg"
+                            className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
                             style={{
-                              backgroundColor: 'rgba(0,0,0,0.4)',
+                              backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
                             }}
                           >
                             {pipelineLoading ? '0' : statusCounts['Pending Decision']}
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="text-base text-white font-normal tracking-wide">Long Lead</div>
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Long Lead</div>
                           <div 
-                            className="text-5xl font-black text-white px-4 py-2 rounded-lg"
+                            className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
                             style={{
-                              backgroundColor: 'rgba(0,0,0,0.4)',
+                              backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
                             }}
                           >
                             {pipelineLoading ? '0' : statusCounts['Long Lead']}
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="text-base text-white font-normal tracking-wide">Won</div>
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Won</div>
                           <div 
-                            className="text-5xl font-black text-white px-4 py-2 rounded-lg"
+                            className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
                             style={{
-                              backgroundColor: 'rgba(0,0,0,0.4)',
+                              backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
                             }}
                           >
                             {pipelineLoading ? '0' : statusCounts['Won']}
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="text-base text-white font-normal tracking-wide">Lost</div>
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Lost</div>
                           <div 
-                            className="text-5xl font-black text-white px-4 py-2 rounded-lg"
+                            className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
                             style={{
-                              backgroundColor: 'rgba(0,0,0,0.4)',
+                              backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
                             }}
                           >
                             {pipelineLoading ? '0' : statusCounts['Lost']}
@@ -2398,7 +2398,7 @@ export default function TeamDashboard() {
                       {/* Left Half - IN PROGRESS */}
                       <div className="flex flex-col pr-4">
                         <div className="flex items-center gap-3 mb-4">
-                          <h3 className="text-lg font-semibold text-white">IN PROGRESS</h3>
+                          <h3 className={`text-lg font-semibold ${pipelineStyle.text}`}>IN PROGRESS</h3>
                           <Badge 
                             variant="secondary" 
                             className="text-[10px]"
@@ -2420,7 +2420,7 @@ export default function TeamDashboard() {
                                 renderProjectItem(project, index, inProgressProjects.length)
                               )
                             ) : (
-                              <div className="text-white/60 text-sm py-4">
+                              <div className={`${pipelineStyle.text}/60 text-sm py-4`}>
                                 No projects in progress
                   </div>
                             )}
@@ -2431,7 +2431,7 @@ export default function TeamDashboard() {
                       {/* Right Half - COMPLETED */}
                       <div className="flex flex-col pl-4">
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-white">COMPLETED</h3>
+                          <h3 className={`text-lg font-semibold ${pipelineStyle.text}`}>COMPLETED</h3>
                           
                           {/* Tabs - Right aligned and in line with COMPLETED */}
                           <div className="flex flex-wrap gap-2">
@@ -2462,7 +2462,7 @@ export default function TeamDashboard() {
                                 renderProjectItem(project, index, completedProjects.length - 1)
                               )
                             ) : (
-                              <div className="text-white/60 text-sm py-4">
+                              <div className={`${pipelineStyle.text}/60 text-sm py-4`}>
                                 No projects with status: {completedFilter}
                               </div>
                             )}
@@ -2478,17 +2478,17 @@ export default function TeamDashboard() {
                     <DialogContent 
                       className="max-w-2xl"
                       style={{
-                        backgroundColor: '#1a1a1a',
+                        backgroundColor: mode === 'chaos' ? '#1E3A8A' : mode === 'chill' ? '#FFFFFF' : '#1a1a1a',
                         borderColor: borderColor,
                         borderWidth: '2px',
                         opacity: 1,
                       }}
                     >
                       <DialogHeader>
-                        <DialogTitle className="text-white">
+                        <DialogTitle className={pipelineStyle.text}>
                           {selectedPipelineProject?.name}
                         </DialogTitle>
-                        <DialogDescription className="text-white/60">
+                        <DialogDescription className={`${pipelineStyle.text}/60`}>
                           {selectedPipelineProject?.type || selectedPipelineProject?.description || 'No description'}
                         </DialogDescription>
                       </DialogHeader>
@@ -2497,42 +2497,42 @@ export default function TeamDashboard() {
                         <div className="space-y-4 mt-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-sm font-semibold text-white mb-1">Status</p>
-                              <p className="text-white/80">{selectedPipelineProject.status}</p>
+                              <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Status</p>
+                              <p className={`${pipelineStyle.text}/80`}>{selectedPipelineProject.status}</p>
                             </div>
                             {selectedPipelineProject.due_date && (
                               <div>
-                                <p className="text-sm font-semibold text-white mb-1">Due Date</p>
-                                <p className="text-white/80">{formatDate(selectedPipelineProject.due_date)}</p>
+                                <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Due Date</p>
+                                <p className={`${pipelineStyle.text}/80`}>{formatDate(selectedPipelineProject.due_date)}</p>
                               </div>
                             )}
                           </div>
                           
                           {selectedPipelineProject.lead && (
                             <div>
-                              <p className="text-sm font-semibold text-white mb-1">Lead</p>
-                              <p className="text-white/80">{selectedPipelineProject.lead}</p>
+                              <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Lead</p>
+                              <p className={`${pipelineStyle.text}/80`}>{selectedPipelineProject.lead}</p>
                             </div>
                           )}
                           
                           {selectedPipelineProject.team && (
                             <div>
-                              <p className="text-sm font-semibold text-white mb-1">Team</p>
-                              <p className="text-white/80">{selectedPipelineProject.team}</p>
+                              <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Team</p>
+                              <p className={`${pipelineStyle.text}/80`}>{selectedPipelineProject.team}</p>
                             </div>
                           )}
                           
                           {selectedPipelineProject.description && (
                             <div>
-                              <p className="text-sm font-semibold text-white mb-1">Description</p>
-                              <p className="text-white/80 whitespace-pre-wrap">{selectedPipelineProject.description}</p>
+                              <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Description</p>
+                              <p className={`${pipelineStyle.text}/80 whitespace-pre-wrap`}>{selectedPipelineProject.description}</p>
                             </div>
                           )}
                           
                           {selectedPipelineProject.notes && (
                             <div>
-                              <p className="text-sm font-semibold text-white mb-1">Notes</p>
-                              <p className="text-white/80 whitespace-pre-wrap">{selectedPipelineProject.notes}</p>
+                              <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Notes</p>
+                              <p className={`${pipelineStyle.text}/80 whitespace-pre-wrap`}>{selectedPipelineProject.notes}</p>
                             </div>
                           )}
                           
@@ -2773,7 +2773,7 @@ export default function TeamDashboard() {
               </div>
                   ))}
               </div>
-                <Button className={`w-full ${mode === 'chaos' ? 'bg-black text-[#EC4899] hover:bg-[#0F0F0F]' : mode === 'chill' ? 'bg-[#4A1818] text-[#8B4444] hover:bg-[#3A1414]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black rounded-full h-10 text-sm uppercase`}>
+                <Button className={`w-full ${mode === 'chaos' ? 'bg-black text-[#F87171] hover:bg-[#0F0F0F]' : mode === 'chill' ? 'bg-[#4A1818] text-[#8B4444] hover:bg-[#3A1414]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black rounded-full h-10 text-sm uppercase`}>
               Ask Question
             </Button>
           </Card>
