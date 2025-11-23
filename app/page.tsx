@@ -2551,16 +2551,12 @@ export default function TeamDashboard() {
               ]
               return (
                 <Card 
-                  className={`${style.bg} ${style.border} ${eventsExpanded ? 'p-6 flex-[0_0_auto]' : 'p-6 flex-[0_0_auto]'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 h-full flex flex-col`} 
-                  style={eventsExpanded ? { minHeight: '0' } : { height: 'auto', minHeight: '80px' }}
+                  className={`${style.bg} ${style.border} ${eventsExpanded ? 'p-6 flex-[0_0_auto]' : 'py-3 px-6 flex-[0_0_auto]'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 h-full flex flex-col`} 
+                  style={eventsExpanded ? { minHeight: '0' } : { height: '80px', maxHeight: '80px', minHeight: '80px' }}
                 >
                   {eventsExpanded ? (
                     /* Vertical stats view when expanded - Bold and clean */
                     <div className="flex flex-col gap-2 h-full">
-                      {/* Small label to match Events spacing */}
-                      <p className={`text-xs uppercase tracking-wider font-black mb-4`} style={{ color: mintColor }}>
-                        STATS
-                      </p>
                       <h2 className={`text-2xl font-black uppercase leading-none ${style.text} mb-3`}>THIS WEEK</h2>
                       {stats.map((stat, index) => (
                         <div key={stat.label} className="flex items-center justify-between">
@@ -2580,13 +2576,8 @@ export default function TeamDashboard() {
                     </div>
                   ) : (
                     /* Horizontal banner view when not expanded */
-                    <div className="flex flex-col h-full">
-                      {/* Small label to match Events spacing */}
-                      <p className={`text-xs uppercase tracking-wider font-black mb-4`} style={{ color: mintColor }}>
-                        STATS
-                      </p>
-                      <div className="flex items-center justify-between gap-6 flex-1">
-                        <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>THIS WEEK</h2>
+                    <div className="flex items-center justify-between gap-6 h-full">
+                      <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>THIS WEEK</h2>
                       <div className="flex gap-4 items-center">
                       {stats.map((stat, index) => (
                         <div 
@@ -2605,7 +2596,6 @@ export default function TeamDashboard() {
                             </span>
                         </div>
                       ))}
-                      </div>
                       </div>
                     </div>
                   )}
@@ -2635,32 +2625,12 @@ export default function TeamDashboard() {
               const inProgressProjects = pipelineData.filter(p => p.status === 'In Progress')
               const completedProjects = pipelineData.filter(p => p.status === currentCompletedFilter)
               
-              // Calculate last month date range
-              const now = new Date()
-              const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-              const firstDayOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-              
-              // Filter Won and Lost projects from last month only
-              const wonLastMonth = pipelineData.filter(p => {
-                if (p.status !== 'Won') return false
-                if (!p.updated_at) return false
-                const updatedDate = new Date(p.updated_at)
-                return updatedDate >= firstDayOfLastMonth && updatedDate < firstDayOfThisMonth
-              })
-              
-              const lostLastMonth = pipelineData.filter(p => {
-                if (p.status !== 'Lost') return false
-                if (!p.updated_at) return false
-                const updatedDate = new Date(p.updated_at)
-                return updatedDate >= firstDayOfLastMonth && updatedDate < firstDayOfThisMonth
-              })
-              
               // Calculate counts for displayed statuses
               const statusCounts = {
                 'In Progress': pipelineData.filter(p => p.status === 'In Progress').length,
                 'Pending Decision': pipelineData.filter(p => p.status === 'Pending Decision').length,
-                'Won (Last Month)': wonLastMonth.length,
-                'Lost (Last Month)': lostLastMonth.length,
+                'Won': pipelineData.filter(p => p.status === 'Won').length,
+                'Lost': pipelineData.filter(p => p.status === 'Lost').length,
               }
               
               const formatDate = (dateString: string | null) => {
@@ -2719,7 +2689,7 @@ export default function TeamDashboard() {
                       <div className="flex flex-col gap-2 h-full">
                         <h2 className={`text-2xl mb-3 font-black uppercase ${pipelineStyle.text}`}>PIPELINE</h2>
                         <div className="flex items-center justify-between">
-                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>In Progress (all)</div>
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>In Progress</div>
                           <div 
                             className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
                             style={{
@@ -2730,7 +2700,7 @@ export default function TeamDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Pending Decision (all)</div>
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Pending Decision</div>
                           <div 
                             className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
                             style={{
@@ -2741,25 +2711,25 @@ export default function TeamDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Won (last month)</div>
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Won</div>
                           <div 
                             className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
                             style={{
                               backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
                             }}
                           >
-                            {pipelineLoading ? '0' : statusCounts['Won (Last Month)']}
+                            {pipelineLoading ? '0' : statusCounts['Won']}
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Lost (last month)</div>
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Lost</div>
                           <div 
                             className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
                             style={{
                               backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
                             }}
                           >
-                            {pipelineLoading ? '0' : statusCounts['Lost (Last Month)']}
+                            {pipelineLoading ? '0' : statusCounts['Lost']}
                           </div>
                         </div>
                       </div>
