@@ -64,17 +64,21 @@ export async function POST(request: NextRequest) {
     // Generate topics
     const topics = await generateTopics(deckText)
 
-    // Label each slide
-    const labeledSlides = await Promise.all(
-      slides.map(async (slide) => {
-        const label = await labelSlide(slide.text)
-        return {
-          slideNumber: slide.slideNumber,
-          slideText: slide.text,
-          label,
-        }
+    // Label each slide with rate limiting to avoid API limits
+    // Process slides sequentially with delays instead of in parallel
+    const labeledSlides = []
+    for (const slide of slides) {
+      const label = await labelSlide(slide.text)
+      labeledSlides.push({
+        slideNumber: slide.slideNumber,
+        slideText: slide.text,
+        label,
       })
-    )
+      // Add delay between slide processing to avoid rate limits
+      if (slides.indexOf(slide) < slides.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500)) // 500ms delay between slides
+      }
+    }
 
     // Create deck record
     const deckRecord = await createDeckRecord({

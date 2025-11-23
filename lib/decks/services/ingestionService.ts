@@ -86,6 +86,10 @@ export async function createTopicsForDeck(input: {
     try {
       if (topic.topic_summary && topic.topic_summary.trim().length > 0) {
         embedding = await embedText(topic.topic_summary)
+        // Add delay between embedding calls to avoid rate limits
+        if (input.topics.indexOf(topic) < input.topics.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 300)) // 300ms delay
+        }
       }
     } catch (error) {
       console.warn(`Failed to generate embedding for topic "${topic.topic_title}":`, error)
@@ -133,6 +137,10 @@ export async function createSlidesForDeck(input: {
     try {
       if (slide.label.slide_caption && slide.label.slide_caption.trim().length > 0) {
         embedding = await embedText(slide.label.slide_caption)
+        // Add delay between embedding calls to avoid rate limits
+        if (input.slides.indexOf(slide) < input.slides.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 300)) // 300ms delay
+        }
       }
     } catch (error) {
       console.warn(`Failed to generate embedding for slide ${slide.slideNumber}:`, error)
