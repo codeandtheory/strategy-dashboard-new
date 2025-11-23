@@ -90,7 +90,7 @@ export function AccountMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className={`relative ${getRoundedClass('rounded-full')} border-2 transition-all hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 overflow-hidden ${
+          className={`relative rounded-full border-2 transition-all hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent overflow-hidden ${
             mode === 'chaos' ? 'border-[#C4F500]/40 focus:ring-[#C4F500]' :
             mode === 'chill' ? 'border-[#FFC043]/40 focus:ring-[#FFC043]' :
             'border-white/20 focus:ring-white'
@@ -115,7 +115,7 @@ export function AccountMenu() {
             />
           ) : null}
           <div 
-            className={`avatar-fallback w-10 h-10 ${getRoundedClass('rounded-full')} flex items-center justify-center text-sm font-semibold ${
+            className={`avatar-fallback w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
               avatarUrl ? 'hidden' : ''
             } ${
               mode === 'chaos' ? 'bg-[#C4F500] text-black' :

@@ -11,7 +11,6 @@ interface BeastBabeData {
     full_name: string | null
     avatar_url: string | null
     role: string | null
-    discipline: string | null
     history: {
       achievement: string | null
       date: string
@@ -152,12 +151,9 @@ export function BeastBabeCard() {
           {currentBeastBabe?.full_name || currentBeastBabe?.email || 'No Beast Babe Yet'}
         </h3>
         
-        {/* Role/Discipline */}
+        {/* Role */}
         {currentBeastBabe?.role && (
-          <p className="text-lg text-white/80 mb-2 glitch-text">{currentBeastBabe.role}</p>
-        )}
-        {currentBeastBabe?.discipline && (
-          <p className="text-base text-white/70 mb-4 glitch-text">{currentBeastBabe.discipline}</p>
+          <p className="text-lg text-white/80 mb-4 glitch-text">{currentBeastBabe.role}</p>
         )}
 
         {/* Achievement Description */}
