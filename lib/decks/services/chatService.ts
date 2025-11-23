@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '../config/supabaseClient'
 import { embedText } from '../llm/embeddingService'
 import { getOpenAIClient, callOpenAIWithFallback } from '../config/openaiClient'
+import { proxyChatCompletion } from './openaiProxyService'
 import { getEnv } from '../config/env'
 
 export interface ChatReference {
@@ -151,8 +152,12 @@ Provide a helpful recommendation based on the available snippets.`
   const config = getEnv()
 
   try {
-    const completion = await callOpenAIWithFallback(async (openai) => {
-      return await openai.chat.completions.create({
+    let completion: any
+
+    // Use proxy if configured (n8n/Elvex), otherwise use direct OpenAI
+    if (config.openaiProxyUrl) {
+      console.log('Using proxy for OpenAI chat:', config.openaiProxyUrl)
+      completion = await proxyChatCompletion({
         model: config.openaiChatModel,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -161,7 +166,19 @@ Provide a helpful recommendation based on the available snippets.`
         temperature: 0.7,
         max_tokens: 1000,
       })
-    })
+    } else {
+      completion = await callOpenAIWithFallback(async (openai) => {
+        return await openai.chat.completions.create({
+          model: config.openaiChatModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.7,
+          max_tokens: 1000,
+        })
+      })
+    }
 
     const answer = completion.choices[0]?.message?.content?.trim()
     if (!answer) {

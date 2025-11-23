@@ -5,6 +5,7 @@
 export interface DeckConfig {
   openaiApiKey: string
   openaiApiKeyFallback?: string
+  openaiProxyUrl?: string // Optional proxy URL (e.g., n8n workflow endpoint)
   supabaseUrl: string
   supabaseServiceRoleKey: string
   googleDriveFolderId: string
@@ -71,6 +72,7 @@ export function getEnv(): DeckConfig {
 
   const openaiChatModel = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini'
   const openaiEmbeddingModel = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small'
+  const openaiProxyUrl = process.env.OPENAI_PROXY_URL // Optional proxy URL (e.g., n8n workflow)
   const maxDeckPages = parseInt(process.env.MAX_DECK_PAGES || '100', 10)
   // Note: Files are uploaded to Google Drive first, so no Vercel body size limit applies
   // This limit is now only used for validation/documentation
@@ -79,6 +81,7 @@ export function getEnv(): DeckConfig {
   cachedConfig = {
     openaiApiKey: openaiApiKey || openaiApiKeyFallback || '',
     openaiApiKeyFallback,
+    openaiProxyUrl,
     supabaseUrl,
     supabaseServiceRoleKey,
     googleDriveFolderId,

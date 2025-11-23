@@ -1,5 +1,6 @@
 import { getOpenAIClient, callOpenAIWithFallback } from '../config/openaiClient'
 import { getEnv } from '../config/env'
+import { proxyChatCompletion } from '../services/openaiProxyService'
 import { buildDeckPrompt } from './deckPrompts'
 import { buildTopicsPrompt } from './topicPrompts'
 import { buildSlidePrompt } from './slidePrompts'
@@ -38,14 +39,27 @@ async function callOpenAI(prompt: string, systemPrompt?: string): Promise<string
   messages.push({ role: 'user', content: prompt })
 
   try {
-    const completion = await callOpenAIWithFallback(async (openai) => {
-      return await openai.chat.completions.create({
+    let completion: any
+
+    // Use proxy if configured (n8n/Elvex), otherwise use direct OpenAI
+    if (config.openaiProxyUrl) {
+      console.log('Using proxy for OpenAI chat completion:', config.openaiProxyUrl)
+      completion = await proxyChatCompletion({
         model: config.openaiChatModel,
         messages,
         response_format: { type: 'json_object' },
         temperature: 0.3,
       })
-    })
+    } else {
+      completion = await callOpenAIWithFallback(async (openai) => {
+        return await openai.chat.completions.create({
+          model: config.openaiChatModel,
+          messages,
+          response_format: { type: 'json_object' },
+          temperature: 0.3,
+        })
+      })
+    }
 
     const responseText = completion.choices[0]?.message?.content?.trim()
     if (!responseText) {
