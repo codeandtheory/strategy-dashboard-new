@@ -122,10 +122,11 @@ export default function VibesPage() {
     return mode === 'code' ? 'rounded-none' : defaultClass
   }
 
-  // Get card styles matching dashboard
+  // Get card styles using RED, ORANGE, and YELLOW SYSTEMS
+  // Beast Babe: RED SYSTEM (Coral Red, Crimson, Peach, Ocean Blue)
   const getBeastBabeCardStyle = () => {
     if (mode === 'chaos') {
-      return { bg: 'bg-gradient-to-br from-[#FF0055] to-[#FF4081]', text: 'text-white', accent: '#E8FF00' }
+      return { bg: 'bg-[#F87171]', text: 'text-black', accent: '#DC2626' } // Coral Red bg with Crimson accent (RED SYSTEM)
     } else if (mode === 'chill') {
       return { bg: 'bg-white', text: 'text-[#4A1818]', accent: '#FFB5D8', border: 'border border-[#FFB5D8]/30' }
     } else {
@@ -133,9 +134,10 @@ export default function VibesPage() {
     }
   }
 
+  // Question of the Week: ORANGE SYSTEM (Orange, Brown, Tan, Purple)
   const getQuestionCardStyle = () => {
     if (mode === 'chaos') {
-      return { bg: 'bg-gradient-to-br from-[#9D4EFF] to-[#6B2C91]', text: 'text-white', accent: '#FF00FF' }
+      return { bg: 'bg-[#F97316]', text: 'text-black', accent: '#7C2D12' } // Orange bg with Brown accent (ORANGE SYSTEM)
     } else if (mode === 'chill') {
       return { bg: 'bg-white', text: 'text-[#4A1818]', accent: '#FFB5D8', border: 'border border-[#FFB5D8]/30' }
     } else {
@@ -143,9 +145,10 @@ export default function VibesPage() {
     }
   }
 
+  // Weekly Playlist: YELLOW SYSTEM (Golden Yellow, Gold, Light Yellow, Deep Purple)
   const getPlaylistCardStyle = () => {
     if (mode === 'chaos') {
-      return { bg: 'bg-gradient-to-br from-[#FF6B00] to-[#FF8A00]', text: 'text-white', accent: '#FF00FF' }
+      return { bg: 'bg-[#EAB308]', text: 'text-black', accent: '#6B21A8', border: 'border-0' } // Golden Yellow bg with Deep Purple accent (YELLOW SYSTEM)
     } else if (mode === 'chill') {
       return { bg: 'bg-white', text: 'text-[#4A1818]', accent: '#FFB5D8', border: 'border border-[#FFB5D8]/30' }
     } else {
@@ -305,7 +308,7 @@ export default function VibesPage() {
                 <h2 className={`text-4xl font-black mb-6 uppercase ${style.text}`}>BEAST<br/>BABE</h2>
                 <div className="flex items-center justify-center mb-4">
                   <div className={`w-20 h-20 ${getRoundedClass('rounded-full')} flex items-center justify-center`} style={{ 
-                    backgroundColor: mode === 'chill' ? '#4A1818' : mode === 'code' ? '#FFFFFF' : '#000000'
+                    backgroundColor: mode === 'chill' ? '#4A1818' : mode === 'code' ? '#FFFFFF' : mode === 'chaos' ? '#0EA5E9' : '#000000' // Ocean Blue from RED SYSTEM
                   }}>
                     <Trophy className="w-10 h-10" style={{ color: style.accent }} />
                   </div>
@@ -344,7 +347,7 @@ export default function VibesPage() {
                       key={answer.id}
                       className={`${getRoundedClass('rounded-xl')} p-3`}
                       style={{ 
-                        backgroundColor: mode === 'chaos' ? 'rgba(255, 255, 255, 0.2)' : mode === 'chill' ? 'rgba(255, 181, 216, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+                        backgroundColor: mode === 'chaos' ? 'rgba(252, 211, 77, 0.2)' : mode === 'chill' ? 'rgba(255, 181, 216, 0.1)' : 'rgba(255, 255, 255, 0.1)', // Tan from ORANGE SYSTEM
                         borderColor: style.accent,
                         borderWidth: '1px'
                       }}
@@ -357,8 +360,8 @@ export default function VibesPage() {
                 <Button
                   className={`w-full ${getRoundedClass('rounded-xl')} font-black h-12 uppercase`}
                   style={{ 
-                    backgroundColor: style.accent,
-                    color: mode === 'chill' ? '#4A1818' : mode === 'code' ? '#000000' : '#000000'
+                    backgroundColor: mode === 'chaos' ? '#9333EA' : style.accent, // Purple from ORANGE SYSTEM (contrast color)
+                    color: mode === 'chill' ? '#4A1818' : mode === 'code' ? '#000000' : '#FFFFFF'
                   }}
                 >
                   Share Your Answer
@@ -371,12 +374,14 @@ export default function VibesPage() {
           {(() => {
             const style = getPlaylistCardStyle()
             return (
-              <Card className={`${style.bg} ${mode === 'chill' || mode === 'code' ? style.border || '' : 'border-0'} ${getRoundedClass('rounded-[2.5rem]')} p-6`}>
+              <Card className={`${style.bg} ${mode === 'chill' || mode === 'code' ? style.border || '' : style.border || 'border-0'} ${getRoundedClass('rounded-[2.5rem]')} p-6`}
+                    style={mode === 'chaos' && style.border?.includes('border-2') ? { borderColor: style.accent } : {}}
+              >
                 <p className={`text-xs uppercase tracking-wider font-black mb-2 ${style.text}`} style={{ opacity: 0.8 }}>WEEKLY</p>
                 <h2 className={`text-4xl font-black mb-6 uppercase`} style={{ color: style.accent }}>PLAYLIST</h2>
                 <div className="flex items-center justify-center mb-4">
                   <div className={`w-16 h-16 ${getRoundedClass('rounded-xl')} flex items-center justify-center`} style={{ 
-                    backgroundColor: style.accent
+                    backgroundColor: mode === 'chaos' ? '#D97706' : style.accent // Gold from YELLOW SYSTEM
                   }}>
                     <Music className="w-8 h-8" style={{ 
                       color: mode === 'chill' ? '#4A1818' : mode === 'code' ? '#000000' : '#000000'
@@ -390,7 +395,7 @@ export default function VibesPage() {
                     <Button
                       className={`w-full ${getRoundedClass('rounded-xl')} font-black h-12 uppercase flex items-center justify-center gap-2`}
                       style={{ 
-                        backgroundColor: style.accent,
+                        backgroundColor: mode === 'chaos' ? '#FEF08A' : style.accent, // Light Yellow from YELLOW SYSTEM (complementary color)
                         color: mode === 'chill' ? '#4A1818' : mode === 'code' ? '#000000' : '#000000'
                       }}
                       onClick={() => weeklyPlaylist.spotify_url && window.open(weeklyPlaylist.spotify_url, '_blank')}

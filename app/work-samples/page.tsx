@@ -259,7 +259,7 @@ export default function WorkSamplesPage() {
               <select
                 value={filterAuthorId || 'all'}
                 onChange={(e) => setFilterAuthorId(e.target.value === 'all' ? null : e.target.value)}
-                className={`h-12 px-4 ${mode === 'chaos' ? 'bg-black/30 border-gray-600 text-white' : mode === 'chill' ? 'bg-white border-gray-300 text-[#4A1818]' : 'bg-black/30 border-gray-600 text-white'} border ${getRoundedClass('rounded-xl')} text-sm font-medium focus:outline-none focus:ring-2 ${mode === 'chaos' ? 'focus:ring-[#C4F500]' : mode === 'chill' ? 'focus:ring-[#FFC043]' : 'focus:ring-white'}`}
+                className={`h-12 px-4 ${mode === 'chaos' ? 'bg-black/30 border-gray-600 text-white' : mode === 'chill' ? 'bg-white border-gray-300 text-[#4A1818]' : 'bg-black/30 border-gray-600 text-white'} border ${getRoundedClass('rounded-xl')} text-sm font-medium focus:outline-none focus:ring-2 ${mode === 'chaos' ? 'focus:ring-white' : mode === 'chill' ? 'focus:ring-[#FFC043]' : 'focus:ring-white'}`}
               >
                 <option value="all">All Authors</option>
                 {uniqueAuthors.map(author => (
@@ -273,7 +273,7 @@ export default function WorkSamplesPage() {
               <select
                 value={filterTypeId || 'all'}
                 onChange={(e) => setFilterTypeId(e.target.value === 'all' ? null : e.target.value)}
-                className={`h-12 px-4 ${mode === 'chaos' ? 'bg-black/30 border-gray-600 text-white' : mode === 'chill' ? 'bg-white border-gray-300 text-[#4A1818]' : 'bg-black/30 border-gray-600 text-white'} border ${getRoundedClass('rounded-xl')} text-sm font-medium focus:outline-none focus:ring-2 ${mode === 'chaos' ? 'focus:ring-[#C4F500]' : mode === 'chill' ? 'focus:ring-[#FFC043]' : 'focus:ring-white'}`}
+                className={`h-12 px-4 ${mode === 'chaos' ? 'bg-black/30 border-gray-600 text-white' : mode === 'chill' ? 'bg-white border-gray-300 text-[#4A1818]' : 'bg-black/30 border-gray-600 text-white'} border ${getRoundedClass('rounded-xl')} text-sm font-medium focus:outline-none focus:ring-2 ${mode === 'chaos' ? 'focus:ring-white' : mode === 'chill' ? 'focus:ring-[#FFC043]' : 'focus:ring-white'}`}
               >
                 <option value="all">All Types</option>
                 {uniqueTypes.map(type => (
@@ -287,7 +287,7 @@ export default function WorkSamplesPage() {
               <select
                 value={filterClient || 'all'}
                 onChange={(e) => setFilterClient(e.target.value === 'all' ? null : e.target.value)}
-                className={`h-12 px-4 ${mode === 'chaos' ? 'bg-black/30 border-gray-600 text-white' : mode === 'chill' ? 'bg-white border-gray-300 text-[#4A1818]' : 'bg-black/30 border-gray-600 text-white'} border ${getRoundedClass('rounded-xl')} text-sm font-medium focus:outline-none focus:ring-2 ${mode === 'chaos' ? 'focus:ring-[#C4F500]' : mode === 'chill' ? 'focus:ring-[#FFC043]' : 'focus:ring-white'}`}
+                className={`h-12 px-4 ${mode === 'chaos' ? 'bg-black/30 border-gray-600 text-white' : mode === 'chill' ? 'bg-white border-gray-300 text-[#4A1818]' : 'bg-black/30 border-gray-600 text-white'} border ${getRoundedClass('rounded-xl')} text-sm font-medium focus:outline-none focus:ring-2 ${mode === 'chaos' ? 'focus:ring-white' : mode === 'chill' ? 'focus:ring-[#FFC043]' : 'focus:ring-white'}`}
               >
                 <option value="all">All Clients</option>
                 {uniqueClients.map(client => (
@@ -302,14 +302,14 @@ export default function WorkSamplesPage() {
             <div className="flex items-center gap-2 border-l pl-4 ml-4">
               <button
                 onClick={() => setViewMode('thumbnails')}
-                className={`h-12 px-4 ${mode === 'chaos' ? viewMode === 'thumbnails' ? 'bg-[#C4F500] text-black border-[#C4F500]' : 'bg-black/30 border-gray-600 text-white hover:bg-black/50' : mode === 'chill' ? viewMode === 'thumbnails' ? 'bg-[#FFC043] text-[#4A1818] border-[#FFC043]' : 'bg-white border-gray-300 text-[#4A1818] hover:bg-gray-50' : viewMode === 'thumbnails' ? 'bg-white text-black border-white' : 'bg-black/30 border-gray-600 text-white hover:bg-black/50'} border ${getRoundedClass('rounded-xl')} flex items-center justify-center transition-colors`}
+                className={`h-12 px-4 ${mode === 'chaos' ? viewMode === 'thumbnails' ? 'bg-white text-black border-white' : 'bg-black/30 border-gray-600 text-white hover:bg-black/50' : mode === 'chill' ? viewMode === 'thumbnails' ? 'bg-[#FFC043] text-[#4A1818] border-[#FFC043]' : 'bg-white border-gray-300 text-[#4A1818] hover:bg-gray-50' : viewMode === 'thumbnails' ? 'bg-white text-black border-white' : 'bg-black/30 border-gray-600 text-white hover:bg-black/50'} border ${getRoundedClass('rounded-xl')} flex items-center justify-center transition-colors`}
                 title="Thumbnail View"
               >
                 <Grid3x3 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`h-12 px-4 ${mode === 'chaos' ? viewMode === 'list' ? 'bg-[#C4F500] text-black border-[#C4F500]' : 'bg-black/30 border-gray-600 text-white hover:bg-black/50' : mode === 'chill' ? viewMode === 'list' ? 'bg-[#FFC043] text-[#4A1818] border-[#FFC043]' : 'bg-white border-gray-300 text-[#4A1818] hover:bg-gray-50' : viewMode === 'list' ? 'bg-white text-black border-white' : 'bg-black/30 border-gray-600 text-white hover:bg-black/50'} border ${getRoundedClass('rounded-xl')} flex items-center justify-center transition-colors`}
+                className={`h-12 px-4 ${mode === 'chaos' ? viewMode === 'list' ? 'bg-white text-black border-white' : 'bg-black/30 border-gray-600 text-white hover:bg-black/50' : mode === 'chill' ? viewMode === 'list' ? 'bg-[#FFC043] text-[#4A1818] border-[#FFC043]' : 'bg-white border-gray-300 text-[#4A1818] hover:bg-gray-50' : viewMode === 'list' ? 'bg-white text-black border-white' : 'bg-black/30 border-gray-600 text-white hover:bg-black/50'} border ${getRoundedClass('rounded-xl')} flex items-center justify-center transition-colors`}
                 title="List View"
               >
                 <List className="w-4 h-4" />
@@ -322,7 +322,7 @@ export default function WorkSamplesPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className={`h-12 px-4 ${mode === 'chaos' ? 'bg-black/30 border-gray-600 text-white' : mode === 'chill' ? 'bg-white border-gray-300 text-[#4A1818]' : 'bg-black/30 border-gray-600 text-white'} border ${getRoundedClass('rounded-xl')} text-sm font-medium focus:outline-none focus:ring-2 ${mode === 'chaos' ? 'focus:ring-[#C4F500]' : mode === 'chill' ? 'focus:ring-[#FFC043]' : 'focus:ring-white'}`}
+                className={`h-12 px-4 ${mode === 'chaos' ? 'bg-black/30 border-gray-600 text-white' : mode === 'chill' ? 'bg-white border-gray-300 text-[#4A1818]' : 'bg-black/30 border-gray-600 text-white'} border ${getRoundedClass('rounded-xl')} text-sm font-medium focus:outline-none focus:ring-2 ${mode === 'chaos' ? 'focus:ring-white' : mode === 'chill' ? 'focus:ring-[#FFC043]' : 'focus:ring-white'}`}
               >
                 <option value="date">Date</option>
                 <option value="name">Name</option>
