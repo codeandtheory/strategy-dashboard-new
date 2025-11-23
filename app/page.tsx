@@ -130,6 +130,9 @@ export default function TeamDashboard() {
     updated_at: string | null
   }>>([])
   const [pipelineLoading, setPipelineLoading] = useState(true)
+  const [selectedPipelineProject, setSelectedPipelineProject] = useState<typeof pipelineData[0] | null>(null)
+  const [isPipelineDialogOpen, setIsPipelineDialogOpen] = useState(false)
+  const [completedFilter, setCompletedFilter] = useState<'Pending Decision' | 'Won' | 'Lost'>('Pending Decision')
   const [pipelineStats, setPipelineStats] = useState<{
     activeProjects: number
     newBusiness: number
@@ -2624,11 +2627,13 @@ export default function TeamDashboard() {
 
             {/* Pipeline */}
             {(() => {
+              // Explicitly capture completedFilter to ensure it's in scope
+              const currentCompletedFilter = completedFilter
               const pipelineStyle = mode === 'chaos' ? getSpecificCardStyle('pipeline') : getCardStyle('work')
               const borderColor = pipelineStyle.accent
               
               const inProgressProjects = pipelineData.filter(p => p.status === 'In Progress')
-              const completedProjects = pipelineData.filter(p => p.status === completedFilter)
+              const completedProjects = pipelineData.filter(p => p.status === currentCompletedFilter)
               
               // Calculate last month date range
               const now = new Date()
@@ -2658,60 +2663,255 @@ export default function TeamDashboard() {
                 'Lost (Last Month)': lostLastMonth.length,
               }
               
-              return (
-                <Card 
-                  className={`${pipelineStyle.bg} ${pipelineStyle.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 overflow-hidden h-full flex flex-col`}
-                  style={pipelineStyle.glow ? { boxShadow: `0 0 40px ${pipelineStyle.glow}` } : {}}
-                >
-                  {/* Stats view - Clean vertical layout */}
-                  <div className="flex flex-col gap-2 h-full">
-                    <h2 className={`text-2xl mb-3 font-black uppercase ${pipelineStyle.text}`}>PIPELINE</h2>
-                    <div className="flex items-center justify-between">
-                      <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>In Progress (all)</div>
-                      <div 
-                        className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
-                        style={{
-                          backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
-                        }}
-                      >
-                        {pipelineLoading ? '0' : statusCounts['In Progress']}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Pending Decision (all)</div>
-                      <div 
-                        className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
-                        style={{
-                          backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
-                        }}
-                      >
-                        {pipelineLoading ? '0' : statusCounts['Pending Decision']}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Won (last month)</div>
-                      <div 
-                        className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
-                        style={{
-                          backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
-                        }}
-                      >
-                        {pipelineLoading ? '0' : statusCounts['Won (Last Month)']}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Lost (last month)</div>
-                      <div 
-                        className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
-                        style={{
-                          backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
-                        }}
-                      >
-                        {pipelineLoading ? '0' : statusCounts['Lost (Last Month)']}
-                      </div>
+              const formatDate = (dateString: string | null) => {
+                if (!dateString) return null
+                const date = new Date(dateString)
+                return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`
+              }
+              
+              const handleProjectClick = (project: typeof pipelineData[0]) => {
+                setSelectedPipelineProject(project)
+                setIsPipelineDialogOpen(true)
+              }
+              
+              const renderProjectItem = (project: typeof pipelineData[0], index: number, total: number) => {
+                const date = formatDate(project.due_date)
+                const displayText = project.type || project.description || 'Unknown'
+                return (
+                  <div key={project.id} className="flex items-start gap-3 py-2">
+                    {/* Plus button on the left */}
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className={`shrink-0 rounded-full border h-7 w-7 mt-0.5`}
+                      style={{
+                        backgroundColor: `${pipelineStyle.accent}20`,
+                        borderColor: `${pipelineStyle.accent}40`,
+                      }}
+                      onClick={() => handleProjectClick(project)}
+                    >
+                      <Plus className={`size-4 ${pipelineStyle.text}`} />
+                    </Button>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 text-sm">
+                      {date && (
+                        <div className={`${pipelineStyle.text}/60 mb-1 text-xs`}>{date}</div>
+                      )}
+                      <div className={`font-bold ${pipelineStyle.text} truncate`}>{project.name}</div>
+                      <div className={`${pipelineStyle.text}/60 truncate text-xs`}>{displayText}</div>
                     </div>
                   </div>
+                )
+              }
+              
+              return (
+                <>
+                  <Card 
+                    className={`${pipelineStyle.bg} ${pipelineStyle.border} ${eventsExpanded ? 'p-6 flex-[2]' : 'p-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 overflow-hidden`}
+                    style={pipelineStyle.glow ? { boxShadow: `0 0 40px ${pipelineStyle.glow}` } : {}}
+                  >
+                    {!eventsExpanded && (
+                      <h2 className={`text-3xl mb-3 font-black uppercase ${pipelineStyle.text} transition-all duration-300`}>PIPELINE</h2>
+                    )}
+                    
+                    {eventsExpanded ? (
+                      /* Stats view when events expanded - Clean vertical layout */
+                      <div className="flex flex-col gap-2 h-full">
+                        <h2 className={`text-2xl mb-3 font-black uppercase ${pipelineStyle.text}`}>PIPELINE</h2>
+                        <div className="flex items-center justify-between">
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>In Progress (all)</div>
+                          <div 
+                            className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
+                            style={{
+                              backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
+                            }}
+                          >
+                            {pipelineLoading ? '0' : statusCounts['In Progress']}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Pending Decision (all)</div>
+                          <div 
+                            className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
+                            style={{
+                              backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
+                            }}
+                          >
+                            {pipelineLoading ? '0' : statusCounts['Pending Decision']}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Won (last month)</div>
+                          <div 
+                            className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
+                            style={{
+                              backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
+                            }}
+                          >
+                            {pipelineLoading ? '0' : statusCounts['Won (Last Month)']}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className={`text-base ${pipelineStyle.text} font-normal tracking-wide`}>Lost (last month)</div>
+                          <div 
+                            className={`text-5xl font-black ${pipelineStyle.text} px-4 py-2 rounded-lg`}
+                            style={{
+                              backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
+                            }}
+                          >
+                            {pipelineLoading ? '0' : statusCounts['Lost (Last Month)']}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Full view when events not expanded */
+                      <div className="grid grid-cols-1 lg:grid-cols-2 divide-x" style={{ borderColor: `${borderColor}40` }}>
+                      {/* Left Half - IN PROGRESS */}
+                      <div className="flex flex-col pr-4">
+                        <div className="flex items-center gap-3 mb-4">
+                          <h3 className={`text-lg font-semibold ${pipelineStyle.text}`}>IN PROGRESS</h3>
+                          <Badge 
+                            variant="secondary" 
+                            className="text-[10px]"
+                            style={{ 
+                              backgroundColor: `${borderColor}20`,
+                              color: borderColor,
+                              borderColor: borderColor
+                            }}
+                          >
+                            {pipelineLoading ? '0' : inProgressProjects.length} {inProgressProjects.length === 1 ? 'project' : 'projects'}
+                          </Badge>
+                        </div>
+                        
+                        {/* Scrollable list - Fixed height to align bottoms */}
+                        <div className="overflow-y-auto" style={{ height: '300px' }}>
+                          <div className="space-y-1">
+                            {!pipelineLoading && inProgressProjects.length > 0 ? (
+                              inProgressProjects.map((project, index) => 
+                                renderProjectItem(project, index, inProgressProjects.length)
+                              )
+                            ) : (
+                              <div className={`${pipelineStyle.text}/60 text-sm py-4`}>
+                                No projects in progress
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Half - COMPLETED */}
+                      <div className="flex flex-col pl-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className={`text-lg font-semibold ${pipelineStyle.text}`}>COMPLETED</h3>
+                        </div>
+                        
+                        {/* Scrollable list - Fixed height to align bottoms, show one less item */}
+                        <div className="overflow-y-auto" style={{ height: '300px' }}>
+                          <div className="space-y-1">
+                            {!pipelineLoading && completedProjects.length > 0 ? (
+                              completedProjects.slice(0, Math.max(0, completedProjects.length - 1)).map((project, index) => 
+                                renderProjectItem(project, index, completedProjects.length - 1)
+                              )
+                            ) : (
+                              <div className={`${pipelineStyle.text}/60 text-sm py-4`}>
+                                No projects with status: {currentCompletedFilter}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    )}
                 </Card>
+                
+                {/* Project Details Dialog */}
+                <Dialog open={isPipelineDialogOpen} onOpenChange={setIsPipelineDialogOpen}>
+                  <DialogContent 
+                    className="max-w-2xl"
+                    style={{
+                      backgroundColor: mode === 'chaos' ? '#1E3A8A' : mode === 'chill' ? '#FFFFFF' : '#1a1a1a',
+                      borderColor: borderColor,
+                      borderWidth: '2px',
+                      opacity: 1,
+                    }}
+                  >
+                    <DialogHeader>
+                      <DialogTitle className={pipelineStyle.text}>
+                        {selectedPipelineProject?.name}
+                      </DialogTitle>
+                      <DialogDescription className={`${pipelineStyle.text}/60`}>
+                        {selectedPipelineProject?.type || selectedPipelineProject?.description || 'No description'}
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    {selectedPipelineProject && (
+                      <div className="space-y-4 mt-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Status</p>
+                            <p className={`${pipelineStyle.text}/80`}>{selectedPipelineProject.status}</p>
+                          </div>
+                          {selectedPipelineProject.due_date && (
+                            <div>
+                              <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Due Date</p>
+                              <p className={`${pipelineStyle.text}/80`}>{formatDate(selectedPipelineProject.due_date)}</p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {selectedPipelineProject.lead && (
+                          <div>
+                            <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Lead</p>
+                            <p className={`${pipelineStyle.text}/80`}>{selectedPipelineProject.lead}</p>
+                          </div>
+                        )}
+                        
+                        {selectedPipelineProject.team && (
+                          <div>
+                            <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Team</p>
+                            <p className={`${pipelineStyle.text}/80`}>{selectedPipelineProject.team}</p>
+                          </div>
+                        )}
+                        
+                        {selectedPipelineProject.description && (
+                          <div>
+                            <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Description</p>
+                            <p className={`${pipelineStyle.text}/80 whitespace-pre-wrap`}>{selectedPipelineProject.description}</p>
+                          </div>
+                        )}
+                        
+                        {selectedPipelineProject.notes && (
+                          <div>
+                            <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Notes</p>
+                            <p className={`${pipelineStyle.text}/80 whitespace-pre-wrap`}>{selectedPipelineProject.notes}</p>
+                          </div>
+                        )}
+                        
+                        {selectedPipelineProject.tier !== null && (
+                          <div>
+                            <p className="text-sm font-semibold text-white mb-1">Tier</p>
+                            <p className="text-white/80">{selectedPipelineProject.tier}</p>
+                          </div>
+                        )}
+                        
+                        {selectedPipelineProject.url && (
+                          <div>
+                            <p className="text-sm font-semibold text-white mb-1">URL</p>
+                            <a 
+                              href={selectedPipelineProject.url || undefined} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-white/80 hover:text-white underline"
+                            >
+                              {selectedPipelineProject.url}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              </>
               )
             })()}
           </div>
