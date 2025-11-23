@@ -43,7 +43,7 @@ export function BeastBabeCard() {
 
   if (loading) {
     return (
-      <Card className="relative overflow-hidden bg-gradient-to-br from-[#6B2C91] via-[#4A1E6B] to-[#2D1B4E] border-0 rounded-[2.5rem] p-6 min-h-[400px] flex items-center justify-center">
+      <Card className="relative overflow-hidden bg-gradient-to-br from-[#047857] via-[#10B981] to-[#1A5D52] border-0 rounded-[2.5rem] p-6 min-h-[400px] flex items-center justify-center">
         <div className="animate-pulse text-white/60">Loading...</div>
       </Card>
     )
@@ -52,56 +52,71 @@ export function BeastBabeCard() {
   const currentBeastBabe = beastBabeData?.currentBeastBabe
 
   return (
-    <Card className="relative overflow-hidden bg-gradient-to-br from-[#6B2C91] via-[#4A1E6B] to-[#2D1B4E] border-0 rounded-[2.5rem] p-6 min-h-[400px]">
-      {/* Decorative background elements */}
+    <Card className="relative overflow-hidden bg-gradient-to-br from-[#047857] via-[#10B981] to-[#1A5D52] border-0 rounded-[2.5rem] p-6 min-h-[400px] glitch-container">
+      {/* Decorative background elements - GREEN SYSTEM with magenta */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Wavy lines */}
-        <div className="absolute top-0 left-0 w-32 h-32 opacity-30">
-          <svg className="w-full h-full text-pink-400 animate-pulse" viewBox="0 0 100 100" fill="none">
+        {/* Animated gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#84CC16]/20 via-[#EC4899]/30 to-[#FF8C42]/20 animate-pulse"></div>
+        
+        {/* Wavy lines - Lime Green and Magenta */}
+        <div className="absolute top-0 left-0 w-40 h-40 opacity-40 animate-bounce-slow">
+          <svg className="w-full h-full text-[#84CC16] animate-pulse" viewBox="0 0 100 100" fill="none">
             <path d="M0,50 Q25,30 50,50 T100,50" stroke="currentColor" strokeWidth="2" fill="none" />
           </svg>
         </div>
-        <div className="absolute bottom-0 right-0 w-40 h-40 opacity-20">
-          <svg className="w-full h-full text-blue-300 animate-pulse" viewBox="0 0 100 100" fill="none" style={{ animationDelay: '1s' }}>
+        <div className="absolute bottom-0 right-0 w-48 h-48 opacity-30 animate-bounce-slow" style={{ animationDelay: '1s' }}>
+          <svg className="w-full h-full text-[#EC4899] animate-pulse" viewBox="0 0 100 100" fill="none" style={{ animationDelay: '0.5s' }}>
             <path d="M0,50 Q25,70 50,50 T100,50" stroke="currentColor" strokeWidth="2" fill="none" />
           </svg>
         </div>
         
-        {/* Triangles */}
-        <div className="absolute left-4 top-1/2 w-16 h-16 opacity-20 animate-pulse" style={{ animationDelay: '0.5s' }}>
-          <div className="w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-b-[28px] border-b-green-400"></div>
+        {/* Triangles - Lime Green and Magenta */}
+        <div className="absolute left-4 top-1/2 w-20 h-20 opacity-30 animate-spin-slow glitch-shift">
+          <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[35px] border-b-[#84CC16]"></div>
         </div>
-        <div className="absolute left-8 top-1/3 w-12 h-12 opacity-30 animate-pulse" style={{ animationDelay: '1.5s' }}>
-          <div className="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-b-[21px] border-b-pink-400"></div>
+        <div className="absolute left-8 top-1/3 w-16 h-16 opacity-40 animate-spin-slow glitch-shift" style={{ animationDelay: '1.5s', animationDirection: 'reverse' }}>
+          <div className="w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-b-[28px] border-b-[#EC4899]"></div>
         </div>
-        
-        {/* Circles */}
-        <div className="absolute top-4 right-8 w-12 h-12 opacity-30 animate-pulse">
-          <div className="w-full h-full rounded-full bg-yellow-400"></div>
-        </div>
-        <div className="absolute right-4 top-1/2 w-16 h-16 opacity-20 animate-pulse" style={{ animationDelay: '1s' }}>
-          <div className="w-full h-full rounded-full border-2 border-dashed border-blue-300"></div>
+        <div className="absolute right-8 bottom-1/4 w-14 h-14 opacity-35 animate-spin-slow glitch-shift" style={{ animationDelay: '0.8s' }}>
+          <div className="w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-b-[24px] border-b-[#FF8C42]"></div>
         </div>
         
-        {/* Stars */}
-        <div className="absolute top-8 right-12 opacity-40 animate-pulse" style={{ animationDelay: '0.3s' }}>
-          <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
+        {/* Circles - Orange and Magenta */}
+        <div className="absolute top-4 right-8 w-16 h-16 opacity-40 animate-ping">
+          <div className="w-full h-full rounded-full bg-[#FF8C42]"></div>
         </div>
-        <div className="absolute bottom-12 right-8 opacity-30 animate-pulse" style={{ animationDelay: '0.7s' }}>
-          <Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />
+        <div className="absolute right-4 top-1/2 w-20 h-20 opacity-30 animate-pulse glitch-shift" style={{ animationDelay: '1s' }}>
+          <div className="w-full h-full rounded-full border-2 border-dashed border-[#EC4899]"></div>
         </div>
+        <div className="absolute left-1/4 bottom-8 w-12 h-12 opacity-35 animate-bounce">
+          <div className="w-full h-full rounded-full bg-[#84CC16]"></div>
+        </div>
+        
+        {/* Stars - Magenta and Lime */}
+        <div className="absolute top-8 right-12 opacity-50 animate-pulse glitch-shift" style={{ animationDelay: '0.3s' }}>
+          <Star className="w-8 h-8 text-[#EC4899] fill-[#EC4899]" />
+        </div>
+        <div className="absolute bottom-12 right-8 opacity-40 animate-pulse glitch-shift" style={{ animationDelay: '0.7s' }}>
+          <Star className="w-6 h-6 text-[#84CC16] fill-[#84CC16]" />
+        </div>
+        <div className="absolute top-1/3 left-12 opacity-35 animate-pulse glitch-shift" style={{ animationDelay: '1.2s' }}>
+          <Star className="w-5 h-5 text-[#FF8C42] fill-[#FF8C42]" />
+        </div>
+        
+        {/* Glitch lines */}
+        <div className="absolute inset-0 glitch-lines"></div>
       </div>
 
       {/* Content */}
       <div className="relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-6 h-6 text-yellow-400 animate-pulse" />
-            <h2 className="text-3xl font-black text-white uppercase tracking-tight">BEAST BABE</h2>
+          <div className="flex items-center gap-2 glitch-text">
+            <Trophy className="w-7 h-7 text-[#84CC16] animate-bounce" style={{ animationDuration: '1.5s' }} />
+            <h2 className="text-3xl font-black text-white uppercase tracking-tight glitch-text">BEAST BABE</h2>
           </div>
           <div className="flex items-center gap-2">
-            <Star className="w-5 h-5 text-yellow-400 fill-yellow-400 animate-pulse" style={{ animationDelay: '0.5s' }} />
+            <Star className="w-6 h-6 text-[#EC4899] fill-[#EC4899] animate-pulse glitch-shift" style={{ animationDelay: '0.5s' }} />
             <HelpCircle className="w-5 h-5 text-white/60" />
           </div>
         </div>
@@ -110,19 +125,21 @@ export function BeastBabeCard() {
         <div className="flex flex-col items-center mb-6">
           {/* Profile Picture with Gradient Ring */}
           <div className="relative mb-4 flex items-center justify-center">
-            {/* Glowing effect behind profile */}
-            <div className="absolute w-36 h-36 rounded-full bg-yellow-400/30 blur-xl animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+            {/* Multiple glowing effects behind profile - GREEN SYSTEM + Magenta */}
+            <div className="absolute w-40 h-40 rounded-full bg-[#84CC16]/40 blur-2xl animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+            <div className="absolute w-36 h-36 rounded-full bg-[#EC4899]/30 blur-xl animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+            <div className="absolute w-32 h-32 rounded-full bg-[#FF8C42]/25 blur-lg animate-pulse" style={{ animationDelay: '0.9s' }}></div>
             
-            {/* Gradient Ring Container */}
-            <div className="relative w-32 h-32">
-              {/* Animated Gradient Ring */}
+            {/* Gradient Ring Container - GREEN SYSTEM + Magenta */}
+            <div className="relative w-32 h-32 glitch-shift">
+              {/* Animated Gradient Ring - Fast spin with GREEN SYSTEM colors + magenta */}
               <div 
-                className="absolute inset-0 rounded-full animate-spin-slow"
+                className="absolute inset-0 rounded-full animate-spin-fast"
                 style={{
-                  background: 'conic-gradient(from 0deg, #ec4899 0%, #eab308 25%, #3b82f6 50%, #a855f7 75%, #ec4899 100%)',
+                  background: 'conic-gradient(from 0deg, #EC4899 0%, #84CC16 20%, #10B981 40%, #FF8C42 60%, #EC4899 80%, #84CC16 100%)',
                 }}
               >
-                <div className="absolute inset-[3px] rounded-full bg-gradient-to-br from-[#6B2C91] via-[#4A1E6B] to-[#2D1B4E]"></div>
+                <div className="absolute inset-[3px] rounded-full bg-gradient-to-br from-[#047857] via-[#10B981] to-[#1A5D52]"></div>
               </div>
               
               {/* Profile Picture */}
@@ -134,7 +151,7 @@ export function BeastBabeCard() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center">
+                  <div className="w-full h-full bg-gradient-to-br from-[#10B981] to-[#047857] flex items-center justify-center">
                     <Trophy className="w-16 h-16 text-white" />
                   </div>
                 )}
@@ -143,7 +160,7 @@ export function BeastBabeCard() {
           </div>
 
           {/* Name */}
-          <h3 className="text-2xl font-black text-white mb-1 text-center">
+          <h3 className="text-2xl font-black text-white mb-1 text-center glitch-text">
             {currentBeastBabe?.full_name || currentBeastBabe?.email || 'No Beast Babe Yet'}
           </h3>
           
@@ -155,18 +172,21 @@ export function BeastBabeCard() {
 
         {/* Achievement Description */}
         {currentBeastBabe?.history?.achievement && (
-          <div className="relative bg-black/20 backdrop-blur-sm rounded-2xl p-5 border border-white/10">
-            {/* Decorative elements in corners */}
-            <div className="absolute bottom-2 left-2 w-8 h-8 opacity-40">
-              <div className="w-full h-full bg-gradient-to-br from-pink-400 to-yellow-400 rounded-sm transform rotate-45"></div>
+          <div className="relative bg-black/30 backdrop-blur-sm rounded-2xl p-5 border-2 border-[#84CC16]/40 glitch-border">
+            {/* Decorative elements in corners - GREEN SYSTEM + Magenta */}
+            <div className="absolute bottom-2 left-2 w-10 h-10 opacity-50 animate-spin-slow">
+              <div className="w-full h-full bg-gradient-to-br from-[#EC4899] to-[#84CC16] rounded-sm transform rotate-45"></div>
             </div>
-            <div className="absolute bottom-2 right-2 w-12 h-4 opacity-30">
-              <svg className="w-full h-full text-blue-300" viewBox="0 0 100 20" fill="none">
+            <div className="absolute bottom-2 right-2 w-16 h-4 opacity-40 animate-pulse">
+              <svg className="w-full h-full text-[#FF8C42]" viewBox="0 0 100 20" fill="none">
                 <path d="M0,10 Q25,5 50,10 T100,10" stroke="currentColor" strokeWidth="2" fill="none" />
               </svg>
             </div>
+            <div className="absolute top-2 right-4 w-6 h-6 opacity-40 animate-bounce">
+              <Star className="w-full h-full text-[#EC4899] fill-[#EC4899]" />
+            </div>
             
-            <p className="text-sm text-white/90 leading-relaxed italic relative z-10">
+            <p className="text-sm text-white/95 leading-relaxed italic relative z-10 glitch-text">
               "{currentBeastBabe.history.achievement}"
             </p>
           </div>
@@ -180,8 +200,9 @@ export function BeastBabeCard() {
         )}
       </div>
 
-      {/* Glowing border effect */}
-      <div className="absolute inset-0 rounded-[2.5rem] border-2 border-yellow-400/20 pointer-events-none animate-pulse"></div>
+      {/* Glowing border effect - GREEN SYSTEM + Magenta */}
+      <div className="absolute inset-0 rounded-[2.5rem] border-2 border-[#84CC16]/30 pointer-events-none animate-pulse glitch-border"></div>
+      <div className="absolute inset-0 rounded-[2.5rem] border border-[#EC4899]/20 pointer-events-none animate-pulse" style={{ animationDelay: '0.5s' }}></div>
     </Card>
   )
 }

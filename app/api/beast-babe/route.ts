@@ -42,7 +42,25 @@ export async function GET(request: NextRequest) {
       Array.isArray(p.special_access) && p.special_access.includes('beast_babe')
     )
 
-    const currentBeastBabe = profiles && profiles.length > 0 ? profiles[0] : null
+    let currentBeastBabe = profiles && profiles.length > 0 ? profiles[0] : null
+
+    // Fetch full history with user details first
+    const { data: history, error: historyError } = await supabaseAdmin
+      .from('beast_babe_history')
+      .select(`
+        *,
+        user:profiles!beast_babe_history_user_id_fkey(id, email, full_name, avatar_url, role, discipline),
+        passed_by:profiles!beast_babe_history_passed_by_user_id_fkey(id, email, full_name, avatar_url)
+      `)
+      .order('date', { ascending: false })
+
+    // If no one has beast_babe in special_access, use the most recent from history
+    if (!currentBeastBabe && history && history.length > 0) {
+      const mostRecent = history[0]
+      if (mostRecent.user) {
+        currentBeastBabe = mostRecent.user
+      }
+    }
 
     // Get the most recent history entry for current beast babe
     let currentBeastBabeHistory = null
@@ -57,16 +75,6 @@ export async function GET(request: NextRequest) {
       
       currentBeastBabeHistory = historyData
     }
-
-    // Fetch full history with user details
-    const { data: history, error: historyError } = await supabaseAdmin
-      .from('beast_babe_history')
-      .select(`
-        *,
-        user:profiles!beast_babe_history_user_id_fkey(id, email, full_name, avatar_url, role, discipline),
-        passed_by:profiles!beast_babe_history_passed_by_user_id_fkey(id, email, full_name, avatar_url)
-      `)
-      .order('date', { ascending: false })
 
     if (historyError) {
       console.error('Error fetching beast babe history:', historyError)

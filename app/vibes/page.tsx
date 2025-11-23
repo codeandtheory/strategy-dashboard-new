@@ -191,11 +191,22 @@ export default function VibesPage() {
 
         // Fetch playlists from database
         // First try with refresh to get Spotify metadata if missing
+        console.log('[Vibes] Fetching playlists from API...')
         const playlistsResponse = await fetch('/api/playlists?refresh=true')
+        console.log('[Vibes] Playlist API response status:', playlistsResponse.status, playlistsResponse.statusText)
+        
         let playlists = null
         if (playlistsResponse.ok) {
           playlists = await playlistsResponse.json()
+          console.log('[Vibes] Received playlists from API:', playlists)
+          console.log('[Vibes] Playlists type:', typeof playlists)
+          console.log('[Vibes] Is array:', Array.isArray(playlists))
+          console.log('[Vibes] Playlists length:', playlists?.length ?? 'null/undefined')
         } else {
+          console.warn('[Vibes] API request failed, falling back to direct Supabase query')
+          const errorData = await playlistsResponse.json().catch(() => ({ error: 'Unknown error' }))
+          console.error('[Vibes] API error response:', playlistsResponse.status, errorData)
+          
           // Fallback to direct Supabase query if API fails
           const { data, error: playlistsError } = await supabase
             .from('playlists')
@@ -203,15 +214,19 @@ export default function VibesPage() {
             .order('date', { ascending: false })
           
           if (playlistsError) {
-            console.error('Error fetching playlists:', playlistsError)
+            console.error('[Vibes] Error fetching playlists from Supabase:', playlistsError)
+            console.error('[Vibes] Supabase error details:', JSON.stringify(playlistsError, null, 2))
           } else {
+            console.log('[Vibes] Received playlists from Supabase:', data)
             playlists = data
           }
         }
 
-        if (playlists && playlists.length > 0) {
+        if (playlists && Array.isArray(playlists) && playlists.length > 0) {
+          console.log(`[Vibes] Found ${playlists.length} playlist(s), setting weekly and archive playlists`)
           // Set the most recent playlist as weekly playlist
           const mostRecent = playlists[0]
+          console.log('[Vibes] Setting weekly playlist:', mostRecent)
           setWeeklyPlaylist({
             id: mostRecent.id,
             date: mostRecent.date,
@@ -238,10 +253,21 @@ export default function VibesPage() {
             created_at: p.created_at,
             week_label: p.week_label || (index === 0 ? 'Last Week' : index === 1 ? '2 Weeks Ago' : index === 2 ? '3 Weeks Ago' : null)
           }))
+          console.log(`[Vibes] Setting ${archive.length} archive playlist(s)`)
           setArchivePlaylists(archive)
+        } else {
+          console.log('[Vibes] No playlists found or empty array')
+          setWeeklyPlaylist(null)
+          setArchivePlaylists([])
         }
       } catch (err: any) {
-        console.error('Error fetching data:', err)
+        console.error('[Vibes] Error fetching data:', err)
+        if (err instanceof Error) {
+          console.error('[Vibes] Error message:', err.message)
+          console.error('[Vibes] Error stack:', err.stack)
+        }
+        setWeeklyPlaylist(null)
+        setArchivePlaylists([])
       } finally {
         setLoading(false)
       }

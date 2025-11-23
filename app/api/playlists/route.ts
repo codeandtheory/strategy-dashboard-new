@@ -103,24 +103,30 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const refreshSpotify = searchParams.get('refresh') === 'true'
     
+    console.log('[API] Fetching playlists from database...')
     const { data: playlists, error } = await supabase
       .from('playlists')
       .select('*')
       .order('date', { ascending: false })
 
     if (error) {
-      console.error('Error fetching playlists:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch playlists' },
-        { status: 500 }
-      )
+      console.error('[API] Error fetching playlists from database:', error)
+      console.error('[API] Error details:', JSON.stringify(error, null, 2))
+      // Return empty array instead of error to prevent frontend issues
+      return NextResponse.json([])
     }
 
+    // Ensure playlists is always an array
+    const playlistsArray = Array.isArray(playlists) ? playlists : []
+    console.log(`[API] Found ${playlistsArray.length} playlist(s) in database`)
+
     // If refresh is requested and we have playlists with Spotify URLs but missing metadata
-    if (refreshSpotify && playlists && playlists.length > 0) {
-      const playlistsToRefresh = playlists.filter(
+    if (refreshSpotify && playlistsArray.length > 0) {
+      const playlistsToRefresh = playlistsArray.filter(
         (p: any) => p.spotify_url && (!p.cover_url || !p.title)
       )
+
+      console.log(`[API] Refreshing metadata for ${playlistsToRefresh.length} playlist(s)`)
 
       if (playlistsToRefresh.length > 0) {
         // Refresh metadata for playlists missing it
@@ -141,35 +147,36 @@ export async function GET(request: NextRequest) {
                 .eq('id', playlist.id)
 
               if (updateError) {
-                console.error(`Error updating playlist ${playlist.id}:`, updateError)
+                console.error(`[API] Error updating playlist ${playlist.id}:`, updateError)
               } else {
+                console.log(`[API] Successfully refreshed metadata for playlist ${playlist.id}`)
                 // Update the playlist in our response array
-                const updatedIndex = playlists.findIndex((p: any) => p.id === playlist.id)
+                const updatedIndex = playlistsArray.findIndex((p: any) => p.id === playlist.id)
                 if (updatedIndex !== -1) {
-                  playlists[updatedIndex] = {
-                    ...playlists[updatedIndex],
-                    title: spotifyData.title || playlists[updatedIndex].title,
-                    cover_url: spotifyData.coverUrl || playlists[updatedIndex].cover_url,
-                    description: spotifyData.description || playlists[updatedIndex].description,
-                    curator_photo_url: spotifyData.curatorPhotoUrl || playlists[updatedIndex].curator_photo_url,
+                  playlistsArray[updatedIndex] = {
+                    ...playlistsArray[updatedIndex],
+                    title: spotifyData.title || playlistsArray[updatedIndex].title,
+                    cover_url: spotifyData.coverUrl || playlistsArray[updatedIndex].cover_url,
+                    description: spotifyData.description || playlistsArray[updatedIndex].description,
+                    curator_photo_url: spotifyData.curatorPhotoUrl || playlistsArray[updatedIndex].curator_photo_url,
                   }
                 }
               }
             }
           } catch (err) {
-            console.error(`Error refreshing playlist ${playlist.id}:`, err)
+            console.error(`[API] Error refreshing playlist ${playlist.id}:`, err)
           }
         }
       }
     }
 
-    return NextResponse.json(playlists)
+    console.log(`[API] Returning ${playlistsArray.length} playlist(s)`)
+    return NextResponse.json(playlistsArray)
   } catch (error: any) {
-    console.error('Error in GET /api/playlists:', error)
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('[API] Error in GET /api/playlists:', error)
+    console.error('[API] Error stack:', error.stack)
+    // Return empty array instead of error to prevent frontend issues
+    return NextResponse.json([])
   }
 }
 

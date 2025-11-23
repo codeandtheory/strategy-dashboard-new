@@ -461,17 +461,38 @@ export default function TeamDashboard() {
       
       try {
         setPlaylistLoading(true)
+        console.log('[Frontend] Fetching weekly playlist...')
         // Try with refresh to get Spotify metadata if missing
         const response = await fetch('/api/playlists?refresh=true')
+        console.log('[Frontend] Playlist API response status:', response.status, response.statusText)
+        
         if (response.ok) {
           const playlists = await response.json()
-          if (playlists && playlists.length > 0) {
+          console.log('[Frontend] Received playlists:', playlists)
+          console.log('[Frontend] Playlists type:', typeof playlists)
+          console.log('[Frontend] Is array:', Array.isArray(playlists))
+          console.log('[Frontend] Playlists length:', playlists?.length ?? 'null/undefined')
+          
+          if (playlists && Array.isArray(playlists) && playlists.length > 0) {
             // Get the most recent playlist
+            console.log('[Frontend] Setting weekly playlist:', playlists[0])
             setWeeklyPlaylist(playlists[0])
+          } else {
+            console.log('[Frontend] No playlists found or empty array')
+            setWeeklyPlaylist(null)
           }
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          console.error('[Frontend] Playlist API error response:', response.status, errorData)
+          setWeeklyPlaylist(null)
         }
       } catch (error) {
-        console.error('Error fetching playlist:', error)
+        console.error('[Frontend] Error fetching playlist:', error)
+        if (error instanceof Error) {
+          console.error('[Frontend] Error message:', error.message)
+          console.error('[Frontend] Error stack:', error.stack)
+        }
+        setWeeklyPlaylist(null)
       } finally {
         setPlaylistLoading(false)
       }
@@ -1366,7 +1387,7 @@ export default function TeamDashboard() {
               >
                 {/* Black masked section on the right with transform/rotation - contains horoscope image */}
                 {mode === 'chaos' && (
-                  <div className={`absolute top-0 right-0 w-1/2 h-full ${getBgClass()} ${getRoundedClass('rounded-[2.5rem]')} transform translate-x-[10%] -rotate-12 overflow-hidden`}>
+                  <div className={`absolute top-1/2 right-0 -translate-y-1/2 w-[45%] aspect-[5/4] ${getBgClass()} ${getRoundedClass('rounded-[2.5rem]')} transform translate-x-[10%] -rotate-12 overflow-hidden`}>
                     {horoscopeImageLoading ? (
                       <div className="w-full h-full flex items-center justify-center">
                         <Loader2 className="w-8 h-8 animate-spin text-white" />
@@ -1400,7 +1421,7 @@ export default function TeamDashboard() {
                   </div>
                 )}
                 {mode !== 'chaos' && (
-                  <div className={`absolute top-0 right-0 w-[55%] h-full ${getBgClass()} overflow-hidden`} 
+                  <div className={`absolute top-1/2 right-0 -translate-y-1/2 w-[50%] aspect-[5/4] ${getBgClass()} overflow-hidden`} 
                        style={{ clipPath: 'polygon(8% 0, 100% 0, 100% 100%, 0% 100%)' }} 
                   >
                     {horoscopeImageLoading ? (
