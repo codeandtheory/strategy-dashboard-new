@@ -2071,7 +2071,7 @@ export default function TeamDashboard() {
                               animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
                             }}
                           >
-                            <span className={`text-4xl font-black ${style.text} leading-none transition-all duration-300`}>
+                            <span className={`text-3xl font-black ${style.text} leading-none transition-all duration-300`}>
                               {stat.value}
                             </span>
                             <span className={`text-xs font-black uppercase tracking-wider ${style.text} transition-opacity duration-300 whitespace-nowrap`}>
@@ -2235,7 +2235,7 @@ export default function TeamDashboard() {
                           <h3 className="text-lg font-semibold text-white">IN PROGRESS</h3>
                           <Badge 
                             variant="secondary" 
-                            className="text-xs"
+                            className="text-[10px]"
                             style={{ 
                               backgroundColor: `${borderColor}20`,
                               color: borderColor,

@@ -415,8 +415,9 @@ export default function PipelinePage() {
                       key={project.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, project)}
-                      className="p-3 cursor-move hover:opacity-80 transition-opacity bg-gray-50"
+                      className="p-3 cursor-move hover:opacity-80 transition-opacity"
                       style={{
+                        backgroundColor: '#E8F5E9',
                         borderColor: `${borderColor}40`,
                         borderWidth: '1px',
                       }}
