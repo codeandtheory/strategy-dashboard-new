@@ -193,7 +193,9 @@ export default function PipelinePage() {
   const borderColor = getBorderColor()
 
   const getProjectsByStatus = (status: string) => {
-    return projects.filter(p => p.status === status)
+    return projects
+      .filter(p => p.status === status)
+      .sort((a, b) => a.name.localeCompare(b.name))
   }
 
   const wonProjects = getProjectsByStatus('Won')
@@ -385,7 +387,7 @@ export default function PipelinePage() {
               key={columnStatus}
               className="flex flex-col h-[calc(100vh-12rem)]"
               style={{
-                backgroundColor: '#1a1a1a',
+                backgroundColor: '#ffffff',
                 borderColor: borderColor,
                 borderWidth: '2px',
               }}
@@ -394,10 +396,10 @@ export default function PipelinePage() {
             >
               {/* Column Header */}
               <div className="p-4 border-b" style={{ borderColor: `${borderColor}40` }}>
-                <h2 className={`text-lg font-semibold ${getTextClass()}`}>
+                <h2 className="text-lg font-semibold text-black">
                   {columnStatus}
                 </h2>
-                <p className={`text-sm ${getTextClass()} opacity-60`}>
+                <p className="text-sm text-black opacity-60">
                   {columnProjects.length} {columnProjects.length === 1 ? 'project' : 'projects'}
                 </p>
               </div>
@@ -413,9 +415,8 @@ export default function PipelinePage() {
                       key={project.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, project)}
-                      className="p-3 cursor-move hover:opacity-80 transition-opacity"
+                      className="p-3 cursor-move hover:opacity-80 transition-opacity bg-gray-50"
                       style={{
-                        backgroundColor: `${borderColor}10`,
                         borderColor: `${borderColor}40`,
                         borderWidth: '1px',
                       }}
@@ -423,25 +424,25 @@ export default function PipelinePage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           {date && (
-                            <div className={`text-xs ${getTextClass()} opacity-60 mb-1`}>
+                            <div className="text-xs text-black opacity-60 mb-1">
                               {date}
                             </div>
                           )}
-                          <div className={`font-semibold ${getTextClass()} mb-1`}>
+                          <div className="font-semibold text-black mb-1">
                             {project.name}
                           </div>
                           {displayText && (
-                            <div className={`text-xs ${getTextClass()} opacity-60 mb-1`}>
+                            <div className="text-xs text-black opacity-60 mb-1">
                               {displayText}
                             </div>
                           )}
                           {project.description && (
-                            <div className={`text-xs ${getTextClass()} opacity-70 mt-1 line-clamp-2`}>
+                            <div className="text-xs text-black opacity-70 mt-1 line-clamp-2">
                               {project.description}
                             </div>
                           )}
                           {project.lead && (
-                            <div className={`text-xs ${getTextClass()} opacity-50 mt-1`}>
+                            <div className="text-xs text-black opacity-50 mt-1">
                               Lead: {project.lead}
                             </div>
                           )}
@@ -467,7 +468,7 @@ export default function PipelinePage() {
                   )
                 })}
                 {columnProjects.length === 0 && (
-                  <div className={`text-center py-8 ${getTextClass()} opacity-40 text-sm`}>
+                  <div className="text-center py-8 text-black opacity-40 text-sm">
                     Drop projects here
                   </div>
                 )}
@@ -480,7 +481,7 @@ export default function PipelinePage() {
         <Card
           className="flex flex-col h-[calc(100vh-12rem)]"
           style={{
-            backgroundColor: '#1a1a1a',
+            backgroundColor: '#ffffff',
             borderColor: borderColor,
             borderWidth: '2px',
           }}
@@ -499,10 +500,10 @@ export default function PipelinePage() {
             }}
           >
             <div className="p-4 border-b" style={{ borderColor: `${borderColor}40` }}>
-              <h2 className={`text-lg font-semibold ${getTextClass()}`}>
+              <h2 className="text-lg font-semibold text-black">
                 Won
               </h2>
-              <p className={`text-sm ${getTextClass()} opacity-60`}>
+              <p className="text-sm text-black opacity-60">
                 {wonProjects.length} {wonProjects.length === 1 ? 'project' : 'projects'}
               </p>
             </div>
@@ -516,34 +517,33 @@ export default function PipelinePage() {
                     key={project.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, project)}
-                    className="p-3 cursor-move hover:opacity-80 transition-opacity"
+                    className="p-3 cursor-move hover:opacity-80 transition-opacity bg-gray-50"
                     style={{
-                      backgroundColor: `${borderColor}10`,
                       borderColor: `${borderColor}40`,
                       borderWidth: '1px',
                     }}
                   >
                     <div className="flex-1 min-w-0">
                       {date && (
-                        <div className={`text-xs ${getTextClass()} opacity-60 mb-1`}>
+                        <div className="text-xs text-black opacity-60 mb-1">
                           {date}
                         </div>
                       )}
-                      <div className={`font-semibold ${getTextClass()} mb-1`}>
+                      <div className="font-semibold text-black mb-1">
                         {project.name}
                       </div>
                       {displayText && (
-                        <div className={`text-xs ${getTextClass()} opacity-60 mb-1`}>
+                        <div className="text-xs text-black opacity-60 mb-1">
                           {displayText}
                         </div>
                       )}
                       {project.description && (
-                        <div className={`text-xs ${getTextClass()} opacity-70 mt-1 line-clamp-2`}>
+                        <div className="text-xs text-black opacity-70 mt-1 line-clamp-2">
                           {project.description}
                         </div>
                       )}
                       {project.lead && (
-                        <div className={`text-xs ${getTextClass()} opacity-50 mt-1`}>
+                        <div className="text-xs text-black opacity-50 mt-1">
                           Lead: {project.lead}
                         </div>
                       )}
@@ -552,7 +552,7 @@ export default function PipelinePage() {
                 )
               })}
               {wonProjects.length === 0 && (
-                <div className={`text-center py-4 ${getTextClass()} opacity-40 text-sm`}>
+                <div className="text-center py-4 text-black opacity-40 text-sm">
                   No won projects
                 </div>
               )}
@@ -572,10 +572,10 @@ export default function PipelinePage() {
             }}
           >
             <div className="p-4 border-b" style={{ borderColor: `${borderColor}40` }}>
-              <h2 className={`text-lg font-semibold ${getTextClass()}`}>
+              <h2 className="text-lg font-semibold text-black">
                 Lost
-          </h2>
-              <p className={`text-sm ${getTextClass()} opacity-60`}>
+              </h2>
+              <p className="text-sm text-black opacity-60">
                 {lostProjects.length} {lostProjects.length === 1 ? 'project' : 'projects'}
               </p>
             </div>
@@ -589,34 +589,33 @@ export default function PipelinePage() {
                     key={project.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, project)}
-                    className="p-3 cursor-move hover:opacity-80 transition-opacity"
+                    className="p-3 cursor-move hover:opacity-80 transition-opacity bg-gray-50"
                     style={{
-                      backgroundColor: `${borderColor}10`,
                       borderColor: `${borderColor}40`,
                       borderWidth: '1px',
                     }}
                   >
                     <div className="flex-1 min-w-0">
                       {date && (
-                        <div className={`text-xs ${getTextClass()} opacity-60 mb-1`}>
+                        <div className="text-xs text-black opacity-60 mb-1">
                           {date}
                         </div>
                       )}
-                      <div className={`font-semibold ${getTextClass()} mb-1`}>
+                      <div className="font-semibold text-black mb-1">
                         {project.name}
                       </div>
                       {displayText && (
-                        <div className={`text-xs ${getTextClass()} opacity-60 mb-1`}>
+                        <div className="text-xs text-black opacity-60 mb-1">
                           {displayText}
                         </div>
                       )}
                       {project.description && (
-                        <div className={`text-xs ${getTextClass()} opacity-70 mt-1 line-clamp-2`}>
+                        <div className="text-xs text-black opacity-70 mt-1 line-clamp-2">
                           {project.description}
                         </div>
                       )}
                       {project.lead && (
-                        <div className={`text-xs ${getTextClass()} opacity-50 mt-1`}>
+                        <div className="text-xs text-black opacity-50 mt-1">
                           Lead: {project.lead}
                         </div>
                       )}
@@ -625,13 +624,13 @@ export default function PipelinePage() {
                 )
               })}
               {lostProjects.length === 0 && (
-                <div className={`text-center py-4 ${getTextClass()} opacity-40 text-sm`}>
+                <div className="text-center py-4 text-black opacity-40 text-sm">
                   No lost projects
                 </div>
               )}
             </div>
-        </div>
-      </Card>
+          </div>
+        </Card>
       </div>
     </div>
   )
