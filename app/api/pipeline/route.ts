@@ -17,25 +17,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
 
-    // Build query
+    // Build query - use * to automatically include all columns (works even if revenue column doesn't exist yet)
     let query = supabase
       .from('pipeline_projects')
       .select(`
-        id,
-        name,
-        type,
-        description,
-        due_date,
-        lead,
-        notes,
-        status,
-        team,
-        url,
-        tier,
-        revenue,
-        created_by,
-        created_at,
-        updated_at,
+        *,
         created_by_profile:profiles!created_by(id, email, full_name)
       `)
 
@@ -119,6 +105,7 @@ export async function PUT(request: NextRequest) {
     if (team !== undefined) updateData.team = team || null
     if (url !== undefined) updateData.url = url || null
     if (tier !== undefined) updateData.tier = tier !== null && tier !== '' ? tier : null
+    // Only include revenue if it's provided (will error if column doesn't exist - user needs to run migration)
     if (revenue !== undefined) updateData.revenue = revenue !== null && revenue !== '' ? revenue : null
 
     const { data, error } = await supabase
@@ -126,27 +113,23 @@ export async function PUT(request: NextRequest) {
       .update(updateData)
       .eq('id', id)
       .select(`
-        id,
-        name,
-        type,
-        description,
-        due_date,
-        lead,
-        notes,
-        status,
-        team,
-        url,
-        tier,
-        revenue,
-        created_by,
-        created_at,
-        updated_at,
+        *,
         created_by_profile:profiles!created_by(id, email, full_name)
       `)
       .single()
 
     if (error) {
       console.error('Error updating pipeline project:', error)
+      // Provide helpful error message if revenue column doesn't exist
+      if (error.message?.includes('revenue') || error.message?.includes('column') || error.message?.includes('does not exist')) {
+        return NextResponse.json(
+          { 
+            error: 'Failed to update project. The revenue column may not exist yet. Please run the migration: supabase/add-revenue-field-to-pipeline.sql',
+            details: error.message 
+          },
+          { status: 500 }
+        )
+      }
       return NextResponse.json(
         { error: 'Failed to update project', details: error.message },
         { status: 500 }
@@ -195,28 +178,45 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Build insert object - conditionally include revenue if provided
+    const insertData: any = {
+      name,
+      type: type || null,
+      description: description || null,
+      due_date: due_date || null,
+      lead: lead || null,
+      notes: notes || null,
+      status,
+      team: team || null,
+      url: url || null,
+      tier: tier !== undefined ? tier : null,
+      created_by: user.id,
+      updated_at: new Date().toISOString()
+    }
+    
+    // Only include revenue if provided (will fail gracefully if column doesn't exist)
+    if (revenue !== undefined && revenue !== null && revenue !== '') {
+      insertData.revenue = revenue
+    }
+
     const { data, error } = await supabase
       .from('pipeline_projects')
-      .insert({
-        name,
-        type: type || null,
-        description: description || null,
-        due_date: due_date || null,
-        lead: lead || null,
-        notes: notes || null,
-        status,
-        team: team || null,
-        url: url || null,
-        tier: tier !== undefined ? tier : null,
-        revenue: revenue !== undefined && revenue !== null ? revenue : null,
-        created_by: user.id,
-        updated_at: new Date().toISOString()
-      })
+      .insert(insertData)
       .select()
       .single()
 
     if (error) {
       console.error('Error creating pipeline project:', error)
+      // Provide helpful error message if revenue column doesn't exist
+      if (error.message?.includes('revenue') || error.message?.includes('column') || error.message?.includes('does not exist')) {
+        return NextResponse.json(
+          { 
+            error: 'Failed to create project. The revenue column may not exist yet. Please run the migration: supabase/add-revenue-field-to-pipeline.sql',
+            details: error.message 
+          },
+          { status: 500 }
+        )
+      }
       return NextResponse.json(
         { error: 'Failed to create project', details: error.message },
         { status: 500 }
@@ -228,6 +228,52 @@ export async function POST(request: NextRequest) {
     console.error('Error in pipeline API:', error)
     return NextResponse.json(
       { error: error.message || 'Failed to create project', details: error.toString() },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE - Delete pipeline project
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Project ID is required' },
+        { status: 400 }
+      )
+    }
+
+    const { error } = await supabase
+      .from('pipeline_projects')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error deleting pipeline project:', error)
+      return NextResponse.json(
+        { error: 'Failed to delete project', details: error.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error('Error in pipeline API:', error)
+    return NextResponse.json(
+      { error: error.message || 'Failed to delete project', details: error.toString() },
       { status: 500 }
     )
   }

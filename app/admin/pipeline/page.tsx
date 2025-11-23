@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { useMode } from '@/contexts/mode-context'
-import { Plus, TrendingUp, Check, X, Edit } from 'lucide-react'
+import { Plus, TrendingUp, Check, X, Edit, Trash2 } from 'lucide-react'
 
 interface PipelineProject {
   id: string
@@ -28,6 +28,24 @@ interface PipelineProject {
 }
 
 type KanbanColumn = 'In Progress' | 'Pending Decision' | 'Long Lead'
+
+// Currency formatting helpers
+const formatCurrency = (value: string | number | null | undefined): string => {
+  if (!value && value !== 0) return ''
+  const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value
+  if (isNaN(num)) return ''
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(num)
+}
+
+const parseCurrency = (value: string): string => {
+  // Remove currency symbols and commas, keep only numbers and decimal point
+  return value.replace(/[^0-9.-]/g, '')
+}
 
 export default function PipelinePage() {
   const { mode } = useMode()
@@ -126,7 +144,7 @@ export default function PipelinePage() {
       team: project.team || '',
       url: project.url || '',
       tier: project.tier?.toString() || '',
-      revenue: project.revenue?.toString() || '',
+      revenue: project.revenue ? formatCurrency(project.revenue) : '',
     })
     setIsEditDialogOpen(true)
   }
@@ -144,7 +162,7 @@ export default function PipelinePage() {
         body: JSON.stringify({
           ...formData,
           tier: formData.tier ? parseInt(formData.tier) : null,
-          revenue: formData.revenue ? parseFloat(formData.revenue) : null,
+          revenue: formData.revenue ? parseFloat(parseCurrency(formData.revenue)) : null,
         }),
       })
 
@@ -185,7 +203,7 @@ export default function PipelinePage() {
           team: formData.team || null,
           url: formData.url || null,
           tier: formData.tier ? parseInt(formData.tier) : null,
-          revenue: formData.revenue ? parseFloat(formData.revenue) : null,
+          revenue: formData.revenue ? parseFloat(parseCurrency(formData.revenue)) : null,
         }),
       })
 
@@ -202,6 +220,35 @@ export default function PipelinePage() {
     } catch (err: any) {
       console.error('Error updating project:', err)
       alert('Failed to update project')
+    }
+  }
+
+  const deleteProject = async () => {
+    if (!editingProject) return
+
+    // Confirm deletion
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${editingProject.name}"? This action cannot be undone.`
+    )
+
+    if (!confirmed) return
+
+    try {
+      const response = await fetch(`/api/pipeline?id=${editingProject.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete project')
+      }
+
+      // Remove project from list
+      setProjects(prev => prev.filter(p => p.id !== editingProject.id))
+      setIsEditDialogOpen(false)
+      resetForm()
+    } catch (err: any) {
+      console.error('Error deleting project:', err)
+      alert('Failed to delete project')
     }
   }
 
@@ -392,16 +439,34 @@ export default function PipelinePage() {
                 </div>
               </div>
               <div>
-                <Label className={getTextClass()}>Revenue ($)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.revenue}
-                  onChange={(e) => setFormData({ ...formData, revenue: e.target.value })}
-                  className="mt-1 bg-white/10 border-white/20 text-white"
-                  placeholder="0.00"
-                />
+                <Label className={getTextClass()}>Revenue</Label>
+                <div className="relative mt-1">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 z-10">$</span>
+                  <Input
+                    type="text"
+                    value={formData.revenue}
+                    onChange={(e) => {
+                      // Allow typing, just store the raw value
+                      const value = e.target.value
+                      const parsed = parseCurrency(value)
+                      // Only update if it's empty or a valid number
+                      if (parsed === '' || (!isNaN(parseFloat(parsed)) && parsed !== '-')) {
+                        setFormData({ ...formData, revenue: value })
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // Format on blur
+                      const parsed = parseCurrency(e.target.value)
+                      if (parsed && !isNaN(parseFloat(parsed))) {
+                        setFormData({ ...formData, revenue: formatCurrency(parsed) })
+                      } else if (parsed === '') {
+                        setFormData({ ...formData, revenue: '' })
+                      }
+                    }}
+                    className="mt-1 bg-white/10 border-white/20 text-white pl-7"
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
               <div>
                 <Label className={getTextClass()}>Lead</Label>
@@ -803,16 +868,34 @@ export default function PipelinePage() {
               </div>
             </div>
             <div>
-              <Label className={getTextClass()}>Revenue ($)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.revenue}
-                onChange={(e) => setFormData({ ...formData, revenue: e.target.value })}
-                className="mt-1 bg-white/10 border-white/20 text-white"
-                placeholder="0.00"
-              />
+              <Label className={getTextClass()}>Revenue</Label>
+              <div className="relative mt-1">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 z-10">$</span>
+                <Input
+                  type="text"
+                  value={formData.revenue}
+                  onChange={(e) => {
+                    // Allow typing, just store the raw value
+                    const value = e.target.value
+                    const parsed = parseCurrency(value)
+                    // Only update if it's empty or a valid number
+                    if (parsed === '' || (!isNaN(parseFloat(parsed)) && parsed !== '-')) {
+                      setFormData({ ...formData, revenue: value })
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Format on blur
+                    const parsed = parseCurrency(e.target.value)
+                    if (parsed && !isNaN(parseFloat(parsed))) {
+                      setFormData({ ...formData, revenue: formatCurrency(parsed) })
+                    } else if (parsed === '') {
+                      setFormData({ ...formData, revenue: '' })
+                    }
+                  }}
+                  className="mt-1 bg-white/10 border-white/20 text-white pl-7"
+                  placeholder="0.00"
+                />
+              </div>
             </div>
             <div>
               <Label className={getTextClass()}>Lead</Label>
@@ -852,23 +935,34 @@ export default function PipelinePage() {
                 rows={3}
               />
             </div>
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex justify-between items-center pt-4">
               <Button
                 variant="outline"
-                onClick={() => {
-                  setIsEditDialogOpen(false)
-                  resetForm()
-                }}
-                style={{ borderColor: borderColor, color: borderColor }}
+                onClick={deleteProject}
+                style={{ borderColor: '#ef4444', color: '#ef4444' }}
+                className="hover:bg-red-500/10"
               >
-                Cancel
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Project
               </Button>
-              <Button
-                onClick={updateProject}
-                style={{ backgroundColor: borderColor, color: '#000' }}
-              >
-                Update Project
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditDialogOpen(false)
+                    resetForm()
+                  }}
+                  style={{ borderColor: borderColor, color: borderColor }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={updateProject}
+                  style={{ backgroundColor: borderColor, color: '#000' }}
+                >
+                  Update Project
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
