@@ -202,11 +202,11 @@ export default function WorkSamplesPage() {
             </Link>
             <nav className="flex items-center gap-6">
               <Link href="/" className={getNavLinkClass()}>HOME</Link>
-              <a href="#" className={getNavLinkClass()}>SNAPS</a>
+              <Link href="/vibes" className={getNavLinkClass()}>SNAPS</Link>
               <a href="#" className={getNavLinkClass()}>RESOURCES</a>
               <Link href="/work-samples" className={getNavLinkClass(true)}>WORK</Link>
               <a href="#" className={getNavLinkClass()}>TEAM</a>
-              <a href="#" className={getNavLinkClass()}>VIBES</a>
+              <Link href="/vibes" className={getNavLinkClass()}>VIBES</Link>
             </nav>
           </div>
           <div className="flex items-center gap-4">
