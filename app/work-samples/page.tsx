@@ -353,7 +353,7 @@ export default function WorkSamplesPage() {
             /* Thumbnail Grid View */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {workSamples.map((sample) => (
-                <Card key={sample.id} className={`${getBgClass()} border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'} ${getRoundedClass('rounded-xl')} overflow-hidden`}>
+                <Card key={sample.id} className={`${getBgClass()} border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'} ${getRoundedClass('rounded-2xl')} overflow-hidden`}>
                   <div className="flex flex-col">
                     {/* Thumbnail */}
                     {sample.thumbnail_url ? (
@@ -384,7 +384,7 @@ export default function WorkSamplesPage() {
                         }}
                       />
                     ) : null}
-                    <div className={`w-full aspect-video ${getRoundedClass('rounded-t-2xl')} bg-gray-200 flex items-center justify-center ${sample.thumbnail_url ? 'hidden' : ''}`}>
+                    <div className={`w-full aspect-video ${getRoundedClass('rounded-t-2xl')} bg-gray-200 flex items-center justify-center ${sample.thumbnail_url ? 'hidden' : ''} border-b ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'}`}>
                       <span className="text-gray-400 text-xs">No Image</span>
                     </div>
 
@@ -450,7 +450,7 @@ export default function WorkSamplesPage() {
             /* List View */
             <div className="space-y-4">
               {workSamples.map((sample) => (
-                <Card key={sample.id} className={`${getBgClass()} border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'} ${getRoundedClass('rounded-xl')} overflow-hidden`}>
+                <Card key={sample.id} className={`${getBgClass()} border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'} ${getRoundedClass('rounded-2xl')} overflow-hidden`}>
                   <div className="flex flex-col md:flex-row gap-6 p-6">
                     {/* Thumbnail - Smaller in list view */}
                     <div className="flex-shrink-0 w-full md:w-48">
@@ -478,7 +478,7 @@ export default function WorkSamplesPage() {
                           }}
                         />
                       ) : null}
-                      <div className={`w-full h-32 md:h-full ${getRoundedClass('rounded-xl')} bg-gray-200 flex items-center justify-center ${sample.thumbnail_url ? 'hidden' : ''}`}>
+                      <div className={`w-full h-32 md:h-full ${getRoundedClass('rounded-xl')} bg-gray-200 flex items-center justify-center ${sample.thumbnail_url ? 'hidden' : ''} border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'}`}>
                         <span className="text-gray-400 text-xs">No Image</span>
                       </div>
                     </div>
