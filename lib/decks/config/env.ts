@@ -4,6 +4,7 @@
 
 export interface DeckConfig {
   openaiApiKey: string
+  openaiApiKeyFallback?: string
   supabaseUrl: string
   supabaseServiceRoleKey: string
   googleDriveFolderId: string
@@ -24,8 +25,9 @@ export function getEnv(): DeckConfig {
   }
 
   const openaiApiKey = process.env.OPENAI_API_KEY
-  if (!openaiApiKey) {
-    throw new Error('OPENAI_API_KEY is required')
+  const openaiApiKeyFallback = process.env.OPENAI_API_KEY_FALLBACK
+  if (!openaiApiKey && !openaiApiKeyFallback) {
+    throw new Error('OPENAI_API_KEY or OPENAI_API_KEY_FALLBACK is required')
   }
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -75,7 +77,8 @@ export function getEnv(): DeckConfig {
   const maxDeckSizeMB = parseInt(process.env.MAX_DECK_SIZE_MB || '100', 10)
 
   cachedConfig = {
-    openaiApiKey,
+    openaiApiKey: openaiApiKey || openaiApiKeyFallback || '',
+    openaiApiKeyFallback,
     supabaseUrl,
     supabaseServiceRoleKey,
     googleDriveFolderId,

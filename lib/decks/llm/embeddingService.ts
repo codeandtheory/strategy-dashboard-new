@@ -1,4 +1,4 @@
-import { getOpenAIClient } from '../config/openaiClient'
+import { getOpenAIClient, callOpenAIWithFallback } from '../config/openaiClient'
 import { getEnv } from '../config/env'
 
 const MAX_EMBEDDING_TEXT_LENGTH = 8000 // Conservative limit for text-embedding-3-small
@@ -9,7 +9,6 @@ export async function embedText(text: string): Promise<number[]> {
   }
 
   const config = getEnv()
-  const openai = getOpenAIClient()
 
   // Truncate text if needed
   let truncatedText = text
@@ -18,9 +17,11 @@ export async function embedText(text: string): Promise<number[]> {
   }
 
   try {
-    const response = await openai.embeddings.create({
-      model: config.openaiEmbeddingModel,
-      input: truncatedText,
+    const response = await callOpenAIWithFallback(async (openai) => {
+      return await openai.embeddings.create({
+        model: config.openaiEmbeddingModel,
+        input: truncatedText,
+      })
     })
 
     const embedding = response.data[0]?.embedding

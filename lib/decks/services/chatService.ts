@@ -1,6 +1,6 @@
 import { getSupabaseClient } from '../config/supabaseClient'
 import { embedText } from '../llm/embeddingService'
-import { getOpenAIClient } from '../config/openaiClient'
+import { getOpenAIClient, callOpenAIWithFallback } from '../config/openaiClient'
 import { getEnv } from '../config/env'
 
 export interface ChatReference {
@@ -148,18 +148,19 @@ ${snippetsText}
 Provide a helpful recommendation based on the available snippets.`
 
   // Call OpenAI
-  const openai = getOpenAIClient()
   const config = getEnv()
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: config.openaiChatModel,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
+    const completion = await callOpenAIWithFallback(async (openai) => {
+      return await openai.chat.completions.create({
+        model: config.openaiChatModel,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      })
     })
 
     const answer = completion.choices[0]?.message?.content?.trim()

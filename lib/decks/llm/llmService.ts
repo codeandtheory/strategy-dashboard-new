@@ -1,4 +1,4 @@
-import { getOpenAIClient } from '../config/openaiClient'
+import { getOpenAIClient, callOpenAIWithFallback } from '../config/openaiClient'
 import { getEnv } from '../config/env'
 import { buildDeckPrompt } from './deckPrompts'
 import { buildTopicsPrompt } from './topicPrompts'
@@ -29,7 +29,6 @@ export type SlideLabelJson = {
 }
 
 async function callOpenAI(prompt: string, systemPrompt?: string): Promise<string> {
-  const openai = getOpenAIClient()
   const config = getEnv()
 
   const messages: Array<{ role: 'system' | 'user'; content: string }> = []
@@ -39,11 +38,13 @@ async function callOpenAI(prompt: string, systemPrompt?: string): Promise<string
   messages.push({ role: 'user', content: prompt })
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: config.openaiChatModel,
-      messages,
-      response_format: { type: 'json_object' },
-      temperature: 0.3,
+    const completion = await callOpenAIWithFallback(async (openai) => {
+      return await openai.chat.completions.create({
+        model: config.openaiChatModel,
+        messages,
+        response_format: { type: 'json_object' },
+        temperature: 0.3,
+      })
     })
 
     const responseText = completion.choices[0]?.message?.content?.trim()
