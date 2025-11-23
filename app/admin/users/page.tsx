@@ -332,7 +332,7 @@ export default function UsersAdminPage() {
                     Avatar
                   </Label>
                   <div className="flex items-center gap-4">
-                    {editingUser.avatar_url && (
+                    {editingUser.avatar_url ? (
                       <div className="flex-shrink-0">
                         <img
                           src={editingUser.avatar_url}
@@ -344,8 +344,12 @@ export default function UsersAdminPage() {
                           }}
                         />
                       </div>
+                    ) : (
+                      <div className="flex-shrink-0 w-20 h-20 rounded-full bg-gray-200 border-2 flex items-center justify-center" style={{ borderColor: getBorderColor() }}>
+                        <User className="w-10 h-10 text-gray-400" />
+                      </div>
                     )}
-                    <div className="flex-1">
+                    <div>
                       <label className="cursor-pointer">
                         <input
                           type="file"
@@ -368,20 +372,13 @@ export default function UsersAdminPage() {
                           ) : (
                             <>
                               <Upload className="w-4 h-4 mr-2" />
-                              Upload Avatar
+                              Upload New Picture
                             </>
                           )}
                         </Button>
                       </label>
-                      <p className="text-xs text-gray-500 mt-2">Or enter URL below</p>
                     </div>
                   </div>
-                  <Input
-                    value={editingUser.avatar_url || ''}
-                    onChange={(e) => setEditingUser({ ...editingUser, avatar_url: e.target.value })}
-                    placeholder="https://..."
-                    className="bg-white text-black border-gray-300 mt-2"
-                  />
                 </div>
 
                 {/* Basic Info */}
