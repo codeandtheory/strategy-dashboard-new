@@ -52,3 +52,4 @@ SELECT id, email FROM auth.users WHERE email = 'karen.piper@codeandtheory.com';
 -- WHERE user_id = 'YOUR_USER_ID_HERE'
 -- ORDER BY date DESC;
 
+

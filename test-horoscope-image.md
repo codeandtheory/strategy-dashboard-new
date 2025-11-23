@@ -156,3 +156,4 @@ Look for console.log statements in:
 - `lib/openai.ts`
 - `app/api/horoscope/image/route.ts`
 
+

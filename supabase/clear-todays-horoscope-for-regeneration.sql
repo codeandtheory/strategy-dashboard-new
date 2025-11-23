@@ -15,3 +15,4 @@ WHERE date = CURRENT_DATE
 -- After running this, refresh the page and a new image will be generated
 -- The new image will be stored in Supabase storage and won't expire
 
+

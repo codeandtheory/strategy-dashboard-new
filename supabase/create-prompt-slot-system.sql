@@ -72,3 +72,4 @@ CREATE POLICY "Public can view active prompt slot catalogs" ON public.prompt_slo
 CREATE POLICY "Users can view own avatar state" ON public.user_avatar_state FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Service role can manage avatar state" ON public.user_avatar_state FOR ALL USING (auth.role() = 'service_role');
 
+

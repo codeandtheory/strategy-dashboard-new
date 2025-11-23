@@ -15,3 +15,4 @@ WHERE user_id = 'YOUR_USER_ID'::uuid
 -- DELETE FROM public.user_avatar_state
 -- WHERE user_id = 'YOUR_USER_ID'::uuid;
 
+

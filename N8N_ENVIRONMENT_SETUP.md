@@ -115,3 +115,4 @@ After setting up environment variables:
 - Check browser console for fetch errors
 - Verify CORS is configured in n8n if needed
 
+

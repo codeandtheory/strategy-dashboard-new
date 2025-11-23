@@ -109,3 +109,4 @@ $$;
 COMMENT ON COLUMN decks.deck_type IS 'Type of deck: work_sample, agency_deck, through_leadership, must_read, etc.';
 COMMENT ON COLUMN decks.type_metadata IS 'Type-specific metadata stored as JSON (e.g., client, author_id, project_name for work samples)';
 
+

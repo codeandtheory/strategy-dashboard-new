@@ -60,3 +60,4 @@ async function clearTodaysHoroscope(userId?: string) {
 const userId = process.argv[2]
 clearTodaysHoroscope(userId)
 
+

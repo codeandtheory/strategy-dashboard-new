@@ -199,3 +199,4 @@ For a typical 30-slide deck:
 **Search queries**: Free (database lookups only)
 **Chat queries**: ~$0.01-0.02 per query
 
+
