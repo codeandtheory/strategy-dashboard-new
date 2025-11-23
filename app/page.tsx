@@ -111,7 +111,15 @@ export default function TeamDashboard() {
   const [pipelineData, setPipelineData] = useState<Array<{
     id: string
     name: string
+    type: string | null
+    description: string | null
+    due_date: string | null
+    lead: string | null
+    notes: string | null
     status: string
+    team: string | null
+    url: string | null
+    tier: number | null
   }>>([])
   const [pipelineLoading, setPipelineLoading] = useState(true)
   
@@ -1828,6 +1836,29 @@ export default function TeamDashboard() {
                 ) : eventsExpanded ? (
                   // Week view - Gantt chart style
                   <div className="space-y-4">
+                    {/* Key/Legend */}
+                    <div className={`${getRoundedClass('rounded-lg')} p-3 mb-4`} style={{ backgroundColor: `${mintColor}22` }}>
+                      <p className={`text-xs font-black uppercase mb-2 ${style.text}`}>Key:</p>
+                      <div className="flex flex-wrap gap-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: '#FF6B6B' }}></div>
+                          <span className={`text-[10px] ${style.text}/80`}>Out of Office</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: '#9D4EFF' }}></div>
+                          <span className={`text-[10px] ${style.text}/80`}>Strategy Team</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: '#FFC043' }}></div>
+                          <span className={`text-[10px] ${style.text}/80`}>Holidays</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: '#00FF87' }}></div>
+                          <span className={`text-[10px] ${style.text}/80`}>Office Events</span>
+                        </div>
+                      </div>
+                    </div>
+                    
                     {/* Day headers */}
                     <div className="grid grid-cols-7 gap-2 mb-4">
                       {getWeekDays().map((day, index) => {
@@ -1854,13 +1885,13 @@ export default function TeamDashboard() {
                         const startCol = span.startDay + 1
                         
                         return (
-                          <div key={event.id} className="space-y-1">
-                            {/* Event bar spanning days */}
-                            <div className="grid grid-cols-7 gap-2">
+                          <div key={event.id} className="relative mb-2">
+                            {/* Event bar spanning days - merged boxes */}
+                            <div className="flex">
                               {getWeekDays().map((day, index) => {
                                 const isInSpan = index >= span.startDay && index <= span.endDay
                                 if (!isInSpan) {
-                                  return <div key={index} className="h-12"></div>
+                                  return <div key={index} className="flex-1 h-12"></div>
                                 }
                                 
                                 const isStart = index === span.startDay
@@ -1869,7 +1900,7 @@ export default function TeamDashboard() {
                                 return (
                                   <div
                                     key={index}
-                                    className={`h-12 ${getRoundedClass(isStart && isEnd ? 'rounded-lg' : isStart ? 'rounded-l-lg' : isEnd ? 'rounded-r-lg' : '')} flex items-center px-2`}
+                                    className={`flex-1 h-12 ${getRoundedClass(isStart && isEnd ? 'rounded-lg' : isStart ? 'rounded-l-lg' : isEnd ? 'rounded-r-lg' : '')} flex items-center px-2`}
                                     style={{ 
                                       backgroundColor: `${eventColor}66`,
                                       borderLeft: isStart ? `3px solid ${eventColor}` : 'none',
@@ -1895,23 +1926,92 @@ export default function TeamDashboard() {
                   </div>
                 ) : (
                   // Today view
-                  <div className="space-y-2">
-                    {filteredEvents.length > 0 ? (
-                      filteredEvents.map((event) => {
-                        const eventColor = getEventColor(event)
+                  <div className="space-y-4">
+                    {/* OOO People List */}
+                    {(() => {
+                      const oooEventsToday = calendarEvents.filter(event => {
+                        const isOOO = event.calendarId.includes('6elnqlt8ok3kmcpim2vge0qqqk') || event.calendarId.includes('ojeuiov0bhit2k17g8d6gj4i68')
+                        if (!isOOO) return false
+                        
+                        const eventStart = event.start.dateTime 
+                          ? new Date(event.start.dateTime)
+                          : event.start.date 
+                            ? new Date(event.start.date)
+                            : null
+                        
+                        if (!eventStart) return false
+                        
+                        // Check if event overlaps with today
+                        const eventEnd = event.end.dateTime 
+                          ? new Date(event.end.dateTime)
+                          : event.end.date 
+                            ? new Date(event.end.date)
+                            : eventStart
+                        
+                        const actualEnd = event.end.date 
+                          ? new Date(eventEnd.getTime() - 24 * 60 * 60 * 1000)
+                          : eventEnd
+                        
+                        return eventStart <= todayEnd && actualEnd >= todayStart
+                      })
+                      
+                      // Extract person names from event summaries (assuming format like "Name - reason")
+                      const oooPeople = Array.from(new Set(
+                        oooEventsToday
+                          .map(event => {
+                            // Extract name (usually before " - " or " vacation" etc)
+                            const summary = event.summary
+                            const nameMatch = summary.match(/^([^-]+?)(?:\s*-\s*|\s+vacation|\s+parental|\s+leave)/i)
+                            return nameMatch ? nameMatch[1].trim() : summary.split(' - ')[0].trim()
+                          })
+                          .filter(Boolean)
+                      ))
+                      
+                      if (oooPeople.length > 0) {
                         return (
-                          <div key={event.id} className={`${getRoundedClass('rounded-lg')} p-3 flex items-center gap-2`} style={{ backgroundColor: `${eventColor}33` }}>
-                            <Clock className="w-4 h-4" style={{ color: eventColor }} />
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-sm font-black ${style.text} truncate`}>{event.summary}</p>
-                              <p className={`text-xs ${style.text}/60`}>{formatEventTime(event)}</p>
+                          <div className="space-y-2">
+                            <p className={`text-xs uppercase tracking-wider font-black ${style.text}/70 mb-2`}>Out of Office Today</p>
+                            <div className={`${getRoundedClass('rounded-lg')} p-3`} style={{ backgroundColor: '#FF6B6B33' }}>
+                              <div className="flex flex-wrap gap-2">
+                                {oooPeople.map((name, idx) => (
+                                  <span 
+                                    key={idx}
+                                    className={`text-xs font-black px-2 py-1 ${getRoundedClass('rounded')}`}
+                                    style={{ 
+                                      backgroundColor: '#FF6B6B66',
+                                      color: '#FF6B6B'
+                                    }}
+                                  >
+                                    {name}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         )
-                      })
-                    ) : (
-                      <p className={`text-sm ${style.text}/80 text-center py-4`}>No events today</p>
-                    )}
+                      }
+                      return null
+                    })()}
+                    
+                    {/* Other Events */}
+                    <div className="space-y-2">
+                      {filteredEvents.length > 0 ? (
+                        filteredEvents.map((event) => {
+                          const eventColor = getEventColor(event)
+                          return (
+                            <div key={event.id} className={`${getRoundedClass('rounded-lg')} p-3 flex items-center gap-2`} style={{ backgroundColor: `${eventColor}33` }}>
+                              <Clock className="w-4 h-4" style={{ color: eventColor }} />
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-black ${style.text} truncate`}>{event.summary}</p>
+                                <p className={`text-xs ${style.text}/60`}>{formatEventTime(event)}</p>
+                              </div>
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <p className={`text-sm ${style.text}/80 text-center py-4`}>No events today</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </Card>
@@ -1977,7 +2077,18 @@ export default function TeamDashboard() {
               const style = mode === 'chaos' ? getSpecificCardStyle('pipeline') : getCardStyle('work')
               const mintColor = '#00FF87'
               
-              // Calculate counts from pipeline data
+              // Get projects for each category
+              const newBusinessProjects = pipelineData.filter(p => 
+                p.status === 'Pending Decision' || p.status === 'Long Lead'
+              ).slice(0, 3) // Show top 3
+              const inProgressProjects = pipelineData.filter(p => 
+                p.status === 'In Progress'
+              ).slice(0, 3) // Show top 3
+              const completedProjects = pipelineData.filter(p => 
+                p.status === 'Won' || p.status === 'Lost'
+              ).slice(0, 3) // Show top 3
+              
+              // Calculate counts
               const newBusinessCount = pipelineData.filter(p => 
                 p.status === 'Pending Decision' || p.status === 'Long Lead'
               ).length
@@ -1988,11 +2099,36 @@ export default function TeamDashboard() {
                 p.status === 'Won' || p.status === 'Lost'
               ).length
               
-              const pipelineItems = [
-                { label: 'New Business', count: pipelineLoading ? '0' : newBusinessCount.toString(), icon: FileText, iconColor: '#FFE500', showIcon: true }, // Yellow
-                { label: 'In Progress', count: pipelineLoading ? '0' : inProgressCount.toString(), icon: Zap, iconColor: '#9D4EFF', showIcon: true }, // Purple
-                { label: 'Completed', count: pipelineLoading ? '0' : completedCount.toString(), icon: null, iconColor: null, showIcon: false }, // No icon
-              ]
+              const formatDate = (dateString: string | null) => {
+                if (!dateString) return null
+                const date = new Date(dateString)
+                return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`
+              }
+              
+              const renderProjectPreview = (project: typeof pipelineData[0], index: number, total: number) => {
+                const date = formatDate(project.due_date)
+                const displayText = project.type || project.description || 'Unknown'
+                
+                return (
+                  <div key={project.id} className="relative flex items-start gap-2 py-1">
+                    {/* Dot */}
+                    <div className="relative z-10 mt-1.5 size-1.5 rounded-full shrink-0" style={{ backgroundColor: style.text === 'text-black' ? '#000' : '#fff' }} />
+                    {/* Dotted line connector */}
+                    {index < total - 1 && (
+                      <div className="absolute left-0.5 top-3 bottom-0 w-px border-l border-dashed opacity-30" style={{ borderColor: style.text === 'text-black' ? '#000' : '#fff' }} />
+                    )}
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 text-xs">
+                      {date && (
+                        <div className="opacity-60 mb-0.5" style={{ color: style.text === 'text-black' ? '#000' : '#fff' }}>{date}</div>
+                      )}
+                      <div className={`font-semibold ${style.text} truncate`}>{project.name}</div>
+                      <div className="opacity-60 truncate" style={{ color: style.text === 'text-black' ? '#000' : '#fff' }}>{displayText}</div>
+                    </div>
+                  </div>
+                )
+              }
+              
               return (
                 <Card className={`${style.bg} ${style.border} ${eventsExpanded ? 'p-4' : 'p-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300`}
                       style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
@@ -2001,22 +2137,66 @@ export default function TeamDashboard() {
                     <p className={`text-xs uppercase tracking-wider mb-4 font-black ${style.text} transition-opacity duration-300`}>WORK</p>
                   )}
                   <h2 className={`${eventsExpanded ? 'text-xl mb-3' : 'text-3xl mb-6'} font-black uppercase ${style.text} transition-all duration-300`}>PIPELINE</h2>
-                  <div className={`${eventsExpanded ? 'space-y-1.5' : 'space-y-2'} transition-all duration-300`}>
-                    {pipelineItems.map((item) => {
-                      const IconComponent = item.icon
-                      return (
-                        <div key={item.label} className={`${getRoundedClass('rounded-lg')} ${eventsExpanded ? 'p-2' : 'p-3'} flex items-center justify-between transition-all duration-300`} style={{ backgroundColor: `${mintColor}33` }}>
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            {item.showIcon && IconComponent && (
-                              <IconComponent className={`${eventsExpanded ? 'w-3 h-3 flex-shrink-0' : 'w-4 h-4'} transition-all duration-300`} style={{ color: item.iconColor }} />
-                            )}
-                            <span className={`${eventsExpanded ? 'text-xs' : 'text-sm'} font-black ${style.text} truncate transition-all duration-300`}>{item.label}</span>
-                          </div>
-                          <span className={`${eventsExpanded ? 'text-base' : 'text-lg'} font-black ${style.text} flex-shrink-0 ml-2 transition-all duration-300`}>{item.count}</span>
+                  
+                  <div className={`${eventsExpanded ? 'space-y-3' : 'space-y-4'} transition-all duration-300`}>
+                    {/* New Business */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <FileText className={`${eventsExpanded ? 'w-3 h-3' : 'w-4 h-4'}`} style={{ color: '#FFE500' }} />
+                          <span className={`${eventsExpanded ? 'text-xs' : 'text-sm'} font-black ${style.text}`}>New Business</span>
                         </div>
-                      )
-                    })}
+                        <span className={`${eventsExpanded ? 'text-sm' : 'text-base'} font-black ${style.text}`}>{pipelineLoading ? '0' : newBusinessCount}</span>
+                      </div>
+                      {!pipelineLoading && newBusinessProjects.length > 0 && (
+                        <div className="space-y-0.5 pl-3">
+                          {newBusinessProjects.map((project, index) => 
+                            renderProjectPreview(project, index, newBusinessProjects.length)
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* In Progress */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Zap className={`${eventsExpanded ? 'w-3 h-3' : 'w-4 h-4'}`} style={{ color: '#9D4EFF' }} />
+                          <span className={`${eventsExpanded ? 'text-xs' : 'text-sm'} font-black ${style.text}`}>In Progress</span>
+                        </div>
+                        <span className={`${eventsExpanded ? 'text-sm' : 'text-base'} font-black ${style.text}`}>{pipelineLoading ? '0' : inProgressCount}</span>
+                      </div>
+                      {!pipelineLoading && inProgressProjects.length > 0 && (
+                        <div className="space-y-0.5 pl-3">
+                          {inProgressProjects.map((project, index) => 
+                            renderProjectPreview(project, index, inProgressProjects.length)
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Completed */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`${eventsExpanded ? 'text-xs' : 'text-sm'} font-black ${style.text}`}>Completed</span>
+                        <span className={`${eventsExpanded ? 'text-sm' : 'text-base'} font-black ${style.text}`}>{pipelineLoading ? '0' : completedCount}</span>
+                      </div>
+                      {!pipelineLoading && completedProjects.length > 0 && (
+                        <div className="space-y-0.5 pl-3">
+                          {completedProjects.map((project, index) => 
+                            renderProjectPreview(project, index, completedProjects.length)
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
+                  
+                  {/* Link to full pipeline page */}
+                  <Link href="/admin/pipeline" className="mt-4 block">
+                    <div className={`text-xs font-black ${style.text} opacity-60 hover:opacity-100 transition-opacity flex items-center gap-1`}>
+                      View All <ChevronRight className="w-3 h-3" />
+                    </div>
+                  </Link>
                 </Card>
               )
             })()}
