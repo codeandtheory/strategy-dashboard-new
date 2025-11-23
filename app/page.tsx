@@ -21,7 +21,6 @@ import { PlaylistData } from '@/lib/spotify-player-types'
 import { ProfileSetupModal } from '@/components/profile-setup-modal'
 import { createClient } from '@/lib/supabase/client'
 import { AddSnapDialog } from '@/components/add-snap-dialog'
-import { SpotifyOEmbedPlayer } from '@/components/spotify-oembed-player'
 import { useGoogleCalendarToken } from '@/hooks/useGoogleCalendarToken'
 
 // Force dynamic rendering to avoid SSR issues with context
@@ -77,22 +76,6 @@ export default function TeamDashboard() {
   const [userTimeZone, setUserTimeZone] = useState<string | null>(null)
   const [timeZones, setTimeZones] = useState<Array<{ label: string; city: string; time: string; offset: number }>>([])
   const [todayDate, setTodayDate] = useState<string>('')
-  const [weather, setWeather] = useState<{
-    temperature: number
-    condition: string
-    description: string
-    humidity: number
-    windSpeed: number
-    emoji: string
-    workReport: string
-    location: string
-    lat?: number
-    lon?: number
-  } | null>(null)
-  const [weatherLoading, setWeatherLoading] = useState(true)
-  const [weatherError, setWeatherError] = useState<string | null>(null)
-  const [currentMapIndex, setCurrentMapIndex] = useState(0)
-  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [profileChecked, setProfileChecked] = useState(false)
   const [snaps, setSnaps] = useState<Array<{
@@ -169,54 +152,6 @@ export default function TeamDashboard() {
     // Update every minute to keep it current (though date rarely changes)
     const interval = setInterval(updateDate, 60000)
     return () => clearInterval(interval)
-  }, [])
-  
-  // Fetch weather data based on user's location
-  useEffect(() => {
-    async function fetchWeather() {
-      try {
-        setWeatherLoading(true)
-        setWeatherError(null)
-
-        // Try to get location from browser geolocation
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              const { latitude, longitude } = position.coords
-              
-              // Fetch weather (reverse geocoding happens server-side)
-              const response = await fetch(
-                `/api/weather?lat=${latitude}&lon=${longitude}`
-              )
-              
-              if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error || 'Failed to fetch weather')
-              }
-
-              const data = await response.json()
-              setWeather({ ...data, lat: latitude, lon: longitude })
-              setUserLocation({ lat: latitude, lon: longitude })
-              setWeatherLoading(false)
-            },
-            (error) => {
-              console.error('Geolocation error:', error)
-              setWeatherError('Unable to get your location for weather')
-              setWeatherLoading(false)
-            }
-          )
-        } else {
-          setWeatherError('Geolocation not supported')
-          setWeatherLoading(false)
-        }
-      } catch (error: any) {
-        console.error('Error fetching weather:', error)
-        setWeatherError(error.message || 'Failed to load weather')
-        setWeatherLoading(false)
-      }
-    }
-
-    fetchWeather()
   }, [])
   
   // Detect user timezone and calculate timezone times
@@ -360,12 +295,22 @@ export default function TeamDashboard() {
         const response = await fetch('/api/pipeline')
         if (response.ok) {
           const result = await response.json()
+          console.log('Pipeline API response:', result)
           if (result.data && Array.isArray(result.data)) {
+            console.log('Setting pipeline data:', result.data.length, 'projects')
             setPipelineData(result.data)
+          } else {
+            console.warn('Pipeline API returned unexpected data structure:', result)
+            setPipelineData([])
           }
+        } else {
+          console.error('Pipeline API error:', response.status, response.statusText)
+          const errorData = await response.json().catch(() => ({}))
+          console.error('Pipeline API error details:', errorData)
         }
       } catch (error) {
         console.error('Error fetching pipeline:', error)
+        setPipelineData([])
       } finally {
         setPipelineLoading(false)
       }
@@ -687,7 +632,7 @@ export default function TeamDashboard() {
 
   // Comprehensive mode-aware card styling
   type CardSection = 'hero' | 'recognition' | 'work' | 'team' | 'vibes' | 'community' | 'default'
-  type SpecificCard = 'hero-large' | 'launch-pad' | 'horoscope' | 'weather' | 'timezones' | 'playlist' | 'friday-drop' | 'brand-redesign' | 'stats' | 'events' | 'pipeline' | 'who-needs-what' | 'snaps' | 'beast-babe' | 'wins-wall' | 'must-reads' | 'ask-hive' | 'team-pulse' | 'loom-standup' | 'inspiration-war' | 'categories' | 'search'
+  type SpecificCard = 'hero-large' | 'launch-pad' | 'horoscope' | 'timezones' | 'playlist' | 'friday-drop' | 'brand-redesign' | 'stats' | 'events' | 'pipeline' | 'who-needs-what' | 'snaps' | 'beast-babe' | 'wins-wall' | 'ask-hive' | 'team-pulse' | 'loom-standup' | 'inspiration-war' | 'search'
   
   const getSpecificCardStyle = (cardName: SpecificCard): { bg: string; border: string; glow: string; text: string; accent: string } => {
     if (mode === 'chaos') {
@@ -695,7 +640,6 @@ export default function TeamDashboard() {
         'hero-large': { bg: 'bg-gradient-to-br from-[#FFE500] via-[#FF8C00] to-[#FF6B6B]', border: 'border-0', glow: '', text: 'text-black', accent: '#FFE500' },
         'launch-pad': { bg: 'bg-gradient-to-br from-[#9D4EFF] to-[#6B2C91]', border: 'border-0', glow: '', text: 'text-white', accent: '#C4F500' },
         'horoscope': { bg: 'bg-[#6B2C91]', border: 'border-0', glow: '', text: 'text-white', accent: '#FFE500' },
-        'weather': { bg: 'bg-gradient-to-br from-[#00B8D4] to-[#0066CC]', border: 'border-0', glow: '', text: 'text-white', accent: '#00D4FF' },
         'timezones': { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#00D4FF' },
         'playlist': { bg: 'bg-gradient-to-br from-[#FF6B00] to-[#FF8A00]', border: 'border-0', glow: '', text: 'text-white', accent: '#FF00FF' },
         'friday-drop': { bg: 'bg-[#40E0D0]', border: 'border-0', glow: '', text: 'text-black', accent: '#000000' }, // Turquoise with black
@@ -707,12 +651,10 @@ export default function TeamDashboard() {
         'snaps': { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#E8FF00' },
         'beast-babe': { bg: 'bg-gradient-to-br from-[#FF0055] to-[#FF4081]', border: 'border-0', glow: '', text: 'text-white', accent: '#E8FF00' },
         'wins-wall': { bg: 'bg-gradient-to-br from-[#00B8D4] to-[#0066CC]', border: 'border-0', glow: '', text: 'text-white', accent: '#00D4FF' },
-        'must-reads': { bg: 'bg-gradient-to-br from-[#FF4081] to-[#E91E63]', border: 'border-0', glow: '', text: 'text-white', accent: '#FF00FF' },
         'ask-hive': { bg: 'bg-gradient-to-br from-[#9D4EFF] to-[#7B2CBE]', border: 'border-0', glow: '', text: 'text-white', accent: '#9D4EFF' },
         'team-pulse': { bg: 'bg-white', border: 'border-0', glow: '', text: 'text-black', accent: '#00FF87' },
         'loom-standup': { bg: 'bg-gradient-to-br from-[#2979FF] to-[#7B1FA2]', border: 'border-0', glow: '', text: 'text-white', accent: '#00D4FF' },
         'inspiration-war': { bg: 'bg-[#E8FF00]', border: 'border-0', glow: '', text: 'text-black', accent: '#C4F500' },
-        'categories': { bg: 'bg-white', border: 'border-0', glow: '', text: 'text-black', accent: '#9D4EFF' },
         'search': { bg: 'bg-[#000000]', border: 'border border-[#E8FF00]', glow: '', text: 'text-white', accent: '#E8FF00' },
       }
       return chaosCardStyles[cardName] || chaosCardStyles['hero-large']
@@ -725,8 +667,8 @@ export default function TeamDashboard() {
       return getCardStyle(cardName === 'hero-large' || cardName === 'launch-pad' ? 'hero' : 
                          cardName === 'snaps' || cardName === 'beast-babe' ? 'recognition' :
                          cardName === 'events' || cardName === 'pipeline' || cardName === 'who-needs-what' || cardName === 'friday-drop' ? 'work' :
-                         cardName === 'weather' || cardName === 'timezones' || cardName === 'team-pulse' || cardName === 'loom-standup' ? 'team' :
-                         cardName === 'horoscope' || cardName === 'playlist' || cardName === 'brand-redesign' || cardName === 'must-reads' || cardName === 'inspiration-war' ? 'vibes' :
+                         cardName === 'timezones' || cardName === 'team-pulse' || cardName === 'loom-standup' ? 'team' :
+                         cardName === 'horoscope' || cardName === 'playlist' || cardName === 'brand-redesign' || cardName === 'inspiration-war' ? 'vibes' :
                          'community')
     }
   }
@@ -1611,18 +1553,59 @@ export default function TeamDashboard() {
             const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
             const weekEnd = new Date(todayStart.getTime() + 7 * 24 * 60 * 60 * 1000)
             
-            const filteredEvents = calendarEvents.filter(event => {
-              const eventStart = event.start.dateTime 
-                ? new Date(event.start.dateTime)
-                : event.start.date 
-                  ? new Date(event.start.date)
-                  : null
-              
-              if (!eventStart) return false
-              
-              const endDate = eventsExpanded ? weekEnd : todayEnd
-              return eventStart >= todayStart && eventStart < endDate
-            })
+            // Filter events and deduplicate
+            const filteredEvents = calendarEvents
+              .filter(event => {
+                const eventStart = event.start.dateTime 
+                  ? new Date(event.start.dateTime)
+                  : event.start.date 
+                    ? new Date(event.start.date)
+                    : null
+                
+                if (!eventStart) return false
+                
+                // For week view, include events that overlap with the week
+                if (eventsExpanded) {
+                  const eventEnd = event.end.dateTime 
+                    ? new Date(event.end.dateTime)
+                    : event.end.date 
+                      ? new Date(event.end.date)
+                      : eventStart
+                  
+                  // For all-day events, end date is exclusive (next day), so subtract 1 day
+                  const actualEnd = event.end.date 
+                    ? new Date(eventEnd.getTime() - 24 * 60 * 60 * 1000)
+                    : eventEnd
+                  
+                  // Event overlaps if it starts before week ends and ends after week starts
+                  return eventStart < weekEnd && actualEnd >= todayStart
+                } else {
+                  // For today view, only show events that start today
+                  return eventStart >= todayStart && eventStart < todayEnd
+                }
+              })
+              // Deduplicate events - same event might appear in multiple calendars
+              // Deduplicate by ID first, then by summary + start time
+              .filter((event, index, self) => {
+                // First check by ID
+                const idMatch = self.findIndex(e => e.id === event.id)
+                if (idMatch < index) return false
+                
+                // Then check by summary + start time (for same event in different calendars)
+                const eventStart = event.start.dateTime || event.start.date || ''
+                const duplicate = self.findIndex(e => 
+                  e.summary === event.summary && 
+                  (e.start.dateTime || e.start.date) === eventStart &&
+                  e.id !== event.id
+                )
+                return duplicate === -1 || duplicate >= index
+              })
+              // Sort by start time
+              .sort((a, b) => {
+                const aStart = a.start.dateTime ? new Date(a.start.dateTime) : new Date(a.start.date || 0)
+                const bStart = b.start.dateTime ? new Date(b.start.dateTime) : new Date(b.start.date || 0)
+                return aStart.getTime() - bStart.getTime()
+              })
 
             // Format time for display
             const formatEventTime = (event: typeof calendarEvents[0]) => {
@@ -1678,7 +1661,7 @@ export default function TeamDashboard() {
                   ? new Date(event.start.date)
                   : null
               
-              const end = event.end.dateTime 
+              let end = event.end.dateTime 
                 ? new Date(event.end.dateTime)
                 : event.end.date
                   ? new Date(event.end.date)
@@ -1686,13 +1669,24 @@ export default function TeamDashboard() {
               
               if (!start) return { startDay: 0, endDay: 0, isMultiDay: false }
               
+              // For all-day events, Google Calendar uses exclusive end dates (next day)
+              // So we need to subtract 1 day to get the actual last day
+              if (event.end.date && end) {
+                end = new Date(end.getTime() - 24 * 60 * 60 * 1000)
+              }
+              
+              if (!end) end = start
+              
               const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+              weekStart.setHours(0, 0, 0, 0)
+              
+              // Calculate days relative to week start
               const startDay = Math.floor((start.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24))
-              const endDay = end ? Math.floor((end.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)) : startDay
+              const endDay = Math.floor((end.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24))
               
               return {
-                startDay: Math.max(0, startDay),
-                endDay: Math.min(6, endDay),
+                startDay: Math.max(0, Math.min(6, startDay)),
+                endDay: Math.max(0, Math.min(6, endDay)),
                 isMultiDay: endDay > startDay,
                 start,
                 end
@@ -1928,7 +1922,7 @@ export default function TeamDashboard() {
                 { value: '12', label: 'placeholder' },
               ]
               return (
-                <Card className={`${style.bg} ${style.border} py-6 px-6 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300`} style={{ minHeight: '200px', height: '200px' }}>
+                <Card className={`${style.bg} ${style.border} py-6 px-6 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300`} style={{ height: '200px', maxHeight: '200px', minHeight: '200px' }}>
                   <div className={`flex items-center ${eventsExpanded ? 'justify-center gap-2' : 'justify-between gap-6'} h-full`}>
                     {!eventsExpanded && (
                       <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>THIS WEEK</h2>
@@ -1988,9 +1982,9 @@ export default function TeamDashboard() {
               ).length
               
               const pipelineItems = [
-                { label: 'New Business', count: pipelineLoading ? '...' : newBusinessCount.toString(), icon: FileText, iconColor: '#FFE500' }, // Yellow
-                { label: 'In Progress', count: pipelineLoading ? '...' : inProgressCount.toString(), icon: Zap, iconColor: '#9D4EFF' }, // Purple
-                { label: 'Completed', count: pipelineLoading ? '...' : completedCount.toString(), icon: CheckCircle, iconColor: mintColor }, // Green
+                { label: 'New Business', count: pipelineLoading ? '0' : newBusinessCount.toString(), icon: FileText, iconColor: '#FFE500', showIcon: true }, // Yellow
+                { label: 'In Progress', count: pipelineLoading ? '0' : inProgressCount.toString(), icon: Zap, iconColor: '#9D4EFF', showIcon: true }, // Purple
+                { label: 'Completed', count: pipelineLoading ? '0' : completedCount.toString(), icon: null, iconColor: null, showIcon: false }, // No icon
               ]
               return (
                 <Card className={`${style.bg} ${style.border} ${eventsExpanded ? 'p-4' : 'p-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300`}
@@ -2006,7 +2000,9 @@ export default function TeamDashboard() {
                       return (
                         <div key={item.label} className={`${getRoundedClass('rounded-lg')} ${eventsExpanded ? 'p-2' : 'p-3'} flex items-center justify-between transition-all duration-300`} style={{ backgroundColor: `${mintColor}33` }}>
                           <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <IconComponent className={`${eventsExpanded ? 'w-3 h-3 flex-shrink-0' : 'w-4 h-4'} transition-all duration-300`} style={{ color: item.iconColor }} />
+                            {item.showIcon && IconComponent && (
+                              <IconComponent className={`${eventsExpanded ? 'w-3 h-3 flex-shrink-0' : 'w-4 h-4'} transition-all duration-300`} style={{ color: item.iconColor }} />
+                            )}
                             <span className={`${eventsExpanded ? 'text-xs' : 'text-sm'} font-black ${style.text} truncate transition-all duration-300`}>{item.label}</span>
                           </div>
                           <span className={`${eventsExpanded ? 'text-base' : 'text-lg'} font-black ${style.text} flex-shrink-0 ml-2 transition-all duration-300`}>{item.count}</span>
@@ -2184,33 +2180,6 @@ export default function TeamDashboard() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {/* Must Reads */}
-          {(() => {
-            const style = mode === 'chaos' ? getSpecificCardStyle('must-reads') : getCardStyle('vibes')
-            return (
-              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
-                    style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
-              >
-                <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
-              <FileText className="w-4 h-4" />
-                  <span className="uppercase tracking-wider font-black text-xs">Weekly</span>
-            </div>
-                <h2 className={`text-3xl font-black mb-6 uppercase ${style.text}`}>MUST<br/>READS</h2>
-            <div className="space-y-3">
-                  {[
-                    { title: 'Design Systems 2024', author: 'By Emma Chen' },
-                    { title: 'Better UX', author: 'By John Smith' },
-                  ].map((read) => (
-                    <div key={read.title} className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
-                      <p className={`text-sm font-black mb-1 ${style.text}`}>{read.title}</p>
-                      <p className={`text-xs font-medium ${style.text}/70`}>{read.author}</p>
-              </div>
-                  ))}
-            </div>
-          </Card>
-            )
-          })()}
-
           {/* Ask The Hive */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('ask-hive') : getCardStyle('community')
@@ -2371,59 +2340,7 @@ export default function TeamDashboard() {
           })()}
         </div>
 
-        <p className={`text-xs uppercase tracking-widest font-black mb-6 flex items-center gap-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : mode === 'code' ? 'text-[#808080] font-mono' : 'text-[#808080]'}`}>
-          {mode === 'code' ? (
-            <>
-              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
-              <span className="text-[#808080]">BROWSE CATEGORIES</span>
-              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
-            </>
-          ) : (
-            <>
-              <span className={`w-8 h-px ${mode === 'chaos' ? 'bg-[#333333]' : mode === 'chill' ? 'bg-[#8B4444]/30' : 'bg-[#333333]'}`}></span>
-          Browse Categories
-            </>
-          )}
-        </p>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          {/* Categories */}
-          {(() => {
-            const style = mode === 'chaos' ? getSpecificCardStyle('categories') : getCardStyle('community')
-            const categoryColors = mode === 'chaos'
-              ? ['#00D4FF', '#FF0055', '#00FF87', '#FF6B00', '#FF6B00', '#000000']
-              : mode === 'chill'
-              ? ['#4A9BFF', '#FF6B35', '#C8D961', '#FF6B35', '#FF6B35', '#4A1818']
-              : ['#cccccc', '#999999', '#e5e5e5', '#999999', '#999999', '#ffffff']
-            const categories = [
-              { name: 'Comms', icon: MessageCircle, color: categoryColors[0] },
-              { name: 'Creative', icon: Lightbulb, color: categoryColors[1] },
-              { name: 'Learn', icon: Star, color: categoryColors[2] },
-              { name: 'Research', icon: Search, color: categoryColors[3] },
-              { name: 'Strategy', icon: Lightbulb, color: categoryColors[4] },
-              { name: 'Tools', icon: Zap, color: categoryColors[5] },
-            ]
-            return (
-              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
-                    style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
-              >
-                <p className={`text-xs uppercase tracking-wider mb-2 font-black ${style.text}/70`}>Browse</p>
-                <h2 className={`text-4xl font-black mb-6 uppercase ${style.text}`}>CATEGORIES</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {categories.map((cat) => {
-                    const IconComponent = cat.icon
-                    return (
-                      <Button key={cat.name} className="font-black rounded-full h-16 uppercase" style={{ backgroundColor: cat.color, color: mode === 'chill' && cat.color === '#4A1818' ? '#FFC043' : (cat.color === '#000000' || cat.color === '#ffffff') ? (mode === 'code' ? '#000000' : '#ffffff') : (mode === 'chill' ? '#4A1818' : '#000000') }}>
-                        <IconComponent className="w-5 h-5 mr-2" />
-                        {cat.name}
-              </Button>
-                    )
-                  })}
-            </div>
-          </Card>
-            )
-          })()}
-
           {/* Search */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('search') : getCardStyle('hero')
@@ -2500,169 +2417,6 @@ export default function TeamDashboard() {
         onSuccess={handleSnapAdded}
       />
 
-      {/* Weather and Spotify - At Bottom of Page */}
-      <div className="mb-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Weather - 2/3 width */}
-        <div className="md:col-span-2">
-          {(() => {
-            // Weather map types from WeatherAPI.com
-            const weatherMaps = [
-              { type: 'tmp2m', label: 'Temperature', path: 'tmp2m' },
-              { type: 'precip', label: 'Precipitation', path: 'precip' },
-              { type: 'pressure', label: 'Pressure', path: 'pressure' },
-              { type: 'wind', label: 'Wind Speed', path: 'wind' },
-            ]
-
-            // Generate weather map URL for current location
-            const getWeatherMapUrl = (mapType: string, zoom: number = 4) => {
-              if (!weather?.lat || !weather?.lon) return null
-              
-              const now = new Date()
-              const utcDate = now.toISOString().split('T')[0].replace(/-/g, '') // yyyyMMdd
-              const utcHour = String(now.getUTCHours()).padStart(2, '0') // HH
-              
-              // Calculate tile coordinates (simplified - for actual implementation, you'd need proper tile math)
-              // For now, we'll use a center point approach
-              const lat = weather.lat
-              const lon = weather.lon
-              
-              // Simple tile calculation (this is approximate)
-              const n = Math.pow(2, zoom)
-              const x = Math.floor((lon + 180) / 360 * n)
-              const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n)
-              
-              return `https://weathermaps.weatherapi.com/${mapType}/tiles/${utcDate}${utcHour}/${zoom}/${x}/${y}.png`
-            }
-
-            const style = mode === 'chaos' ? getSpecificCardStyle('weather') : getCardStyle('team')
-            const currentMap = weatherMaps[currentMapIndex]
-            const mapUrl = getWeatherMapUrl(currentMap.path)
-            
-            return (
-              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} relative overflow-hidden`}
-                    style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
-              >
-                {weatherLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className={`w-6 h-6 animate-spin ${style.text}`} />
-                  </div>
-                ) : weatherError ? (
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <p className={`text-xs uppercase tracking-wider font-black mb-1 ${style.text}/90`}>Right Now</p>
-                        <h2 className={`text-lg font-black uppercase ${style.text}`}>WEATHER</h2>
-                      </div>
-                      <span className="text-3xl">🌤️</span>
-                    </div>
-                    <p className={`text-sm ${style.text}/80`}>{weatherError}</p>
-                  </div>
-                ) : weather ? (
-                  <div className="space-y-4">
-                    {/* Top Header with Weather Icon */}
-                    <div className="flex items-start justify-between relative z-10">
-                      <div>
-                        <p className={`text-xs uppercase tracking-wider font-black mb-1 ${style.text}/90`}>Right Now</p>
-                        <h2 className={`text-lg font-black uppercase ${style.text}`}>WEATHER</h2>
-                      </div>
-                      <span className="text-3xl">{weather.emoji}</span>
-                    </div>
-                    
-                    {/* Weather Map Carousel */}
-                    {mapUrl && weather.lat && weather.lon && (
-                      <div className="relative w-full h-32 rounded-xl overflow-hidden mb-4 bg-black/20">
-                        <img 
-                          src={mapUrl} 
-                          alt={currentMap.label}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Hide image if it fails to load
-                            e.currentTarget.style.display = 'none'
-                          }}
-                        />
-                        {/* Map Navigation */}
-                        <div className="absolute inset-0 flex items-center justify-between p-2">
-                          <button
-                            onClick={() => setCurrentMapIndex((prev) => (prev - 1 + weatherMaps.length) % weatherMaps.length)}
-                            className={`p-1.5 ${getRoundedClass('rounded-full')} bg-black/40 hover:bg-black/60 transition-all backdrop-blur-sm`}
-                            aria-label="Previous map"
-                          >
-                            <ChevronLeft className="w-4 h-4 text-white" />
-                          </button>
-                          <div className={`px-3 py-1 ${getRoundedClass('rounded-full')} bg-black/40 backdrop-blur-sm`}>
-                            <p className="text-xs font-bold text-white uppercase">{currentMap.label}</p>
-                          </div>
-                          <button
-                            onClick={() => setCurrentMapIndex((prev) => (prev + 1) % weatherMaps.length)}
-                            className={`p-1.5 ${getRoundedClass('rounded-full')} bg-black/40 hover:bg-black/60 transition-all backdrop-blur-sm`}
-                            aria-label="Next map"
-                          >
-                            <ChevronRight className="w-4 h-4 text-white" />
-                          </button>
-                        </div>
-                        {/* Map Dots Indicator */}
-                        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1.5">
-                          {weatherMaps.map((_, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => setCurrentMapIndex(idx)}
-                              className={`w-1.5 h-1.5 ${getRoundedClass('rounded-full')} transition-all ${
-                                idx === currentMapIndex ? 'bg-white w-4' : 'bg-white/50'
-                              }`}
-                              aria-label={`View ${weatherMaps[idx].label} map`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Main Temperature */}
-                    <div className="relative z-10">
-                      <p className={`text-6xl font-black leading-none mb-2 ${style.text}`}>{weather.temperature}°</p>
-                      <p className={`${style.text} text-base font-semibold capitalize mb-4`}>{weather.description}</p>
-                    </div>
-                    
-                    {/* Work Report - More Prominent */}
-                    {weather.workReport && (
-                      <div className={`mb-4 p-4 ${getRoundedClass('rounded-xl')} ${mode === 'chaos' ? 'bg-black/30 backdrop-blur-sm' : mode === 'chill' ? 'bg-white/15 backdrop-blur-sm' : 'bg-black/30 backdrop-blur-sm'} relative z-10 border ${mode === 'chaos' ? 'border-white/20' : mode === 'chill' ? 'border-white/20' : 'border-white/20'}`}>
-                        <p className={`text-sm font-medium ${style.text} leading-relaxed`}>{weather.workReport}</p>
-                      </div>
-                    )}
-                    
-                    {/* Bottom Stats - Side by Side */}
-                    <div className="flex gap-4 relative z-10">
-                      <div className="flex-1">
-                        <p className={`text-xs ${style.text}/80 font-bold uppercase tracking-wide mb-1`}>HUMIDITY</p>
-                        <p className={`text-xl font-black ${style.text}`}>{weather.humidity}%</p>
-                      </div>
-                      <div className="flex-1">
-                        <p className={`text-xs ${style.text}/80 font-bold uppercase tracking-wide mb-1`}>WIND</p>
-                        <p className={`text-xl font-black ${style.text}`}>{weather.windSpeed} mph</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <p className={`text-xs uppercase tracking-wider font-black mb-1 ${style.text}/90`}>Right Now</p>
-                        <h2 className={`text-lg font-black uppercase ${style.text}`}>WEATHER</h2>
-                      </div>
-                      <span className="text-3xl">🌤️</span>
-                    </div>
-                    <p className={`text-sm ${style.text}/80`}>Loading weather...</p>
-                  </div>
-                )}
-              </Card>
-            )
-          })()}
-        </div>
-
-        {/* Spotify Player - 1/3 width */}
-        <div className="md:col-span-1">
-          <SpotifyOEmbedPlayer height={352} />
-        </div>
-      </div>
     </div>
   )
 }
