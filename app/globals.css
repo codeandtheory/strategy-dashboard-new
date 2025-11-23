@@ -120,12 +120,12 @@
 }
 
 /* Added smooth scroll behavior and refined base styles */
-/* Scale entire site to 80% using CSS transform on html - matches browser zoom effect */
+/* Scale entire site to 60% using CSS transform on html - matches browser zoom effect */
 html {
   scroll-behavior: smooth;
-  width: 125vw; /* 100% / 0.8 = 125% to maintain full viewport coverage */
-  min-height: 125vh;
-  transform: scale(0.8);
+  width: 166.67vw; /* 100% / 0.6 = 166.67% to maintain full viewport coverage */
+  min-height: 166.67vh;
+  transform: scale(0.6);
   transform-origin: top left;
   overflow-x: hidden; /* Prevent horizontal scrollbar */
 }
