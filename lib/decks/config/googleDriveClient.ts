@@ -19,10 +19,14 @@ export function getGoogleDriveClient(): GoogleDriveClient {
     throw new Error('Google Drive authentication credentials are missing')
   }
 
+  // For shared drives, we need the full drive scope
   const auth = new google.auth.JWT({
     email: config.googleClientEmail,
     key: config.googlePrivateKey,
-    scopes: ['https://www.googleapis.com/auth/drive.file'],
+    scopes: [
+      'https://www.googleapis.com/auth/drive', // Full access (needed for shared drives)
+      'https://www.googleapis.com/auth/drive.file', // Files created by app
+    ],
   })
 
   driveClient = {
