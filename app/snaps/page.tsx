@@ -598,21 +598,21 @@ export default function SnapsPage() {
                   return (
                     <Card
                       key={snap.id}
-                      className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}
+                      className={`bg-white ${getRoundedClass('rounded-xl')} p-[10px] shadow-sm`}
                     >
                       <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0" style={{ padding: '5px' }}>
+                        <div className="flex-shrink-0" style={{ padding: '10px', width: '100px', height: '100px' }}>
                           {profilePicture ? (
                             <img 
                               src={profilePicture} 
                               alt={activeFilter === 'all' ? toName : activeFilter === 'about-me' ? fromName : toName}
-                              className={`${getRoundedClass('rounded-lg')} w-10 h-10 object-cover`}
+                              className={`${getRoundedClass('rounded-lg')} w-full h-full object-cover`}
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ 
+                            <div className="w-full h-full rounded-full flex items-center justify-center" style={{ 
                               backgroundColor: style.accent
                             }}>
-                              <Users className={`w-5 h-5 ${mode === 'chaos' || mode === 'code' ? 'text-black' : mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`} />
+                              <Users className={`w-10 h-10 ${mode === 'chaos' || mode === 'code' ? 'text-black' : mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`} />
                             </div>
                           )}
                         </div>

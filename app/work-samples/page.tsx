@@ -353,7 +353,7 @@ export default function WorkSamplesPage() {
             /* Thumbnail Grid View */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {workSamples.map((sample) => (
-                <Card key={sample.id} className={`${getBgClass()} border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'} ${getRoundedClass('rounded-2xl')} overflow-hidden`}>
+                <Card key={sample.id} className={`${getBgClass()} border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'} ${getRoundedClass('rounded-2xl')} overflow-hidden p-2`}>
                   <div className="flex flex-col">
                     {/* Thumbnail */}
                     {sample.thumbnail_url ? (
@@ -366,7 +366,7 @@ export default function WorkSamplesPage() {
                             : sample.thumbnail_url
                         }
                         alt={sample.project_name}
-                        className={`w-full aspect-video object-cover ${getRoundedClass('rounded-t-2xl')}`}
+                        className={`w-full aspect-video object-cover ${getRoundedClass('rounded-2xl')}`}
                         onError={(e) => {
                           // Try proxy if direct URL fails (for Supabase URLs)
                           const target = e.target as HTMLImageElement
@@ -384,12 +384,12 @@ export default function WorkSamplesPage() {
                         }}
                       />
                     ) : null}
-                    <div className={`w-full aspect-video ${getRoundedClass('rounded-t-2xl')} bg-gray-200 flex items-center justify-center ${sample.thumbnail_url ? 'hidden' : ''} border-b ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'}`}>
+                    <div className={`w-full aspect-video ${getRoundedClass('rounded-2xl')} bg-gray-200 flex items-center justify-center ${sample.thumbnail_url ? 'hidden' : ''} border-b ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'}`}>
                       <span className="text-gray-400 text-xs">No Image</span>
                     </div>
 
                     {/* Content */}
-                    <div className="p-6 flex flex-col gap-3">
+                    <div className="px-4 pb-4 pt-2 flex flex-col gap-3">
                       {/* Date */}
                       <div className="flex items-center gap-2">
                         <Calendar className={`w-4 h-4 ${getTextClass()}/70`} />

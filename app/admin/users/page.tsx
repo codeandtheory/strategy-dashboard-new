@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,6 +45,7 @@ export default function UsersAdminPage() {
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const getBorderColor = () => {
     switch (mode) {
@@ -112,13 +113,13 @@ export default function UsersAdminPage() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file')
+      setError('Please upload an image file')
       return
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be less than 5MB')
+      setError('Image must be less than 5MB')
       return
     }
 
@@ -152,11 +153,18 @@ export default function UsersAdminPage() {
       // Update editing user with new avatar URL
       setEditingUser({ ...editingUser, avatar_url: publicUrl })
       
-      alert('Avatar uploaded successfully! Click "Save Changes" to update the profile.')
+      // Reset file input so same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     } catch (err: any) {
       console.error('Error uploading avatar:', err)
       setError(err.message || 'Failed to upload avatar')
-      alert('Failed to upload avatar: ' + err.message)
+      
+      // Reset file input on error too
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     } finally {
       setUploadingAvatar(false)
     }
@@ -186,12 +194,9 @@ export default function UsersAdminPage() {
       setUsers(prev => prev.map(u => u.id === editingUser.id ? result.data : u))
       setSelectedUser(result.data)
       setEditingUser(result.data)
-      
-      alert('User profile updated successfully!')
     } catch (err: any) {
       console.error('Error updating user:', err)
       setError(err.message || 'Failed to update user')
-      alert('Failed to update user: ' + err.message)
     } finally {
       setSaving(false)
     }
@@ -350,33 +355,42 @@ export default function UsersAdminPage() {
                       </div>
                     )}
                     <div>
-                      <label className="cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                          className="hidden"
-                          disabled={uploadingAvatar}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={uploadingAvatar}
-                          className="bg-white text-black border-gray-300 hover:bg-gray-50"
-                        >
-                          {uploadingAvatar ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Uploading...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-4 h-4 mr-2" />
-                              Upload New Picture
-                            </>
-                          )}
-                        </Button>
-                      </label>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                        disabled={uploadingAvatar}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={uploadingAvatar || !editingUser}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          console.log('Upload button clicked, fileInputRef:', fileInputRef.current)
+                          if (fileInputRef.current) {
+                            fileInputRef.current.click()
+                          } else {
+                            console.error('fileInputRef.current is null')
+                          }
+                        }}
+                        className="bg-white text-black border-gray-300 hover:bg-gray-50"
+                      >
+                        {uploadingAvatar ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload New Picture
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </div>

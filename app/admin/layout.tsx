@@ -19,7 +19,8 @@ import {
   LogOut,
   Shield,
   Settings,
-  Upload
+  Upload,
+  Newspaper
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useEffect } from 'react'
@@ -92,32 +93,67 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Navigation sections matching the old admin structure
+  // Helper function to check if user has access to a section
+  const hasSectionAccess = (sectionKey: 'content' | 'leadership' | 'curation' | 'admin'): boolean => {
+    if (!user) return false
+    const role = user.baseRole
+    
+    // Admin has access to everything
+    if (role === 'admin') return true
+    
+    // Contributor has access to content, leadership, and curation
+    if (role === 'contributor') {
+      return sectionKey === 'content' || sectionKey === 'leadership' || sectionKey === 'curation'
+    }
+    
+    // Users only have access to content management
+    if (role === 'user') {
+      return sectionKey === 'content'
+    }
+    
+    return false
+  }
+
+  // Navigation sections with new hierarchical structure
   const navSections = [
     {
       title: 'PROFILE',
       items: [
-        { href: '/admin', label: 'Admin Homepage', icon: Home, permission: null },
+        { href: '/admin', label: 'Admin Homepage', icon: Home, permission: null, sectionAccess: null },
       ]
     },
     {
       title: 'CONTENT MANAGEMENT',
+      sectionAccess: 'content' as const,
       items: [
-        { href: '/admin/must-read', label: 'Must Reads', icon: FileText, permission: null },
-        { href: '/admin/work-sample', label: 'Work Samples', icon: Briefcase, permission: null },
-        { href: '/admin/decks', label: 'Decks', icon: Upload, permission: null },
-        { href: '/admin/content', label: 'Resources', icon: FolderOpen, permission: 'canManageContent' as const },
-        { href: '/admin/pipeline', label: 'Pipeline', icon: GitBranch, permission: null },
-        { href: '/admin/beast-babe', label: 'Beast Babe', icon: Crown, permission: 'canPassBeastBabe' as const },
-        { href: '/admin/playlists', label: 'Playlist', icon: Music, permission: 'canManagePlaylists' as const },
+        { href: '/admin/must-read', label: 'Must Reads', icon: FileText, permission: null, sectionAccess: 'content' as const },
+        { href: '/admin/work-sample', label: 'Work Samples', icon: Briefcase, permission: null, sectionAccess: 'content' as const },
+        { href: '/admin/content', label: 'Resources', icon: FolderOpen, permission: null, sectionAccess: 'content' as const },
       ]
     },
     {
-      title: 'ADMINISTRATION',
+      title: 'LEADERSHIP',
+      sectionAccess: 'leadership' as const,
       items: [
-        { href: '/admin/users', label: 'User Management', icon: Users, permission: 'canManageUsers' as const },
-        { href: '/admin/notifications', label: 'Push Notifications', icon: Bell, permission: 'canManageUsers' as const },
-        { href: '/admin/curator-rotation', label: 'Curator Rotation', icon: RotateCw, permission: 'canManageUsers' as const },
+        { href: '/admin/pipeline', label: 'Pipeline', icon: GitBranch, permission: null, sectionAccess: 'leadership' as const },
+        { href: '/admin/news', label: 'News', icon: Newspaper, permission: null, sectionAccess: 'leadership' as const },
+        { href: '/admin/curator-rotation', label: 'Curator Rotation', icon: RotateCw, permission: null, sectionAccess: 'leadership' as const },
+      ]
+    },
+    {
+      title: 'CURATION',
+      sectionAccess: 'curation' as const,
+      items: [
+        { href: '/admin/playlists', label: 'Playlist', icon: Music, permission: 'canManagePlaylists' as const, sectionAccess: 'curation' as const },
+        { href: '/admin/beast-babe', label: 'Beast Babe', icon: Crown, permission: 'canPassBeastBabe' as const, sectionAccess: 'curation' as const },
+      ]
+    },
+    {
+      title: 'ADMIN',
+      sectionAccess: 'admin' as const,
+      items: [
+        { href: '/admin/users', label: 'User Management', icon: Users, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
+        { href: '/admin/notifications', label: 'Push Notifications', icon: Bell, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
       ]
     }
   ]
@@ -179,37 +215,49 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         
         {/* Navigation Sections */}
         <nav className="space-y-6">
-          {navSections.map((section) => (
-            <div key={section.title}>
-              <h2 className={`text-xs font-bold uppercase tracking-wider mb-3 ${getTextClass()}/50`}>
-                {section.title}
-              </h2>
-              <div className="space-y-1">
-                {section.items.map((item) => {
-                  // Check permissions if required
-                  if (item.permission && !permissions?.[item.permission]) {
-                    return null
-                  }
-                  
-                  const Icon = item.icon
-                  const isActive = pathname === item.href || (item.href !== '/admin' && pathname?.startsWith(item.href))
-                  
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-3 px-3 py-2 ${getRoundedClass('rounded-lg')} transition-colors text-sm ${
-                        getNavItemStyle(isActive)
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span className="font-medium uppercase tracking-wider text-sm">{item.label}</span>
-                    </Link>
-                  )
-                })}
+          {navSections.map((section) => {
+            // Check if user has access to this section
+            if (section.sectionAccess && !hasSectionAccess(section.sectionAccess)) {
+              return null
+            }
+            
+            return (
+              <div key={section.title}>
+                <h2 className={`text-xs font-bold uppercase tracking-wider mb-3 ${getTextClass()}/50`}>
+                  {section.title}
+                </h2>
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    // Check section access for individual items
+                    if (item.sectionAccess && !hasSectionAccess(item.sectionAccess)) {
+                      return null
+                    }
+                    
+                    // Check permissions if required
+                    if (item.permission && !permissions?.[item.permission]) {
+                      return null
+                    }
+                    
+                    const Icon = item.icon
+                    const isActive = pathname === item.href || (item.href !== '/admin' && pathname?.startsWith(item.href))
+                    
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center gap-3 px-3 py-2 ${getRoundedClass('rounded-lg')} transition-colors text-sm ${
+                          getNavItemStyle(isActive)
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="font-medium uppercase tracking-wider text-sm">{item.label}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </nav>
 
         {/* Bottom Actions */}
