@@ -132,6 +132,12 @@ export default function TeamDashboard() {
   const [selectedPipelineProject, setSelectedPipelineProject] = useState<typeof pipelineData[0] | null>(null)
   const [isPipelineDialogOpen, setIsPipelineDialogOpen] = useState(false)
   const [completedFilter, setCompletedFilter] = useState<'Pending Decision' | 'Long Lead' | 'Won' | 'Lost'>('Pending Decision')
+  const [pipelineStats, setPipelineStats] = useState<{
+    activeProjects: number
+    newBusiness: number
+    pitchesDue: number
+  } | null>(null)
+  const [pipelineStatsLoading, setPipelineStatsLoading] = useState(true)
   const [weeklyPlaylist, setWeeklyPlaylist] = useState<{
     id: string
     date: string
@@ -451,6 +457,42 @@ export default function TeamDashboard() {
     }
     
     fetchPipeline()
+  }, [user])
+
+  // Fetch pipeline stats
+  useEffect(() => {
+    async function fetchPipelineStats() {
+      if (!user) return
+      
+      try {
+        setPipelineStatsLoading(true)
+        const response = await fetch('/api/pipeline/stats')
+        if (response.ok) {
+          const result = await response.json()
+          setPipelineStats(result)
+        } else {
+          console.error('Pipeline stats API error:', response.status, response.statusText)
+          // Set default values on error
+          setPipelineStats({
+            activeProjects: 0,
+            newBusiness: 0,
+            pitchesDue: 0
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching pipeline stats:', error)
+        // Set default values on error
+        setPipelineStats({
+          activeProjects: 0,
+          newBusiness: 0,
+          pitchesDue: 0
+        })
+      } finally {
+        setPipelineStatsLoading(false)
+      }
+    }
+    
+    fetchPipelineStats()
   }, [user])
 
   // Fetch weekly playlist
@@ -2474,9 +2516,9 @@ export default function TeamDashboard() {
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
               const stats = [
-                { value: '5', label: 'new business' },
-                { value: '8', label: 'pitches shipped' },
-                { value: '12', label: 'placeholder' },
+                { value: pipelineStatsLoading ? '...' : (pipelineStats?.activeProjects?.toString() || '0'), label: 'active projects' },
+                { value: pipelineStatsLoading ? '...' : (pipelineStats?.newBusiness?.toString() || '0'), label: 'new business' },
+                { value: pipelineStatsLoading ? '...' : (pipelineStats?.pitchesDue?.toString() || '0'), label: 'pitches due' },
               ]
               return (
                 <Card 
