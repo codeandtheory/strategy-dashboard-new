@@ -112,6 +112,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 3: Get resumable upload URL for this file ID using files.update
+    // Wait a brief moment for the file to be fully created
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
     const authClient = await auth.getAccessToken()
     if (!authClient.token) {
       throw new Error('Failed to get access token')
@@ -119,10 +122,12 @@ export async function POST(request: NextRequest) {
 
     // Initialize resumable upload for the existing file
     // Use raw fetch to get the Location header with the resumable upload URL
-    // For shared drives, we need to include the driveId in the query
+    // For shared drives, we need to include supportsAllDrives in the query
     const updateUrl = new URL(`https://www.googleapis.com/upload/drive/v3/files/${fileId}`)
     updateUrl.searchParams.set('uploadType', 'resumable')
     updateUrl.searchParams.set('supportsAllDrives', 'true')
+    
+    console.log('Requesting resumable upload URL for file:', fileId)
     
     const updateResponse = await fetch(updateUrl.toString(), {
       method: 'PATCH',
@@ -138,6 +143,21 @@ export async function POST(request: NextRequest) {
     if (!updateResponse.ok) {
       const errorText = await updateResponse.text()
       console.error('Failed to create resumable upload URL:', updateResponse.status, errorText)
+      console.error('File ID used:', fileId)
+      console.error('Request URL:', updateUrl.toString())
+      
+      // Try to verify the file exists
+      try {
+        const fileCheck = await drive.files.get({
+          fileId: fileId,
+          fields: 'id, name',
+          supportsAllDrives: true,
+        } as any)
+        console.log('File exists and is accessible:', fileCheck.data)
+      } catch (checkError: any) {
+        console.error('File check failed:', checkError.message)
+      }
+      
       throw new Error(`Failed to create resumable upload URL: ${updateResponse.status} ${errorText}`)
     }
 
