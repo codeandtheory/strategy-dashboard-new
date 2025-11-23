@@ -125,6 +125,12 @@ export default function TeamDashboard() {
   const [calendarError, setCalendarError] = useState<string | null>(null)
   const [eventsExpanded, setEventsExpanded] = useState(false)
   const [serviceAccountEmail, setServiceAccountEmail] = useState<string | null>(null)
+  const [pipelineData, setPipelineData] = useState<Array<{
+    id: string
+    name: string
+    status: string
+  }>>([])
+  const [pipelineLoading, setPipelineLoading] = useState(true)
   
   // Get Google Calendar access token using the user's existing Google session
   const { accessToken: googleCalendarToken, loading: tokenLoading, error: tokenError } = useGoogleCalendarToken()
@@ -344,6 +350,30 @@ export default function TeamDashboard() {
     fetchWorkSamples()
   }, [user])
 
+  // Fetch pipeline data
+  useEffect(() => {
+    async function fetchPipeline() {
+      if (!user) return
+      
+      try {
+        setPipelineLoading(true)
+        const response = await fetch('/api/pipeline')
+        if (response.ok) {
+          const result = await response.json()
+          if (result.data && Array.isArray(result.data)) {
+            setPipelineData(result.data)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching pipeline:', error)
+      } finally {
+        setPipelineLoading(false)
+      }
+    }
+    
+    fetchPipeline()
+  }, [user])
+
   // Fetch recent snaps for the logged-in user
   useEffect(() => {
     async function fetchSnaps() {
@@ -424,6 +454,13 @@ export default function TeamDashboard() {
   // Fetch calendar events
   useEffect(() => {
     async function fetchCalendarEvents() {
+      // Don't wait for token - proceed immediately
+      // If token becomes available later, it will be used on next fetch
+      // This ensures calendar loads even if popup is blocked
+      if (tokenLoading && !googleCalendarToken && !tokenError) {
+        console.log('⏳ Token is loading, but proceeding with fallback authentication...')
+      }
+
       try {
         setCalendarLoading(true)
         setCalendarError(null)
@@ -442,6 +479,12 @@ export default function TeamDashboard() {
         let apiUrl = `/api/calendar?calendarIds=${calendarIdsParam}&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&maxResults=50`
         if (googleCalendarToken) {
           apiUrl += `&accessToken=${encodeURIComponent(googleCalendarToken)}`
+          console.log('✅ Using Google OAuth token for calendar access')
+        } else {
+          console.warn('⚠️ No Google OAuth token available - will use service account or fallback auth')
+          if (tokenError) {
+            console.error('Token error:', tokenError)
+          }
         }
         
         const response = await fetch(apiUrl)
@@ -492,11 +535,10 @@ export default function TeamDashboard() {
       }
     }
 
-    // Only fetch if we're not waiting for the token, or if we have a token
-    if (!tokenLoading) {
-      fetchCalendarEvents()
-    }
-  }, [user, eventsExpanded, googleCalendarToken, tokenLoading, calendarIds])
+    // Fetch events immediately - don't wait for token
+    // Token will be used if available, otherwise falls back to service account
+    fetchCalendarEvents()
+  }, [user, eventsExpanded, googleCalendarToken, tokenLoading, tokenError, calendarIds])
 
   const handleSnapAdded = async () => {
     // Refresh snaps list for the logged-in user
@@ -1723,9 +1765,48 @@ export default function TeamDashboard() {
                         {!googleCalendarToken && !tokenLoading && (
                           <div className={`${getRoundedClass('rounded-lg')} p-2 mt-2`} style={{ backgroundColor: `${mintColor}22` }}>
                             <p className="font-semibold mb-1">No Google Calendar Access</p>
-                            <p className="text-[10px]">The app needs permission to access your Google Calendar. A consent dialog should appear, or refresh the page.</p>
+                            {tokenError ? (
+                              <>
+                                <p className="text-[10px] mb-2 text-red-400">{tokenError}</p>
+                                {tokenError.includes('popup') && (
+                                  <div className="text-[10px] space-y-1">
+                                    <p className="font-semibold">To fix popup blocking:</p>
+                                    <ol className="list-decimal list-inside ml-2 space-y-1">
+                                      <li>Check your browser's popup blocker settings</li>
+                                      <li>Allow popups for this site</li>
+                                      <li>Refresh the page</li>
+                                    </ol>
+                                  </div>
+                                )}
+                                {tokenError.includes('NEXT_PUBLIC_GOOGLE_CLIENT_ID') && (
+                                  <p className="text-[10px] mt-2 font-semibold text-yellow-400">
+                                    ⚠️ Add NEXT_PUBLIC_GOOGLE_CLIENT_ID to your .env.local file and restart the dev server.
+                                  </p>
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-[10px]">The app needs permission to access your Google Calendar. A consent dialog should appear, or refresh the page.</p>
+                            )}
                           </div>
                         )}
+                        {tokenLoading && (
+                          <div className={`${getRoundedClass('rounded-lg')} p-2 mt-2`} style={{ backgroundColor: `${mintColor}22` }}>
+                            <p className="text-[10px]">⏳ Requesting Google Calendar access... Check for a popup window.</p>
+                          </div>
+                        )}
+                        {/* Debug info */}
+                        <div className={`${getRoundedClass('rounded-lg')} p-2 mt-2 text-[10px]`} style={{ backgroundColor: `${mintColor}11` }}>
+                          <p className="font-semibold mb-1">Debug Info:</p>
+                          <p>Token Status: {googleCalendarToken ? '✅ Available' : tokenLoading ? '⏳ Loading...' : '❌ Not available'}</p>
+                          <p>Token Error: {tokenError || 'None'}</p>
+                          <p>Auth Method: {serviceAccountEmail || 'Unknown'}</p>
+                          {googleCalendarToken && (
+                            <p className="text-green-400">✅ Using OAuth token (should work with shared calendars)</p>
+                          )}
+                          {!googleCalendarToken && !tokenLoading && (
+                            <p className="text-yellow-400">⚠️ Using fallback authentication (service account - may not work with shared calendars)</p>
+                          )}
+                        </div>
                         {serviceAccountEmail && !serviceAccountEmail.includes('OAuth2') && (
                           <div className={`${getRoundedClass('rounded-lg')} p-2 mt-2`} style={{ backgroundColor: `${mintColor}22` }}>
                             <p className="font-semibold mb-1">Fallback Authentication:</p>
@@ -1894,10 +1975,22 @@ export default function TeamDashboard() {
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('pipeline') : getCardStyle('work')
               const mintColor = '#00FF87'
+              
+              // Calculate counts from pipeline data
+              const newBusinessCount = pipelineData.filter(p => 
+                p.status === 'Pending Decision' || p.status === 'Long Lead'
+              ).length
+              const inProgressCount = pipelineData.filter(p => 
+                p.status === 'In Progress'
+              ).length
+              const completedCount = pipelineData.filter(p => 
+                p.status === 'Won' || p.status === 'Lost'
+              ).length
+              
               const pipelineItems = [
-                { label: 'New Business', count: '12', icon: FileText, iconColor: '#FFE500' }, // Yellow
-                { label: 'In Progress', count: '8', icon: Zap, iconColor: '#9D4EFF' }, // Purple
-                { label: 'Completed', count: '24', icon: CheckCircle, iconColor: mintColor }, // Green
+                { label: 'New Business', count: pipelineLoading ? '...' : newBusinessCount.toString(), icon: FileText, iconColor: '#FFE500' }, // Yellow
+                { label: 'In Progress', count: pipelineLoading ? '...' : inProgressCount.toString(), icon: Zap, iconColor: '#9D4EFF' }, // Purple
+                { label: 'Completed', count: pipelineLoading ? '...' : completedCount.toString(), icon: CheckCircle, iconColor: mintColor }, // Green
               ]
               return (
                 <Card className={`${style.bg} ${style.border} ${eventsExpanded ? 'p-4' : 'p-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300`}
