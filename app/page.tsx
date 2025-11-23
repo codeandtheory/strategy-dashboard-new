@@ -1766,22 +1766,19 @@ export default function TeamDashboard() {
                       const senderName = snap.submitted_by_profile?.full_name || snap.submitted_by_profile?.email || null
                       const recipientName = snap.mentioned_user_profile?.full_name || snap.mentioned_user_profile?.email || snap.mentioned || 'Team'
                       return (
-                        <div key={snap.id} className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/40'} rounded-xl p-4 border-2 transition-all hover:opacity-80`} style={{ borderColor: `${style.accent}66` }}>
-                          <div className="flex items-start gap-3">
-                            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: style.accent }}></div>
-                            <div className="flex-1">
-                              <p className={`text-lg mb-2 leading-relaxed ${style.text}`}>{snap.snap_content}</p>
-                              {snapViewType === 'received' && senderName && (
-                                <p className={`text-xs ${style.text}/60`}>
-                                  From: {senderName}
-                                </p>
-                              )}
-                              {snapViewType === 'given' && (
-                                <p className={`text-xs ${style.text}/60`}>
-                                  To: {recipientName}
-                                </p>
-                              )}
-                            </div>
+                        <div key={snap.id} className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/40'} rounded-xl p-4 border-2 transition-all hover:opacity-80 relative`} style={{ borderColor: `${style.accent}66`, borderLeftWidth: '10px', borderLeftColor: style.accent }}>
+                          <div className="flex-1">
+                            <p className={`text-lg mb-2 leading-relaxed ${style.text}`}>{snap.snap_content}</p>
+                            {snapViewType === 'received' && senderName && (
+                              <p className={`text-xs ${style.text}/60`}>
+                                From: {senderName}
+                              </p>
+                            )}
+                            {snapViewType === 'given' && (
+                              <p className={`text-xs ${style.text}/60`}>
+                                To: {recipientName}
+                              </p>
+                            )}
                           </div>
                         </div>
                       )

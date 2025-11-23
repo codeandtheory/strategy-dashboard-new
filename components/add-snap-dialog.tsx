@@ -50,8 +50,8 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
       const overlay = document.querySelector('[data-radix-dialog-overlay]')
       if (overlay) {
         const overlayEl = overlay as HTMLElement
-        overlayEl.style.backgroundColor = 'rgb(0, 0, 0)'
-        overlayEl.style.opacity = '1'
+        overlayEl.style.setProperty('background-color', 'rgb(0, 0, 0)', 'important')
+        overlayEl.style.setProperty('opacity', '1', 'important')
         overlayEl.classList.remove('bg-black/80')
         overlayEl.classList.add('bg-black')
       }
@@ -242,16 +242,18 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
             {showSuggestions && suggestions.length > 0 && (
               <div
                 ref={suggestionsRef}
-                className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto"
+                className="absolute z-50 w-full mt-1 border border-border rounded-md shadow-lg max-h-60 overflow-auto"
+                style={{ backgroundColor: 'rgb(0, 0, 0)', opacity: 1 }}
               >
                 {suggestions.map((profile, idx) => (
                   <button
                     key={profile.id}
                     type="button"
                     onClick={() => handleSelectSuggestion(profile)}
-                    className={`w-full text-left px-4 py-2 hover:bg-accent hover:text-accent-foreground ${
-                      idx === selectedIndex ? 'bg-accent text-accent-foreground' : ''
+                    className={`w-full text-left px-4 py-2 hover:bg-gray-800 hover:text-white ${
+                      idx === selectedIndex ? 'bg-gray-800 text-white' : 'text-white'
                     }`}
+                    style={{ backgroundColor: idx === selectedIndex ? 'rgb(31, 41, 55)' : 'transparent' }}
                   >
                     {profile.full_name || profile.email}
                   </button>
