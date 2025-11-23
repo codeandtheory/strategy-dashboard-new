@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '../config/supabaseClient'
 import { embedText } from '../llm/embeddingService'
 import type { DeckMetadataJson, TopicJson, SlideLabelJson } from '../llm/llmService'
+import type { ElvexDeckMetadata, ElvexTopic, ElvexSlide } from './elvexService'
 
 export interface DeckRow {
   id: string
@@ -46,7 +47,7 @@ export async function createDeckRecord(input: {
   title: string
   gdriveFileId: string
   gdriveFileUrl?: string
-  deckMetadata: DeckMetadataJson
+  deckMetadata: DeckMetadataJson | ElvexDeckMetadata
 }): Promise<DeckRow> {
   const supabase = getSupabaseClient()
 
@@ -75,7 +76,7 @@ export async function createDeckRecord(input: {
 
 export async function createTopicsForDeck(input: {
   deckId: string
-  topics: TopicJson[]
+  topics: TopicJson[] | ElvexTopic[]
 }): Promise<TopicRow[]> {
   const supabase = getSupabaseClient()
   const topicRows: TopicRow[] = []

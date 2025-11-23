@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getEnv } from '@/lib/decks/config/env'
-import { downloadFileFromDrive, getDriveFileMetadata } from '@/lib/decks/services/googleDriveDownloadService'
-import { extractSlidesFromPdf } from '@/lib/decks/services/pdfExtractionService'
-import { generateDeckMetadata, generateTopics, labelSlide } from '@/lib/decks/llm/llmService'
+import { getDriveFileMetadata } from '@/lib/decks/services/googleDriveDownloadService'
+import { processDeckWithElvex, processDeckWithElvexChat } from '@/lib/decks/services/elvexService'
 import {
   createDeckRecord,
   createTopicsForDeck,
   createSlidesForDeck,
 } from '@/lib/decks/services/ingestionService'
+import { embedText } from '@/lib/decks/llm/embeddingService'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes for processing large PDFs
@@ -36,49 +36,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File must be a PDF' }, { status: 400 })
     }
 
-    // Download file from Google Drive
-    const buffer = await downloadFileFromDrive(gdriveFileId)
-
-    // Extract PDF to check page count
-    const slides = await extractSlidesFromPdf(buffer)
-    const pageCount = slides.length
-
-    // Validate page count
-    if (pageCount > config.maxDeckPages) {
-      return NextResponse.json(
-        {
-          error: `PDF has ${pageCount} pages, which exceeds the limit of ${config.maxDeckPages} pages. Please use a smaller deck.`,
-        },
-        { status: 400 }
-      )
+    // Process deck with Elvex assistant
+    // Elvex has access to Google Drive and will process the file directly
+    let elvexResult
+    try {
+      // Try assistant API first, fallback to chat API
+      elvexResult = await processDeckWithElvex(gdriveFileId, fileMetadata.name)
+    } catch (error: any) {
+      console.log('Elvex assistant API failed, trying chat API:', error.message)
+      elvexResult = await processDeckWithElvexChat(gdriveFileId, fileMetadata.name)
     }
 
-    // Build deck text from slides
-    const deckText = slides
-      .map((slide) => `Slide ${slide.slideNumber}:\n${slide.text}`)
-      .join('\n\n')
-
-    // Generate deck metadata
-    const deckMetadata = await generateDeckMetadata(deckText)
-
-    // Generate topics
-    const topics = await generateTopics(deckText)
-
-    // Label each slide with rate limiting to avoid API limits
-    // Process slides sequentially with delays instead of in parallel
-    const labeledSlides = []
-    for (const slide of slides) {
-      const label = await labelSlide(slide.text)
-      labeledSlides.push({
-        slideNumber: slide.slideNumber,
-        slideText: slide.text,
-        label,
-      })
-      // Add delay between slide processing to avoid rate limits
-      if (slides.indexOf(slide) < slides.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 500)) // 500ms delay between slides
-      }
-    }
+    // Map Elvex results to our format
+    const deckMetadata = elvexResult.deck_metadata
+    const topics = elvexResult.topics
+    const slides = elvexResult.slides.map((slide) => ({
+      slideNumber: slide.slide_number,
+      slideText: '', // Elvex doesn't return raw text, just metadata
+      label: {
+        slide_type: slide.slide_type,
+        slide_caption: slide.slide_caption,
+        topics: slide.topics || [],
+        reusable: slide.reusable,
+      },
+    }))
 
     // Create deck record
     const deckRecord = await createDeckRecord({
