@@ -256,16 +256,16 @@ export function TeamPulseCard() {
     return base
   }
 
-  // PURPLE SYSTEM: Purple (#9333EA), Deep Purple (#7C3AED), Lavender (#C084FC), Lime Green (#84CC16)
+  // Pulse Check colors: Lavender (#D4B5E8), Deep Purple (#6B2E8C), Lime Green (#C5F547)
   const style = mode === 'chaos' 
-    ? { bg: 'bg-[#9333EA]', border: 'border-0', text: 'text-white', accent: '#C084FC' } // Purple bg with Lavender accent
+    ? { bg: 'bg-[#D4B5E8]', border: 'border-0', text: 'text-black', accent: '#C5F547', secondary: '#6B2E8C' } // Lavender bg with Lime Green accent, Deep Purple secondary
     : mode === 'chill'
-    ? { bg: 'bg-white', border: 'border-0', text: 'text-[#4A1818]', accent: '#C084FC' }
-    : { bg: 'bg-black', border: 'border-0', text: 'text-white', accent: '#C084FC' }
+    ? { bg: 'bg-white', border: 'border-0', text: 'text-[#4A1818]', accent: '#C5F547', secondary: '#6B2E8C' }
+    : { bg: 'bg-black', border: 'border-0', text: 'text-white', accent: '#C5F547', secondary: '#6B2E8C' }
 
-  const barColor = mode === 'chaos' ? '#C084FC' : mode === 'chill' ? '#C084FC' : '#C084FC'
-  const trackBg = mode === 'chaos' ? 'rgba(255, 255, 255, 0.2)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.2)'
-  const thumbBorder = mode === 'chaos' ? '#fff' : mode === 'chill' ? '#4A1818' : '#fff'
+  const barColor = mode === 'chaos' ? '#C5F547' : mode === 'chill' ? '#C5F547' : '#C5F547'
+  const trackBg = mode === 'chaos' ? 'rgba(107, 46, 140, 0.2)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.2)'
+  const thumbBorder = mode === 'chaos' ? '#6B2E8C' : mode === 'chill' ? '#4A1818' : '#fff'
 
   // Show results if submitted
   if (currentStep === 'results' && hasSubmitted) {
@@ -288,16 +288,13 @@ export function TeamPulseCard() {
         <div className="p-4 pb-3 flex-shrink-0 relative z-10">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className={`p-1.5 rounded-lg ${mode === 'chaos' ? 'bg-[#C084FC]/20' : mode === 'chill' ? 'bg-[#C084FC]/20' : 'bg-white/20'}`}>
-                <TrendingUp className={`w-4 h-4 ${style.text}`} />
-              </div>
               <div>
                 <h2 className={`text-xl font-black uppercase ${style.text} tracking-tighter`}>Pulse Check</h2>
                 <p className={`text-xs font-bold ${style.text}/70 mt-0.5 uppercase tracking-wider`}>This week's results</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className={`${mode === 'chaos' ? 'bg-[#C084FC] text-black' : mode === 'chill' ? 'bg-[#C084FC] text-[#4A1818]' : 'bg-white text-black'} border-0 font-black text-xs px-2 py-0.5`}>
+              <Badge className={`${mode === 'chaos' ? 'bg-[#C5F547] text-black' : mode === 'chill' ? 'bg-[#C5F547] text-[#4A1818]' : 'bg-white text-black'} border-0 font-black text-xs px-2 py-0.5`}>
                 {totalResponses} {totalResponses === 1 ? 'response' : 'responses'}
               </Badge>
               <Button
@@ -323,7 +320,7 @@ export function TeamPulseCard() {
                 }}
                 className={`${getRoundedClass('rounded-full')} text-xs h-7 px-3 backdrop-blur-md shadow-lg transition-all ${
                   mode === 'chaos' 
-                    ? 'bg-white/20 text-white hover:bg-white/30 hover:shadow-xl border-0' 
+                    ? 'bg-[#6B2E8C]/20 text-black hover:bg-[#6B2E8C]/30 hover:shadow-xl border-0' 
                     : mode === 'chill'
                     ? 'bg-white/30 text-[#4A1818] hover:bg-white/40 hover:shadow-xl border-0'
                     : 'bg-white/20 text-white hover:bg-white/30 hover:shadow-xl border-0'
@@ -440,7 +437,10 @@ export function TeamPulseCard() {
       `}</style>
       <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] flex flex-col overflow-hidden`}>
         <div className="p-6 pb-4 flex-shrink-0">
-          <div className="flex items-center justify-between mb-2">
+          {/* Header matching horoscope header style */}
+          <h2 className={`text-4xl font-black mb-6 uppercase`} style={{ color: style.secondary }}>PULSE<br/>CHECK</h2>
+          
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Lock className={`w-3 h-3 ${style.text}/60`} />
               <p className={`text-xs ${style.text}/60`}>Your response is private and only added to the group average</p>
@@ -453,7 +453,7 @@ export function TeamPulseCard() {
                 }}
                 className={`${getRoundedClass('rounded-full')} text-xs h-8 px-4 backdrop-blur-md shadow-lg transition-all ${
                   mode === 'chaos' 
-                    ? 'bg-white/20 text-white hover:bg-white/30 hover:shadow-xl border-0' 
+                    ? 'bg-[#6B2E8C]/20 text-black hover:bg-[#6B2E8C]/30 hover:shadow-xl border-0' 
                     : mode === 'chill'
                     ? 'bg-white/30 text-[#4A1818] hover:bg-white/40 hover:shadow-xl border-0'
                     : 'bg-white/20 text-white hover:bg-white/30 hover:shadow-xl border-0'
@@ -463,27 +463,6 @@ export function TeamPulseCard() {
               </Button>
             )}
           </div>
-          
-          {/* Header matching horoscope header style */}
-          <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
-            <TrendingUp className="w-4 h-4" />
-            <span className="uppercase tracking-wider font-black text-xs">Pulse Check</span>
-          </div>
-          <h2 className={`text-4xl font-black mb-6 uppercase`} style={{ color: style.accent }}>PULSE<br/>CHECK</h2>
-          
-          {hasSubmitted && (
-            <div className={`mb-4 p-2 ${getRoundedClass('rounded-lg')} ${
-              mode === 'chaos' 
-                ? 'bg-[#EAB308]/10 border border-[#EAB308]/20' 
-                : mode === 'chill'
-                ? 'bg-[#FFC043]/10 border border-[#FFC043]/20'
-                : 'bg-white/10 border border-white/20'
-            }`}>
-              <p className={`text-xs ${style.text}/80`}>
-                You've already submitted this week. You can answer again to see new questions, but your previous submission won't be overwritten.
-              </p>
-            </div>
-          )}
         </div>
         
         <div className="flex-1 px-6 pb-4">
@@ -562,9 +541,9 @@ export function TeamPulseCard() {
             onClick={handleSubmit}
             disabled={!allAnswered || isSubmitting}
             className={`w-full ${getRoundedClass('rounded-full')} h-10 ${
-              mode === 'chaos' ? 'bg-[#C084FC] text-black hover:bg-[#C084FC]/80' :
-              mode === 'chill' ? 'bg-[#C084FC] text-[#4A1818] hover:bg-[#C084FC]/80' :
-              'bg-[#C084FC] text-black hover:bg-[#C084FC]/80'
+              mode === 'chaos' ? 'bg-[#C5F547] text-black hover:bg-[#C5F547]/80' :
+              mode === 'chill' ? 'bg-[#C5F547] text-[#4A1818] hover:bg-[#C5F547]/80' :
+              'bg-[#C5F547] text-black hover:bg-[#C5F547]/80'
             } font-black uppercase tracking-wider text-sm ${mode === 'code' ? 'font-mono' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {isSubmitting ? 'Submitting...' : 'Submit'}

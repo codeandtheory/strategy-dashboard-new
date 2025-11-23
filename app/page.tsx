@@ -731,7 +731,7 @@ export default function TeamDashboard() {
         'timezones': { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#F97316' }, // Black bg with Orange accent
         
         // Vibes - PURPLE SYSTEM: Purple, Deep Purple, Lavender, Lime Green
-        'horoscope': { bg: 'bg-[#9333EA]', border: 'border-0', glow: '', text: 'text-white', accent: '#C084FC' }, // Purple bg with Lavender accent
+        'horoscope': { bg: 'bg-[#9B59B6]', border: 'border-0', glow: '', text: 'text-white', accent: '#6B2E8C' }, // Purple bg (#9B59B6) with Deep Purple accent (#6B2E8C)
         'playlist': { bg: 'bg-[#000000]', border: 'border-2', glow: '', text: 'text-white', accent: '#9333EA' }, // Black bg with Purple border and accent
         
         // Community 1: Hive/Pulse - RED SYSTEM: Coral Red, Crimson, Peach, Ocean Blue
@@ -2901,74 +2901,33 @@ export default function TeamDashboard() {
 
       {/* Weekly Playlist Dialog */}
       <Dialog open={isPlaylistDialogOpen} onOpenChange={setIsPlaylistDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          {(() => {
-            const style = mode === 'chaos' ? getSpecificCardStyle('playlist') : getCardStyle('vibes')
-            return (
-              <div>
-                <DialogHeader>
-                  <DialogTitle className={`text-3xl font-black mb-4 uppercase ${style.text}`}>
-                    <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
-                      <Music className="w-4 h-4" />
-                      <span className="uppercase tracking-wider font-black text-xs">Weekly</span>
-                    </div>
-                    PLAYLIST
-                  </DialogTitle>
-                </DialogHeader>
-                {playlistLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin" style={{ color: style.accent }} />
-                  </div>
-                ) : weeklyPlaylist ? (
-                  <div className="space-y-4">
-                    {weeklyPlaylist.cover_url && (
-                      <div className="relative">
-                        <img
-                          src={weeklyPlaylist.cover_url}
-                          alt={weeklyPlaylist.title || 'Playlist'}
-                          className={`w-full ${getRoundedClass('rounded-xl')} object-cover`}
-                          style={{ maxHeight: '200px' }}
-                        />
-                        {weeklyPlaylist.curator_photo_url && (
-                          <div className="absolute bottom-2 right-2">
-                            <img
-                              src={weeklyPlaylist.curator_photo_url}
-                              alt={weeklyPlaylist.curator}
-                              className={`w-12 h-12 ${getRoundedClass('rounded-full')} ring-2 ring-white object-cover`}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div>
-                      <p className={`text-lg font-black mb-1 ${style.text}`}>
-                        {weeklyPlaylist.title || 'Untitled Playlist'}
-                      </p>
-                      <p className={`text-sm ${style.text}/70 mb-3`}>
-                        Curated by {weeklyPlaylist.curator}
-                      </p>
-                      {weeklyPlaylist.description && (
-                        <p className={`text-xs ${style.text}/60 mb-4`}>
-                          {weeklyPlaylist.description}
-                        </p>
-                      )}
-                    </div>
-                    <Button
-                      onClick={() => weeklyPlaylist.spotify_url && window.open(weeklyPlaylist.spotify_url, '_blank')}
-                      className={`w-full ${mode === 'chaos' ? 'bg-black text-[#9333EA] hover:bg-[#0F0F0F]' : mode === 'chill' ? 'bg-[#4A1818] text-[#C8D961] hover:bg-[#3A1414]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black rounded-full h-10 text-sm uppercase flex items-center justify-center gap-2`}
-                    >
-                      <Play className="w-4 h-4" />
-                      Play on Spotify
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className={`text-sm ${style.text}/60`}>No playlist this week</p>
-                  </div>
-                )}
-              </div>
-            )
-          })()}
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+          {playlistLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-6 h-6 animate-spin" />
+            </div>
+          ) : weeklyPlaylist ? (
+            <SpotifyPlayer
+              playlist={{
+                title: weeklyPlaylist.title || 'Untitled Playlist',
+                curator: weeklyPlaylist.curator,
+                curatorPhotoUrl: weeklyPlaylist.curator_photo_url || undefined,
+                coverUrl: weeklyPlaylist.cover_url || undefined,
+                description: weeklyPlaylist.description || undefined,
+                spotifyUrl: weeklyPlaylist.spotify_url || undefined,
+                tracks: []
+              }}
+              onSpotifyLink={() => {
+                if (weeklyPlaylist.spotify_url) {
+                  window.open(weeklyPlaylist.spotify_url, '_blank')
+                }
+              }}
+            />
+          ) : (
+            <div className="text-center py-16 px-6">
+              <p className="text-sm text-muted-foreground">No playlist this week</p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
