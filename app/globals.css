@@ -5,6 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --scale-factor: 0.8; /* Global scale factor for 80% sizing */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -121,6 +122,7 @@
 /* Added smooth scroll behavior and refined base styles */
 html {
   scroll-behavior: smooth;
+  font-size: 80%; /* Scale everything down to 80% by reducing root font size */
 }
 
 body {
