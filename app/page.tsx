@@ -2038,14 +2038,14 @@ export default function TeamDashboard() {
                   style={eventsExpanded ? { minHeight: '0' } : { height: '80px', maxHeight: '80px', minHeight: '80px' }}
                 >
                   {eventsExpanded ? (
-                    /* Vertical stats view when expanded */
-                    <div className="flex flex-col gap-6 h-full justify-center">
+                    /* Vertical stats view when expanded - Bold and clean */
+                    <div className="flex flex-col gap-5 h-full justify-center">
                       {stats.map((stat, index) => (
-                        <div key={stat.label} className="flex items-center justify-between">
-                          <div className={`text-sm font-medium ${style.text} opacity-70`}>
+                        <div key={stat.label} className="flex items-center justify-between py-2">
+                          <div className={`text-base font-normal tracking-wide ${style.text}`}>
                             {stat.label}
                           </div>
-                          <div className={`text-4xl font-black ${style.text}`}>
+                          <div className={`text-5xl font-black ${style.text}`}>
                             {stat.value}
                           </div>
                         </div>
@@ -2161,35 +2161,35 @@ export default function TeamDashboard() {
                     )}
                     
                     {eventsExpanded ? (
-                      /* Stats view when events expanded - Vertical and refined */
-                      <div className="flex flex-col gap-6 h-full justify-center">
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-white/70 font-medium">In Progress</div>
-                          <div className={`text-4xl font-black ${getTextClass()}`}>
+                      /* Stats view when events expanded - Clean vertical layout */
+                      <div className="flex flex-col gap-5 h-full justify-center">
+                        <div className="flex items-center justify-between py-2">
+                          <div className="text-base text-white font-normal tracking-wide">In Progress</div>
+                          <div className="text-5xl font-black text-white">
                             {pipelineLoading ? '0' : statusCounts['In Progress']}
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-white/70 font-medium">Pending</div>
-                          <div className={`text-4xl font-black ${getTextClass()}`}>
+                        <div className="flex items-center justify-between py-2">
+                          <div className="text-base text-white font-normal tracking-wide">Pending</div>
+                          <div className="text-5xl font-black text-white">
                             {pipelineLoading ? '0' : statusCounts['Pending Decision']}
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-white/70 font-medium">Long Lead</div>
-                          <div className={`text-4xl font-black ${getTextClass()}`}>
+                        <div className="flex items-center justify-between py-2">
+                          <div className="text-base text-white font-normal tracking-wide">Long Lead</div>
+                          <div className="text-5xl font-black text-white">
                             {pipelineLoading ? '0' : statusCounts['Long Lead']}
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-white/70 font-medium">Won</div>
-                          <div className={`text-4xl font-black ${getTextClass()}`}>
+                        <div className="flex items-center justify-between py-2">
+                          <div className="text-base text-white font-normal tracking-wide">Won</div>
+                          <div className="text-5xl font-black text-white">
                             {pipelineLoading ? '0' : statusCounts['Won']}
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-white/70 font-medium">Lost</div>
-                          <div className={`text-4xl font-black ${getTextClass()}`}>
+                        <div className="flex items-center justify-between py-2">
+                          <div className="text-base text-white font-normal tracking-wide">Lost</div>
+                          <div className="text-5xl font-black text-white">
                             {pipelineLoading ? '0' : statusCounts['Lost']}
                           </div>
                         </div>
