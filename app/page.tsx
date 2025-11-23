@@ -315,8 +315,8 @@ export default function TeamDashboard() {
       
       try {
         const url = snapViewType === 'received' 
-          ? `/api/snaps?mentioned_user_id=${user.id}&limit=3`
-          : `/api/snaps?submitted_by=${user.id}&limit=3`
+          ? `/api/snaps?mentioned_user_id=${user.id}&limit=6`
+          : `/api/snaps?submitted_by=${user.id}&limit=6`
         const response = await fetch(url)
         if (response.ok) {
           const result = await response.json()
@@ -336,11 +336,11 @@ export default function TeamDashboard() {
     // Refresh snaps list for the logged-in user
     if (!user) return
     
-    try {
-      const url = snapViewType === 'received' 
-        ? `/api/snaps?mentioned_user_id=${user.id}&limit=3`
-        : `/api/snaps?submitted_by=${user.id}&limit=3`
-      const response = await fetch(url)
+      try {
+        const url = snapViewType === 'received' 
+          ? `/api/snaps?mentioned_user_id=${user.id}&limit=6`
+          : `/api/snaps?submitted_by=${user.id}&limit=6`
+        const response = await fetch(url)
       if (response.ok) {
         const result = await response.json()
         if (result.data && Array.isArray(result.data)) {
@@ -1703,12 +1703,19 @@ export default function TeamDashboard() {
                     <Sparkles className="w-4 h-4" />
                     <span className="uppercase tracking-wider font-black text-xs">Recent Recognition</span>
                   </div>
-                  <Button 
-                    onClick={() => setShowAddSnapDialog(true)}
-                    className={`${mode === 'chaos' ? 'bg-gradient-to-r from-[#00FF87] to-[#00E676] hover:from-[#00FF87] hover:to-[#00FF87] text-black' : mode === 'chill' ? 'bg-gradient-to-r from-[#C8D961] to-[#FFC043] hover:from-[#C8D961] hover:to-[#C8D961] text-[#4A1818]' : 'bg-gradient-to-r from-[#cccccc] to-[#e5e5e5] hover:from-[#cccccc] hover:to-[#cccccc] text-black'} font-black rounded-full h-10 px-6 text-sm uppercase`}
-                  >
-                    + GIVE A SNAP
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Link href="/vibes">
+                      <Button className={`${mode === 'chaos' ? 'bg-black/40 hover:bg-black/60 border-2 border-[#E8FF00] text-[#E8FF00]' : mode === 'chill' ? 'bg-[#F5E6D3]/30 hover:bg-[#F5E6D3]/50 border-2 border-[#FFB5D8] text-[#4A1818]' : 'bg-black/40 hover:bg-black/60 border-2 border-white text-white'} font-black rounded-full h-10 px-6 text-sm uppercase`}>
+                        VIEW ALL
+                      </Button>
+                    </Link>
+                    <Button 
+                      onClick={() => setShowAddSnapDialog(true)}
+                      className={`${mode === 'chaos' ? 'bg-gradient-to-r from-[#00FF87] to-[#00E676] hover:from-[#00FF87] hover:to-[#00FF87] text-black' : mode === 'chill' ? 'bg-gradient-to-r from-[#C8D961] to-[#FFC043] hover:from-[#C8D961] hover:to-[#C8D961] text-[#4A1818]' : 'bg-gradient-to-r from-[#cccccc] to-[#e5e5e5] hover:from-[#cccccc] hover:to-[#cccccc] text-black'} font-black rounded-full h-10 px-6 text-sm uppercase`}
+                    >
+                      + GIVE A SNAP
+                    </Button>
+                  </div>
                 </div>
                 <h2 className="text-6xl font-black mb-4 uppercase" style={{ color: style.accent }}>Your Snaps</h2>
                 <div className="flex gap-2 mb-6">
@@ -1757,16 +1764,15 @@ export default function TeamDashboard() {
                   ) : (
                     snaps.map((snap, idx) => {
                       const fromName = snap.submitted_by_profile?.full_name || snap.submitted_by_profile?.email || 'Anonymous'
-                      const toName = snap.mentioned_user_profile?.full_name || snap.mentioned_user_profile?.email || snap.mentioned || 'Team'
                       return (
                         <div key={snap.id} className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/40'} rounded-xl p-5 border-2 transition-all hover:opacity-80`} style={{ borderColor: `${style.accent}66` }}>
                           <div className="flex items-start gap-3">
                             <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-2" style={{ backgroundColor: style.accent }}></div>
                             <div className="flex-1">
-                              <p className={`font-black text-sm mb-1 ${style.text}`}>
-                                <span className="font-black">{fromName}</span> <span className={`${style.text}/50`}>→</span> <span className="font-black">{toName}</span>
+                              <p className={`text-lg font-black mb-3 leading-snug ${style.text}`}>{snap.snap_content}</p>
+                              <p className={`text-xs ${style.text}/60`}>
+                                {fromName}
                               </p>
-                              <p className={`text-sm leading-relaxed ${style.text}/80`}>{snap.snap_content}</p>
                             </div>
                           </div>
                         </div>
@@ -1774,11 +1780,6 @@ export default function TeamDashboard() {
                     })
                   )}
                 </div>
-                <Link href="/vibes">
-                  <Button className={`w-full ${mode === 'chaos' ? 'bg-black/40 hover:bg-black/60 border-2 border-[#E8FF00] text-[#E8FF00]' : mode === 'chill' ? 'bg-[#F5E6D3]/30 hover:bg-[#F5E6D3]/50 border-2 border-[#FFB5D8] text-[#4A1818]' : 'bg-black/40 hover:bg-black/60 border-2 border-white text-white'} font-black rounded-full h-14 text-base uppercase`}>
-                    VIEW ALL SNAPS
-                  </Button>
-                </Link>
               </Card>
             )
           })()}
