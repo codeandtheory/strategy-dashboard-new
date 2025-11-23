@@ -164,11 +164,6 @@ export function BeastBabeCard() {
         <h3 className="text-4xl font-black text-white mb-2 text-left glitch-text">
           {currentBeastBabe?.full_name || currentBeastBabe?.email || 'No Beast Babe Yet'}
         </h3>
-        
-        {/* Role */}
-        {currentBeastBabe?.role && (
-          <p className="text-lg text-white/80 mb-4 glitch-text">{currentBeastBabe.role}</p>
-        )}
 
         {/* Achievement Description */}
         {currentBeastBabe?.history?.achievement && (

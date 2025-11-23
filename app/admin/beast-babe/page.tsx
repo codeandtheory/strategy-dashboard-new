@@ -248,9 +248,6 @@ export default function BeastBabeAdmin() {
                 <h3 className="text-lg font-semibold text-foreground mb-1">
                   {currentBeastBabe.full_name || currentBeastBabe.email || 'Unknown'}
                 </h3>
-                {currentBeastBabe.role && (
-                  <p className="text-sm text-muted-foreground mb-2">{currentBeastBabe.role}</p>
-                )}
                 {currentBeastBabe.history?.achievement && (
                   <p className="text-sm text-foreground mt-2 italic">
                     "{currentBeastBabe.history.achievement}"
