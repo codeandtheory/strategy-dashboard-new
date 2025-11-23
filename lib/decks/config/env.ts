@@ -5,7 +5,7 @@
 export interface DeckConfig {
   openaiApiKey: string
   openaiApiKeyFallback?: string
-  openaiProxyUrl?: string // Optional proxy URL (e.g., n8n workflow endpoint)
+  openaiProxyUrl?: string // Optional proxy URL (e.g., Elvex endpoint: https://api.elvex.ai/v1/chat/completions)
   supabaseUrl: string
   supabaseServiceRoleKey: string
   googleDriveFolderId: string
