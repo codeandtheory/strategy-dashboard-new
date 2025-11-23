@@ -115,8 +115,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     {
       title: 'ADMINISTRATION',
       items: [
+        { href: '/admin/users', label: 'User Management', icon: Users, permission: 'canManageUsers' as const },
         { href: '/admin/notifications', label: 'Push Notifications', icon: Bell, permission: 'canManageUsers' as const },
-        { href: '/admin/users', label: 'Set Curator', icon: Users, permission: 'canManageUsers' as const },
         { href: '/admin/curator-rotation', label: 'Curator Rotation', icon: RotateCw, permission: 'canManageUsers' as const },
       ]
     }

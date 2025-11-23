@@ -127,30 +127,49 @@ export function AccountMenu() {
           </div>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-background border border-border shadow-lg">
+      <DropdownMenuContent 
+        align="end" 
+        className={`w-56 border shadow-lg ${mode === 'code' ? 'rounded-none' : getRoundedClass('rounded-[1.5rem]')}`}
+        style={{
+          backgroundColor: mode === 'chaos' ? '#1a1a1a' : mode === 'chill' ? '#FFFFFF' : '#1a1a1a',
+          borderColor: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF',
+        }}
+      >
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{displayName}</p>
+            <p className={`text-sm font-medium leading-none ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{displayName}</p>
             {user.email && (
-              <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+              <p className={`text-xs leading-none ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>{user.email}</p>
             )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push('/profile')}>
+        <DropdownMenuItem 
+          onClick={() => router.push('/profile')}
+          className={mode === 'chill' ? 'text-[#4A1818] hover:bg-gray-100' : 'text-white hover:bg-white/10'}
+        >
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push('/settings/notifications')}>
+        <DropdownMenuItem 
+          onClick={() => router.push('/settings/notifications')}
+          className={mode === 'chill' ? 'text-[#4A1818] hover:bg-gray-100' : 'text-white hover:bg-white/10'}
+        >
           <Bell className="mr-2 h-4 w-4" />
           <span>Notification Settings</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push('/admin')}>
+        <DropdownMenuItem 
+          onClick={() => router.push('/admin')}
+          className={mode === 'chill' ? 'text-[#4A1818] hover:bg-gray-100' : 'text-white hover:bg-white/10'}
+        >
           <Shield className="mr-2 h-4 w-4" />
           <span>Admin</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
+        <DropdownMenuItem 
+          onClick={signOut} 
+          className={mode === 'chill' ? 'text-red-600 hover:bg-red-50 focus:text-red-600' : 'text-red-400 hover:bg-red-500/20 focus:text-red-400'}
+        >
           <LogOut className="mr-2 h-4 w-4" />
           <span>Logout</span>
         </DropdownMenuItem>

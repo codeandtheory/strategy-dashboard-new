@@ -8,7 +8,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { useMode } from '@/contexts/mode-context'
 import { usePermissions } from '@/contexts/permissions-context'
-import { Users, Search, Save, Loader2, User, Mail, Calendar, Briefcase, Building, Globe, MapPin, Image as ImageIcon } from 'lucide-react'
+import { Users, Search, Save, Loader2, User, Mail, Calendar, Briefcase, Building, Globe, MapPin, Image as ImageIcon, Upload } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/auth-context'
+import { LocationAutocomplete } from '@/components/location-autocomplete'
 
 interface UserProfile {
   id: string
@@ -32,6 +35,8 @@ interface UserProfile {
 export default function UsersAdminPage() {
   const { mode } = useMode()
   const { permissions } = usePermissions()
+  const { user: authUser } = useAuth()
+  const supabase = createClient()
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -39,6 +44,7 @@ export default function UsersAdminPage() {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null)
   const [saving, setSaving] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   const getBorderColor = () => {
     switch (mode) {
@@ -98,6 +104,62 @@ export default function UsersAdminPage() {
   const handleUserSelect = (user: UserProfile) => {
     setSelectedUser(user)
     setEditingUser({ ...user })
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !editingUser || !authUser) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be less than 5MB')
+      return
+    }
+
+    setUploadingAvatar(true)
+    setError(null)
+
+    try {
+      // Create a unique filename
+      // Store in user's folder: avatars/{user_id}/{filename}
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}.${fileExt}`
+      const filePath = `${editingUser.id}/${fileName}`
+
+      // Upload to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (uploadError) {
+        throw uploadError
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+
+      // Update editing user with new avatar URL
+      setEditingUser({ ...editingUser, avatar_url: publicUrl })
+      
+      alert('Avatar uploaded successfully! Click "Save Changes" to update the profile.')
+    } catch (err: any) {
+      console.error('Error uploading avatar:', err)
+      setError(err.message || 'Failed to upload avatar')
+      alert('Failed to upload avatar: ' + err.message)
+    } finally {
+      setUploadingAvatar(false)
+    }
   }
 
   const handleSave = async () => {
@@ -263,31 +325,63 @@ export default function UsersAdminPage() {
               <h2 className="text-xl font-semibold text-black mb-6">Edit User Profile</h2>
               
               <div className="space-y-6">
-                {/* Avatar URL */}
+                {/* Avatar Upload */}
                 <div>
                   <Label className="text-black flex items-center gap-2 mb-2">
                     <ImageIcon className="w-4 h-4" />
-                    Avatar URL
+                    Avatar
                   </Label>
+                  <div className="flex items-center gap-4">
+                    {editingUser.avatar_url && (
+                      <div className="flex-shrink-0">
+                        <img
+                          src={editingUser.avatar_url}
+                          alt="Avatar preview"
+                          className="w-20 h-20 rounded-full object-cover border-2"
+                          style={{ borderColor: getBorderColor() }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none'
+                          }}
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="hidden"
+                          disabled={uploadingAvatar}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={uploadingAvatar}
+                          className="bg-white text-black border-gray-300 hover:bg-gray-50"
+                        >
+                          {uploadingAvatar ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4 mr-2" />
+                              Upload Avatar
+                            </>
+                          )}
+                        </Button>
+                      </label>
+                      <p className="text-xs text-gray-500 mt-2">Or enter URL below</p>
+                    </div>
+                  </div>
                   <Input
                     value={editingUser.avatar_url || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, avatar_url: e.target.value })}
                     placeholder="https://..."
-                    className="bg-white text-black border-gray-300"
+                    className="bg-white text-black border-gray-300 mt-2"
                   />
-                  {editingUser.avatar_url && (
-                    <div className="mt-2">
-                      <img
-                        src={editingUser.avatar_url}
-                        alt="Avatar preview"
-                        className="w-20 h-20 rounded-full object-cover border-2"
-                        style={{ borderColor: getBorderColor() }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none'
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {/* Basic Info */}
@@ -410,12 +504,15 @@ export default function UsersAdminPage() {
                       <MapPin className="w-4 h-4" />
                       Location
                     </Label>
-                    <Input
+                    <LocationAutocomplete
                       value={editingUser.location || ''}
-                      onChange={(e) => setEditingUser({ ...editingUser, location: e.target.value })}
-                      placeholder="City, State"
+                      onChange={(value) => setEditingUser({ ...editingUser, location: value })}
+                      placeholder="Start typing a city or location..."
                       className="bg-white text-black border-gray-300"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Start typing to see location suggestions
+                    </p>
                   </div>
                   <div>
                     <Label className="text-black flex items-center gap-2 mb-2">
