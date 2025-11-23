@@ -706,41 +706,97 @@ export default function TeamDashboard() {
     }
   }, [user])
 
+  // Time-based gradient for hero section
+  const getTimeBasedGradient = (): { bg: string; text: string; accent: string } => {
+    const now = new Date()
+    const hour = now.getHours()
+    
+    // Define time periods and their corresponding gradients using our color systems
+    // Sunrise: 5-7 AM - Orange/Yellow system (warm, bright)
+    // Daytime: 7 AM - 5 PM - Blue system (clear, bright)
+    // Sunset: 5-7 PM - Red/Orange system (warm, vibrant)
+    // Dusk: 7-9 PM - Purple system (deep, transitioning)
+    // Nighttime: 9 PM - 5 AM - Deep Purple/Navy (dark, cool)
+    
+    if (hour >= 5 && hour < 7) {
+      // Sunrise: Orange/Yellow system
+      // ORANGE SYSTEM: Orange (#FF8C42), Golden Yellow (#FFD700)
+      return {
+        bg: 'bg-gradient-to-br from-[#FFD700] via-[#FF8C42] to-[#FFB84D]',
+        text: 'text-black',
+        accent: '#FFD700'
+      }
+    } else if (hour >= 7 && hour < 17) {
+      // Daytime: Blue system
+      // BLUE SYSTEM: Ocean Blue (#00A3E0), Sky Blue (#7DD3F0), Navy Blue (#1B4D7C)
+      return {
+        bg: 'bg-gradient-to-br from-[#7DD3F0] via-[#00A3E0] to-[#1B4D7C]',
+        text: 'text-white',
+        accent: '#00A3E0'
+      }
+    } else if (hour >= 17 && hour < 19) {
+      // Sunset: Red/Orange system
+      // RED SYSTEM: Coral Red (#FF4C4C), Orange (#FF8C42), Crimson (#C41E3A)
+      return {
+        bg: 'bg-gradient-to-br from-[#FF4C4C] via-[#FF8C42] to-[#C41E3A]',
+        text: 'text-white',
+        accent: '#FF4C4C'
+      }
+    } else if (hour >= 19 && hour < 21) {
+      // Dusk: Purple system
+      // PURPLE SYSTEM: Purple (#9B59B6), Deep Purple (#6B2E8C), Lavender
+      return {
+        bg: 'bg-gradient-to-br from-[#9B59B6] via-[#6B2E8C] to-[#4A148C]',
+        text: 'text-white',
+        accent: '#9B59B6'
+      }
+    } else {
+      // Nighttime: Deep Purple/Navy
+      // Deep Purple (#6B2E8C), Navy Blue (#1B4D7C)
+      return {
+        bg: 'bg-gradient-to-br from-[#6B2E8C] via-[#1B4D7C] to-[#0F172A]',
+        text: 'text-white',
+        accent: '#6B2E8C'
+      }
+    }
+  }
+
   // Comprehensive mode-aware card styling
   type CardSection = 'hero' | 'recognition' | 'work' | 'team' | 'vibes' | 'community' | 'community2' | 'default'
   type SpecificCard = 'hero-large' | 'launch-pad' | 'horoscope' | 'timezones' | 'playlist' | 'friday-drop' | 'brand-redesign' | 'stats' | 'events' | 'pipeline' | 'who-needs-what' | 'snaps' | 'beast-babe' | 'wins-wall' | 'ask-hive' | 'team-pulse' | 'loom-standup' | 'inspiration-war' | 'search'
   
   const getSpecificCardStyle = (cardName: SpecificCard): { bg: string; border: string; glow: string; text: string; accent: string } => {
     if (mode === 'chaos') {
+      const timeGradient = getTimeBasedGradient()
       const chaosCardStyles: Record<SpecificCard, { bg: string; border: string; glow: string; text: string; accent: string }> = {
-        // Hero - keep current gradient
-        'hero-large': { bg: 'bg-gradient-to-br from-[#FFE500] via-[#FF8C00] to-[#FF6B6B]', border: 'border-0', glow: '', text: 'text-black', accent: '#FFE500' },
+        // Hero - time-based gradient
+        'hero-large': { bg: timeGradient.bg, border: 'border-0', glow: '', text: timeGradient.text, accent: timeGradient.accent },
         
         // Recognition & Culture - GREEN SYSTEM: Emerald, Forest Green, Lime Green, Orange
         'beast-babe': { bg: 'bg-[#10B981]', border: 'border-0', glow: '', text: 'text-black', accent: '#047857' }, // Emerald bg with Forest Green accent
         'wins-wall': { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#84CC16' }, // Black bg with Lime Green accent
         'snaps': { bg: 'bg-[#1E293B]', border: 'border-2', glow: '', text: 'text-white', accent: '#10B981' }, // Slate Grey bg with Emerald accent and border
         
-        // Work - BLUE SYSTEM: Ocean Blue, Navy Blue, Sky Blue, Golden Yellow
-        'events': { bg: 'bg-[#0EA5E9]', border: 'border-0', glow: '', text: 'text-black', accent: '#1E3A8A' }, // Ocean Blue bg with Navy Blue accent
-        'pipeline': { bg: 'bg-[#1E3A8A]', border: 'border-0', glow: '', text: 'text-white', accent: '#38BDF8' }, // Navy Blue bg with Sky Blue accent
-        'friday-drop': { bg: 'bg-[#EAB308]', border: 'border-0', glow: '', text: 'text-black', accent: '#0EA5E9' }, // Golden Yellow bg with Ocean Blue accent
-        'who-needs-what': { bg: 'bg-[#38BDF8]', border: 'border-0', glow: '', text: 'text-black', accent: '#1E3A8A' }, // Sky Blue bg with Navy Blue accent
+        // Work - BLUE SYSTEM: Ocean (#00A3E0), Navy (#1B4D7C), Sky (#7DD3F0), Golden Yellow (#FFD700)
+        'events': { bg: 'bg-[#00A3E0]', border: 'border-0', glow: '', text: 'text-black', accent: '#1B4D7C' }, // Ocean bg with Navy accent
+        'pipeline': { bg: 'bg-[#1B4D7C]', border: 'border-0', glow: '', text: 'text-white', accent: '#7DD3F0' }, // Navy bg with Sky accent
+        'friday-drop': { bg: 'bg-[#FFD700]', border: 'border-0', glow: '', text: 'text-black', accent: '#00A3E0' }, // Golden Yellow bg with Ocean accent
+        'who-needs-what': { bg: 'bg-[#7DD3F0]', border: 'border-0', glow: '', text: 'text-black', accent: '#1B4D7C' }, // Sky bg with Navy accent
         
-        // Team - ORANGE SYSTEM: Orange, Brown, Tan, Purple
-        'timezones': { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#F97316' }, // Black bg with Orange accent
+        // Team - ORANGE SYSTEM: Orange (#FF8C42), Brown (#7A5C3D), Tan (#D4C4A8), Purple (#9B59B6)
+        'timezones': { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#FF8C42' }, // Black bg with Orange accent
         
         // Vibes - PURPLE SYSTEM: Purple, Deep Purple, Lavender, Lime Green
         'horoscope': { bg: 'bg-[#9B59B6]', border: 'border-0', glow: '', text: 'text-white', accent: '#6B2E8C' }, // Purple bg (#9B59B6) with Deep Purple accent (#6B2E8C)
         'playlist': { bg: 'bg-[#000000]', border: 'border-2', glow: '', text: 'text-white', accent: '#9333EA' }, // Black bg with Purple border and accent
         
-        // Community 1: Hive/Pulse - RED SYSTEM: Coral Red, Crimson, Peach, Ocean Blue
-        'ask-hive': { bg: 'bg-[#F87171]', border: 'border-0', glow: '', text: 'text-black', accent: '#DC2626' }, // Coral Red bg with Crimson accent
-        'team-pulse': { bg: 'bg-[#F4F4F5]', border: 'border-0', glow: '', text: 'text-black', accent: '#F87171' }, // Zinc bg with Coral Red accent
+        // Community 1: Hive/Pulse - RED SYSTEM: Coral Red (#FF4C4C), Crimson (#C41E3A), Peach (#FFD4C4), Ocean Blue (#00A3E0)
+        'ask-hive': { bg: 'bg-[#FF4C4C]', border: 'border-0', glow: '', text: 'text-black', accent: '#C41E3A' }, // Coral Red bg with Crimson accent
+        'team-pulse': { bg: 'bg-[#F4F4F5]', border: 'border-0', glow: '', text: 'text-black', accent: '#FF4C4C' }, // Zinc bg with Coral Red accent
         
-        // Community 2: Loop/Inspo War/Search - YELLOW SYSTEM: Golden Yellow, Gold, Light Yellow, Deep Purple
-        'loom-standup': { bg: 'bg-[#EAB308]', border: 'border-0', glow: '', text: 'text-black', accent: '#D97706' }, // Golden Yellow bg with Gold accent
-        'inspiration-war': { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#EAB308' }, // Black bg with Golden Yellow accent
+        // Community 2: Loop/Inspo War/Search - YELLOW SYSTEM: Yellow (#FFD700), Gold (#D4A60A), Light Yellow (#FFF59D), Deep Purple (#6B2E8C)
+        'loom-standup': { bg: 'bg-[#FFD700]', border: 'border-0', glow: '', text: 'text-black', accent: '#D4A60A' }, // Yellow bg with Gold accent
+        'inspiration-war': { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#FFD700' }, // Black bg with Yellow accent
         'search': { bg: 'bg-[#000000]', border: 'border-2', glow: '', text: 'text-white', accent: '#9333EA' }, // Black bg with Purple border and accent
         
         // Other cards - keeping existing or using appropriate section colors
@@ -772,11 +828,11 @@ export default function TeamDashboard() {
       const chaosColors: Record<CardSection, { bg: string; border: string; glow: string; text: string; accent: string }> = {
         hero: { bg: 'bg-gradient-to-br from-[#FFB84D] via-[#FFE500] to-[#FFE500]', border: 'border-0', glow: '', text: 'text-black', accent: '#C4F500' }, // Keep hero gradient
         recognition: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#10B981' }, // GREEN SYSTEM - Emerald accent
-        work: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#0EA5E9' }, // BLUE SYSTEM - Ocean Blue accent
-        team: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#F97316' }, // ORANGE SYSTEM - Orange accent
+        work: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#00A3E0' }, // BLUE SYSTEM - Ocean accent
+        team: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#FF8C42' }, // ORANGE SYSTEM - Orange accent
         vibes: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#9333EA' }, // PURPLE SYSTEM - Purple accent
-        community: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#F87171' }, // RED SYSTEM - Coral Red accent
-        community2: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#EAB308' }, // YELLOW SYSTEM - Golden Yellow accent
+        community: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#FF4C4C' }, // RED SYSTEM - Coral Red accent
+        community2: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#FFD700' }, // YELLOW SYSTEM - Yellow accent
         default: { bg: 'bg-[#000000]', border: 'border-0', glow: '', text: 'text-white', accent: '#10B981' },
       }
       return chaosColors[section] || chaosColors.default
@@ -814,11 +870,11 @@ export default function TeamDashboard() {
       // For chaos mode, return accent, black, and a secondary color based on section
       const secondaryColors: Record<CardSection, string> = {
         recognition: '#84CC16', // Lime Green (GREEN SYSTEM)
-        work: '#38BDF8', // Sky Blue (BLUE SYSTEM)
-        team: '#FCD34D', // Tan (ORANGE SYSTEM)
+        work: '#7DD3F0', // Sky (BLUE SYSTEM)
+        team: '#D4C4A8', // Tan (ORANGE SYSTEM)
         vibes: '#C084FC', // Lavender (PURPLE SYSTEM)
-        community: '#FED7AA', // Peach (RED SYSTEM)
-        community2: '#FEF08A', // Light Yellow (YELLOW SYSTEM)
+        community: '#FFD4C4', // Peach (RED SYSTEM)
+        community2: '#FFF59D', // Light Yellow (YELLOW SYSTEM)
         hero: '#C4F500', // Lime
         default: '#EAB308',
       }
@@ -919,7 +975,7 @@ export default function TeamDashboard() {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
+    <div className={`flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       <header className={`border-b ${getBorderClass()} px-6 py-4`}>
         <div className="max-w-[1600px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
@@ -1134,7 +1190,7 @@ export default function TeamDashboard() {
         </div>
       </header>
 
-      <main className="max-w-[1600px] mx-auto px-6 py-4 flex-1">
+      <main className="max-w-[1600px] mx-auto px-6 py-4 flex-1 pb-0">
         {/* Hero Section - Full Width */}
         <section className="mb-12">
           {(() => {
@@ -1253,7 +1309,7 @@ export default function TeamDashboard() {
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('timezones') : getCardStyle('team')
             const timeZoneColors = mode === 'chaos' 
-              ? ['#0EA5E9', '#0369A1', '#34D399', '#0EA5E9', '#0369A1', '#34D399', '#0EA5E9'] // Team palette: Ocean Blue, Deep Ocean, Bright Mint
+              ? ['#00A3E0', '#1B4D7C', '#7DD3F0', '#00A3E0', '#1B4D7C', '#7DD3F0', '#00A3E0'] // Team palette: Ocean, Navy, Sky (BLUE SYSTEM)
               : mode === 'chill'
               ? ['#C8D961', '#4A9BFF', '#00D4FF', '#9D4EFF', '#FFB84D', '#FFD93D', '#A8E6CF']
               : ['#cccccc', '#e5e5e5', '#999999', '#cccccc', '#b3b3b3', '#d9d9d9', '#e5e5e5']
@@ -1694,7 +1750,7 @@ export default function TeamDashboard() {
           {/* Events */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('events') : getCardStyle('work')
-            const mintColor = mode === 'chaos' ? '#0EA5E9' : '#00FF87' // Work section uses Ocean Blue from BLUE SYSTEM
+            const mintColor = mode === 'chaos' ? '#00A3E0' : '#00FF87' // Work section uses Ocean from BLUE SYSTEM
             
             // Filter events for today or week view
             const now = new Date()
@@ -1785,16 +1841,16 @@ export default function TeamDashboard() {
               
               // Strategy team
               if (calendarId.includes('6236655ee40ad4fcbedc4e96ce72c39783f27645dbdd22714ca9bc90fcc551ac')) {
-                return mode === 'chaos' ? '#1E3A8A' : '#9D4EFF' // Navy Blue from BLUE SYSTEM
+                return mode === 'chaos' ? '#1B4D7C' : '#9D4EFF' // Navy from BLUE SYSTEM
               }
               
               // Holidays
               if (calendarId.includes('holiday')) {
-                return mode === 'chaos' ? '#EAB308' : '#FFC043' // Golden Yellow from BLUE SYSTEM contrast
+                return mode === 'chaos' ? '#FFD700' : '#FFC043' // Golden Yellow from BLUE SYSTEM contrast
               }
               
               // Office events (default)
-              return mode === 'chaos' ? '#0EA5E9' : '#00FF87' // Ocean Blue from BLUE SYSTEM
+              return mode === 'chaos' ? '#00A3E0' : '#00FF87' // Ocean from BLUE SYSTEM
             }
 
             // Generate week days for Gantt chart
@@ -2779,7 +2835,7 @@ export default function TeamDashboard() {
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('loom-standup') : getCardStyle('team')
             const standupColors = mode === 'chaos'
-              ? ['#F97316', '#92400E', '#FCD34D'] // ORANGE SYSTEM: Orange, Brown, Tan
+              ? ['#FF8C42', '#7A5C3D', '#D4C4A8'] // ORANGE SYSTEM: Orange, Brown, Tan
               : mode === 'chill'
               ? ['#4A9BFF', '#8B4444', '#FFB5D8']
               : ['#cccccc', '#999999', '#e5e5e5']

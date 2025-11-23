@@ -124,10 +124,10 @@ export default function VibesPage() {
   }
 
   // Get card styles using RED, ORANGE, and YELLOW SYSTEMS
-  // Beast Babe: RED SYSTEM (Coral Red, Crimson, Peach, Ocean Blue)
+  // Beast Babe: RED SYSTEM (Coral Red #FF4C4C, Crimson #C41E3A, Peach #FFD4C4, Ocean Blue #00A3E0)
   const getBeastBabeCardStyle = () => {
     if (mode === 'chaos') {
-      return { bg: 'bg-[#F87171]', text: 'text-black', accent: '#DC2626' } // Coral Red bg with Crimson accent (RED SYSTEM)
+      return { bg: 'bg-[#FF4C4C]', text: 'text-black', accent: '#C41E3A' } // Coral Red bg with Crimson accent (RED SYSTEM)
     } else if (mode === 'chill') {
       return { bg: 'bg-white', text: 'text-[#4A1818]', accent: '#FFB5D8', border: 'border border-[#FFB5D8]/30' }
     } else {
@@ -135,10 +135,10 @@ export default function VibesPage() {
     }
   }
 
-  // Question of the Week: ORANGE SYSTEM (Orange, Brown, Tan, Purple)
+  // Question of the Week: ORANGE SYSTEM (Orange #FF8C42, Brown #7A5C3D, Tan #D4C4A8, Purple #9B59B6)
   const getQuestionCardStyle = () => {
     if (mode === 'chaos') {
-      return { bg: 'bg-[#F97316]', text: 'text-black', accent: '#7C2D12' } // Orange bg with Brown accent (ORANGE SYSTEM)
+      return { bg: 'bg-[#FF8C42]', text: 'text-black', accent: '#7A5C3D' } // Orange bg with Brown accent (ORANGE SYSTEM)
     } else if (mode === 'chill') {
       return { bg: 'bg-white', text: 'text-[#4A1818]', accent: '#FFB5D8', border: 'border border-[#FFB5D8]/30' }
     } else {
@@ -146,10 +146,10 @@ export default function VibesPage() {
     }
   }
 
-  // Weekly Playlist: YELLOW SYSTEM (Golden Yellow, Gold, Light Yellow, Deep Purple)
+  // Weekly Playlist: YELLOW SYSTEM (Yellow #FFD700, Gold #D4A60A, Light Yellow #FFF59D, Deep Purple #6B2E8C)
   const getPlaylistCardStyle = () => {
     if (mode === 'chaos') {
-      return { bg: 'bg-[#EAB308]', text: 'text-black', accent: '#6B21A8', border: 'border-0' } // Golden Yellow bg with Deep Purple accent (YELLOW SYSTEM)
+      return { bg: 'bg-[#FFD700]', text: 'text-black', accent: '#6B2E8C', border: 'border-0' } // Yellow bg with Deep Purple accent (YELLOW SYSTEM)
     } else if (mode === 'chill') {
       return { bg: 'bg-white', text: 'text-[#4A1818]', accent: '#FFB5D8', border: 'border border-[#FFB5D8]/30' }
     } else {
@@ -267,7 +267,7 @@ export default function VibesPage() {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
+    <div className={`flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       <header className={`border-b ${getBorderClass()} px-6 py-4`}>
         <div className="max-w-[1600px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">

@@ -85,14 +85,17 @@ const getScoreInterpretation = (score: number) => {
   }
 }
 
-// Get slider color based on score
+// Get slider color based on score - using color scheme colors
+// RED SYSTEM: Coral Red (#FF4C4C), Crimson (#C41E3A)
+// YELLOW SYSTEM: Yellow (#FFD700), Gold (#D4A60A)
+// GREEN SYSTEM: Emerald (#00C896), Forest (#1A5D52)
 const getSliderColor = (score: number) => {
   if (score >= 70) {
-    return 'linear-gradient(90deg, #10b981 0%, #059669 100%)'
+    return 'linear-gradient(90deg, #00C896 0%, #1A5D52 100%)' // GREEN SYSTEM: Emerald to Forest
   } else if (score >= 50) {
-    return 'linear-gradient(90deg, #eab308 0%, #ca8a04 100%)'
+    return 'linear-gradient(90deg, #FFD700 0%, #D4A60A 100%)' // YELLOW SYSTEM: Yellow to Gold
   } else {
-    return 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'
+    return 'linear-gradient(90deg, #FF4C4C 0%, #C41E3A 100%)' // RED SYSTEM: Coral Red to Crimson
   }
 }
 

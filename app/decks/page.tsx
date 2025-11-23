@@ -108,7 +108,7 @@ export default function DecksPage() {
   }, [searchQuery])
 
   return (
-    <div className={`min-h-screen flex flex-col ${getBgClass()} ${getTextClass()}`}>
+    <div className={`flex flex-col ${getBgClass()} ${getTextClass()}`}>
       {/* Header */}
       <header className={`border-b ${getBorderClass()} sticky top-0 z-50 ${getBgClass()}`}>
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

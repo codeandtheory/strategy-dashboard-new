@@ -139,6 +139,19 @@ body {
   height: auto;
   margin: 0;
   padding: 0;
+  padding-bottom: 0 !important;
+  overflow-x: hidden;
+}
+
+/* Remove any extra space after footer and ensure html/body fit content */
+html, body {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+body > div:last-child {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 /* Force rem-based scaling for common Tailwind utilities */
