@@ -65,6 +65,7 @@ export default function SnapsPage() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all-time')
   const [stats, setStats] = useState<SnapStats>({ totalSnaps: 0, snapLeader: null })
   const [showTimeDropdown, setShowTimeDropdown] = useState(false)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
 
   // Dashboard styling helpers
   const getBgClass = () => {
@@ -155,60 +156,22 @@ export default function SnapsPage() {
     }
   }, [user, authLoading, router])
 
-  // Fetch snaps and stats
+  // Fetch all snaps once on mount (no filters)
   useEffect(() => {
-    async function fetchData() {
+    async function fetchAllSnaps() {
       if (!user) return
       
       setLoading(true)
       setError(null)
       
       try {
-        // Build query based on filters
-        let url = '/api/snaps'
-        const params = new URLSearchParams()
-        
-        if (activeFilter === 'about-me') {
-          params.append('mentioned_user_id', user.id)
-        } else if (activeFilter === 'i-gave') {
-          params.append('submitted_by', user.id)
-        }
-        
-        if (params.toString()) {
-          url += '?' + params.toString()
-        }
-        
-        const response = await fetch(url)
+        // Fetch ALL snaps without filters
+        const response = await fetch('/api/snaps')
         
         if (response.ok) {
           const result = await response.json()
           if (result.data && Array.isArray(result.data)) {
-            let snaps = result.data
-            
-            // Apply time filter
-            if (timeFilter !== 'all-time') {
-              const now = new Date()
-              const filterDate = new Date()
-              
-              if (timeFilter === 'today') {
-                filterDate.setHours(0, 0, 0, 0)
-              } else if (timeFilter === 'this-week') {
-                const dayOfWeek = now.getDay()
-                filterDate.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
-                filterDate.setHours(0, 0, 0, 0)
-              } else if (timeFilter === 'this-month') {
-                filterDate.setDate(1)
-                filterDate.setHours(0, 0, 0, 0)
-              }
-              
-              snaps = snaps.filter((snap: Snap) => {
-                const snapDate = new Date(snap.date)
-                return snapDate >= filterDate
-              })
-            }
-            
-            setAllSnaps(snaps)
-            setFilteredSnaps(snaps)
+            setAllSnaps(result.data)
           }
         } else {
           const errorData = await response.json()
@@ -262,63 +225,65 @@ export default function SnapsPage() {
         setError(err.message || 'Failed to load snaps')
       } finally {
         setLoading(false)
+        setInitialLoadComplete(true)
       }
     }
     
-    if (user) {
-      fetchData()
+    if (user && !initialLoadComplete) {
+      fetchAllSnaps()
     }
-  }, [user, activeFilter, timeFilter, supabase])
+  }, [user, initialLoadComplete, supabase])
+
+  // Filter snaps client-side based on activeFilter and timeFilter
+  useEffect(() => {
+    if (!user || !initialLoadComplete) return
+    
+    let filtered = [...allSnaps]
+    
+    // Apply active filter
+    if (activeFilter === 'about-me') {
+      filtered = filtered.filter(snap => snap.mentioned_user_id === user.id)
+    } else if (activeFilter === 'i-gave') {
+      filtered = filtered.filter(snap => snap.submitted_by === user.id)
+    }
+    
+    // Apply time filter
+    if (timeFilter !== 'all-time') {
+      const now = new Date()
+      const filterDate = new Date()
+      
+      if (timeFilter === 'today') {
+        filterDate.setHours(0, 0, 0, 0)
+      } else if (timeFilter === 'this-week') {
+        const dayOfWeek = now.getDay()
+        filterDate.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
+        filterDate.setHours(0, 0, 0, 0)
+      } else if (timeFilter === 'this-month') {
+        filterDate.setDate(1)
+        filterDate.setHours(0, 0, 0, 0)
+      }
+      
+      filtered = filtered.filter((snap: Snap) => {
+        const snapDate = new Date(snap.date)
+        return snapDate >= filterDate
+      })
+    }
+    
+    setFilteredSnaps(filtered)
+  }, [allSnaps, activeFilter, timeFilter, user, initialLoadComplete])
 
   const handleSnapAdded = async () => {
-    // Refresh snaps list
+    // Refresh all snaps (client-side filtering will handle the rest)
     if (!user) return
     
     try {
-      let url = '/api/snaps'
-      const params = new URLSearchParams()
-      
-      if (activeFilter === 'about-me') {
-        params.append('mentioned_user_id', user.id)
-      } else if (activeFilter === 'i-gave') {
-        params.append('submitted_by', user.id)
-      }
-      
-      if (params.toString()) {
-        url += '?' + params.toString()
-      }
-      
-      const response = await fetch(url)
+      const response = await fetch('/api/snaps')
       
       if (response.ok) {
         const result = await response.json()
         if (result.data && Array.isArray(result.data)) {
-          let snaps = result.data
-          
-          // Apply time filter
-          if (timeFilter !== 'all-time') {
-            const now = new Date()
-            const filterDate = new Date()
-            
-            if (timeFilter === 'today') {
-              filterDate.setHours(0, 0, 0, 0)
-            } else if (timeFilter === 'this-week') {
-              const dayOfWeek = now.getDay()
-              filterDate.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
-              filterDate.setHours(0, 0, 0, 0)
-            } else if (timeFilter === 'this-month') {
-              filterDate.setDate(1)
-              filterDate.setHours(0, 0, 0, 0)
-            }
-            
-            snaps = snaps.filter((snap: Snap) => {
-              const snapDate = new Date(snap.date)
-              return snapDate >= filterDate
-            })
-          }
-          
-          setAllSnaps(snaps)
-          setFilteredSnaps(snaps)
+          setAllSnaps(result.data)
+          // Filtering will happen automatically via the useEffect
         }
       }
     } catch (err) {
@@ -620,6 +585,20 @@ export default function SnapsPage() {
                   const toName = getDisplayName(snap.mentioned_user_profile) || snap.mentioned || 'Team'
                   const isAnonymous = !snap.submitted_by_profile
                   
+                  // Determine display format based on active filter
+                  let headerText = ''
+                  let subText = ''
+                  
+                  if (activeFilter === 'all') {
+                    headerText = `To ${toName} / snap / from ${fromName}`
+                  } else if (activeFilter === 'about-me') {
+                    // Just show snap, with "From [name]" below
+                    subText = `From ${fromName}`
+                  } else if (activeFilter === 'i-gave') {
+                    // Just show snap, with "To [recipient]" below
+                    subText = `To ${toName}`
+                  }
+                  
                   return (
                     <Card
                       key={snap.id}
@@ -634,26 +613,30 @@ export default function SnapsPage() {
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="text-sm font-black text-black">
-                              {fromName} → {toName}
-                            </p>
-                            {isAnonymous && (
-                              <span className={`px-2 py-1 ${getRoundedClass('rounded-full')} text-xs font-black uppercase flex items-center gap-1`} style={{ 
-                                backgroundColor: style.accent,
-                                color: mode === 'chaos' || mode === 'code' ? '#000000' : mode === 'chill' ? '#4A1818' : '#000000'
-                              }}>
-                                <Users className="w-3 h-3" />
-                                Anonymous
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 mb-2">
-                            {formatTimeAgo(snap.date)}
-                          </p>
-                          <p className="text-base leading-relaxed text-black">
+                          {activeFilter === 'all' && (
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-sm font-black text-black">
+                                {headerText}
+                              </p>
+                              {isAnonymous && (
+                                <span className={`px-2 py-1 ${getRoundedClass('rounded-full')} text-xs font-black uppercase flex items-center gap-1`} style={{ 
+                                  backgroundColor: style.accent,
+                                  color: mode === 'chaos' || mode === 'code' ? '#000000' : mode === 'chill' ? '#4A1818' : '#000000'
+                                }}>
+                                  <Users className="w-3 h-3" />
+                                  Anonymous
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <p className={`text-lg mb-2 leading-relaxed ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                             {snap.snap_content}
                           </p>
+                          {subText && (
+                            <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-gray-500'}`}>
+                              {subText}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </Card>
@@ -674,3 +657,4 @@ export default function SnapsPage() {
     </div>
   )
 }
+
