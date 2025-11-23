@@ -100,12 +100,17 @@ export async function GET(request: NextRequest) {
     
     if (accessToken) {
       // Use the provided access token (from user's Google OAuth session)
-      console.log('Using provided Google OAuth access token')
-      const oauth2Client = new google.auth.OAuth2()
+      console.log('✅ Using provided Google OAuth access token for calendar access')
+      // Try to get client ID from env (optional, but helps with token validation)
+      const oauthClientId = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+      const oauth2Client = oauthClientId 
+        ? new google.auth.OAuth2(oauthClientId)
+        : new google.auth.OAuth2()
       oauth2Client.setCredentials({ access_token: accessToken })
       calendar = google.calendar({ version: 'v3', auth: oauth2Client })
     } else {
       // Use server-side authentication (OAuth2 refresh token or service account)
+      console.log('⚠️ No access token provided - falling back to server-side authentication')
       calendar = getCalendarClient()
     }
     const allEvents: CalendarEvent[] = []
