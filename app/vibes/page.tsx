@@ -118,20 +118,38 @@ export default function VibesPage() {
     }
   }
 
-  const getRoundedClass = (base: string) => {
-    if (mode === 'chaos') return base.replace('rounded', 'rounded-[1.5rem]')
-    if (mode === 'chill') return base.replace('rounded', 'rounded-2xl')
-    if (mode === 'code') return 'rounded-none'
-    return base
+  const getRoundedClass = (defaultClass: string) => {
+    return mode === 'code' ? 'rounded-none' : defaultClass
   }
 
-  // Get accent color for cards
-  const getAccentColor = () => {
-    switch (mode) {
-      case 'chaos': return '#C4F500'
-      case 'chill': return '#FFC043'
-      case 'code': return '#FFFFFF'
-      default: return '#C4F500'
+  // Get card styles matching dashboard
+  const getBeastBabeCardStyle = () => {
+    if (mode === 'chaos') {
+      return { bg: 'bg-gradient-to-br from-[#FF0055] to-[#FF4081]', text: 'text-white', accent: '#E8FF00' }
+    } else if (mode === 'chill') {
+      return { bg: 'bg-white', text: 'text-[#4A1818]', accent: '#FFB5D8', border: 'border border-[#FFB5D8]/30' }
+    } else {
+      return { bg: 'bg-[#000000]', text: 'text-[#FFFFFF]', accent: '#FFFFFF', border: 'border border-[#FFFFFF]' }
+    }
+  }
+
+  const getQuestionCardStyle = () => {
+    if (mode === 'chaos') {
+      return { bg: 'bg-gradient-to-br from-[#9D4EFF] to-[#6B2C91]', text: 'text-white', accent: '#FF00FF' }
+    } else if (mode === 'chill') {
+      return { bg: 'bg-white', text: 'text-[#4A1818]', accent: '#FFB5D8', border: 'border border-[#FFB5D8]/30' }
+    } else {
+      return { bg: 'bg-[#000000]', text: 'text-[#FFFFFF]', accent: '#FFFFFF', border: 'border border-[#FFFFFF]' }
+    }
+  }
+
+  const getPlaylistCardStyle = () => {
+    if (mode === 'chaos') {
+      return { bg: 'bg-gradient-to-br from-[#FF6B00] to-[#FF8A00]', text: 'text-white', accent: '#FF00FF' }
+    } else if (mode === 'chill') {
+      return { bg: 'bg-white', text: 'text-[#4A1818]', accent: '#FFB5D8', border: 'border border-[#FFB5D8]/30' }
+    } else {
+      return { bg: 'bg-[#000000]', text: 'text-[#FFFFFF]', accent: '#FFFFFF', border: 'border border-[#FFFFFF]' }
     }
   }
 
@@ -232,8 +250,6 @@ export default function VibesPage() {
     return null
   }
 
-  const accentColor = getAccentColor()
-
   return (
     <div className={`min-h-screen ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       <header className={`border-b ${getBorderClass()} px-6 py-4`}>
@@ -269,145 +285,114 @@ export default function VibesPage() {
         {/* Top Row - Three Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Beast Babe Card */}
-          <Card className={`${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
-            backgroundColor: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF',
-            color: mode === 'chill' ? '#4A1818' : '#000000'
-          }}>
-            <p className="text-xs uppercase tracking-wider font-black mb-2" style={{ 
-              color: mode === 'chill' ? '#4A1818' : '#000000',
-              opacity: 0.8
-            }}>THIS WEEK'S</p>
-            <h2 className="text-4xl font-black mb-6 uppercase" style={{ 
-              color: mode === 'chill' ? '#4A1818' : '#000000'
-            }}>BEAST<br/>BABE</h2>
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ 
-                backgroundColor: mode === 'chill' ? '#4A1818' : '#000000'
-              }}>
-                <Trophy className="w-10 h-10" style={{ 
-                  color: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF'
-                }} />
-              </div>
-            </div>
-            {beastBabe ? (
-              <>
-                <p className="text-2xl font-black text-center mb-1" style={{ 
-                  color: mode === 'chill' ? '#4A1818' : '#000000'
-                }}>
-                  {beastBabe.full_name || 'Anonymous'}
-                </p>
-                <p className="text-sm font-medium text-center" style={{ 
-                  color: mode === 'chill' ? '#4A1818' : '#000000',
-                  opacity: 0.8
-                }}>
-                  {beastBabe.snaps_count} Snaps Received
-                </p>
-              </>
-            ) : (
-              <p className="text-sm font-medium text-center" style={{ 
-                color: mode === 'chill' ? '#4A1818' : '#000000',
-                opacity: 0.8
-              }}>No data yet</p>
-            )}
-          </Card>
+          {(() => {
+            const style = getBeastBabeCardStyle()
+            return (
+              <Card className={`${style.bg} ${mode === 'chill' || mode === 'code' ? style.border || '' : 'border-0'} ${getRoundedClass('rounded-[2.5rem]')} p-6`}>
+                <p className={`text-xs uppercase tracking-wider font-black mb-2 ${style.text}`} style={{ opacity: 0.8 }}>THIS WEEK'S</p>
+                <h2 className={`text-4xl font-black mb-6 uppercase ${style.text}`}>BEAST<br/>BABE</h2>
+                <div className="flex items-center justify-center mb-4">
+                  <div className={`w-20 h-20 ${getRoundedClass('rounded-full')} flex items-center justify-center`} style={{ 
+                    backgroundColor: mode === 'chill' ? '#4A1818' : mode === 'code' ? '#FFFFFF' : '#000000'
+                  }}>
+                    <Trophy className="w-10 h-10" style={{ color: style.accent }} />
+                  </div>
+                </div>
+                {beastBabe ? (
+                  <>
+                    <p className={`text-2xl font-black text-center mb-1 ${style.text}`}>
+                      {beastBabe.full_name || 'Anonymous'}
+                    </p>
+                    <p className={`text-sm font-medium text-center ${style.text}`} style={{ opacity: 0.8 }}>
+                      {beastBabe.snaps_count} Snaps Received
+                    </p>
+                  </>
+                ) : (
+                  <p className={`text-sm font-medium text-center ${style.text}`} style={{ opacity: 0.8 }}>No data yet</p>
+                )}
+              </Card>
+            )
+          })()}
 
           {/* Question of the Week Card */}
-          <Card className={`${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
-            backgroundColor: mode === 'chaos' ? '#1a1a1a' : mode === 'chill' ? '#FFFFFF' : '#000000',
-            borderColor: accentColor,
-            borderWidth: '2px'
-          }}>
-            <div className="flex items-center gap-2 mb-4">
-              <MessageCircle className="w-4 h-4" style={{ color: accentColor }} />
-              <p className="text-xs uppercase tracking-wider font-black" style={{ color: accentColor }}>QUESTION OF THE WEEK</p>
-            </div>
-            <h2 className="text-2xl font-black mb-6 leading-tight" style={{ 
-              color: mode === 'chill' ? '#4A1818' : '#FFFFFF'
-            }}>
-              {questionOfWeek}
-            </h2>
-            <div className="space-y-3 mb-6">
-              {answers.map((answer) => (
-                <div
-                  key={answer.id}
-                  className={`${getRoundedClass('rounded-xl')} p-3`}
+          {(() => {
+            const style = getQuestionCardStyle()
+            return (
+              <Card className={`${style.bg} ${mode === 'chill' || mode === 'code' ? style.border || '' : 'border-0'} ${getRoundedClass('rounded-[2.5rem]')} p-6`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <MessageCircle className="w-4 h-4" style={{ color: style.accent }} />
+                  <p className={`text-xs uppercase tracking-wider font-black`} style={{ color: style.accent }}>QUESTION OF THE WEEK</p>
+                </div>
+                <h2 className={`text-2xl font-black mb-6 leading-tight ${style.text}`}>
+                  {questionOfWeek}
+                </h2>
+                <div className="space-y-3 mb-6">
+                  {answers.map((answer) => (
+                    <div
+                      key={answer.id}
+                      className={`${getRoundedClass('rounded-xl')} p-3`}
+                      style={{ 
+                        backgroundColor: mode === 'chaos' ? 'rgba(255, 255, 255, 0.2)' : mode === 'chill' ? 'rgba(255, 181, 216, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+                        borderColor: style.accent,
+                        borderWidth: '1px'
+                      }}
+                    >
+                      <p className={`text-sm font-medium ${style.text}`}>"{answer.answer}"</p>
+                      <p className={`text-xs mt-1 ${style.text}`} style={{ opacity: 0.7 }}>- {answer.author}</p>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  className={`w-full ${getRoundedClass('rounded-xl')} font-black h-12 uppercase`}
                   style={{ 
-                    backgroundColor: mode === 'chaos' ? 'rgba(196, 245, 0, 0.1)' : mode === 'chill' ? 'rgba(255, 192, 67, 0.1)' : 'rgba(255, 255, 255, 0.1)',
-                    borderColor: accentColor,
-                    borderWidth: '1px'
+                    backgroundColor: style.accent,
+                    color: mode === 'chill' ? '#4A1818' : mode === 'code' ? '#000000' : '#000000'
                   }}
                 >
-                  <p className="text-sm font-medium" style={{ 
-                    color: mode === 'chill' ? '#4A1818' : '#FFFFFF'
-                  }}>"{answer.answer}"</p>
-                  <p className="text-xs mt-1" style={{ 
-                    color: mode === 'chill' ? '#4A1818' : '#FFFFFF',
-                    opacity: 0.7
-                  }}>- {answer.author}</p>
-                </div>
-              ))}
-            </div>
-            <Button
-              className={`w-full ${getRoundedClass('rounded-xl')} font-black h-12 uppercase`}
-              style={{ 
-                backgroundColor: accentColor,
-                color: mode === 'chill' ? '#4A1818' : '#000000'
-              }}
-            >
-              Share Your Answer
-            </Button>
-          </Card>
+                  Share Your Answer
+                </Button>
+              </Card>
+            )
+          })()}
 
           {/* Weekly Playlist Card */}
-          <Card className={`${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
-            backgroundColor: mode === 'chaos' ? '#1a1a1a' : mode === 'chill' ? '#FFFFFF' : '#000000',
-            borderColor: accentColor,
-            borderWidth: '2px'
-          }}>
-            <p className="text-xs uppercase tracking-wider font-black mb-2" style={{ 
-              color: mode === 'chill' ? '#4A1818' : '#FFFFFF',
-              opacity: 0.8
-            }}>WEEKLY</p>
-            <h2 className="text-4xl font-black mb-6 uppercase" style={{ 
-              color: accentColor
-            }}>PLAYLIST</h2>
-            <div className="flex items-center justify-center mb-4">
-              <div className={`w-16 h-16 ${getRoundedClass('rounded-xl')} flex items-center justify-center`} style={{ 
-                backgroundColor: accentColor
-              }}>
-                <Music className="w-8 h-8" style={{ 
-                  color: mode === 'chill' ? '#4A1818' : '#000000'
-                }} />
-              </div>
-            </div>
-            {weeklyPlaylist ? (
-              <>
-                <p className="text-lg font-black text-center mb-1" style={{ 
-                  color: mode === 'chill' ? '#4A1818' : '#FFFFFF'
-                }}>{weeklyPlaylist.title || 'Untitled Playlist'}</p>
-                <p className="text-sm font-medium text-center mb-6" style={{ 
-                  color: mode === 'chill' ? '#4A1818' : '#FFFFFF',
-                  opacity: 0.8
-                }}>Curated by {weeklyPlaylist.curator}</p>
-                <Button
-                  className={`w-full ${getRoundedClass('rounded-xl')} font-black h-12 uppercase flex items-center justify-center gap-2`}
-                  style={{ 
-                    backgroundColor: accentColor,
-                    color: mode === 'chill' ? '#4A1818' : '#000000'
-                  }}
-                  onClick={() => weeklyPlaylist.spotify_url && window.open(weeklyPlaylist.spotify_url, '_blank')}
-                >
-                  <Play className="w-4 h-4" />
-                  Play on Spotify
-                </Button>
-              </>
-            ) : (
-              <p className="text-sm font-medium text-center" style={{ 
-                color: mode === 'chill' ? '#4A1818' : '#FFFFFF',
-                opacity: 0.8
-              }}>No playlist this week</p>
-            )}
-          </Card>
+          {(() => {
+            const style = getPlaylistCardStyle()
+            return (
+              <Card className={`${style.bg} ${mode === 'chill' || mode === 'code' ? style.border || '' : 'border-0'} ${getRoundedClass('rounded-[2.5rem]')} p-6`}>
+                <p className={`text-xs uppercase tracking-wider font-black mb-2 ${style.text}`} style={{ opacity: 0.8 }}>WEEKLY</p>
+                <h2 className={`text-4xl font-black mb-6 uppercase`} style={{ color: style.accent }}>PLAYLIST</h2>
+                <div className="flex items-center justify-center mb-4">
+                  <div className={`w-16 h-16 ${getRoundedClass('rounded-xl')} flex items-center justify-center`} style={{ 
+                    backgroundColor: style.accent
+                  }}>
+                    <Music className="w-8 h-8" style={{ 
+                      color: mode === 'chill' ? '#4A1818' : mode === 'code' ? '#000000' : '#000000'
+                    }} />
+                  </div>
+                </div>
+                {weeklyPlaylist ? (
+                  <>
+                    <p className={`text-lg font-black text-center mb-1 ${style.text}`}>{weeklyPlaylist.title || 'Untitled Playlist'}</p>
+                    <p className={`text-sm font-medium text-center mb-6 ${style.text}`} style={{ opacity: 0.8 }}>Curated by {weeklyPlaylist.curator}</p>
+                    <Button
+                      className={`w-full ${getRoundedClass('rounded-xl')} font-black h-12 uppercase flex items-center justify-center gap-2`}
+                      style={{ 
+                        backgroundColor: style.accent,
+                        color: mode === 'chill' ? '#4A1818' : mode === 'code' ? '#000000' : '#000000'
+                      }}
+                      onClick={() => weeklyPlaylist.spotify_url && window.open(weeklyPlaylist.spotify_url, '_blank')}
+                    >
+                      <Play className="w-4 h-4" />
+                      Play on Spotify
+                    </Button>
+                  </>
+                ) : (
+                  <p className={`text-sm font-medium text-center ${style.text}`} style={{ opacity: 0.8 }}>No playlist this week</p>
+                )}
+              </Card>
+            )
+          })()}
         </div>
 
         {/* Archive Section */}

@@ -234,7 +234,7 @@ export function TeamPulseCard() {
   // Show results if we have enough responses
   if (currentStep === 'results' && totalResponses >= MIN_SAMPLE_COUNT) {
     return (
-      <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}>
+      <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] p-8 md:p-10`}>
         <div className="flex items-center justify-between mb-4">
           <Badge className={`${mode === 'chaos' ? 'bg-[#00FF87] text-black' : mode === 'chill' ? 'bg-[#C8D961] text-[#4A1818]' : 'bg-white text-black'} border-0 font-black text-xs`}>
             {totalResponses} responses
@@ -296,39 +296,70 @@ export function TeamPulseCard() {
     const allQuestionsAnswered = shuffledQuestions.every(q => responses[q.key]?.score !== undefined)
     const isLastQuestion = currentQuestionIndex === shuffledQuestions.length - 1
 
+    const trackBg = mode === 'chaos' ? 'rgba(0, 0, 0, 0.1)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.2)'
+    const thumbBorder = mode === 'chaos' ? '#000' : mode === 'chill' ? '#4A1818' : '#fff'
+
     return (
-      <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}>
-        <div className="flex items-center gap-2 mb-4">
-          <Lock className={`w-3 h-3 ${style.text}/60`} />
-          <p className={`text-xs ${style.text}/60`}>Your response is private and only added to the group average</p>
-        </div>
-        
-        <h2 className={`text-3xl font-black mb-6 uppercase ${style.text}`}>Team Pulse</h2>
-        
-        {!isCommentStep ? (
-          <>
-            <div className="mb-6">
-              <p className={`text-lg font-medium mb-6 ${style.text}`}>
-                {currentQuestion?.text}
-              </p>
-              <div className="px-2">
-                <Slider
-                  value={[currentScore]}
-                  onValueChange={handleScoreChange}
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                />
-                <div className="flex justify-between mt-2">
-                  <span className={`text-xs ${style.text}/60`}>Low</span>
-                  <span className={`text-xs font-black ${style.text}`}>{currentScore}</span>
-                  <span className={`text-xs ${style.text}/60`}>High</span>
+      <>
+        <style>{`
+          .pulse-slider-wrapper [class*="bg-secondary"],
+          .pulse-slider-wrapper [class*="rounded-full"][class*="bg-"]:first-child {
+            background-color: ${trackBg} !important;
+            height: 12px !important;
+          }
+          .pulse-slider-wrapper [class*="bg-primary"],
+          .pulse-slider-wrapper [class*="absolute"][class*="h-full"] {
+            background-color: ${barColor} !important;
+            height: 12px !important;
+          }
+          .pulse-slider-wrapper button,
+          .pulse-slider-wrapper [role="slider"] {
+            background-color: ${barColor} !important;
+            border-color: ${thumbBorder} !important;
+            height: 24px !important;
+            width: 24px !important;
+            border-width: 4px !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+          }
+        `}</style>
+        <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] p-8 md:p-10`}>
+          <div className="flex items-center gap-2 mb-6">
+            <Lock className={`w-3 h-3 ${style.text}/60`} />
+            <p className={`text-xs ${style.text}/60`}>Your response is private and only added to the group average</p>
+          </div>
+          
+          <h2 className={`text-3xl font-black mb-10 uppercase ${style.text}`}>Team Pulse</h2>
+          
+          {!isCommentStep ? (
+            <>
+              <div className="mb-10">
+                <p className={`text-xl font-medium mb-10 text-center ${style.text}`}>
+                  {currentQuestion?.text}
+                </p>
+                <div className="px-4 py-6">
+                  <div className="mb-4">
+                    <div className={`text-center mb-6`}>
+                      <span className={`text-4xl font-black ${style.text}`}>{currentScore}</span>
+                    </div>
+                    <div className="pulse-slider-wrapper">
+                      <Slider
+                        value={[currentScore]}
+                        onValueChange={handleScoreChange}
+                        min={0}
+                        max={100}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-between mt-4">
+                    <span className={`text-xs ${style.text}/60`}>Low</span>
+                    <span className={`text-xs ${style.text}/60`}>High</span>
+                  </div>
                 </div>
               </div>
-            </div>
             
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mt-8">
               <span className={`text-xs ${style.text}/60`}>
                 {currentQuestionIndex + 1} of {shuffledQuestions.length}
               </span>
@@ -386,13 +417,14 @@ export function TeamPulseCard() {
             </div>
           </>
         )}
-      </Card>
+        </Card>
+      </>
     )
   }
 
   // Show waiting state
   return (
-    <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}>
+    <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] p-8 md:p-10`}>
       <div className="flex items-center gap-2 mb-4">
         <Users className={`w-4 h-4 ${style.text}/60`} />
         <p className={`text-xs ${style.text}/60`}>
