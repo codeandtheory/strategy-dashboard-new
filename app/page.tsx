@@ -75,6 +75,8 @@ export default function TeamDashboard() {
   const [horoscopeError, setHoroscopeError] = useState<string | null>(null)
   const [horoscopeImageError, setHoroscopeImageError] = useState<string | null>(null)
   const [userName, setUserName] = useState<string>('Friend')
+  const [userFirstName, setUserFirstName] = useState<string>('')
+  const [temperature, setTemperature] = useState<string | null>(null)
   const [characterName, setCharacterName] = useState<string | null>(null)
   const [userTimeZone, setUserTimeZone] = useState<string | null>(null)
   const [timeZones, setTimeZones] = useState<Array<{ label: string; city: string; time: string; offset: number }>>([])
@@ -305,6 +307,96 @@ export default function TeamDashboard() {
       checkProfileSetup()
     }
   }, [user, authLoading, profileChecked])
+
+  // Fetch user's first name from profile
+  useEffect(() => {
+    async function fetchUserFirstName() {
+      if (!user) {
+        setUserFirstName('')
+        return
+      }
+      
+      try {
+        const supabase = createClient()
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle()
+        
+        const fullName = profile?.full_name || user.user_metadata?.full_name || user.email || ''
+        // Extract first name
+        const firstName = fullName.split(' ')[0] || fullName || ''
+        setUserFirstName(firstName)
+      } catch (err) {
+        console.error('Error fetching user first name:', err)
+        setUserFirstName('')
+      }
+    }
+    
+    if (user && !authLoading) {
+      fetchUserFirstName()
+    }
+  }, [user, authLoading])
+
+  // Fetch weather based on user's location
+  useEffect(() => {
+    async function fetchWeather() {
+      if (!user) {
+        setTemperature(null)
+        return
+      }
+      
+      try {
+        const supabase = createClient()
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('location')
+          .eq('id', user.id)
+          .maybeSingle()
+        
+        if (!profile?.location) {
+          setTemperature(null)
+          return
+        }
+        
+        // Try to get coordinates from location string
+        // First, try to geocode the location
+        const geocodeResponse = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(profile.location)}&limit=1`,
+          {
+            headers: {
+              'User-Agent': 'Strategy Dashboard App'
+            }
+          }
+        )
+        
+        if (geocodeResponse.ok) {
+          const geocodeData = await geocodeResponse.json()
+          if (geocodeData && geocodeData.length > 0) {
+            const lat = geocodeData[0].lat
+            const lon = geocodeData[0].lon
+            
+            // Fetch weather using coordinates
+            const weatherResponse = await fetch(`/api/weather?lat=${lat}&lon=${lon}`)
+            if (weatherResponse.ok) {
+              const weatherData = await weatherResponse.json()
+              if (weatherData.temperature) {
+                setTemperature(`${weatherData.temperature}°F`)
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching weather:', err)
+        setTemperature(null)
+      }
+    }
+    
+    if (user && !authLoading) {
+      fetchWeather()
+    }
+  }, [user, authLoading])
 
   // Fetch work samples
   useEffect(() => {
@@ -1268,7 +1360,7 @@ export default function TeamDashboard() {
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('hero-large') : getCardStyle('hero')
             return (
-              <Card className={`${style.bg} ${style.border} p-0 ${mode === 'chaos' ? getRoundedClass('rounded-[2.5rem]') : getRoundedClass('rounded-[2.5rem]')} relative overflow-hidden group min-h-[500px] flex flex-col justify-between`}
+              <Card className={`${style.bg} ${style.border} p-0 ${mode === 'chaos' ? getRoundedClass('rounded-[2.5rem]') : getRoundedClass('rounded-[2.5rem]')} relative overflow-hidden group min-h-[300px] flex flex-col justify-between`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
                 {/* Black masked section on the right with transform/rotation - contains horoscope image */}
@@ -1342,24 +1434,27 @@ export default function TeamDashboard() {
                     ) : null}
                   </div>
                 )}
-                <div className="relative z-10 p-8 md:p-12 h-full flex flex-col justify-between">
+                <div className="relative z-10 p-6 md:p-8 h-full flex flex-col justify-between">
                   <div>
                     {mode !== 'chaos' && (
-                      <Badge className={`${mode === 'chill' ? 'bg-[#4A1818] text-[#FFC043]' : mode === 'code' ? 'bg-[#FFFFFF] text-black border border-[#FFFFFF]' : 'bg-white text-black'} hover:opacity-90 ${mode === 'code' ? 'border-0' : 'border-0'} ${getRoundedClass('rounded-full')} font-black mb-4 md:mb-6 text-xs md:text-sm uppercase tracking-[0.2em] ${mode === 'code' ? 'font-mono' : ''} px-4 md:px-6 py-2 md:py-3`}>
+                      <Badge className={`${mode === 'chill' ? 'bg-[#4A1818] text-[#FFC043]' : mode === 'code' ? 'bg-[#FFFFFF] text-black border border-[#FFFFFF]' : 'bg-white text-black'} hover:opacity-90 ${mode === 'code' ? 'border-0' : 'border-0'} ${getRoundedClass('rounded-full')} font-black mb-2 md:mb-3 text-xs md:text-sm uppercase tracking-[0.2em] ${mode === 'code' ? 'font-mono' : ''} px-3 md:px-4 py-1.5 md:py-2`}>
                         {mode === 'code' ? '[AI CHAOS AGENT]' : 'AI Chaos Agent'}
                       </Badge>
                     )}
-                    <h1 className={`text-[clamp(3rem,8vw+1rem,10rem)] font-black mb-4 md:mb-6 leading-[0.85] tracking-tight uppercase ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
-                      {mode === 'code' ? `> Hello, ${userName}` : `Hello, ${userName}`}
+                    <h1 className={`text-[clamp(2rem,6vw+0.5rem,6rem)] font-black mb-2 md:mb-3 leading-[0.85] tracking-tight uppercase ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
+                      {mode === 'code' ? `> Hello,` : `Hello,`}
                     </h1>
-                    <p className={`text-[clamp(1.25rem,3vw+0.5rem,2.5rem)] font-bold max-w-2xl leading-tight ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
-                      {mode === 'code' ? ':: Let\'s ship something amazing today' : 'Let\'s ship something amazing today'}
-                    </p>
-                    <p className={`text-base md:text-lg lg:text-xl font-bold mt-4 ${mode === 'code' ? 'font-mono text-[#FFFFFF]/70' : style.text === 'text-white' ? 'text-white/70' : 'text-black/70'}`}>
-                      {mode === 'code' ? `C:\\> date: ${todayDate || 'Loading...'}` : todayDate || 'Loading...'}
+                    <h2 className={`text-[clamp(1.75rem,5vw+0.5rem,5rem)] font-black mb-2 md:mb-3 leading-[0.85] tracking-tight uppercase ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
+                      {mode === 'code' ? `${userFirstName || userName}` : `${userFirstName || userName}`}
+                    </h2>
+                    <p className={`text-[clamp(1rem,2.5vw+0.5rem,1.75rem)] font-bold max-w-2xl leading-tight ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
+                      {mode === 'code' 
+                        ? `It's ${todayDate || 'Loading...'}${temperature ? ` and ${temperature}` : ''}`
+                        : `It's ${todayDate || 'Loading...'}${temperature ? ` and ${temperature}` : ''}`
+                      }
                     </p>
                   </div>
-                  <div className="relative z-10 flex items-center gap-3 md:gap-4 flex-wrap">
+                  <div className="relative z-10 flex items-center gap-3 md:gap-4 flex-wrap mt-4">
                     {(() => {
                       // Determine if background is light (for button contrast)
                       const isLightBg = style.text === 'text-black'
@@ -1367,41 +1462,41 @@ export default function TeamDashboard() {
                       return (
                         <>
                           {['Give Snap', 'Need Help', 'Add Win'].map((label) => {
-                            // Determine button colors based on mode and time-based gradient
+                            // Determine button colors based on mode - always use dark background with white text for good contrast
                       let buttonStyle: React.CSSProperties = {}
                       let buttonClasses = ''
                       
                       if (mode === 'chaos') {
-                        // Use accent color from time-based gradient
+                        // Use dark background with white text for good contrast
                         buttonStyle = {
-                          backgroundColor: isLightBg ? '#000000' : style.accent,
-                          color: isLightBg ? style.accent : '#000000'
+                          backgroundColor: isLightBg ? '#000000' : '#1a1a1a',
+                          color: '#FFFFFF'
                         }
-                        buttonClasses = `${isLightBg ? 'hover:bg-[#0F0F0F]' : 'hover:opacity-90'} hover:scale-105`
+                        buttonClasses = `${isLightBg ? 'hover:bg-[#0F0F0F]' : 'hover:bg-[#2a2a2a]'} hover:scale-105`
                       } else if (mode === 'chill') {
                         buttonStyle = {
                           backgroundColor: '#4A1818',
-                          color: style.accent
+                          color: '#FFFFFF'
                         }
                         buttonClasses = 'hover:bg-[#3A1414]'
                       } else if (mode === 'code') {
                         buttonStyle = {
-                          backgroundColor: '#FFFFFF',
-                          color: '#000000'
+                          backgroundColor: '#000000',
+                          color: '#FFFFFF'
                         }
-                        buttonClasses = 'hover:bg-[#CCCCCC] border border-[#FFFFFF]'
+                        buttonClasses = 'hover:bg-[#1a1a1a] border border-[#FFFFFF]'
                       } else {
                         buttonStyle = {
-                          backgroundColor: '#FFFFFF',
-                          color: '#000000'
+                          backgroundColor: '#000000',
+                          color: '#FFFFFF'
                         }
-                        buttonClasses = 'hover:bg-[#e5e5e5]'
+                        buttonClasses = 'hover:bg-[#1a1a1a]'
                       }
                       
                       return (
                         <Button 
                           key={label} 
-                          className={`${buttonClasses} font-black ${getRoundedClass('rounded-full')} py-3 md:py-4 px-6 md:px-8 text-base md:text-lg uppercase tracking-wider transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}
+                          className={`${buttonClasses} font-semibold ${getRoundedClass('rounded-full')} py-3 md:py-4 px-6 md:px-8 text-base md:text-lg tracking-normal transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}
                           style={buttonStyle}
                         >
                           {mode === 'code' ? `[${label.toUpperCase().replace(' ', ' ')}]` : label} {mode !== 'code' && <ArrowRight className="w-4 h-4 ml-2" />}
@@ -1410,19 +1505,19 @@ export default function TeamDashboard() {
                     })}
                           <Button 
                       onClick={() => setIsPlaylistDialogOpen(true)}
-                      className={`${mode === 'chaos' ? (isLightBg ? 'hover:bg-[#0F0F0F]' : 'hover:opacity-90') + ' hover:scale-105' : mode === 'chill' ? 'hover:bg-[#3A1414]' : mode === 'code' ? 'hover:bg-[#CCCCCC] border border-[#FFFFFF]' : 'hover:bg-[#e5e5e5]'} font-black ${getRoundedClass('rounded-full')} py-3 md:py-4 px-6 md:px-8 text-base md:text-lg uppercase tracking-wider transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}
+                      className={`${mode === 'chaos' ? (isLightBg ? 'hover:bg-[#0F0F0F]' : 'hover:bg-[#2a2a2a]') + ' hover:scale-105' : mode === 'chill' ? 'hover:bg-[#3A1414]' : mode === 'code' ? 'hover:bg-[#1a1a1a] border border-[#FFFFFF]' : 'hover:bg-[#1a1a1a]'} font-semibold ${getRoundedClass('rounded-full')} py-3 md:py-4 px-6 md:px-8 text-base md:text-lg tracking-normal transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}
                       style={mode === 'chaos' ? {
-                        backgroundColor: isLightBg ? '#000000' : style.accent,
-                        color: isLightBg ? style.accent : '#000000'
+                        backgroundColor: isLightBg ? '#000000' : '#1a1a1a',
+                        color: '#FFFFFF'
                       } : mode === 'chill' ? {
                         backgroundColor: '#4A1818',
-                        color: style.accent
+                        color: '#FFFFFF'
                       } : mode === 'code' ? {
-                        backgroundColor: '#FFFFFF',
-                        color: '#000000'
+                        backgroundColor: '#000000',
+                        color: '#FFFFFF'
                       } : {
-                        backgroundColor: '#FFFFFF',
-                        color: '#000000'
+                        backgroundColor: '#000000',
+                        color: '#FFFFFF'
                       }}
                     >
                       {mode === 'code' ? '[PLAYLIST]' : 'Playlist'} {mode !== 'code' && <Music className="w-4 h-4 ml-2" />}
