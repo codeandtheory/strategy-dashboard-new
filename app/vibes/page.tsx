@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Trophy, Music, MessageCircle, Play } from 'lucide-react'
 import { PlaylistData } from '@/lib/spotify-player-types'
+import { PlaylistCard } from '@/components/playlist-card'
 
 interface BeastBabe {
   id: string
@@ -26,14 +27,15 @@ interface QuestionAnswer {
 
 interface Playlist {
   id: string
-  title: string
+  date: string
+  title: string | null
   curator: string
   curator_photo_url?: string | null
   cover_url?: string | null
   description?: string | null
-  spotify_url?: string | null
+  spotify_url: string
   created_at: string
-  week_label?: string
+  week_label?: string | null
 }
 
 export default function VibesPage() {

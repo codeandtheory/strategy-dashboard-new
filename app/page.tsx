@@ -1405,7 +1405,7 @@ export default function TeamDashboard() {
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12 items-stretch">
-          <div className="space-y-6">
+          <div className="flex flex-col h-full space-y-6">
             {/* Beast Babe */}
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('beast-babe') : getCardStyle('recognition')
@@ -1435,7 +1435,7 @@ export default function TeamDashboard() {
                 { name: 'Alex Chen', win: 'Closed $50k deal!', emoji: '⭐' },
               ]
               return (
-                <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
+                <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} flex-1 flex flex-col`}
                       style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
                 >
                   <div className="flex items-center gap-2 text-sm mb-2" style={{ color: style.accent }}>
@@ -1443,7 +1443,7 @@ export default function TeamDashboard() {
                     <span className="uppercase tracking-wider font-black text-xs">Celebrate</span>
               </div>
                   <h2 className={`text-4xl font-black mb-4 uppercase ${style.text}`}>WINS<br/>WALL</h2>
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2 mb-4 flex-1">
                     {wins.map((win, idx) => (
                       <div key={idx} className={`${mode === 'chaos' ? 'bg-black/40' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/40'} rounded-xl p-3 border-2`} style={{ borderColor: `${style.accent}66` }}>
                         <div className="flex items-center justify-between">
@@ -1456,7 +1456,7 @@ export default function TeamDashboard() {
                   </div>
                     ))}
                 </div>
-                  <Button className={`w-full ${mode === 'chaos' ? 'bg-black text-[#00FF87] hover:bg-[#0F0F0F]' : mode === 'chill' ? 'bg-[#4A1818] text-[#C8D961] hover:bg-[#3A1414]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black rounded-full h-12 uppercase`}>
+                  <Button className={`w-full mt-auto ${mode === 'chaos' ? 'bg-black text-[#00FF87] hover:bg-[#0F0F0F]' : mode === 'chill' ? 'bg-[#4A1818] text-[#C8D961] hover:bg-[#3A1414]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black rounded-full h-12 uppercase`}>
                 Share Win
               </Button>
             </Card>

@@ -29,8 +29,10 @@ export default function PlaylistsAdmin() {
   const [spotifyUrl, setSpotifyUrl] = useState('')
   const [curator, setCurator] = useState('')
   const [description, setDescription] = useState('')
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]) // Today's date as default
   const [playlist, setPlaylist] = useState<PlaylistData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
@@ -88,16 +90,60 @@ export default function PlaylistsAdmin() {
       return
     }
 
-    // Update curator and description from form
-    const updatedPlaylist = {
-      ...playlist,
-      curator: curator.trim() || playlist.curator,
-      description: description.trim() || playlist.description || '',
+    if (!date) {
+      setError('Please select a date')
+      return
     }
 
-    // TODO: Save to database/API
-    console.log('Saving playlist:', updatedPlaylist)
-    alert('Playlist saved! (This will connect to your backend)')
+    setSaving(true)
+    setError(null)
+    setSuccess(false)
+
+    try {
+      // Update curator and description from form
+      const finalCurator = curator.trim() || playlist.curator
+      const finalDescription = description.trim() || playlist.description || ''
+
+      const response = await fetch('/api/playlists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date,
+          title: playlist.title || null,
+          curator: finalCurator,
+          description: finalDescription || null,
+          spotify_url: playlist.spotifyUrl || spotifyUrl,
+          cover_url: playlist.coverUrl || null,
+          curator_photo_url: playlist.curatorPhotoUrl || null,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save playlist')
+      }
+
+      const savedPlaylist = await response.json()
+      setSuccess(true)
+      setError(null)
+      
+      // Reset form
+      setSpotifyUrl('')
+      setCurator('')
+      setDescription('')
+      setDate(new Date().toISOString().split('T')[0])
+      setPlaylist(null)
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err: any) {
+      setError(err.message || 'Failed to save playlist')
+      setSuccess(false)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -151,7 +197,20 @@ export default function PlaylistsAdmin() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Date <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  When this playlist was published
+                </p>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Curator <span className="text-destructive">*</span>
@@ -278,9 +337,18 @@ export default function PlaylistsAdmin() {
                   <ExternalLink className="w-4 h-4" />
                   Open in Spotify
                 </a>
-                <Button onClick={handleSave} size="lg">
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Playlist
+                <Button onClick={handleSave} size="lg" disabled={saving}>
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Playlist
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
