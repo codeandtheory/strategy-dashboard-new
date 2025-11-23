@@ -53,6 +53,65 @@ export default function BeastBabeAdmin() {
   const [showBrowseDialog, setShowBrowseDialog] = useState(false)
   const [browseSearchQuery, setBrowseSearchQuery] = useState('')
 
+  // Theme-aware styling helpers
+  const getBgClass = () => {
+    switch (mode) {
+      case 'chaos': return 'bg-[#1A1A1A]'
+      case 'chill': return 'bg-[#F5E6D3]'
+      case 'code': return 'bg-black'
+      default: return 'bg-[#1A1A1A]'
+    }
+  }
+
+  const getTextClass = () => {
+    switch (mode) {
+      case 'chaos': return 'text-white'
+      case 'chill': return 'text-[#4A1818]'
+      case 'code': return 'text-[#FFFFFF]'
+      default: return 'text-white'
+    }
+  }
+
+  const getBorderClass = () => {
+    switch (mode) {
+      case 'chaos': return 'border-[#333333]'
+      case 'chill': return 'border-[#8B4444]/30'
+      case 'code': return 'border-[#FFFFFF]/30'
+      default: return 'border-[#333333]'
+    }
+  }
+
+  const getRoundedClass = (base: string) => {
+    if (mode === 'chaos') return base.replace('rounded', 'rounded-[1.5rem]')
+    if (mode === 'chill') return base.replace('rounded', 'rounded-2xl')
+    return base
+  }
+
+  const getCardStyle = () => {
+    if (mode === 'chaos') {
+      return { 
+        bg: 'bg-[#000000]', 
+        border: 'border border-[#C4F500]', 
+        text: 'text-white', 
+        accent: '#C4F500' 
+      }
+    } else if (mode === 'chill') {
+      return { 
+        bg: 'bg-white', 
+        border: 'border border-[#FFC043]/30', 
+        text: 'text-[#4A1818]', 
+        accent: '#FFC043' 
+      }
+    } else { // code
+      return { 
+        bg: 'bg-[#000000]', 
+        border: 'border border-[#FFFFFF]', 
+        text: 'text-[#FFFFFF]', 
+        accent: '#FFFFFF' 
+      }
+    }
+  }
+
   useEffect(() => {
     fetchBeastBabeData()
     fetchUsers()
@@ -164,14 +223,15 @@ export default function BeastBabeAdmin() {
 
   if (!permissions?.canPassBeastBabe) {
     return (
-      <div>
+      <div className={`${getBgClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Beast Babe Torch</h1>
+          <h1 className={`text-4xl font-black uppercase ${getTextClass()} mb-2`}>Beast Babe Torch</h1>
+          <p className={`${getTextClass()}/70 font-normal`}>You don't have permission to pass the beast babe torch.</p>
         </div>
-        <Card className="p-6">
-          <div className="flex items-center gap-3 text-destructive">
-            <ShieldOff className="w-5 h-5" />
-            <p>You don't have permission to pass the beast babe torch. Only the current Beast Babe or an admin can pass it to the next person.</p>
+        <Card className={`${getCardStyle().bg} ${getCardStyle().border} border p-6 ${getRoundedClass('rounded-xl')}`}>
+          <div className={`flex items-center gap-3 ${getCardStyle().text}`}>
+            <ShieldOff className="w-5 h-5" style={{ color: getCardStyle().accent }} />
+            <p>Only the current Beast Babe or an admin can pass it to the next person.</p>
           </div>
         </Card>
       </div>
@@ -180,8 +240,8 @@ export default function BeastBabeAdmin() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      <div className={`${getBgClass()} flex items-center justify-center min-h-[400px]`}>
+        <Loader2 className={`w-8 h-8 animate-spin ${getTextClass()}/50`} />
       </div>
     )
   }
@@ -220,25 +280,22 @@ export default function BeastBabeAdmin() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`${getBgClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
+      {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Crown className="w-8 h-8 text-yellow-500" />
-          <h1 className="text-4xl font-bold text-foreground">Beast Babe Torch</h1>
-        </div>
-        <p className="text-muted-foreground">
-          Pass the Beast Babe torch to the next deserving person
+        <h1 className={`text-4xl font-black uppercase ${getTextClass()} mb-2`}>Beast Babe Torch</h1>
+        <p className={`${getTextClass()}/70 font-normal`}>Pass the Beast Babe torch to the next deserving person.</p>
+        <p className={`text-sm ${getTextClass()}/50 mt-2 font-medium`}>
+          Recognize outstanding team members and celebrate their achievements.
         </p>
       </div>
 
-      {/* Current Beast Babe */}
-      {currentBeastBabe && (
-        <Card className="p-6">
-          <div className="p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-            <div className="flex items-center gap-3 mb-4">
-              <Crown className="w-6 h-6 text-yellow-500" />
-              <h2 className="text-xl font-semibold text-foreground">Current Beast Babe</h2>
-            </div>
+      {/* Current Beast Babe Section */}
+      <div className="mb-8">
+        <h2 className={`text-2xl font-black uppercase tracking-wider ${getTextClass()} mb-4`}>Current Beast Babe</h2>
+        
+        {currentBeastBabe ? (
+          <Card className={`${getCardStyle().bg} ${getCardStyle().border} border p-6 ${getRoundedClass('rounded-xl')}`}>
             <div className="flex items-start gap-4">
               {currentBeastBabe.avatar_url ? (
                 <img
@@ -247,66 +304,72 @@ export default function BeastBabeAdmin() {
                   className="w-16 h-16 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                  <Crown className="w-8 h-8 text-yellow-500" />
+                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: `${getCardStyle().accent}20` }}>
+                  <Crown className="w-8 h-8" style={{ color: getCardStyle().accent }} />
                 </div>
               )}
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-foreground mb-1">
-                  {currentBeastBabe.full_name || currentBeastBabe.email || 'Unknown'}
-                </h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className={`text-lg font-semibold ${getCardStyle().text}`}>
+                    {currentBeastBabe.full_name || currentBeastBabe.email || 'Unknown'}
+                  </h3>
+                  <Crown className="w-5 h-5" style={{ color: getCardStyle().accent }} />
+                </div>
                 {currentBeastBabe.history?.achievement && (
-                  <p className="text-sm text-foreground mt-2 italic">
+                  <p className={`text-sm ${getCardStyle().text}/80 italic mt-2`}>
                     "{currentBeastBabe.history.achievement}"
                   </p>
                 )}
               </div>
             </div>
-          </div>
-        </Card>
-      )}
-
-      {!currentBeastBabe && (
-        <Card className="p-6">
-          <div className="text-center py-8">
-            <Crown className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No current Beast Babe. Select someone to start!</p>
-          </div>
-        </Card>
-      )}
+          </Card>
+        ) : (
+          <Card className={`${getCardStyle().bg} ${getCardStyle().border} border p-6 ${getRoundedClass('rounded-xl')}`}>
+            <div className="text-center py-8">
+              <Crown className={`w-12 h-12 mx-auto mb-4 ${getTextClass()}/30`} />
+              <p className={getCardStyle().text}>No current Beast Babe. Select someone to start!</p>
+            </div>
+          </Card>
+        )}
+      </div>
 
       {/* Pass Torch Section */}
-      <Card className="p-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4">Pass the Torch</h2>
+      <div className="mb-8">
+        <h2 className={`text-2xl font-black uppercase tracking-wider ${getTextClass()} mb-4`}>Pass the Torch</h2>
         
-        {error && (
-          <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-green-600 dark:text-green-400">
-            {success}
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label className="block text-sm font-medium text-foreground">
-                Select Next Beast Babe
-              </Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowBrowseDialog(true)}
-                className="flex items-center gap-2"
-              >
-                <Users className="w-4 h-4" />
-                Browse Team
-              </Button>
+        <Card className={`${getCardStyle().bg} ${getCardStyle().border} border p-6 ${getRoundedClass('rounded-xl')}`}>
+          {error && (
+            <div className={`mb-4 p-4 ${getRoundedClass('rounded-lg')}`} style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)', borderWidth: '1px' }}>
+              <p className={getCardStyle().text} style={{ color: '#ef4444' }}>{error}</p>
             </div>
+          )}
+
+          {success && (
+            <div className={`mb-4 p-4 ${getRoundedClass('rounded-lg')}`} style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderColor: 'rgba(34, 197, 94, 0.2)', borderWidth: '1px' }}>
+              <p className={getCardStyle().text} style={{ color: '#22c55e' }}>{success}</p>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label className={`block text-sm font-medium ${getCardStyle().text}`}>
+                  Select Next Beast Babe
+                </Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowBrowseDialog(true)}
+                  className={`flex items-center gap-2 ${getRoundedClass('rounded-lg')} ${
+                    mode === 'chaos' ? 'border-[#C4F500] text-[#C4F500] hover:bg-[#C4F500]/10' :
+                    mode === 'chill' ? 'border-[#FFC043] text-[#FFC043] hover:bg-[#FFC043]/10' :
+                    'border-[#FFFFFF] text-[#FFFFFF] hover:bg-[#FFFFFF]/10'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  Browse Team
+                </Button>
+              </div>
             
             {/* Search Bar */}
             <div className="relative mb-4">
