@@ -1888,10 +1888,11 @@ export default function TeamDashboard() {
                   </p>
                   <button
                     onClick={() => setEventsExpanded(!eventsExpanded)}
-                    className={`${getRoundedClass('rounded-lg')} px-3 py-1.5 flex items-center gap-1 text-xs font-black transition-all`}
+                    className={`${getRoundedClass('rounded-lg')} px-3 py-1.5 flex items-center gap-1 text-xs font-black transition-all border-2`}
                     style={{ 
-                      backgroundColor: `${mintColor}33`,
-                      color: mintColor
+                      backgroundColor: `${mintColor}66`,
+                      color: mintColor,
+                      borderColor: mintColor
                     }}
                   >
                     {eventsExpanded ? (
@@ -2933,10 +2934,10 @@ export default function TeamDashboard() {
           })()}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+        <div className="grid grid-cols-1 gap-6 mb-12">
           {/* Search */}
           {(() => {
-            const style = mode === 'chaos' ? getSpecificCardStyle('search') : getCardStyle('hero')
+            const style = mode === 'chaos' ? getSpecificCardStyle('search') : getCardStyle('vibes')
             return (
               <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
