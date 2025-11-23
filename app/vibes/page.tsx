@@ -269,7 +269,7 @@ export default function VibesPage() {
   return (
     <div className={`flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       <header className={`border-b ${getBorderClass()} px-6 py-4`}>
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
+        <div className="max-w-[1200px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/">
               <div className={`w-10 h-10 ${getLogoBg()} ${getLogoText()} ${getRoundedClass('rounded-xl')} flex items-center justify-center font-black text-lg ${mode === 'code' ? 'font-mono' : ''} cursor-pointer`}>
@@ -294,7 +294,7 @@ export default function VibesPage() {
         </div>
       </header>
 
-      <main className="max-w-[1600px] mx-auto px-6 py-10 flex-1">
+      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1">
         {/* Header */}
         <h1 className={`text-5xl font-black mb-8 ${getTextClass()}`}>Vibes</h1>
 

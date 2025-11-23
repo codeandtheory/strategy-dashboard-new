@@ -1049,7 +1049,7 @@ export default function TeamDashboard() {
   return (
     <div className={`flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       <header className={`border-b ${getBorderClass()} px-6 py-4`}>
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
+        <div className="max-w-[1200px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className={`w-10 h-10 ${getLogoBg()} ${getLogoText()} ${getRoundedClass('rounded-xl')} flex items-center justify-center font-black text-lg ${mode === 'code' ? 'font-mono' : ''}`}>
               {mode === 'code' ? 'C:\\>' : 'D'}
@@ -1262,7 +1262,7 @@ export default function TeamDashboard() {
         </div>
       </header>
 
-      <main className="max-w-[1600px] mx-auto px-6 py-4 flex-1 pb-0">
+      <main className="max-w-[1200px] mx-auto px-6 py-4 flex-1 pb-0">
         {/* Hero Section - Full Width */}
         <section className="mb-12">
           {(() => {
@@ -1344,9 +1344,11 @@ export default function TeamDashboard() {
                 )}
                 <div className="relative z-10 p-8 md:p-12 h-full flex flex-col justify-between">
                   <div>
-                    <Badge className={`${mode === 'chaos' ? 'bg-black text-[#FFE500]' : mode === 'chill' ? 'bg-[#4A1818] text-[#FFC043]' : mode === 'code' ? 'bg-[#FFFFFF] text-black border border-[#FFFFFF]' : 'bg-white text-black'} hover:opacity-90 ${mode === 'code' ? 'border-0' : 'border-0'} ${getRoundedClass('rounded-full')} font-black mb-4 md:mb-6 text-xs md:text-sm uppercase tracking-[0.2em] ${mode === 'code' ? 'font-mono' : ''} px-4 md:px-6 py-2 md:py-3`}>
-                      {mode === 'code' ? '[AI CHAOS AGENT]' : mode === 'chaos' ? 'QUICK ACTIONS' : 'AI Chaos Agent'}
-                    </Badge>
+                    {mode !== 'chaos' && (
+                      <Badge className={`${mode === 'chill' ? 'bg-[#4A1818] text-[#FFC043]' : mode === 'code' ? 'bg-[#FFFFFF] text-black border border-[#FFFFFF]' : 'bg-white text-black'} hover:opacity-90 ${mode === 'code' ? 'border-0' : 'border-0'} ${getRoundedClass('rounded-full')} font-black mb-4 md:mb-6 text-xs md:text-sm uppercase tracking-[0.2em] ${mode === 'code' ? 'font-mono' : ''} px-4 md:px-6 py-2 md:py-3`}>
+                        {mode === 'code' ? '[AI CHAOS AGENT]' : 'AI Chaos Agent'}
+                      </Badge>
+                    )}
                     <h1 className={`text-[clamp(3rem,8vw+1rem,10rem)] font-black mb-4 md:mb-6 leading-[0.85] tracking-tight uppercase ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
                       {mode === 'code' ? `> Hello, ${userName}` : `Hello, ${userName}`}
                     </h1>
@@ -1358,17 +1360,76 @@ export default function TeamDashboard() {
                     </p>
                   </div>
                   <div className="relative z-10 flex items-center gap-3 md:gap-4 flex-wrap">
-                    {['Give Snap', 'Need Help', 'Add Win'].map((label) => (
-                      <Button key={label} className={`${mode === 'chaos' ? 'bg-black text-[#FFE500] hover:bg-[#0F0F0F] hover:scale-105' : mode === 'chill' ? 'bg-[#4A1818] text-[#FFC043] hover:bg-[#3A1414]' : mode === 'code' ? 'bg-[#FFFFFF] text-black border border-[#FFFFFF] hover:bg-[#CCCCCC]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black ${getRoundedClass('rounded-full')} py-3 md:py-4 px-6 md:px-8 text-base md:text-lg uppercase tracking-wider transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}>
-                        {mode === 'code' ? `[${label.toUpperCase().replace(' ', ' ')}]` : label} {mode !== 'code' && <ArrowRight className="w-4 h-4 ml-2" />}
-                  </Button>
-                    ))}
-                    <Button 
+                    {(() => {
+                      // Determine if background is light (for button contrast)
+                      const isLightBg = style.text === 'text-black'
+                      
+                      return (
+                        <>
+                          {['Give Snap', 'Need Help', 'Add Win'].map((label) => {
+                            // Determine button colors based on mode and time-based gradient
+                      let buttonStyle: React.CSSProperties = {}
+                      let buttonClasses = ''
+                      
+                      if (mode === 'chaos') {
+                        // Use accent color from time-based gradient
+                        buttonStyle = {
+                          backgroundColor: isLightBg ? '#000000' : style.accent,
+                          color: isLightBg ? style.accent : '#000000'
+                        }
+                        buttonClasses = `${isLightBg ? 'hover:bg-[#0F0F0F]' : 'hover:opacity-90'} hover:scale-105`
+                      } else if (mode === 'chill') {
+                        buttonStyle = {
+                          backgroundColor: '#4A1818',
+                          color: style.accent
+                        }
+                        buttonClasses = 'hover:bg-[#3A1414]'
+                      } else if (mode === 'code') {
+                        buttonStyle = {
+                          backgroundColor: '#FFFFFF',
+                          color: '#000000'
+                        }
+                        buttonClasses = 'hover:bg-[#CCCCCC] border border-[#FFFFFF]'
+                      } else {
+                        buttonStyle = {
+                          backgroundColor: '#FFFFFF',
+                          color: '#000000'
+                        }
+                        buttonClasses = 'hover:bg-[#e5e5e5]'
+                      }
+                      
+                      return (
+                        <Button 
+                          key={label} 
+                          className={`${buttonClasses} font-black ${getRoundedClass('rounded-full')} py-3 md:py-4 px-6 md:px-8 text-base md:text-lg uppercase tracking-wider transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}
+                          style={buttonStyle}
+                        >
+                          {mode === 'code' ? `[${label.toUpperCase().replace(' ', ' ')}]` : label} {mode !== 'code' && <ArrowRight className="w-4 h-4 ml-2" />}
+                        </Button>
+                      )
+                    })}
+                          <Button 
                       onClick={() => setIsPlaylistDialogOpen(true)}
-                      className={`${mode === 'chaos' ? 'bg-black text-[#FFE500] hover:bg-[#0F0F0F] hover:scale-105' : mode === 'chill' ? 'bg-[#4A1818] text-[#FFC043] hover:bg-[#3A1414]' : mode === 'code' ? 'bg-[#FFFFFF] text-black border border-[#FFFFFF] hover:bg-[#CCCCCC]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black ${getRoundedClass('rounded-full')} py-3 md:py-4 px-6 md:px-8 text-base md:text-lg uppercase tracking-wider transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}
+                      className={`${mode === 'chaos' ? (isLightBg ? 'hover:bg-[#0F0F0F]' : 'hover:opacity-90') + ' hover:scale-105' : mode === 'chill' ? 'hover:bg-[#3A1414]' : mode === 'code' ? 'hover:bg-[#CCCCCC] border border-[#FFFFFF]' : 'hover:bg-[#e5e5e5]'} font-black ${getRoundedClass('rounded-full')} py-3 md:py-4 px-6 md:px-8 text-base md:text-lg uppercase tracking-wider transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}
+                      style={mode === 'chaos' ? {
+                        backgroundColor: isLightBg ? '#000000' : style.accent,
+                        color: isLightBg ? style.accent : '#000000'
+                      } : mode === 'chill' ? {
+                        backgroundColor: '#4A1818',
+                        color: style.accent
+                      } : mode === 'code' ? {
+                        backgroundColor: '#FFFFFF',
+                        color: '#000000'
+                      } : {
+                        backgroundColor: '#FFFFFF',
+                        color: '#000000'
+                      }}
                     >
                       {mode === 'code' ? '[PLAYLIST]' : 'Playlist'} {mode !== 'code' && <Music className="w-4 h-4 ml-2" />}
-                    </Button>
+                          </Button>
+                        </>
+                      )
+                    })()}
                 </div>
               </div>
             </Card>

@@ -445,8 +445,8 @@ export function TeamPulseCard() {
           
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Lock className={`w-3 h-3 ${style.text}/60`} />
-              <p className={`text-xs ${style.text}/60`}>Your response is private and only added to the group average</p>
+              <Lock className="w-3 h-3" style={{ color: '#6B2E8C' }} />
+              <p className="text-xs" style={{ color: '#6B2E8C' }}>Your response is private and only added to the group average</p>
             </div>
             {hasSubmitted && (
               <Button
@@ -454,13 +454,7 @@ export function TeamPulseCard() {
                   loadAggregatedData()
                   setCurrentStep('results')
                 }}
-                className={`${getRoundedClass('rounded-full')} text-xs h-8 px-4 backdrop-blur-md shadow-lg transition-all ${
-                  mode === 'chaos' 
-                    ? 'bg-[#6B2E8C]/20 text-black hover:bg-[#6B2E8C]/30 hover:shadow-xl border-0' 
-                    : mode === 'chill'
-                    ? 'bg-white/30 text-[#4A1818] hover:bg-white/40 hover:shadow-xl border-0'
-                    : 'bg-white/20 text-white hover:bg-white/30 hover:shadow-xl border-0'
-                }`}
+                className={`${getRoundedClass('rounded-full')} text-xs h-8 px-4 backdrop-blur-md shadow-lg transition-all bg-[#6B2E8C] text-white hover:bg-[#6B2E8C]/90 hover:shadow-xl border-0`}
               >
                 View Results
               </Button>
@@ -479,7 +473,7 @@ export function TeamPulseCard() {
               
               return (
                 <div key={question.question_key} className="space-y-2">
-                  <p className={`text-sm font-black ${style.text} leading-tight`}>
+                  <p className={`text-lg font-black ${style.text} leading-tight`}>
                     {question.question_text}
                   </p>
                   
@@ -512,11 +506,11 @@ export function TeamPulseCard() {
                         <span className={`text-[10px] font-black ${style.text}/70 uppercase tracking-wider`}>Low</span>
                         <span className={`text-[10px] font-black ${style.text}/70 uppercase tracking-wider`}>High</span>
                       </div>
+                      </div>
                     </div>
-                  </div>
                   
                   {/* Optional comment */}
-                  <div>
+                  <div className="mt-6">
                     <label className={`text-[10px] font-black mb-1 block ${style.text} uppercase tracking-wider`}>
                       Comment
                     </label>
@@ -539,7 +533,7 @@ export function TeamPulseCard() {
           </div>
         </div>
         
-        <div className="p-6 pt-4 flex-shrink-0 border-t border-opacity-10" style={{ borderColor: mode === 'chaos' ? 'rgba(0,0,0,0.1)' : mode === 'chill' ? 'rgba(74,24,24,0.1)' : 'rgba(255,255,255,0.1)' }}>
+        <div className="p-6 pt-2 flex-shrink-0 border-t border-opacity-10" style={{ borderColor: mode === 'chaos' ? 'rgba(0,0,0,0.1)' : mode === 'chill' ? 'rgba(74,24,24,0.1)' : 'rgba(255,255,255,0.1)' }}>
           <Button
             onClick={handleSubmit}
             disabled={!allAnswered || isSubmitting}

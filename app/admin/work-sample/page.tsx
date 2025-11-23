@@ -739,7 +739,7 @@ export default function WorkSampleAdmin() {
 
   return (
     <div className={`${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'} min-h-screen p-6`}>
-      <div className="max-w-[1600px] mx-auto">
+      <div className="max-w-[1200px] mx-auto">
         {/* Header */}
         <div className="mb-4">
           <h1 className={`text-2xl font-black uppercase tracking-wider ${getTextClass()} mb-1`}>Work Samples</h1>

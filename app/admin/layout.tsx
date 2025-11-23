@@ -202,7 +202,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     <div className={`min-h-screen ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       {/* Main Navigation Header */}
       <header className={`border-b ${getBorderClass()} px-6 py-4`}>
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
+        <div className="max-w-[1200px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/">
               <div className={`w-10 h-10 ${getLogoBg()} ${getLogoText()} ${getRoundedClass('rounded-xl')} flex items-center justify-center font-black text-lg ${mode === 'code' ? 'font-mono' : ''} cursor-pointer`}>
@@ -228,7 +228,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content Area - Centered */}
-      <main className="max-w-[1600px] mx-auto px-6 py-10">
+      <main className="max-w-[1200px] mx-auto px-6 py-10">
         <div className="flex gap-6">
           {/* Left Sidebar Card - 1/4 width */}
           <Card className={`w-1/4 ${mode === 'chaos' ? 'bg-[#1a1a1a]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 

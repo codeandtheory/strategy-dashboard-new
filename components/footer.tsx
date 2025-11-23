@@ -53,7 +53,7 @@ export function Footer() {
           <a href="#" className={`transition-colors ${mode === 'chaos' ? 'hover:text-[#808080]' : mode === 'chill' ? 'hover:text-[#8B4444]/80' : 'hover:text-[#999999]'}`}>Contact we're right here</a>
         </div>
       </div>
-      <p className={`text-center text-[10px] mt-4 mb-0 pb-0 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]/70' : 'text-[#666666]'}`}>v1.2.3-beta-test.beta</p>
+      <p className={`text-center text-[0.625rem] mt-4 mb-0 pb-0 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]/70' : 'text-[#666666]'}`}>v1.2.3-beta-test.beta</p>
     </footer>
   )
 }

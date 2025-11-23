@@ -120,15 +120,10 @@
 }
 
 /* Added smooth scroll behavior and refined base styles */
-/* Scale entire site to 75% using CSS transform on html - matches browser zoom effect */
+/* Scale entire site to 75% by setting base font size to 75% (12px instead of 16px) */
 html {
   scroll-behavior: smooth;
-  width: 133.33vw; /* 100% / 0.75 = 133.33% to maintain full viewport coverage */
-  height: auto;
-  transform: scale(0.75);
-  transform-origin: top left;
-  overflow-x: hidden; /* Prevent horizontal scrollbar */
-  overflow-y: auto; /* Allow vertical scrolling when needed */
+  font-size: 75%; /* 75% of 16px = 12px base font size */
 }
 
 /* Ensure body and all elements use rem-based sizing */
@@ -139,19 +134,7 @@ body {
   height: auto;
   margin: 0;
   padding: 0;
-  padding-bottom: 0 !important;
   overflow-x: hidden;
-}
-
-/* Remove any extra space after footer and ensure html/body fit content */
-html, body {
-  margin-bottom: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-body > div:last-child {
-  padding-bottom: 0 !important;
-  margin-bottom: 0 !important;
 }
 
 /* Force rem-based scaling for common Tailwind utilities */
@@ -327,7 +310,7 @@ body > div:last-child {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   grid-auto-rows: minmax(200px, auto);
-  gap: 1.5rem;
+  gap: 1.125rem; /* 75% of 1.5rem */
 }
 
 @media (max-width: 1024px) {
