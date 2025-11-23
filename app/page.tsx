@@ -1519,22 +1519,46 @@ export default function TeamDashboard() {
               return '#00FF87' // Mint/Green
             }
 
-            // Group events by date for week view
-            const eventsByDate = eventsExpanded ? filteredEvents.reduce((acc, event) => {
-              const eventDate = event.start.dateTime 
-                ? new Date(event.start.dateTime).toDateString()
-                : event.start.date
-                  ? new Date(event.start.date).toDateString()
-                  : ''
-              
-              if (!eventDate) return acc
-              
-              if (!acc[eventDate]) {
-                acc[eventDate] = []
+            // Generate week days for Gantt chart
+            const getWeekDays = () => {
+              const days = []
+              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+              for (let i = 0; i < 7; i++) {
+                const day = new Date(today)
+                day.setDate(today.getDate() + i)
+                days.push(day)
               }
-              acc[eventDate].push(event)
-              return acc
-            }, {} as Record<string, typeof calendarEvents>) : {}
+              return days
+            }
+
+            // Calculate event span across days
+            const getEventSpan = (event: typeof calendarEvents[0]) => {
+              const start = event.start.dateTime 
+                ? new Date(event.start.dateTime)
+                : event.start.date
+                  ? new Date(event.start.date)
+                  : null
+              
+              const end = event.end.dateTime 
+                ? new Date(event.end.dateTime)
+                : event.end.date
+                  ? new Date(event.end.date)
+                  : null
+              
+              if (!start) return { startDay: 0, endDay: 0, isMultiDay: false }
+              
+              const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+              const startDay = Math.floor((start.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24))
+              const endDay = end ? Math.floor((end.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)) : startDay
+              
+              return {
+                startDay: Math.max(0, startDay),
+                endDay: Math.min(6, endDay),
+                isMultiDay: endDay > startDay,
+                start,
+                end
+              }
+            }
 
             return (
               <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} ${eventsExpanded ? 'md:col-span-3' : ''}`}
@@ -1572,44 +1596,97 @@ export default function TeamDashboard() {
                     <Loader2 className={`w-6 h-6 animate-spin ${style.text}`} />
                   </div>
                 ) : calendarError ? (
-                  <div className={`${getRoundedClass('rounded-lg')} p-3`} style={{ backgroundColor: `${mintColor}33` }}>
-                    <p className={`text-xs ${style.text}/80`}>{calendarError}</p>
+                  <div className={`${getRoundedClass('rounded-lg')} p-4 space-y-2`} style={{ backgroundColor: `${mintColor}33` }}>
+                    <p className={`text-sm font-black ${style.text}`}>Calendar Connection Issue</p>
+                    {calendarError.includes('Google Calendar API has not been used') || calendarError.includes('disabled') ? (
+                      <div className={`text-xs ${style.text}/80 space-y-1`}>
+                        <p>The Google Calendar API needs to be enabled in your Google Cloud project.</p>
+                        <p className="mt-2">Enable it at:</p>
+                        <a 
+                          href="https://console.developers.google.com/apis/api/calendar-json.googleapis.com/overview?project=141888268813" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="underline text-blue-400 hover:text-blue-300"
+                        >
+                          Google Cloud Console
+                        </a>
+                      </div>
+                    ) : calendarError.includes('Not Found') || calendarError.includes('404') ? (
+                      <div className={`text-xs ${style.text}/80 space-y-1`}>
+                        <p>Some calendars are not accessible. They may need to be shared with the service account.</p>
+                        <p className="mt-2">Check server logs for details on which calendars failed.</p>
+                      </div>
+                    ) : (
+                      <p className={`text-xs ${style.text}/80`}>{calendarError}</p>
+                    )}
                   </div>
                 ) : eventsExpanded ? (
-                  // Week view
+                  // Week view - Gantt chart style
                   <div className="space-y-4">
-                    {Object.entries(eventsByDate).map(([date, events]) => {
-                      const dateObj = new Date(date)
-                      const isToday = dateObj.toDateString() === now.toDateString()
-                      const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' })
-                      const dayNumber = dateObj.getDate()
-                      const monthName = dateObj.toLocaleDateString('en-US', { month: 'short' })
-                      
-                      return (
-                        <div key={date} className="space-y-2">
-                          <div className="flex items-center gap-2 mb-2">
-                            <p className={`text-xs font-black uppercase ${style.text}`} style={{ color: isToday ? mintColor : style.text }}>
-                              {isToday ? 'TODAY' : `${dayName} ${monthName} ${dayNumber}`}
+                    {/* Day headers */}
+                    <div className="grid grid-cols-7 gap-2 mb-4">
+                      {getWeekDays().map((day, index) => {
+                        const isToday = day.toDateString() === now.toDateString()
+                        const dayName = day.toLocaleDateString('en-US', { weekday: 'short' })
+                        const dayNumber = day.getDate()
+                        return (
+                          <div key={index} className="text-center">
+                            <p className={`text-xs font-black uppercase ${style.text} mb-1`} style={{ color: isToday ? mintColor : style.text }}>
+                              {isToday ? 'TODAY' : dayName}
                             </p>
+                            <p className={`text-sm font-black ${style.text}`}>{dayNumber}</p>
                           </div>
-                          {events.map((event) => {
-                            const eventColor = getEventColor(event)
-                            return (
-                              <div key={event.id} className={`${getRoundedClass('rounded-lg')} p-3 flex items-center gap-2`} style={{ backgroundColor: `${eventColor}33` }}>
-                                <Clock className="w-4 h-4" style={{ color: eventColor }} />
-                                <div className="flex-1 min-w-0">
-                                  <p className={`text-sm font-black ${style.text} truncate`}>{event.summary}</p>
-                                  <p className={`text-xs ${style.text}/60`}>{formatEventTime(event)}</p>
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )
-                    })}
-                    {Object.keys(eventsByDate).length === 0 && (
-                      <p className={`text-sm ${style.text}/80 text-center py-4`}>No events this week</p>
-                    )}
+                        )
+                      })}
+                    </div>
+
+                    {/* Events as Gantt bars */}
+                    <div className="space-y-2">
+                      {filteredEvents.map((event) => {
+                        const eventColor = getEventColor(event)
+                        const span = getEventSpan(event)
+                        const colSpan = span.endDay - span.startDay + 1
+                        const startCol = span.startDay + 1
+                        
+                        return (
+                          <div key={event.id} className="space-y-1">
+                            {/* Event bar spanning days */}
+                            <div className="grid grid-cols-7 gap-2">
+                              {getWeekDays().map((day, index) => {
+                                const isInSpan = index >= span.startDay && index <= span.endDay
+                                if (!isInSpan) {
+                                  return <div key={index} className="h-12"></div>
+                                }
+                                
+                                const isStart = index === span.startDay
+                                const isEnd = index === span.endDay
+                                
+                                return (
+                                  <div
+                                    key={index}
+                                    className={`h-12 ${getRoundedClass(isStart && isEnd ? 'rounded-lg' : isStart ? 'rounded-l-lg' : isEnd ? 'rounded-r-lg' : '')} flex items-center px-2`}
+                                    style={{ 
+                                      backgroundColor: `${eventColor}66`,
+                                      borderLeft: isStart ? `3px solid ${eventColor}` : 'none',
+                                    }}
+                                  >
+                                    {isStart && (
+                                      <div className="flex-1 min-w-0">
+                                        <p className={`text-xs font-black ${style.text} truncate`}>{event.summary}</p>
+                                        <p className={`text-[10px] ${style.text}/70`}>{formatEventTime(event)}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {filteredEvents.length === 0 && (
+                        <p className={`text-sm ${style.text}/80 text-center py-4`}>No events this week</p>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   // Today view
@@ -1647,12 +1724,12 @@ export default function TeamDashboard() {
                 { value: '12', label: 'placeholder' },
               ]
               return (
-                <Card className={`${style.bg} ${style.border} ${eventsExpanded ? 'py-3 px-4' : 'py-4 px-6'} flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300`}>
-                  <div className={`flex items-center ${eventsExpanded ? 'justify-center gap-2' : 'justify-between gap-6'}`}>
+                <Card className={`${style.bg} ${style.border} py-6 px-6 flex-[0_0_auto] ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300`} style={{ minHeight: '200px', height: '200px' }}>
+                  <div className={`flex items-center ${eventsExpanded ? 'justify-center gap-2' : 'justify-between gap-6'} h-full`}>
                     {!eventsExpanded && (
                       <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>THIS WEEK</h2>
                     )}
-                    <div className={`flex ${eventsExpanded ? 'gap-2' : 'gap-4'}`}>
+                    <div className={`flex ${eventsExpanded ? 'gap-2' : 'gap-4'} items-center`}>
                       {stats.map((stat, index) => (
                         <div 
                           key={stat.label} 

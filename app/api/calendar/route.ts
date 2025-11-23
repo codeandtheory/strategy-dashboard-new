@@ -77,6 +77,20 @@ export async function GET(request: NextRequest) {
 
     const calendar = getCalendarClient()
     const allEvents: CalendarEvent[] = []
+    
+    // Get service account email for error messages
+    let clientEmail: string
+    try {
+      const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+      if (serviceAccountJson) {
+        const parsed = JSON.parse(serviceAccountJson)
+        clientEmail = parsed.client_email
+      } else {
+        clientEmail = process.env.GOOGLE_DRIVE_CLIENT_EMAIL || 'service account email'
+      }
+    } catch {
+      clientEmail = process.env.GOOGLE_DRIVE_CLIENT_EMAIL || 'service account email'
+    }
 
     // Fetch events from each calendar
     for (const calendarId of calendarIds) {
@@ -130,13 +144,29 @@ export async function GET(request: NextRequest) {
 
         allEvents.push(...transformedEvents)
       } catch (error: any) {
-        console.error(`Error fetching events from calendar ${calendarId}:`, error)
-        console.error(`Error details:`, {
+        const errorDetails = {
           message: error.message,
           code: error.code,
           status: error.response?.status,
           statusText: error.response?.statusText,
-        })
+        }
+        console.error(`Error fetching events from calendar ${decodedCalendarId}:`, error)
+        console.error(`Error details:`, errorDetails)
+        
+        // Provide helpful error messages for common issues
+        if (error.code === 403 || error.status === 403) {
+          if (error.message?.includes('not been used') || error.message?.includes('disabled')) {
+            console.error(`⚠️  Google Calendar API is not enabled. Enable it at: https://console.developers.google.com/apis/api/calendar-json.googleapis.com/overview?project=141888268813`)
+          } else {
+            console.error(`⚠️  Permission denied. The service account may need to be shared with this calendar.`)
+            console.error(`   Service account email: ${clientEmail}`)
+            console.error(`   Calendar ID: ${decodedCalendarId}`)
+            console.error(`   To fix: Share the calendar with the service account email or make the calendar public.`)
+          }
+        } else if (error.code === 404 || error.status === 404) {
+          console.error(`⚠️  Calendar not found. Check that the calendar ID is correct: ${decodedCalendarId}`)
+        }
+        
         // Continue with other calendars even if one fails
       }
     }
