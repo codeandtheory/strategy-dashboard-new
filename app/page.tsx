@@ -798,6 +798,30 @@ export default function TeamDashboard() {
     }
   }
 
+  // Get accent colors for a section (returns array of colors: [accent, black/white, secondary accent])
+  const getSectionAccentColors = (section: CardSection): string[] => {
+    const style = getCardStyle(section)
+    if (mode === 'chaos') {
+      // For chaos mode, return accent, black, and a secondary color based on section
+      const secondaryColors: Record<CardSection, string> = {
+        recognition: '#EAB308', // Golden Yellow
+        work: '#1488A6', // Electric Teal
+        team: '#34D399', // Bright Mint
+        vibes: '#A21CAF', // Deep Magenta
+        community: '#7C3AED', // Rich Purple
+        hero: '#C4F500', // Lime
+        default: '#EAB308',
+      }
+      return [style.accent, '#000000', secondaryColors[section] || secondaryColors.default]
+    } else if (mode === 'chill') {
+      // For chill mode, return accent, text color (dark), and a lighter version
+      return [style.accent, '#4A1818', style.accent]
+    } else {
+      // For code mode, return white variations
+      return ['#FFFFFF', '#808080', '#FFFFFF']
+    }
+  }
+
   // Mode-aware class helpers
   const getBgClass = () => {
     switch (mode) {
@@ -1305,6 +1329,16 @@ export default function TeamDashboard() {
             <>
               <span className={`w-8 h-px ${mode === 'chaos' ? 'bg-[#333333]' : mode === 'chill' ? 'bg-[#8B4444]/30' : 'bg-[#333333]'}`}></span>
           Personalized Information
+              {(() => {
+                const colors = getSectionAccentColors('vibes')
+                return (
+                  <span className="flex items-center gap-1.5 ml-2">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[0] }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[1] }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[2] }}></span>
+                  </span>
+                )
+              })()}
             </>
           )}
         </p>
@@ -1450,6 +1484,16 @@ export default function TeamDashboard() {
             <>
               <span className={`w-8 h-px ${mode === 'chaos' ? 'bg-[#333333]' : mode === 'chill' ? 'bg-[#8B4444]/30' : 'bg-[#333333]'}`}></span>
           Recognition & Culture
+              {(() => {
+                const colors = getSectionAccentColors('recognition')
+                return (
+                  <span className="flex items-center gap-1.5 ml-2">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[0] }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[1] }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[2] }}></span>
+                  </span>
+                )
+              })()}
             </>
           )}
         </p>
@@ -1460,7 +1504,7 @@ export default function TeamDashboard() {
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('beast-babe') : getCardStyle('recognition')
               return (
-                <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
+                <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} flex-shrink-0`}
                       style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
                 >
                   <p className="text-xs uppercase tracking-wider mb-2 font-black" style={{ color: style.accent }}>This Week's</p>
@@ -1485,7 +1529,7 @@ export default function TeamDashboard() {
                 { name: 'Alex Chen', win: 'Closed $50k deal!', emoji: '⭐' },
               ]
               return (
-                <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} flex-1 flex flex-col`}
+                <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} flex-1 flex flex-col min-h-0`}
                       style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
                 >
                   <div className="flex items-center gap-2 text-sm mb-2" style={{ color: style.accent }}>
@@ -1653,6 +1697,16 @@ export default function TeamDashboard() {
             <>
               <span className={`w-8 h-px ${mode === 'chaos' ? 'bg-[#333333]' : mode === 'chill' ? 'bg-[#8B4444]/30' : 'bg-[#333333]'}`}></span>
           This Week
+              {(() => {
+                const colors = getSectionAccentColors('work')
+                return (
+                  <span className="flex items-center gap-1.5 ml-2">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[0] }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[1] }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[2] }}></span>
+                  </span>
+                )
+              })()}
             </>
           )}
         </p>
@@ -2515,6 +2569,16 @@ export default function TeamDashboard() {
             <>
               <span className={`w-8 h-px ${mode === 'chaos' ? 'bg-[#333333]' : mode === 'chill' ? 'bg-[#8B4444]/30' : 'bg-[#333333]'}`}></span>
           Work Updates
+              {(() => {
+                const colors = getSectionAccentColors('work')
+                return (
+                  <span className="flex items-center gap-1.5 ml-2">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[0] }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[1] }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[2] }}></span>
+                  </span>
+                )
+              })()}
             </>
           )}
         </p>
@@ -2663,6 +2727,16 @@ export default function TeamDashboard() {
             <>
               <span className={`w-8 h-px ${mode === 'chaos' ? 'bg-[#333333]' : mode === 'chill' ? 'bg-[#8B4444]/30' : 'bg-[#333333]'}`}></span>
           More Modules
+              {(() => {
+                const colors = getSectionAccentColors('community')
+                return (
+                  <span className="flex items-center gap-1.5 ml-2">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[0] }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[1] }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[2] }}></span>
+                  </span>
+                )
+              })()}
             </>
           )}
         </p>

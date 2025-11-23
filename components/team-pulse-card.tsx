@@ -37,7 +37,7 @@ interface QuestionSummary {
   average: number
 }
 
-const FIXED_HEIGHT = 'h-[600px]'
+const FIXED_HEIGHT = '' // Removed fixed height to allow natural sizing
 
 // Question icons mapping
 const QUESTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -269,7 +269,7 @@ export function TeamPulseCard() {
     const overallInterpretation = getScoreInterpretation(overallTeamMood)
     
     return (
-      <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] ${FIXED_HEIGHT} flex flex-col overflow-hidden relative`}>
+      <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] flex flex-col overflow-hidden relative`}>
         {/* Subtle gradient background based on overall mood */}
         <div 
           className="absolute inset-0 opacity-5 pointer-events-none transition-opacity duration-1000"
@@ -282,15 +282,15 @@ export function TeamPulseCard() {
           }}
         />
         
-        <div className="p-8 pb-6 flex-shrink-0 relative z-10">
-          <div className="flex items-center justify-between mb-6">
+        <div className="p-6 pb-4 flex-shrink-0 relative z-10">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-xl ${mode === 'chaos' ? 'bg-[#00FF87]/20' : mode === 'chill' ? 'bg-[#C8D961]/20' : 'bg-white/20'}`}>
                 <TrendingUp className={`w-5 h-5 ${style.text}`} />
               </div>
               <div>
-                <h2 className={`text-3xl font-black uppercase ${style.text} tracking-tighter`}>Team Pulse</h2>
-                <p className={`text-xs font-bold ${style.text}/70 mt-1 uppercase tracking-wider`}>This week's results</p>
+                <h2 className={`text-2xl font-black uppercase ${style.text} tracking-tighter`}>Team Pulse</h2>
+                <p className={`text-xs font-bold ${style.text}/70 mt-0.5 uppercase tracking-wider`}>This week's results</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -330,43 +330,10 @@ export function TeamPulseCard() {
               </Button>
             </div>
           </div>
-
-          {/* Overall Team Mood Summary */}
-          {overallTeamMood > 0 && (
-            <div className={`mb-6 p-4 rounded-xl border-2 ${overallInterpretation.borderColor} ${overallInterpretation.bgColor} transition-all duration-500`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{overallInterpretation.emoji}</span>
-                  <div>
-                    <p className={`text-xs font-black ${overallInterpretation.color} mb-2 uppercase tracking-wider`}>Team Health</p>
-                    <div className="flex items-baseline gap-2">
-                      <span className={`text-5xl font-black ${overallInterpretation.color}`}>{overallTeamMood}</span>
-                      <span className={`text-base font-bold ${overallInterpretation.color}/70`}>/100</span>
-                      <span className={`text-base font-black ${overallInterpretation.color} ml-3 uppercase tracking-wider`}>{overallInterpretation.label}</span>
-                    </div>
-                  </div>
-                </div>
-                {(highestQuestion || lowestQuestion) && (
-                  <div className="text-right">
-                    {highestQuestion && (
-                      <p className={`text-xs ${style.text}/60 mb-1`}>
-                        <span className="font-medium">↑ Highest:</span> {highestQuestion.average}
-                      </p>
-                    )}
-                    {lowestQuestion && (
-                      <p className={`text-xs ${style.text}/60`}>
-                        <span className="font-medium">↓ Lowest:</span> {lowestQuestion.average}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
         
-        <div className="flex-1 overflow-y-auto px-8 pb-8 relative z-10">
-          <div className="space-y-6">
+        <div className="flex-1 px-6 pb-6 relative z-10">
+          <div className="space-y-3">
             {aggregatedData.length > 0 ? (
               aggregatedData.map((data, index) => {
                 const question = questions.find(q => q.question_key === data.questionKey)
@@ -380,64 +347,31 @@ export function TeamPulseCard() {
                 return (
                   <div 
                     key={data.questionKey} 
-                    className={`p-5 rounded-2xl border-2 ${interpretation.borderColor} ${resultTint} transition-all duration-300 backdrop-blur-sm`}
+                    className={`p-3 rounded-xl border-2 ${interpretation.borderColor} ${resultTint} transition-all duration-300 backdrop-blur-sm`}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className="flex items-start justify-between gap-3 mb-4">
-                      <div className="flex items-start gap-3 flex-1">
-                        <div className={`p-2.5 rounded-xl ${interpretation.bgColor} mt-0.5`}>
-                          <QuestionIcon className={`w-5 h-5 ${interpretation.color}`} />
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                        <div className={`p-1.5 rounded-lg ${interpretation.bgColor} flex-shrink-0`}>
+                          <QuestionIcon className={`w-4 h-4 ${interpretation.color}`} />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-base font-black ${interpretation.color} leading-tight mb-2`}>{questionText}</p>
-                          {data.change !== null && data.change !== undefined && (
-                            <div className="flex items-center gap-1.5">
-                              {data.change > 0 ? (
-                                <ChevronUp className={`w-4 h-4 text-green-700 font-bold`} />
-                              ) : data.change < 0 ? (
-                                <ChevronDown className={`w-4 h-4 text-red-700 font-bold`} />
-                              ) : (
-                                <Minus className={`w-4 h-4 ${interpretation.color}/60`} />
-                              )}
-                              <span className={`text-xs font-black ${
-                                data.change > 0 ? 'text-green-700' : data.change < 0 ? 'text-red-700' : interpretation.color + '/60'
-                              }`}>
-                                {data.change > 0 ? '+' : ''}{data.change} from last week
-                                {data.prevAverage !== null && data.prevAverage !== undefined && (
-                                  <span className={`${interpretation.color}/60 ml-1 font-normal`}>(was {data.prevAverage})</span>
-                                )}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                        <p className={`text-xs font-black ${interpretation.color} leading-tight truncate`}>{questionText}</p>
                       </div>
-                      <div className="flex items-baseline gap-2 flex-shrink-0">
-                        <span className={`text-4xl font-black ${interpretation.color}`}>{roundedAverage}</span>
-                        <span className={`text-sm font-bold ${interpretation.color}/70`}>/100</span>
-                        <span className="text-2xl ml-2" title={interpretation.label}>{interpretation.emoji}</span>
+                      <div className="flex items-baseline gap-1.5 flex-shrink-0">
+                        <span className={`text-2xl font-black ${interpretation.color}`}>{roundedAverage}</span>
+                        <span className={`text-xs font-bold ${interpretation.color}/70`}>/100</span>
+                        <span className="text-base ml-1.5" title={interpretation.label}>{interpretation.emoji}</span>
                       </div>
                     </div>
-                    <div className={`w-full rounded-full h-4 ${mode === 'chaos' ? 'bg-black/10' : mode === 'chill' ? 'bg-[#4A1818]/10' : 'bg-white/20'} overflow-hidden shadow-inner`}>
+                    <div className={`w-full rounded-full h-2.5 ${mode === 'chaos' ? 'bg-black/10' : mode === 'chill' ? 'bg-[#4A1818]/10' : 'bg-white/20'} overflow-hidden shadow-inner`}>
                       <div 
-                        className="h-4 rounded-full transition-all duration-700 ease-out shadow-lg" 
+                        className="h-2.5 rounded-full transition-all duration-700 ease-out shadow-lg" 
                         style={{ 
                           width: `${data.average}%`, 
                           background: getSliderColor(data.average)
                         }} 
                       />
                     </div>
-                    {data.commentThemes.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        {data.commentThemes.map((theme, idx) => (
-                          <Badge
-                            key={idx}
-                            className={`text-xs font-black transition-all hover:scale-105 ${interpretation.bgColor} ${interpretation.color} border-2 ${interpretation.borderColor}`}
-                          >
-                            {theme.theme} ({theme.count})
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 )
               })
@@ -458,7 +392,7 @@ export function TeamPulseCard() {
   // Show survey
   if (questions.length === 0) {
     return (
-      <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] ${FIXED_HEIGHT} flex items-center justify-center`}>
+      <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] flex items-center justify-center`}>
         <div className={`text-center ${style.text}/70`}>
           <p className="text-base font-black uppercase tracking-wider">Loading questions...</p>
         </div>
@@ -501,9 +435,9 @@ export function TeamPulseCard() {
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), 0 0 0 3px ${mode === 'chaos' ? 'rgba(255,255,255,0.4)' : mode === 'chill' ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)'} !important;
         }
       `}</style>
-      <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] ${FIXED_HEIGHT} flex flex-col overflow-hidden`}>
-        <div className="p-8 pb-6 flex-shrink-0">
-          <div className="flex items-center justify-between mb-6">
+      <Card className={`${style.bg} ${style.border} !rounded-[2.5rem] flex flex-col overflow-hidden`}>
+        <div className="p-6 pb-4 flex-shrink-0">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Lock className={`w-3 h-3 ${style.text}/60`} />
               <p className={`text-xs ${style.text}/60`}>Your response is private and only added to the group average</p>
@@ -528,9 +462,9 @@ export function TeamPulseCard() {
             )}
           </div>
           
-          <h2 className={`text-3xl font-black mb-6 uppercase ${style.text} tracking-tighter`}>Team Pulse</h2>
+          <h2 className={`text-2xl font-black mb-4 uppercase ${style.text} tracking-tighter`}>Team Pulse</h2>
           {hasSubmitted && (
-            <div className={`mb-4 p-3 ${getRoundedClass('rounded-lg')} ${
+            <div className={`mb-3 p-2.5 ${getRoundedClass('rounded-lg')} ${
               mode === 'chaos' 
                 ? 'bg-[#EAB308]/10 border border-[#EAB308]/20' 
                 : mode === 'chill'
@@ -544,8 +478,8 @@ export function TeamPulseCard() {
           )}
         </div>
         
-        <div className="flex-1 overflow-y-auto px-8 pb-6">
-          <div className="space-y-8">
+        <div className="flex-1 px-6 pb-4 overflow-y-auto">
+          <div className="space-y-5">
             {questions.map((question, index) => {
               const response = responses[question.question_key]
               const score = response?.score ?? 50
@@ -554,24 +488,24 @@ export function TeamPulseCard() {
               const scoreInterpretation = getScoreInterpretation(score)
               
               return (
-                <div key={question.question_key} className="space-y-6">
+                <div key={question.question_key} className="space-y-4">
                   <div>
-                    <p className={`text-2xl font-black mb-8 text-center ${style.text} tracking-tight`}>
+                    <p className={`text-lg font-black mb-4 text-center ${style.text} tracking-tight`}>
                       {question.question_text}
                     </p>
-                    <div className="px-4">
-                      <div className="mb-6">
-                        <div className={`text-center mb-6`}>
+                    <div className="px-2">
+                      <div className="mb-4">
+                        <div className={`text-center mb-4`}>
                           <span 
-                            className={`text-6xl font-black ${scoreInterpretation.color} drop-shadow-lg`}
+                            className={`text-4xl font-black ${scoreInterpretation.color} drop-shadow-lg`}
                             style={{ 
                               textShadow: mode === 'code' ? 'none' : '0 2px 8px rgba(0,0,0,0.1)'
                             }}
                           >
                             {score}
                           </span>
-                          <div className="mt-2">
-                            <span className={`text-sm font-black ${scoreInterpretation.color} uppercase tracking-wider`}>
+                          <div className="mt-1">
+                            <span className={`text-xs font-black ${scoreInterpretation.color} uppercase tracking-wider`}>
                               {scoreInterpretation.label}
                             </span>
                           </div>
@@ -593,7 +527,7 @@ export function TeamPulseCard() {
                           />
                         </div>
                       </div>
-                      <div className="flex justify-between mt-3">
+                      <div className="flex justify-between mt-2">
                         <span className={`text-xs font-black ${style.text}/70 uppercase tracking-wider`}>Low</span>
                         <span className={`text-xs font-black ${style.text}/70 uppercase tracking-wider`}>High</span>
                       </div>
@@ -602,14 +536,14 @@ export function TeamPulseCard() {
                   
                   {/* Optional comment */}
                   <div>
-                    <label className={`text-sm font-black mb-3 block ${style.text} uppercase tracking-wider`}>
+                    <label className={`text-xs font-black mb-2 block ${style.text} uppercase tracking-wider`}>
                       Optional comment
                     </label>
                     <Textarea
                       value={comment}
                       onChange={(e) => handleCommentChange(question.question_key, e.target.value)}
                       placeholder="Share your thoughts..."
-                      className={`${getRoundedClass('rounded-xl')} min-h-[100px] resize-none font-medium ${
+                      className={`${getRoundedClass('rounded-xl')} min-h-[60px] resize-none font-medium text-sm ${
                         mode === 'chaos' 
                           ? 'bg-white border-2 border-black/30 text-black placeholder:text-black/50 focus:border-black/50 focus:ring-2 focus:ring-black/20' 
                           : mode === 'chill' 
@@ -628,11 +562,11 @@ export function TeamPulseCard() {
           </div>
         </div>
         
-        <div className="p-8 pt-6 flex-shrink-0 border-t border-opacity-10" style={{ borderColor: mode === 'chaos' ? 'rgba(0,0,0,0.1)' : mode === 'chill' ? 'rgba(74,24,24,0.1)' : 'rgba(255,255,255,0.1)' }}>
+        <div className="p-6 pt-4 flex-shrink-0 border-t border-opacity-10" style={{ borderColor: mode === 'chaos' ? 'rgba(0,0,0,0.1)' : mode === 'chill' ? 'rgba(74,24,24,0.1)' : 'rgba(255,255,255,0.1)' }}>
           <Button
             onClick={handleSubmit}
             disabled={!allAnswered || isSubmitting}
-            className={`w-full ${getRoundedClass('rounded-lg')} h-12 ${
+            className={`w-full ${getRoundedClass('rounded-lg')} h-10 ${
               mode === 'chaos' ? 'bg-[#00FF87] text-black hover:bg-[#00FF87]/80' :
               mode === 'chill' ? 'bg-[#C8D961] text-[#4A1818] hover:bg-[#C8D961]/80' :
               'bg-white text-black hover:bg-white/80'
