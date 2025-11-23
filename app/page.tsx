@@ -124,7 +124,7 @@ export default function TeamDashboard() {
   const [calendarError, setCalendarError] = useState<string | null>(null)
   const [eventsExpanded, setEventsExpanded] = useState(false)
 
-  // Calendar IDs from the provided embed URLs
+  // Calendar IDs from the provided embed URLs (stored decoded)
   const calendarIds = [
     'codeandtheory.com_6elnqlt8ok3kmcpim2vge0qqqk@group.calendar.google.com', // Out of office 1
     'codeandtheory.com_ojeuiov0bhit2k17g8d6gj4i68@group.calendar.google.com', // Out of office 2
@@ -369,6 +369,7 @@ export default function TeamDashboard() {
           ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days for week view
           : new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString() // 1 day for today view
 
+        // Encode calendar IDs for the API (they're already decoded in the array)
         const calendarIdsParam = calendarIds.map(id => encodeURIComponent(id)).join(',')
         const response = await fetch(
           `/api/calendar?calendarIds=${calendarIdsParam}&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&maxResults=50`
@@ -376,11 +377,17 @@ export default function TeamDashboard() {
 
         if (response.ok) {
           const result = await response.json()
+          console.log('Calendar API response:', { eventCount: result.count, events: result.events })
           if (result.events && Array.isArray(result.events)) {
             setCalendarEvents(result.events)
+            console.log(`Loaded ${result.events.length} calendar events`)
+          } else {
+            console.warn('No events array in response:', result)
+            setCalendarEvents([])
           }
         } else {
-          const errorData = await response.json()
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          console.error('Calendar API error:', errorData)
           setCalendarError(errorData.error || 'Failed to fetch calendar events')
         }
       } catch (error: any) {
@@ -1453,7 +1460,7 @@ export default function TeamDashboard() {
           )}
         </p>
 
-        <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 ${eventsExpanded ? 'md:grid-cols-4' : ''}`}>
+        <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 mb-12`}>
           {/* Events */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('events') : getCardStyle('work')
@@ -1530,7 +1537,7 @@ export default function TeamDashboard() {
             }, {} as Record<string, typeof calendarEvents>) : {}
 
             return (
-              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} ${eventsExpanded ? 'md:col-span-2' : ''}`}
+              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} ${eventsExpanded ? 'md:col-span-3' : ''}`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : { borderColor: style.accent }}
               >
                 <div className="flex items-center justify-between mb-4">
@@ -1630,7 +1637,7 @@ export default function TeamDashboard() {
           })()}
 
           {/* Pipeline with This Week stats bar above it */}
-          <div className={`${eventsExpanded ? 'md:col-span-2' : 'md:col-span-3'} flex flex-col gap-6`}>
+          <div className={`${eventsExpanded ? 'md:col-span-1' : 'md:col-span-3'} flex flex-col gap-6`}>
             {/* This Week Stats Bar */}
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')

@@ -81,8 +81,13 @@ export async function GET(request: NextRequest) {
     // Fetch events from each calendar
     for (const calendarId of calendarIds) {
       try {
+        // Decode the calendar ID in case it's URL encoded
+        const decodedCalendarId = decodeURIComponent(calendarId)
+        
+        console.log(`Fetching events from calendar: ${decodedCalendarId}`)
+        
         const response = await calendar.events.list({
-          calendarId: calendarId,
+          calendarId: decodedCalendarId,
           timeMin: timeMin,
           timeMax: timeMax,
           maxResults: maxResults,
@@ -91,17 +96,18 @@ export async function GET(request: NextRequest) {
         })
 
         const events = response.data.items || []
+        console.log(`Found ${events.length} events in calendar ${decodedCalendarId}`)
         
         // Get calendar name
         let calendarName: string | undefined
         try {
           const calendarInfo = await calendar.calendars.get({
-            calendarId: calendarId,
+            calendarId: decodedCalendarId,
           })
           calendarName = calendarInfo.data.summary || undefined
         } catch (error) {
           // If we can't get calendar name, continue without it
-          console.warn(`Could not fetch calendar name for ${calendarId}`)
+          console.warn(`Could not fetch calendar name for ${decodedCalendarId}:`, error)
         }
 
         // Transform events to our format
@@ -118,13 +124,19 @@ export async function GET(request: NextRequest) {
           },
           location: event.location || undefined,
           description: event.description || undefined,
-          calendarId: calendarId,
+          calendarId: decodedCalendarId,
           calendarName: calendarName,
         }))
 
         allEvents.push(...transformedEvents)
       } catch (error: any) {
         console.error(`Error fetching events from calendar ${calendarId}:`, error)
+        console.error(`Error details:`, {
+          message: error.message,
+          code: error.code,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+        })
         // Continue with other calendars even if one fails
       }
     }
