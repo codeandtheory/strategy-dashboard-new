@@ -130,6 +130,13 @@ export async function PUT(request: NextRequest) {
         updateData[field] = null
       }
     })
+    
+    // Ensure is_active is a boolean (default to true if not provided)
+    if (updateData.is_active === undefined || updateData.is_active === null) {
+      updateData.is_active = true
+    } else {
+      updateData.is_active = Boolean(updateData.is_active)
+    }
 
     // Use admin client to update profile (bypasses RLS)
     const supabaseAdmin = await getSupabaseAdminClient()

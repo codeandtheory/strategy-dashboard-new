@@ -29,6 +29,7 @@ interface UserProfile {
   website: string | null
   pronouns: string | null
   slack_id: string | null
+  is_active: boolean | null
   created_at: string
   updated_at: string
 }
@@ -46,6 +47,7 @@ export default function UsersAdminPage() {
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const getBorderColor = () => {
@@ -105,7 +107,7 @@ export default function UsersAdminPage() {
 
   const handleUserSelect = (user: UserProfile) => {
     setSelectedUser(user)
-    setEditingUser({ ...user })
+    setEditingUser({ ...user, is_active: user.is_active !== false }) // Default to true if null
   }
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -204,6 +206,12 @@ export default function UsersAdminPage() {
   }
 
   const filteredUsers = users.filter(user => {
+    // Filter by active/inactive status
+    const isActive = user.is_active !== false // Default to true if null
+    if (activeTab === 'active' && !isActive) return false
+    if (activeTab === 'inactive' && isActive) return false
+    
+    // Filter by search query
     if (!searchQuery.trim()) return true
     const query = searchQuery.toLowerCase()
     return (
@@ -272,8 +280,31 @@ export default function UsersAdminPage() {
                 className="pl-10 bg-white text-black border-gray-300"
               />
             </div>
+            {/* Tabs for Active/Inactive */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setActiveTab('active')}
+                className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'active'
+                    ? 'bg-gray-200 text-black'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-150'
+                }`}
+              >
+                Active ({users.filter(u => u.is_active !== false).length})
+              </button>
+              <button
+                onClick={() => setActiveTab('inactive')}
+                className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'inactive'
+                    ? 'bg-gray-200 text-black'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-150'
+                }`}
+              >
+                Inactive ({users.filter(u => u.is_active === false).length})
+              </button>
+            </div>
             <h2 className="text-lg font-semibold text-black">
-              Users ({filteredUsers.length})
+              {activeTab === 'active' ? 'Active' : 'Inactive'} Users ({filteredUsers.length})
             </h2>
           </div>
 
@@ -533,6 +564,20 @@ export default function UsersAdminPage() {
                       Admin only
                     </p>
                   </div>
+                </div>
+
+                {/* Active Status */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    checked={editingUser.is_active !== false}
+                    onChange={(e) => setEditingUser({ ...editingUser, is_active: e.target.checked })}
+                    className="w-4 h-4 rounded border-gray-300 text-black focus:ring-2 focus:ring-black"
+                  />
+                  <Label htmlFor="is_active" className="text-black cursor-pointer">
+                    Active
+                  </Label>
                 </div>
 
                 {/* Location and Website */}
