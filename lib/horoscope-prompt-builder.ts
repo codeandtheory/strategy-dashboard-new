@@ -465,8 +465,11 @@ function buildPromptString(
     .map((id) => getCatalogItem('constraints', id))
     .filter((c) => c !== null) as PromptSlotCatalog[]
 
-  // Build subject clause
+  // Build subject clause - include star sign
   let subjectClause = userProfile.name
+  if (userProfile.starSign) {
+    subjectClause += ` (${userProfile.starSign})`
+  }
   if (userProfile.role) {
     subjectClause += `, a ${userProfile.role.toLowerCase()}`
   }

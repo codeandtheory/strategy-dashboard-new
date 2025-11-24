@@ -456,10 +456,38 @@ export async function GET(request: NextRequest) {
         date: todayDate,
       })
       
+      // Validate n8n result before using it
+      console.log('📥 Received n8n result:', {
+        hasHoroscope: !!n8nResult.horoscope,
+        horoscopeLength: n8nResult.horoscope?.length || 0,
+        horoscopePreview: n8nResult.horoscope?.substring(0, 100) || 'MISSING',
+        hasDos: !!n8nResult.dos,
+        dosCount: n8nResult.dos?.length || 0,
+        hasDonts: !!n8nResult.donts,
+        dontsCount: n8nResult.donts?.length || 0,
+        hasImageUrl: !!n8nResult.imageUrl,
+        imageUrl: n8nResult.imageUrl || 'MISSING',
+      })
+
+      if (!n8nResult.horoscope || !n8nResult.dos || !n8nResult.donts) {
+        throw new Error('Invalid n8n result: missing horoscope text, dos, or donts')
+      }
+
+      if (!n8nResult.imageUrl) {
+        throw new Error('Invalid n8n result: missing imageUrl')
+      }
+
       horoscopeText = n8nResult.horoscope
       horoscopeDos = n8nResult.dos
       horoscopeDonts = n8nResult.donts
       imageUrl = n8nResult.imageUrl
+
+      console.log('✅ Using n8n result:', {
+        horoscopeText: horoscopeText.substring(0, 100) + '...',
+        dosCount: horoscopeDos.length,
+        dontsCount: horoscopeDonts.length,
+        imageUrl: imageUrl
+      })
       
       // Update user avatar state (same logic as in generateHoroscopeImage)
       const { data: styleReference } = await supabaseAdmin
@@ -510,15 +538,19 @@ export async function GET(request: NextRequest) {
       
       // Download the image from OpenAI and upload to Supabase storage to prevent expiration
       console.log('📥 Downloading image from OpenAI and uploading to Supabase storage...')
+      console.log('   Source image URL:', imageUrl)
       let permanentImageUrl = imageUrl
       try {
         // Download the image
+        console.log('   Fetching image from:', imageUrl)
         const imageResponse = await fetch(imageUrl)
         if (!imageResponse.ok) {
-          throw new Error(`Failed to download image: ${imageResponse.statusText}`)
+          throw new Error(`Failed to download image: ${imageResponse.statusText} (${imageResponse.status})`)
         }
+        console.log('   Image downloaded successfully, size:', imageResponse.headers.get('content-length') || 'unknown')
         const imageBlob = await imageResponse.blob()
         const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
+        console.log('   Image buffer size:', imageBuffer.length, 'bytes')
         
         // Upload to Supabase storage (avatars bucket)
         const fileName = `horoscope-${userId}-${todayDate}.png`
@@ -542,7 +574,15 @@ export async function GET(request: NextRequest) {
             .getPublicUrl(filePath)
           
           permanentImageUrl = urlData.publicUrl
-          console.log('✅ Image uploaded to Supabase storage:', permanentImageUrl)
+          console.log('✅ Image uploaded to Supabase storage')
+          console.log('   File path:', filePath)
+          console.log('   Public URL:', permanentImageUrl)
+          console.log('   Original URL:', imageUrl)
+          
+          // Verify the URLs are different (should be Supabase URL, not OpenAI URL)
+          if (permanentImageUrl === imageUrl) {
+            console.warn('⚠️ WARNING: Permanent URL is same as original URL - upload may have failed')
+          }
         }
       } catch (imageError: any) {
         console.error('⚠️ Error processing image upload:', imageError)
@@ -615,6 +655,12 @@ export async function GET(request: NextRequest) {
     if (doubleCheckHoroscope && doubleCheckHoroscope.horoscope_text && doubleCheckHoroscope.horoscope_text.trim() !== '') {
       console.log('🛡️ SAFETY CHECK: Horoscope text was created between checks - returning cached instead of saving')
       console.log('   This prevents duplicate API calls and billing limit hits')
+      console.log('   Cached horoscope preview:', doubleCheckHoroscope.horoscope_text.substring(0, 100))
+      console.log('   Generated horoscope preview:', horoscopeText.substring(0, 100))
+      console.log('   ⚠️ WARNING: Returning cached data instead of newly generated data!')
+      console.log('   Cached image_url:', doubleCheckHoroscope.image_url)
+      console.log('   Generated image_url:', imageUrl)
+      
       // Return cached text to prevent duplicate generation
       return NextResponse.json({
         star_sign: starSign, // Use the star sign we calculated
@@ -647,21 +693,25 @@ export async function GET(request: NextRequest) {
       character_name: characterName,
       date: todayDate, // Explicitly set date to ensure consistency
       generated_at: new Date().toISOString(),
-      image_url: imageUrl, // Set image URL from n8n result
+      image_url: imageUrl, // Set image URL from n8n result (after upload to Supabase)
       prompt_slots_json: promptSlots, // Set prompt slots from prompt building
       image_prompt: imagePrompt, // Set image prompt
     }
     
-    console.log('💾 Saving horoscope text to database...')
+    console.log('💾 Saving horoscope to database...')
     console.log('   Upsert data:', {
       user_id: upsertData.user_id,
       date: upsertData.date,
       star_sign: upsertData.star_sign,
       text_length: upsertData.horoscope_text?.length || 0,
+      text_preview: upsertData.horoscope_text?.substring(0, 100) || 'MISSING',
       has_dos: !!upsertData.horoscope_dos?.length,
+      dos_count: upsertData.horoscope_dos?.length || 0,
       has_donts: !!upsertData.horoscope_donts?.length,
+      donts_count: upsertData.horoscope_donts?.length || 0,
       character_name: upsertData.character_name,
-      has_image_url: !!upsertData.image_url
+      image_url: upsertData.image_url || 'MISSING',
+      image_url_length: upsertData.image_url?.length || 0
     })
     
     const { data: upsertResult, error: upsertError } = await supabaseAdmin
@@ -750,6 +800,18 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // Log what we're returning to verify it matches what was saved
+    console.log('📤 Returning horoscope response:', {
+      star_sign: starSign,
+      text_length: horoscopeText?.length || 0,
+      text_preview: horoscopeText?.substring(0, 100) || 'MISSING',
+      dos_count: horoscopeDos?.length || 0,
+      donts_count: horoscopeDonts?.length || 0,
+      image_url: imageUrl || 'MISSING',
+      image_url_length: imageUrl?.length || 0,
+      character_name: characterName
+    })
+
     return NextResponse.json({
       star_sign: starSign,
       horoscope_text: horoscopeText,
