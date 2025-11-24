@@ -2555,24 +2555,29 @@ export default function TeamDashboard() {
                   style={eventsExpanded ? { flex: '0 0 auto', height: '180px', maxHeight: '180px' } : { flex: '0 0 auto', height: 'auto', minHeight: '70px' }}
                 >
                   {eventsExpanded ? (
-                    /* Vertical stats view when expanded - Bold and clean */
-                    <div className="flex flex-col gap-2">
-                      <h2 className={`text-2xl font-black uppercase leading-none ${style.text} mb-3`}>THIS WEEK</h2>
-                      {stats.map((stat, index) => (
-                        <div key={stat.label} className="flex items-center justify-between">
-                          <div className={`text-base font-normal tracking-wide ${style.text}`}>
-                            {stat.label}
-                          </div>
+                    /* Horizontal stats view when expanded - labels below numbers */
+                    <div className="flex flex-col gap-4 h-full">
+                      <h2 className={`text-2xl font-black uppercase leading-none ${style.text}`}>THIS WEEK</h2>
+                      <div className="flex items-center justify-between gap-4 flex-1">
+                        {stats.map((stat, index) => (
                           <div 
-                            className={`text-5xl font-black ${style.text} px-4 py-2 rounded-lg`}
-                            style={{
-                              backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
-                            }}
+                            key={stat.label} 
+                            className="flex flex-col items-center justify-center flex-1"
                           >
-                            {stat.value}
+                            <div 
+                              className={`text-5xl font-black ${style.text} px-4 py-2 rounded-lg mb-2 w-full text-center`}
+                              style={{
+                                backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
+                              }}
+                            >
+                              {stat.value}
+                            </div>
+                            <div className={`text-xs font-black uppercase tracking-wider ${style.text} text-center`}>
+                              {stat.label}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     /* Horizontal banner view when not expanded */
@@ -2758,13 +2763,13 @@ export default function TeamDashboard() {
                       </div>
                     ) : (
                       /* 3-column view when collapsed */
-                      <div className="flex flex-col" style={{ height: 'calc(100% - 350px)' }}>
+                      <div className="flex flex-col h-full">
                         <h2 className={`text-2xl mb-4 font-black uppercase ${pipelineStyle.text}`}>PIPELINE</h2>
-                        <div className="grid grid-cols-3 gap-4 flex-1 overflow-hidden" style={{ height: '400px' }}>
+                        <div className="grid grid-cols-3 gap-4 flex-1 overflow-hidden" style={{ height: '300px' }}>
                           {/* Column 1: In Progress */}
-                          <div className="flex flex-col overflow-hidden">
+                          <div className="flex flex-col overflow-hidden h-full">
                             <div className={`text-sm font-semibold ${pipelineStyle.text} mb-3 uppercase tracking-wide`}>In Progress</div>
-                            <div className="overflow-y-auto pr-2" style={{ height: '370px' }}>
+                            <div className="flex-1 overflow-y-auto pr-2">
                               <div className="space-y-1">
                                 {!pipelineLoading && inProgressProjects.length > 0 ? (
                                   inProgressProjects.map((project, index) => 
@@ -2780,9 +2785,9 @@ export default function TeamDashboard() {
                           </div>
                           
                           {/* Column 2: Pending Decision */}
-                          <div className="flex flex-col overflow-hidden">
+                          <div className="flex flex-col overflow-hidden h-full">
                             <div className={`text-sm font-semibold ${pipelineStyle.text} mb-3 uppercase tracking-wide`}>Pending Decision</div>
-                            <div className="overflow-y-auto pr-2" style={{ height: '370px' }}>
+                            <div className="flex-1 overflow-y-auto pr-2">
                               <div className="space-y-1">
                                 {!pipelineLoading && pendingDecisionProjects.length > 0 ? (
                                   pendingDecisionProjects.map((project, index) => 
@@ -2798,11 +2803,11 @@ export default function TeamDashboard() {
                           </div>
                           
                           {/* Column 3: Won / Lost Split */}
-                          <div className="flex flex-col overflow-hidden">
+                          <div className="flex flex-col overflow-hidden h-full">
                             {/* Won - Top Half */}
-                            <div className="flex flex-col mb-4">
+                            <div className="flex flex-col flex-1 min-h-0 mb-4">
                               <div className={`text-sm font-semibold ${pipelineStyle.text} mb-3 uppercase tracking-wide`}>Won</div>
-                              <div className="overflow-y-auto pr-2" style={{ height: '175px' }}>
+                              <div className="flex-1 overflow-y-auto pr-2">
                                 <div className="space-y-1">
                                   {!pipelineLoading && wonProjects.length > 0 ? (
                                     wonProjects.map((project, index) => 
@@ -2818,9 +2823,9 @@ export default function TeamDashboard() {
                             </div>
                             
                             {/* Lost - Bottom Half */}
-                            <div className="flex flex-col border-t" style={{ borderColor: `${borderColor}40` }}>
+                            <div className="flex flex-col flex-1 min-h-0 border-t" style={{ borderColor: `${borderColor}40` }}>
                               <div className={`text-sm font-semibold ${pipelineStyle.text} mb-3 mt-4 uppercase tracking-wide`}>Lost</div>
-                              <div className="overflow-y-auto pr-2" style={{ height: '175px' }}>
+                              <div className="flex-1 overflow-y-auto pr-2">
                                 <div className="space-y-1">
                                   {!pipelineLoading && lostProjects.length > 0 ? (
                                     lostProjects.map((project, index) => 
