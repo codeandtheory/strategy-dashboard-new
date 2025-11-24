@@ -476,24 +476,130 @@ function buildPromptString(
   if (subjectRole) {
     subjectClause += `, as ${subjectRole.label.toLowerCase()}`
   }
+  // Handle subject_twist - add it in a way that makes grammatical sense
   if (subjectTwist) {
-    subjectClause += ` ${subjectTwist.label.toLowerCase()}`
+    const twistLabel = subjectTwist.label.toLowerCase()
+    // If twist is a descriptor (adjective-like), add it before the role
+    // If twist is a noun phrase, add it after with proper grammar
+    if (twistLabel.includes('living') || twistLabel.includes('version') || twistLabel.includes('form')) {
+      // These are noun phrases that should be integrated differently
+      // Instead of "as hero in an rpg living neon sign", make it "as a living neon sign hero in an rpg"
+      // Or better: restructure to avoid awkwardness
+      if (subjectRole) {
+        // If we have a role, integrate the twist more naturally
+        subjectClause = subjectClause.replace(
+          `, as ${subjectRole.label.toLowerCase()}`,
+          `, as ${twistLabel} ${subjectRole.label.toLowerCase()}`
+        )
+      } else {
+        subjectClause += `, as ${twistLabel}`
+      }
+    } else {
+      // Simple descriptor - add it naturally
+      subjectClause += ` ${twistLabel}`
+    }
   }
 
-  // Build prompt following the example format
-  const styleText = styleReference
-    ? `${styleReference.label}${styleMedium ? `. ${styleMedium.label}` : ''}`
-    : styleMedium?.label || ''
+  // Build style text - prefer style reference, only add medium if it complements
+  // Avoid redundant combinations (e.g., "Rubber Hose Cartoon. Marker Illustration")
+  let styleText = ''
+  if (styleReference) {
+    styleText = styleReference.label
+    // Only add medium if it's different and complementary
+    // Skip if medium is already implied by the style reference
+    if (styleMedium && !styleReference.label.toLowerCase().includes(styleMedium.label.toLowerCase().split(' ')[0])) {
+      // Check if they conflict (both are illustration styles, both are cartoon styles, etc.)
+      const styleRefLower = styleReference.label.toLowerCase()
+      const mediumLower = styleMedium.label.toLowerCase()
+      const isIllustration = mediumLower.includes('illustration') || mediumLower.includes('sketch') || mediumLower.includes('drawing')
+      const isCartoon = styleRefLower.includes('cartoon') || styleRefLower.includes('animation')
+      const isDigital = mediumLower.includes('digital') || mediumLower.includes('cg') || mediumLower.includes('3d')
+      
+      // Only add medium if it adds meaningful information
+      if (!(isIllustration && isCartoon) && !(isDigital && styleRefLower.includes('cg'))) {
+        styleText += `. ${styleMedium.label}`
+      }
+    }
+  } else if (styleMedium) {
+    styleText = styleMedium.label
+  }
 
-  const activityText = activity ? ` ${activity.label.toLowerCase()}` : ''
+  // Build activity text - integrate naturally and check for contradictions
+  let activityText = ''
+  if (activity) {
+    const activityLabel = activity.label.toLowerCase()
+    // Check if activity contradicts the setting (e.g., "flying" in "library")
+    const isFlyingActivity = activityLabel.includes('flying') || activityLabel.includes('air') || activityLabel.includes('sky')
+    const isIndoorSetting = settingText.includes('library') || settingText.includes('room') || settingText.includes('house') || settingText.includes('building')
+    
+    // Only include activity if it makes sense with the setting
+    if (!(isFlyingActivity && isIndoorSetting)) {
+      activityText = ` ${activityLabel}`
+    }
+  }
+
+  // Build setting text with proper grammar
   const settingText = settingPlace?.label.toLowerCase() || 'a setting'
-  const timeText = settingTime?.label.toLowerCase() || 'a time'
+  let timeText = settingTime?.label.toLowerCase() || 'a time'
+  // Fix grammar: "at stormy afternoon" -> "during a stormy afternoon"
+  if (timeText.startsWith('stormy') || timeText.startsWith('sunny') || timeText.startsWith('rainy')) {
+    timeText = `during a ${timeText}`
+  } else if (timeText.includes('afternoon') || timeText.includes('morning') || timeText.includes('evening') || timeText.includes('night')) {
+    if (!timeText.startsWith('during') && !timeText.startsWith('at') && !timeText.startsWith('on')) {
+      timeText = `during ${timeText}`
+    }
+  } else if (!timeText.startsWith('at') && !timeText.startsWith('during') && !timeText.startsWith('on')) {
+    timeText = `at ${timeText}`
+  }
+
+  // Build mood, color, lighting
   const moodText = moodVibe?.label.toLowerCase() || 'moody'
   const colorText = colorPalette?.label.toLowerCase() || 'colorful'
   const lightingText = lightingStyle?.label.toLowerCase() || 'natural lighting'
-  const constraintsText = constraints.map((c) => c.label.toLowerCase()).join(', ')
 
-  const prompt = `${styleText}. ${cameraFrame?.label || 'Portrait'} of ${subjectClause}${activityText}. They are in ${settingText} at ${timeText}. ${moodText} mood, ${colorText} palette, ${lightingText}. ${constraintsText}.`
+  // Handle camera frame - avoid contradictions
+  let cameraFrameText = cameraFrame?.label || 'Portrait'
+  // If constraints mention "portrait ratio" or "face", don't use "Top Down View"
+  const hasPortraitConstraint = constraints.some(c => 
+    c.label.toLowerCase().includes('portrait') || 
+    c.label.toLowerCase().includes('face') ||
+    c.label.toLowerCase().includes('close-up')
+  )
+  if (hasPortraitConstraint && cameraFrameText.toLowerCase().includes('top down')) {
+    cameraFrameText = 'Portrait'
+  }
+
+  // Build constraints text
+  const constraintsText = constraints.length > 0 
+    ? constraints.map((c) => c.label.toLowerCase()).join(', ')
+    : ''
+
+  // Build the prompt with better structure
+  let prompt = ''
+  
+  // Style
+  if (styleText) {
+    prompt += `${styleText}. `
+  }
+  
+  // Camera frame and subject
+  prompt += `${cameraFrameText} of ${subjectClause}`
+  
+  // Activity (already filtered for contradictions above)
+  if (activityText) {
+    prompt += activityText
+  }
+  
+  // Setting and time
+  prompt += `. They are in ${settingText} ${timeText}. `
+  
+  // Mood, color, lighting
+  prompt += `${moodText} mood, ${colorText} palette, ${lightingText}`
+  
+  // Constraints
+  if (constraintsText) {
+    prompt += `. ${constraintsText}`
+  }
 
   return prompt.trim()
 }
@@ -755,6 +861,25 @@ export async function buildHoroscopePrompt(
 
   // Build prompt string
   const prompt = buildPromptString(slots, catalogs, userProfile)
+
+  // Validate prompt was built correctly
+  if (!prompt || prompt.trim() === '') {
+    throw new Error('Failed to build prompt - prompt is empty. Check that all required slots were selected and catalog items exist.')
+  }
+
+  // Ensure prompt contains essential elements
+  if (!prompt.includes(userProfile.name)) {
+    console.warn('⚠️ Warning: Prompt does not include user name:', userProfile.name)
+  }
+
+  if (prompt.length < 50) {
+    console.warn('⚠️ Warning: Prompt is very short (less than 50 characters). This may indicate missing slot data.')
+    console.warn('Prompt:', prompt)
+  }
+
+  console.log('✅ Built prompt successfully:', prompt.substring(0, 150) + (prompt.length > 150 ? '...' : ''))
+  console.log('Prompt length:', prompt.length)
+  console.log('Slots used:', Object.keys(slots).filter(key => slots[key] !== null))
 
   return { prompt, slots, reasoning }
 }

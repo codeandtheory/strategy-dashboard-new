@@ -10,7 +10,7 @@ import { useMode } from "@/contexts/mode-context"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { getStarSignEmoji } from '@/lib/horoscope-utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -183,7 +183,7 @@ export default function TeamDashboard() {
   const [videosLoading, setVideosLoading] = useState(true)
   
   // Get Google Calendar access token using the user's existing Google session
-  const { accessToken: googleCalendarToken, loading: tokenLoading, error: tokenError } = useGoogleCalendarToken()
+  const { accessToken: googleCalendarToken, loading: tokenLoading, error: tokenError, refreshToken: refreshCalendarToken } = useGoogleCalendarToken()
 
   // Calendar IDs - can be hardcoded or dynamically fetched
   const [calendarIds, setCalendarIds] = useState<string[]>([
@@ -799,7 +799,12 @@ export default function TeamDashboard() {
           
           if (response.status === 401 || response.status === 403) {
             console.error('🔐 Authentication issue - token may be invalid or missing calendar scopes')
-            console.error('💡 Try re-authenticating with Google and granting calendar permissions')
+            if (response.status === 401 && refreshCalendarToken) {
+              console.log('🔄 Token expired in calendars list - refreshing token...')
+              refreshCalendarToken()
+            } else {
+              console.error('💡 Try re-authenticating with Google and granting calendar permissions')
+            }
           }
         }
       } catch (error) {
@@ -810,6 +815,9 @@ export default function TeamDashboard() {
     fetchUserCalendars()
   }, [googleCalendarToken, tokenLoading, useDynamicCalendars])
 
+  // Track token refresh attempts to prevent infinite loops
+  const tokenRefreshAttemptsRef = useRef(0)
+  
   // Fetch calendar events
   useEffect(() => {
     async function fetchCalendarEvents() {
@@ -855,8 +863,30 @@ export default function TeamDashboard() {
             events: result.events,
             successfulCalendars: result.successfulCalendars,
             failedCalendars: result.failedCalendars,
-            failedDetails: result.failedCalendarDetails
+            failedDetails: result.failedCalendarDetails,
+            tokenExpired: result.tokenExpired
           })
+          
+          // Check if token expired and refresh if needed
+          if (result.tokenExpired && googleCalendarToken && refreshCalendarToken) {
+            // Prevent infinite retry loops
+            if (tokenRefreshAttemptsRef.current < 2) {
+              tokenRefreshAttemptsRef.current += 1
+              console.log(`🔄 Token expired detected - refreshing token (attempt ${tokenRefreshAttemptsRef.current})...`)
+              refreshCalendarToken()
+              // Wait a bit for token to refresh, then retry
+              setTimeout(() => {
+                fetchCalendarEvents()
+              }, 2000)
+              return
+            } else {
+              console.error('⚠️ Token refresh failed after multiple attempts - using fallback authentication')
+              tokenRefreshAttemptsRef.current = 0 // Reset for next time
+            }
+          } else {
+            // Reset counter on successful response
+            tokenRefreshAttemptsRef.current = 0
+          }
           
           if (result.failedCalendars > 0) {
             console.warn(`${result.failedCalendars} calendar(s) failed to load. Check server logs for details.`)

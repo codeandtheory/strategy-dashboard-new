@@ -65,6 +65,16 @@
     },
     {
       "parameters": {
+        "jsCode": "// Validate and log image prompt before sending to OpenAI\nconst webhookData = $input.item.json;\n\nconsole.log('📝 Image prompt validation:');\nconsole.log('Has imagePrompt:', !!webhookData.imagePrompt);\nconsole.log('imagePrompt type:', typeof webhookData.imagePrompt);\nconsole.log('imagePrompt length:', webhookData.imagePrompt?.length || 0);\nconsole.log('imagePrompt preview:', webhookData.imagePrompt?.substring(0, 200) || 'MISSING');\n\n// Validate prompt exists and is not empty\nif (!webhookData.imagePrompt || typeof webhookData.imagePrompt !== 'string' || webhookData.imagePrompt.trim() === '') {\n  console.error('❌ ERROR: imagePrompt is missing or empty!');\n  console.error('Available keys:', Object.keys(webhookData || {}));\n  console.error('Full webhook data:', JSON.stringify(webhookData, null, 2));\n  throw new Error('imagePrompt is missing or empty. Cannot generate image without a valid prompt.');\n}\n\n// Ensure prompt is a string and has minimum length\nconst prompt = String(webhookData.imagePrompt).trim();\nif (prompt.length < 10) {\n  console.error('❌ ERROR: imagePrompt is too short:', prompt);\n  throw new Error('imagePrompt is too short (less than 10 characters). This suggests the prompt was not built correctly.');\n}\n\nconsole.log('✅ Image prompt validated successfully');\nconsole.log('Full prompt:', prompt);\n\n// Pass through all webhook data with validated prompt\nreturn {\n  json: {\n    ...webhookData,\n    imagePrompt: prompt\n  }\n};"
+      },
+      "id": "validate-image-prompt",
+      "name": "Validate Image Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
         "resource": "image",
         "operation": "create",
         "model": "dall-e-3",
@@ -142,7 +152,27 @@
             "index": 0
           },
           {
+            "node": "Validate Image Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Image Prompt": {
+      "main": [
+        [
+          {
             "node": "OpenAI Image Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Webhook Response",
             "type": "main",
             "index": 0
           }
@@ -244,4 +274,5 @@
   "updatedAt": "2024-01-01T00:00:00.000Z",
   "versionId": "1"
 }
+
 

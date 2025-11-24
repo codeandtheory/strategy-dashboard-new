@@ -434,6 +434,15 @@ export async function GET(request: NextRequest) {
       promptSlots = slots
       promptReasoning = reasoning
       
+      // Validate prompt was built correctly
+      if (!imagePrompt || imagePrompt.trim() === '') {
+        throw new Error('Failed to build image prompt - prompt is empty')
+      }
+      
+      // Log the built prompt for debugging
+      console.log('✅ Built image prompt:', imagePrompt.substring(0, 200) + (imagePrompt.length > 200 ? '...' : ''))
+      console.log('Prompt length:', imagePrompt.length)
+      console.log('Prompt slots:', Object.keys(promptSlots || {}))
       console.log('Built image prompt, calling n8n for text and image generation...')
       
       // Call n8n workflow for both text transformation and image generation

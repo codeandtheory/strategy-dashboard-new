@@ -297,6 +297,49 @@ This workflow is designed for **synchronous execution**:
 3. **Test Image Generation**: Verify DALL-E 3 access and image generation works
 4. **Test End-to-End**: Call from Next.js API route and verify complete flow
 
+## Troubleshooting
+
+### "No Respond to Webhook node found in the workflow"
+
+This error occurs when n8n can't find the "Respond to Webhook" node. To fix:
+
+1. **Check Workflow is Active**: 
+   - Open the workflow in n8n
+   - Ensure the workflow is **Active** (toggle switch in top right)
+   - Inactive workflows won't respond to webhook calls
+
+2. **Verify Respond to Webhook Node is Connected**:
+   - Check that "Webhook Response" node exists
+   - Verify it's connected from "Combine Results" node
+   - The connection should show an arrow from Combine Results → Webhook Response
+
+3. **Re-import Workflow**:
+   - If the workflow structure doesn't match, re-import `n8n-horoscope-generation-workflow.json`
+   - Go to n8n → Workflows → Import from File
+   - Select the JSON file and import
+   - Activate the workflow after import
+
+4. **Check Webhook URL**:
+   - Verify the webhook URL matches: `https://candt.app.n8n.cloud/webhook-test/horoscope-generation`
+   - The path in the webhook node should be: `horoscope-generation`
+   - The `/webhook-test/` prefix is added by n8n automatically
+
+### "image not found. please generate horoscope first"
+
+This error occurs when the image URL isn't being returned properly. Check:
+
+1. **Verify Image Generation Node Settings**:
+   - Ensure "Return URL" option is enabled in OpenAI Image Generation node
+   - This prevents n8n from downloading the image as binary data
+
+2. **Check Combine Results Node**:
+   - Verify the Combine Results node is correctly extracting `imageUrl` from the response
+   - Check the execution logs in n8n to see what data structure is being returned
+
+3. **Verify Response Structure**:
+   - The final response should include: `{ horoscope, dos, donts, imageUrl, prompt, slots, reasoning }`
+   - Check n8n execution logs to see the actual response structure
+
 ## Integration with Next.js
 
 The Next.js application:

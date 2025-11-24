@@ -215,6 +215,16 @@ export async function GET(request: NextRequest) {
         console.error(`Error details:`, errorDetails)
         
         let errorMessage = error.message || 'Unknown error'
+        let isTokenExpired = false
+        
+        // Check for token expiration (401 with Invalid Credentials)
+        if ((error.code === 401 || error.status === 401) && accessToken) {
+          if (error.message?.includes('Invalid Credentials') || error.message?.includes('invalid_token')) {
+            isTokenExpired = true
+            errorMessage = 'Token expired - please refresh your Google Calendar connection'
+            console.error(`⚠️  Access token expired for calendar ${decodedCalendarId}. Client should refresh token.`)
+          }
+        }
         
         // Provide helpful error messages for common issues
         if (error.code === 403 || error.status === 403) {
@@ -245,7 +255,11 @@ export async function GET(request: NextRequest) {
           }
         }
         
-        failedCalendars.push({ id: decodedCalendarId, error: errorMessage })
+        failedCalendars.push({ 
+          id: decodedCalendarId, 
+          error: errorMessage,
+          isTokenExpired: isTokenExpired 
+        })
         // Continue with other calendars even if one fails
       }
     }
@@ -257,6 +271,9 @@ export async function GET(request: NextRequest) {
       return aStart.localeCompare(bStart)
     })
 
+    // Check if any failures were due to token expiration
+    const hasTokenExpiration = failedCalendars.some(f => f.isTokenExpired)
+    
     return NextResponse.json({
       events: allEvents,
       count: allEvents.length,
@@ -265,6 +282,7 @@ export async function GET(request: NextRequest) {
       failedCalendarDetails: failedCalendars,
       authInfo: authInfo, // Include auth info for debugging
       usingOAuth2: usingOAuth2,
+      tokenExpired: hasTokenExpiration, // Flag to indicate token needs refresh
     })
   } catch (error: any) {
     console.error('Error fetching calendar events:', error)

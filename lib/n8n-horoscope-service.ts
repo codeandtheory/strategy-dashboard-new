@@ -44,12 +44,19 @@ export async function generateHoroscopeViaN8n(
 
   console.log('Calling n8n webhook for horoscope generation...')
   console.log('Webhook URL:', webhookUrl)
+  
+  // Validate image prompt before sending
+  if (!request.imagePrompt || request.imagePrompt.trim() === '') {
+    throw new Error('Image prompt is empty - cannot generate image without prompt')
+  }
+  
   console.log('Request payload:', {
     starSign: request.starSign,
     hasCafeAstrologyText: !!request.cafeAstrologyText,
     hasImagePrompt: !!request.imagePrompt,
     textLength: request.cafeAstrologyText?.length || 0,
     promptLength: request.imagePrompt?.length || 0,
+    promptPreview: request.imagePrompt.substring(0, 150) + (request.imagePrompt.length > 150 ? '...' : ''),
   })
 
   const maxRetries = 3

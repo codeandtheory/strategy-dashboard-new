@@ -29,6 +29,7 @@ export function useGoogleCalendarToken() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [needsAuth, setNeedsAuth] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
     async function getToken() {
@@ -216,8 +217,21 @@ export function useGoogleCalendarToken() {
     }
     
     getToken()
-  }, [])
+  }, [refreshTrigger])
 
-  return { accessToken, loading, error, needsAuth }
+  // Function to refresh the token (clears cache and requests new token)
+  const refreshToken = () => {
+    console.log('🔄 Refreshing Google Calendar token...')
+    // Clear cached token
+    localStorage.removeItem('google_calendar_token')
+    localStorage.removeItem('google_calendar_token_expiry')
+    setAccessToken(null)
+    setError(null)
+    setLoading(true)
+    // Trigger useEffect to run again
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+  return { accessToken, loading, error, needsAuth, refreshToken }
 }
 
