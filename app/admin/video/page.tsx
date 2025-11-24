@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useMode } from '@/contexts/mode-context'
 import { useAuth } from '@/contexts/auth-context'
+import { VideoEmbed } from '@/components/video-embed'
 import { 
   Plus, 
   Search, 
@@ -18,7 +19,8 @@ import {
   X,
   Pin,
   ExternalLink,
-  Play
+  Play,
+  Eye
 } from 'lucide-react'
 
 interface Video {
@@ -63,8 +65,10 @@ export default function VideoAdmin() {
   const [sortOrder, setSortOrder] = useState<string>('desc')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [editingItem, setEditingItem] = useState<Video | null>(null)
+  const [viewingItem, setViewingItem] = useState<Video | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -499,6 +503,7 @@ export default function VideoAdmin() {
                       <option value="">Auto-detect</option>
                       <option value="youtube">YouTube</option>
                       <option value="vimeo">Vimeo</option>
+                      <option value="zoom">Zoom</option>
                       <option value="direct">Direct Link</option>
                     </select>
                     <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
@@ -684,13 +689,25 @@ export default function VideoAdmin() {
                             <Pin className={`w-3 h-3 ${item.pinned ? 'fill-current' : ''}`} />
                           </Button>
                           <Button
+                            onClick={() => {
+                              setViewingItem(item)
+                              setIsViewDialogOpen(true)
+                            }}
+                            size="sm"
+                            variant="outline"
+                            className={`${cardStyle.border} border ${cardStyle.text} h-6 px-2`}
+                            title="View video"
+                          >
+                            <Eye className="w-3 h-3" />
+                          </Button>
+                          <Button
                             onClick={() => window.open(item.video_url, '_blank')}
                             size="sm"
                             variant="outline"
                             className={`${cardStyle.border} border ${cardStyle.text} h-6 px-2`}
-                            title="Watch video"
+                            title="Open in new tab"
                           >
-                            <Play className="w-3 h-3" />
+                            <ExternalLink className="w-3 h-3" />
                           </Button>
                           <Button
                             onClick={() => handleEdit(item)}
@@ -815,6 +832,7 @@ export default function VideoAdmin() {
                     <option value="">Auto-detect</option>
                     <option value="youtube">YouTube</option>
                     <option value="vimeo">Vimeo</option>
+                    <option value="zoom">Zoom</option>
                     <option value="direct">Direct Link</option>
                   </select>
                 </div>
@@ -854,6 +872,128 @@ export default function VideoAdmin() {
                 Update
               </Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Dialog with Video Embed */}
+        <Dialog open={isViewDialogOpen} onOpenChange={(open) => {
+          setIsViewDialogOpen(open)
+          if (!open) {
+            setViewingItem(null)
+          }
+        }}>
+          <DialogContent className={`${cardStyle.bg} ${cardStyle.border} border max-w-5xl max-h-[90vh] overflow-y-auto`}>
+            <DialogHeader>
+              <DialogTitle className={cardStyle.text}>
+                {viewingItem?.title || 'Video'}
+              </DialogTitle>
+            </DialogHeader>
+            {viewingItem && (
+              <div className="space-y-4">
+                {/* Video Embed */}
+                <VideoEmbed
+                  videoUrl={viewingItem.video_url}
+                  title={viewingItem.title}
+                  platform={viewingItem.platform}
+                  aspectRatio="16/9"
+                />
+
+                {/* Video Details */}
+                <div className={`${cardStyle.border} border-t pt-4 space-y-2`}>
+                  {viewingItem.description && (
+                    <div>
+                      <h3 className={`text-sm font-semibold ${cardStyle.text} mb-1`}>Description</h3>
+                      <p className={`text-sm ${cardStyle.text}/70`}>{viewingItem.description}</p>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {viewingItem.category && (
+                      <div>
+                        <span className={`font-semibold ${cardStyle.text}`}>Category: </span>
+                        <span className={cardStyle.text + '/70'}>{viewingItem.category}</span>
+                      </div>
+                    )}
+                    {viewingItem.platform && (
+                      <div>
+                        <span className={`font-semibold ${cardStyle.text}`}>Platform: </span>
+                        <span className={cardStyle.text + '/70'}>{viewingItem.platform}</span>
+                      </div>
+                    )}
+                    {viewingItem.duration && (
+                      <div>
+                        <span className={`font-semibold ${cardStyle.text}`}>Duration: </span>
+                        <span className={cardStyle.text + '/70'}>
+                          {Math.floor(viewingItem.duration / 60)}:{(viewingItem.duration % 60).toString().padStart(2, '0')}
+                        </span>
+                      </div>
+                    )}
+                    {viewingItem.created_at && (
+                      <div>
+                        <span className={`font-semibold ${cardStyle.text}`}>Created: </span>
+                        <span className={cardStyle.text + '/70'}>
+                          {new Date(viewingItem.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {viewingItem.tags && viewingItem.tags.length > 0 && (
+                    <div>
+                      <h3 className={`text-sm font-semibold ${cardStyle.text} mb-1`}>Tags</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {viewingItem.tags.map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className={`px-2 py-1 ${getRoundedClass('rounded-md')} text-xs ${
+                              mode === 'chaos' ? 'bg-[#C4F500]/20 text-[#C4F500]' :
+                              mode === 'chill' ? 'bg-[#FFC043]/20 text-[#4A1818]' :
+                              'bg-white/20 text-white'
+                            }`}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {viewingItem.submitted_by_profile && (
+                    <div>
+                      <span className={`font-semibold ${cardStyle.text}`}>Submitted by: </span>
+                      <span className={cardStyle.text + '/70'}>
+                        {viewingItem.submitted_by_profile.full_name || viewingItem.submitted_by_profile.email}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      onClick={() => {
+                        setIsViewDialogOpen(false)
+                        handleEdit(viewingItem)
+                      }}
+                      className={`${getRoundedClass('rounded-lg')} ${
+                        mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
+                        mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
+                        'bg-[#FFFFFF] text-black hover:bg-[#FFFFFF]/80'
+                      } font-black uppercase tracking-wider`}
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => window.open(viewingItem.video_url, '_blank')}
+                      variant="outline"
+                      className={`${cardStyle.border} border ${cardStyle.text}`}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Open Original
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

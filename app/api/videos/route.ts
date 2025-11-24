@@ -165,6 +165,8 @@ export async function POST(request: NextRequest) {
         detectedPlatform = 'youtube'
       } else if (video_url.includes('vimeo.com')) {
         detectedPlatform = 'vimeo'
+      } else if (video_url.includes('zoom.us')) {
+        detectedPlatform = 'zoom'
       } else {
         detectedPlatform = 'direct'
       }
@@ -280,6 +282,8 @@ export async function PUT(request: NextRequest) {
           updateData.platform = 'youtube'
         } else if (video_url.includes('vimeo.com')) {
           updateData.platform = 'vimeo'
+        } else if (video_url.includes('zoom.us')) {
+          updateData.platform = 'zoom'
         } else {
           updateData.platform = 'direct'
         }
