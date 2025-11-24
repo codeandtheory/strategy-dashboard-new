@@ -254,15 +254,22 @@ export async function GET(request: NextRequest) {
     if (cachedHoroscope && !forceRegenerate) {
       if (cachedHoroscope.horoscope_text && cachedHoroscope.horoscope_text.trim() !== '') {
         // Check if this horoscope was generated with the new n8n system
-        // Old horoscopes won't have prompt_slots_json
+        // We can't rely on prompt_slots_json alone since old horoscopes might have it
+        // Instead, check the generated_at timestamp - if it's before n8n integration (roughly Nov 24, 2025 18:30 UTC),
+        // or if it doesn't have prompt_slots_json, regenerate it
         const hasPromptSlots = 'prompt_slots_json' in cachedHoroscope && !!cachedHoroscope.prompt_slots_json
+        const generatedAt = cachedHoroscope.generated_at ? new Date(cachedHoroscope.generated_at) : null
+        // n8n integration timestamp: Nov 24, 2025 18:30 UTC (approximate)
+        const n8nIntegrationDate = new Date('2025-11-24T18:30:00Z')
+        const isPreN8n = !generatedAt || generatedAt < n8nIntegrationDate || !hasPromptSlots
         
-        if (!hasPromptSlots) {
+        if (isPreN8n) {
           console.log('🔄 FOUND old cached horoscope (pre-n8n system) - will regenerate with n8n')
           console.log('   This horoscope was generated before n8n integration')
           console.log('   Text length:', cachedHoroscope.horoscope_text.length)
           console.log('   Date:', cachedHoroscope.date)
           console.log('   Generated at:', cachedHoroscope.generated_at)
+          console.log('   Has prompt slots:', hasPromptSlots)
           // Don't return - continue to generate new horoscope via n8n
         } else {
           console.log('✅ FOUND cached horoscope text in database - RETURNING CACHED (NO API CALL)')
