@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
 import { useMode } from '@/contexts/mode-context'
-import { AccountMenu } from '@/components/account-menu'
+import { SiteHeader } from '@/components/site-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -86,51 +86,7 @@ export default function SnapsPage() {
     }
   }
 
-  const getBorderClass = () => {
-    switch (mode) {
-      case 'chaos': return 'border-[#333333]'
-      case 'chill': return 'border-[#4A1818]/20'
-      case 'code': return 'border-[#FFFFFF]'
-      default: return 'border-[#333333]'
-    }
-  }
 
-  const getNavLinkClass = (isActive = false) => {
-    const base = `transition-colors text-sm font-black uppercase ${mode === 'code' ? 'font-mono' : ''}`
-    if (isActive) {
-      switch (mode) {
-        case 'chaos': return `${base} text-white hover:text-[#C4F500]`
-        case 'chill': return `${base} text-[#4A1818] hover:text-[#FFC043]`
-        case 'code': return `${base} text-[#FFFFFF] hover:text-[#FFFFFF]`
-        default: return `${base} text-white hover:text-[#C4F500]`
-      }
-    } else {
-      switch (mode) {
-        case 'chaos': return `${base} text-[#666666] hover:text-white`
-        case 'chill': return `${base} text-[#8B4444] hover:text-[#4A1818]`
-        case 'code': return `${base} text-[#808080] hover:text-[#FFFFFF]`
-        default: return `${base} text-[#666666] hover:text-white`
-      }
-    }
-  }
-
-  const getLogoBg = () => {
-    switch (mode) {
-      case 'chaos': return 'bg-[#C4F500]'
-      case 'chill': return 'bg-[#FFC043]'
-      case 'code': return 'bg-[#FFFFFF]'
-      default: return 'bg-[#C4F500]'
-    }
-  }
-
-  const getLogoText = () => {
-    switch (mode) {
-      case 'chaos': return 'text-black'
-      case 'chill': return 'text-[#4A1818]'
-      case 'code': return 'text-black'
-      default: return 'text-black'
-    }
-  }
 
   const getRoundedClass = (defaultClass: string) => {
     return mode === 'code' ? 'rounded-none' : defaultClass
@@ -357,32 +313,9 @@ export default function SnapsPage() {
 
   return (
     <div className={`flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
-      <header className={`border-b ${getBorderClass()} px-6 py-4 fixed top-0 left-0 right-0 z-50 ${getBgClass()}`}>
-        <div className="max-w-[1200px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link href="/">
-              <div className={`w-10 h-10 ${getLogoBg()} ${getLogoText()} ${getRoundedClass('rounded-xl')} flex items-center justify-center font-black text-lg ${mode === 'code' ? 'font-mono' : ''} cursor-pointer`}>
-                {mode === 'code' ? 'C:\\>' : 'D'}
-              </div>
-            </Link>
-            <nav className="flex items-center gap-6">
-              <Link href="/" className={getNavLinkClass()}>HOME</Link>
-              <Link href="/snaps" className={getNavLinkClass(true)}>SNAPS</Link>
-              <Link href="/resources" className={getNavLinkClass()}>RESOURCES</Link>
-              <Link href="/work-samples" className={getNavLinkClass()}>WORK</Link>
-              <a href="#" className={getNavLinkClass()}>TEAM</a>
-              <Link href="/vibes" className={getNavLinkClass()}>VIBES</Link>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            {user && (
-              <AccountMenu />
-            )}
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
-      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-20">
+      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
         <div className="flex gap-6">
           {/* Left Sidebar Card */}
           <Card className={`w-80 ${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
@@ -558,7 +491,7 @@ export default function SnapsPage() {
           <div className="flex-1 flex flex-col">
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
-              <h1 className={`text-4xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Snaps</h1>
+              <h1 className={`text-4xl font-black uppercase ${getTextClass()}`}>SNAPS</h1>
               <Button
                 onClick={() => setShowAddDialog(true)}
                 className={`${mode === 'chaos' ? 'bg-gradient-to-r from-[#00C896] to-[#1A5D52] hover:from-[#00C896] hover:to-[#00C896] text-black' : mode === 'chill' ? 'bg-gradient-to-r from-[#C8D961] to-[#FFC043] hover:from-[#C8D961] hover:to-[#C8D961] text-[#4A1818]' : 'bg-gradient-to-r from-[#cccccc] to-[#e5e5e5] hover:from-[#cccccc] hover:to-[#cccccc] text-black'} font-black ${getRoundedClass('rounded-full')} h-10 px-6 text-sm uppercase`}

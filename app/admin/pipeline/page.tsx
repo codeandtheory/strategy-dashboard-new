@@ -690,7 +690,9 @@ export default function PipelinePage() {
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {wonProjects.map((project) => {
                 const date = formatDate(project.due_date)
-                const displayText = project.type || 'Unknown'
+                const clientName = project.name || 'Unknown'
+                const projectType = project.type || 'Unknown'
+                const displayText = `${clientName} - ${projectType}`
                 
                 return (
                   <Card
@@ -710,11 +712,8 @@ export default function PipelinePage() {
                           {date}
                         </div>
                       )}
-                      <div className="font-semibold text-black mb-1">
-                        {project.name}
-                      </div>
                       {displayText && (
-                        <div className="text-xs text-black opacity-60 mb-1">
+                        <div className="font-semibold text-black mb-1">
                           {displayText}
                         </div>
                       )}
@@ -766,7 +765,9 @@ export default function PipelinePage() {
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {lostProjects.map((project) => {
                 const date = formatDate(project.due_date)
-                const displayText = project.type || 'Unknown'
+                const clientName = project.name || 'Unknown'
+                const projectType = project.type || 'Unknown'
+                const displayText = `${clientName} - ${projectType}`
                 
                 return (
                   <Card
@@ -786,11 +787,8 @@ export default function PipelinePage() {
                           {date}
                         </div>
                       )}
-                      <div className="font-semibold text-black mb-1">
-                        {project.name}
-                      </div>
                       {displayText && (
-                        <div className="text-xs text-black opacity-60 mb-1">
+                        <div className="font-semibold text-black mb-1">
                           {displayText}
                         </div>
                       )}

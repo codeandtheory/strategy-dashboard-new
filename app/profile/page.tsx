@@ -54,10 +54,29 @@ export default function ProfilePage() {
     }
   }
 
-  const getRoundedClass = (defaultClass: string) => {
-    if (mode === 'chaos') return defaultClass.replace('rounded', 'rounded-[1.5rem]')
-    if (mode === 'chill') return defaultClass.replace('rounded', 'rounded-2xl')
-    return mode === 'code' ? 'rounded-none' : defaultClass
+  const getRoundedClass = (base: string) => {
+    if (mode === 'code') return 'rounded-none'
+    // For rounded-[2.5rem] or similar, keep it to match the rest of the site (like snaps page)
+    if (base.includes('rounded-[')) {
+      return base // Keep the original rounded class to match site styling
+    }
+    // For simple 'rounded' classes, do the replacement
+    if (mode === 'chaos') return base.replace('rounded', 'rounded-[1.5rem]')
+    if (mode === 'chill') return base.replace('rounded', 'rounded-2xl')
+    return base
+  }
+
+  const getNavItemStyle = (isActive: boolean) => {
+    if (isActive) {
+      switch (mode) {
+        case 'chaos': return 'bg-[#C4F500] text-black'
+        case 'chill': return 'bg-[#FFC043] text-[#4A1818]'
+        case 'code': return 'bg-[#FFFFFF] text-black'
+        default: return 'bg-primary text-primary-foreground'
+      }
+    } else {
+      return `${getTextClass()}/60 hover:${getTextClass()} hover:bg-black/10`
+    }
   }
 
   const getLogoBg = () => {

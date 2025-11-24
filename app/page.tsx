@@ -1,7 +1,7 @@
 'use client'
 
 import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info, ExternalLink, User, ChevronDown, ChevronUp, Plus, Check } from 'lucide-react'
-import { AccountMenu } from '@/components/account-menu'
+import { SiteHeader } from '@/components/site-header'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -1212,51 +1212,6 @@ export default function TeamDashboard() {
     }
   }
 
-  const getBorderClass = () => {
-    switch (mode) {
-      case 'chaos': return 'border-[#333333]'
-      case 'chill': return 'border-[#4A1818]/20'
-      case 'code': return 'border-[#FFFFFF]'
-      default: return 'border-[#333333]'
-    }
-  }
-
-  const getNavLinkClass = (isActive = false) => {
-    const base = `transition-colors text-sm font-black uppercase ${mode === 'code' ? 'font-mono' : ''}`
-    if (isActive) {
-      switch (mode) {
-        case 'chaos': return `${base} text-white hover:text-[#C4F500]`
-        case 'chill': return `${base} text-[#4A1818] hover:text-[#FFC043]`
-        case 'code': return `${base} text-[#FFFFFF] hover:text-[#FFFFFF]`
-        default: return `${base} text-white hover:text-[#C4F500]`
-      }
-    } else {
-      switch (mode) {
-        case 'chaos': return `${base} text-[#666666] hover:text-white`
-        case 'chill': return `${base} text-[#8B4444] hover:text-[#4A1818]`
-        case 'code': return `${base} text-[#808080] hover:text-[#FFFFFF]`
-        default: return `${base} text-[#666666] hover:text-white`
-      }
-    }
-  }
-
-  const getLogoBg = () => {
-    switch (mode) {
-      case 'chaos': return 'bg-[#C4F500]'
-      case 'chill': return 'bg-[#FFC043]'
-      case 'code': return 'bg-[#FFFFFF]'
-      default: return 'bg-[#C4F500]'
-    }
-  }
-
-  const getLogoText = () => {
-    switch (mode) {
-      case 'chaos': return 'text-black'
-      case 'chill': return 'text-[#4A1818]'
-      case 'code': return 'text-black'
-      default: return 'text-black'
-    }
-  }
 
   // Code mode helpers
   const getRoundedClass = (defaultClass: string) => {
@@ -1279,223 +1234,202 @@ export default function TeamDashboard() {
     return text
   }
 
-  return (
-    <div className={`flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
-      <header className={`border-b ${getBorderClass()} px-6 py-4 fixed top-0 left-0 right-0 z-50 ${getBgClass()}`}>
-        <div className="max-w-[1200px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <div className={`w-10 h-10 ${getLogoBg()} ${getLogoText()} ${getRoundedClass('rounded-xl')} flex items-center justify-center font-black text-lg ${mode === 'code' ? 'font-mono' : ''}`}>
-              {mode === 'code' ? 'C:\\>' : 'D'}
-            </div>
-            <nav className="flex items-center gap-6">
-              <a href="#" className={getNavLinkClass(true)}>HOME</a>
-              <Link href="/snaps" className={getNavLinkClass()}>SNAPS</Link>
-              <Link href="/resources" className={getNavLinkClass()}>RESOURCES</Link>
-              <Link href="/work-samples" className={getNavLinkClass()}>WORK</Link>
-              <a href="#" className={getNavLinkClass()}>TEAM</a>
-              <Link href="/vibes" className={getNavLinkClass()}>VIBES</Link>
-              <Link href="/playground" className={getNavLinkClass()}>PLAYGROUND</Link>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Horoscope Image Actions - Tooltip and Download */}
-            {horoscopeImage && (
-              <TooltipProvider>
-                <div className="flex items-center gap-2">
-                  {(horoscopeImageSlotsLabels || horoscopeImagePrompt) && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button 
-                          type="button"
-                          className={`p-2 ${getRoundedClass('rounded-full')} border-2 transition-all hover:opacity-80 ${
-                            mode === 'chaos' ? 'bg-black/20 border-[#C4F500]/40 hover:bg-black/30' :
-                            mode === 'chill' ? 'bg-[#F5E6D3]/30 border-[#FFC043]/40 hover:bg-[#F5E6D3]/40' :
-                            'bg-black/20 border-white/20 hover:bg-black/30'
-                          }`}
-                        >
-                          <Info className={`w-4 h-4 ${
-                            mode === 'chaos' ? 'text-[#C4F500]' :
-                            mode === 'chill' ? 'text-[#FFC043]' :
-                            'text-white'
-                          }`} />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent 
-                        side="bottom"
-                        className="max-w-2xl p-4 bg-black/95 text-white text-xs border border-white/20 z-[10000] max-h-[80vh] overflow-y-auto"
-                      >
-                        <p className="font-bold mb-3 text-sm">Image Generation Details</p>
-                        <div className="space-y-4">
-                          {/* Debug: Show reasoning object if available */}
-                          {process.env.NODE_ENV === 'development' && horoscopeImageSlotsReasoning && (
-                            <div className="text-[10px] text-gray-500 border-t border-gray-700 pt-2">
-                              <p className="font-semibold mb-1">Debug - Reasoning Object:</p>
-                              <pre className="whitespace-pre-wrap break-words">{JSON.stringify(horoscopeImageSlotsReasoning, null, 2)}</pre>
-                            </div>
-                          )}
-                          {/* Prompt Slots Section */}
-                          {horoscopeImageSlotsLabels && (
-                            <div>
-                              <p className="font-semibold mb-2 text-[#C4F500]">Selected Slots:</p>
-                              <div className="space-y-2 pl-2 text-xs">
-                                {horoscopeImageSlotsLabels.style_medium && (
-                                  <div>
-                                    <p><span className="text-gray-400">Style Medium:</span> {horoscopeImageSlotsLabels.style_medium}</p>
-                                    {horoscopeImageSlotsReasoning?.style_medium && (
-                                      <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.style_medium}</p>
-                                    )}
-                                  </div>
-                                )}
-                                {horoscopeImageSlotsLabels.style_reference && (
-                                  <div>
-                                    <p><span className="text-gray-400">Style Reference:</span> {horoscopeImageSlotsLabels.style_reference}</p>
-                                    {horoscopeImageSlotsReasoning?.style_reference && (
-                                      <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.style_reference}</p>
-                                    )}
-                                  </div>
-                                )}
-                                {horoscopeImageSlotsLabels.subject_role && (
-                                  <div>
-                                    <p><span className="text-gray-400">Subject Role:</span> {horoscopeImageSlotsLabels.subject_role}</p>
-                                    {horoscopeImageSlotsReasoning?.subject_role && (
-                                      <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.subject_role}</p>
-                                    )}
-                                  </div>
-                                )}
-                                {horoscopeImageSlotsLabels.subject_twist && (
-                                  <div>
-                                    <p><span className="text-gray-400">Subject Twist:</span> {horoscopeImageSlotsLabels.subject_twist}</p>
-                                    {horoscopeImageSlotsReasoning?.subject_twist && (
-                                      <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.subject_twist}</p>
-                                    )}
-                                  </div>
-                                )}
-                                {horoscopeImageSlotsLabels.setting_place && (
-                                  <div>
-                                    <p><span className="text-gray-400">Setting Place:</span> {horoscopeImageSlotsLabels.setting_place}</p>
-                                    {horoscopeImageSlotsReasoning?.setting_place && (
-                                      <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.setting_place}</p>
-                                    )}
-                                  </div>
-                                )}
-                                {horoscopeImageSlotsLabels.setting_time && (
-                                  <div>
-                                    <p><span className="text-gray-400">Setting Time:</span> {horoscopeImageSlotsLabels.setting_time}</p>
-                                    {horoscopeImageSlotsReasoning?.setting_time && (
-                                      <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.setting_time}</p>
-                                    )}
-                                  </div>
-                                )}
-                                {horoscopeImageSlotsLabels.activity && (
-                                  <div>
-                                    <p><span className="text-gray-400">Activity:</span> {horoscopeImageSlotsLabels.activity}</p>
-                                    {horoscopeImageSlotsReasoning?.activity && (
-                                      <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.activity}</p>
-                                    )}
-                                  </div>
-                                )}
-                                {horoscopeImageSlotsLabels.mood_vibe && (
-                                  <div>
-                                    <p><span className="text-gray-400">Mood Vibe:</span> {horoscopeImageSlotsLabels.mood_vibe}</p>
-                                    {horoscopeImageSlotsReasoning?.mood_vibe && (
-                                      <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.mood_vibe}</p>
-                                    )}
-                                  </div>
-                                )}
-                                {horoscopeImageSlotsLabels.color_palette && (
-                                  <div>
-                                    <p><span className="text-gray-400">Color Palette:</span> {horoscopeImageSlotsLabels.color_palette}</p>
-                                    {horoscopeImageSlotsReasoning?.color_palette && (
-                                      <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.color_palette}</p>
-                                    )}
-                                  </div>
-                                )}
-                                {horoscopeImageSlotsLabels.camera_frame && (
-                                  <div>
-                                    <p><span className="text-gray-400">Camera Frame:</span> {horoscopeImageSlotsLabels.camera_frame}</p>
-                                    {horoscopeImageSlotsReasoning?.camera_frame && (
-                                      <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.camera_frame}</p>
-                                    )}
-                                  </div>
-                                )}
-                                {horoscopeImageSlotsLabels.lighting_style && (
-                                  <div>
-                                    <p><span className="text-gray-400">Lighting Style:</span> {horoscopeImageSlotsLabels.lighting_style}</p>
-                                    {horoscopeImageSlotsReasoning?.lighting_style && (
-                                      <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.lighting_style}</p>
-                                    )}
-                                  </div>
-                                )}
-                                {horoscopeImageSlotsLabels.constraints && horoscopeImageSlotsLabels.constraints.length > 0 && (
-                                  <div>
-                                    <p>
-                                      <span className="text-gray-400">Constraints:</span>{' '}
-                                      {horoscopeImageSlotsLabels.constraints.join(', ')}
-                                    </p>
-                                    {horoscopeImageSlotsReasoning?.constraints && (
-                                      <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.constraints}</p>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Full Prompt Section */}
-                          {horoscopeImagePrompt && (
-                            <div>
-                              <p className="font-semibold mb-2 text-[#C4F500]">Full Prompt:</p>
-                              <p className="text-xs pl-2 text-gray-300 whitespace-pre-wrap break-words">{horoscopeImagePrompt}</p>
-                            </div>
+  // Horoscope Image Actions - Tooltip and Download
+  const horoscopeImageActions = horoscopeImage && (
+    <TooltipProvider>
+      <div className="flex items-center gap-2">
+        {(horoscopeImageSlotsLabels || horoscopeImagePrompt) && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                type="button"
+                className={`p-2 ${getRoundedClass('rounded-full')} border-2 transition-all hover:opacity-80 ${
+                  mode === 'chaos' ? 'bg-black/20 border-[#C4F500]/40 hover:bg-black/30' :
+                  mode === 'chill' ? 'bg-[#F5E6D3]/30 border-[#FFC043]/40 hover:bg-[#F5E6D3]/40' :
+                  'bg-black/20 border-white/20 hover:bg-black/30'
+                }`}
+              >
+                <Info className={`w-4 h-4 ${
+                  mode === 'chaos' ? 'text-[#C4F500]' :
+                  mode === 'chill' ? 'text-[#FFC043]' :
+                  'text-white'
+                }`} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent 
+              side="bottom"
+              className="max-w-2xl p-4 bg-black/95 text-white text-xs border border-white/20 z-[10000] max-h-[80vh] overflow-y-auto"
+            >
+              <p className="font-bold mb-3 text-sm">Image Generation Details</p>
+              <div className="space-y-4">
+                {/* Debug: Show reasoning object if available */}
+                {process.env.NODE_ENV === 'development' && horoscopeImageSlotsReasoning && (
+                  <div className="text-[10px] text-gray-500 border-t border-gray-700 pt-2">
+                    <p className="font-semibold mb-1">Debug - Reasoning Object:</p>
+                    <pre className="whitespace-pre-wrap break-words">{JSON.stringify(horoscopeImageSlotsReasoning, null, 2)}</pre>
+                  </div>
+                )}
+                {/* Prompt Slots Section */}
+                {horoscopeImageSlotsLabels && (
+                  <div>
+                    <p className="font-semibold mb-2 text-[#C4F500]">Selected Slots:</p>
+                    <div className="space-y-2 pl-2 text-xs">
+                      {horoscopeImageSlotsLabels.style_medium && (
+                        <div>
+                          <p><span className="text-gray-400">Style Medium:</span> {horoscopeImageSlotsLabels.style_medium}</p>
+                          {horoscopeImageSlotsReasoning?.style_medium && (
+                            <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.style_medium}</p>
                           )}
                         </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        // Use our API proxy to avoid CORS issues
-                        const downloadUrl = `/api/horoscope/avatar/download?url=${encodeURIComponent(horoscopeImage)}`
-                        const a = document.createElement('a')
-                        a.href = downloadUrl
-                        a.download = `horoscope-${horoscope?.star_sign || 'daily'}-${new Date().toISOString().split('T')[0]}.png`
-                        document.body.appendChild(a)
-                        a.click()
-                        // Clean up after a short delay
-                        setTimeout(() => {
-                          document.body.removeChild(a)
-                        }, 100)
-                      } catch (error) {
-                        console.error('Error downloading horoscope image:', error)
-                        // Fallback: open image in new tab if download fails
-                        window.open(horoscopeImage, '_blank')
-                      }
-                    }}
-                    className={`p-2 ${getRoundedClass('rounded-full')} border-2 transition-all hover:opacity-80 ${
-                      mode === 'chaos' ? 'bg-black/20 border-[#C4F500]/40 hover:bg-black/30' :
-                      mode === 'chill' ? 'bg-[#F5E6D3]/30 border-[#FFC043]/40 hover:bg-[#F5E6D3]/40' :
-                      'bg-black/20 border-white/20 hover:bg-black/30'
-                    }`}
-                  >
-                    <Download className={`w-4 h-4 ${
-                      mode === 'chaos' ? 'text-[#C4F500]' :
-                      mode === 'chill' ? 'text-[#FFC043]' :
-                      'text-white'
-                    }`} />
-                  </button>
-                </div>
-              </TooltipProvider>
-            )}
-            {user && (
-              <AccountMenu />
-            )}
-          </div>
-        </div>
-      </header>
+                      )}
+                      {horoscopeImageSlotsLabels.style_reference && (
+                        <div>
+                          <p><span className="text-gray-400">Style Reference:</span> {horoscopeImageSlotsLabels.style_reference}</p>
+                          {horoscopeImageSlotsReasoning?.style_reference && (
+                            <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.style_reference}</p>
+                          )}
+                        </div>
+                      )}
+                      {horoscopeImageSlotsLabels.subject_role && (
+                        <div>
+                          <p><span className="text-gray-400">Subject Role:</span> {horoscopeImageSlotsLabels.subject_role}</p>
+                          {horoscopeImageSlotsReasoning?.subject_role && (
+                            <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.subject_role}</p>
+                          )}
+                        </div>
+                      )}
+                      {horoscopeImageSlotsLabels.subject_twist && (
+                        <div>
+                          <p><span className="text-gray-400">Subject Twist:</span> {horoscopeImageSlotsLabels.subject_twist}</p>
+                          {horoscopeImageSlotsReasoning?.subject_twist && (
+                            <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.subject_twist}</p>
+                          )}
+                        </div>
+                      )}
+                      {horoscopeImageSlotsLabels.setting_place && (
+                        <div>
+                          <p><span className="text-gray-400">Setting Place:</span> {horoscopeImageSlotsLabels.setting_place}</p>
+                          {horoscopeImageSlotsReasoning?.setting_place && (
+                            <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.setting_place}</p>
+                          )}
+                        </div>
+                      )}
+                      {horoscopeImageSlotsLabels.setting_time && (
+                        <div>
+                          <p><span className="text-gray-400">Setting Time:</span> {horoscopeImageSlotsLabels.setting_time}</p>
+                          {horoscopeImageSlotsReasoning?.setting_time && (
+                            <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.setting_time}</p>
+                          )}
+                        </div>
+                      )}
+                      {horoscopeImageSlotsLabels.activity && (
+                        <div>
+                          <p><span className="text-gray-400">Activity:</span> {horoscopeImageSlotsLabels.activity}</p>
+                          {horoscopeImageSlotsReasoning?.activity && (
+                            <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.activity}</p>
+                          )}
+                        </div>
+                      )}
+                      {horoscopeImageSlotsLabels.mood_vibe && (
+                        <div>
+                          <p><span className="text-gray-400">Mood Vibe:</span> {horoscopeImageSlotsLabels.mood_vibe}</p>
+                          {horoscopeImageSlotsReasoning?.mood_vibe && (
+                            <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.mood_vibe}</p>
+                          )}
+                        </div>
+                      )}
+                      {horoscopeImageSlotsLabels.color_palette && (
+                        <div>
+                          <p><span className="text-gray-400">Color Palette:</span> {horoscopeImageSlotsLabels.color_palette}</p>
+                          {horoscopeImageSlotsReasoning?.color_palette && (
+                            <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.color_palette}</p>
+                          )}
+                        </div>
+                      )}
+                      {horoscopeImageSlotsLabels.camera_frame && (
+                        <div>
+                          <p><span className="text-gray-400">Camera Frame:</span> {horoscopeImageSlotsLabels.camera_frame}</p>
+                          {horoscopeImageSlotsReasoning?.camera_frame && (
+                            <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.camera_frame}</p>
+                          )}
+                        </div>
+                      )}
+                      {horoscopeImageSlotsLabels.lighting_style && (
+                        <div>
+                          <p><span className="text-gray-400">Lighting Style:</span> {horoscopeImageSlotsLabels.lighting_style}</p>
+                          {horoscopeImageSlotsReasoning?.lighting_style && (
+                            <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.lighting_style}</p>
+                          )}
+                        </div>
+                      )}
+                      {horoscopeImageSlotsLabels.constraints && horoscopeImageSlotsLabels.constraints.length > 0 && (
+                        <div>
+                          <p>
+                            <span className="text-gray-400">Constraints:</span>{' '}
+                            {horoscopeImageSlotsLabels.constraints.join(', ')}
+                          </p>
+                          {horoscopeImageSlotsReasoning?.constraints && (
+                            <p className="text-gray-500 text-[10px] pl-4 italic">→ {horoscopeImageSlotsReasoning.constraints}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Full Prompt Section */}
+                {horoscopeImagePrompt && (
+                  <div>
+                    <p className="font-semibold mb-2 text-[#C4F500]">Full Prompt:</p>
+                    <p className="text-xs pl-2 text-gray-300 whitespace-pre-wrap break-words">{horoscopeImagePrompt}</p>
+                  </div>
+                )}
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        )}
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              // Use our API proxy to avoid CORS issues
+              const downloadUrl = `/api/horoscope/avatar/download?url=${encodeURIComponent(horoscopeImage)}`
+              const a = document.createElement('a')
+              a.href = downloadUrl
+              a.download = `horoscope-${horoscope?.star_sign || 'daily'}-${new Date().toISOString().split('T')[0]}.png`
+              document.body.appendChild(a)
+              a.click()
+              // Clean up after a short delay
+              setTimeout(() => {
+                document.body.removeChild(a)
+              }, 100)
+            } catch (error) {
+              console.error('Error downloading horoscope image:', error)
+              // Fallback: open image in new tab if download fails
+              window.open(horoscopeImage, '_blank')
+            }
+          }}
+          className={`p-2 ${getRoundedClass('rounded-full')} border-2 transition-all hover:opacity-80 ${
+            mode === 'chaos' ? 'bg-black/20 border-[#C4F500]/40 hover:bg-black/30' :
+            mode === 'chill' ? 'bg-[#F5E6D3]/30 border-[#FFC043]/40 hover:bg-[#F5E6D3]/40' :
+            'bg-black/20 border-white/20 hover:bg-black/30'
+          }`}
+        >
+          <Download className={`w-4 h-4 ${
+            mode === 'chaos' ? 'text-[#C4F500]' :
+            mode === 'chill' ? 'text-[#FFC043]' :
+            'text-white'
+          }`} />
+        </button>
+      </div>
+    </TooltipProvider>
+  )
 
-      <main className="max-w-[1200px] mx-auto px-6 py-4 flex-1 pb-0 pt-28">
+  return (
+    <div className={`flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
+      <SiteHeader rightContent={horoscopeImageActions} />
+
+      <main className="max-w-[1200px] mx-auto px-6 py-4 flex-1 pb-0 pt-24">
         {/* Hero Section - Full Width */}
         <section className="mb-12">
           {(() => {
@@ -2587,24 +2521,24 @@ export default function TeamDashboard() {
                     <div className="flex flex-col gap-4 h-full">
                       <h2 className={`text-2xl font-black uppercase leading-none ${style.text}`}>THIS WEEK</h2>
                       <div className="flex items-center justify-between gap-4 flex-1">
-                        {stats.map((stat, index) => (
+                      {stats.map((stat, index) => (
                           <div 
                             key={stat.label} 
                             className="flex flex-col items-center justify-center flex-1"
                           >
                             <div 
                               className={`text-5xl font-black ${style.text} px-4 py-2 rounded-lg mb-2 w-full text-center`}
-                              style={{
-                                backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
-                              }}
-                            >
-                              {stat.value}
-                            </div>
+                            style={{
+                              backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74,24,24,0.25)' : 'rgba(0,0,0,0.35)',
+                            }}
+                          >
+                            {stat.value}
+                          </div>
                             <div className={`text-xs font-black uppercase tracking-wider ${style.text} text-center`}>
                               {stat.label}
                             </div>
-                          </div>
-                        ))}
+                        </div>
+                      ))}
                       </div>
                     </div>
                   ) : (
@@ -2629,8 +2563,8 @@ export default function TeamDashboard() {
                             </span>
                         </div>
                       ))}
-                      </div>
                     </div>
+                  </div>
                   )}
                   <style jsx>{`
                     @keyframes fadeInUp {
@@ -2682,7 +2616,7 @@ export default function TeamDashboard() {
               const renderProjectItem = (project: typeof pipelineData[0], index: number, total: number) => {
                 const date = formatDate(project.due_date)
                 const displayText = project.type || project.description || 'Unknown'
-                return (
+              return (
                   <div key={project.id} className="flex items-start gap-3 py-2">
                     {/* Plus button on the left */}
                     <Button
@@ -2729,7 +2663,7 @@ export default function TeamDashboard() {
                 )
               }
               
-              return (
+                      return (
                 <>
                   <Card 
                     className={`${pipelineStyle.bg} ${pipelineStyle.border} ${eventsExpanded ? 'p-6 flex-[2]' : 'p-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 overflow-hidden`}
@@ -2794,20 +2728,20 @@ export default function TeamDashboard() {
                           <div className="flex flex-col overflow-hidden h-full min-w-0">
                             <div className={`text-sm font-semibold ${pipelineStyle.text} mb-3 uppercase tracking-wide truncate`}>In Progress</div>
                             <div className="flex-1 overflow-y-auto overflow-x-hidden pr-2 min-h-0">
-                              <div className="space-y-1">
-                                {!pipelineLoading && inProgressProjects.length > 0 ? (
-                                  inProgressProjects.map((project, index) => 
-                                    renderProjectItem(project, index, inProgressProjects.length)
-                                  )
-                                ) : (
-                                  <div className={`${pipelineStyle.text}/60 text-sm py-4`}>
-                                    No projects in progress
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+                          <div className="space-y-1">
+                            {!pipelineLoading && inProgressProjects.length > 0 ? (
+                              inProgressProjects.map((project, index) => 
+                                renderProjectItem(project, index, inProgressProjects.length)
+                              )
+                            ) : (
+                              <div className={`${pipelineStyle.text}/60 text-sm py-4`}>
+                                No projects in progress
+                  </div>
+                            )}
                           </div>
-                          
+                        </div>
+                      </div>
+
                           {/* Column 2: Pending Decision */}
                           <div className="flex flex-col overflow-hidden h-full min-w-0">
                             <div className={`text-sm font-semibold ${pipelineStyle.text} mb-3 uppercase tracking-wide truncate`}>Pending Decision</div>
@@ -2843,120 +2777,120 @@ export default function TeamDashboard() {
                                     </div>
                                   )}
                                 </div>
-                              </div>
-                            </div>
-                            
+                          </div>
+                        </div>
+                        
                             {/* Lost - Bottom Half */}
                             <div className="flex flex-col flex-1 min-h-0 border-t" style={{ borderColor: `${borderColor}40` }}>
                               <div className={`text-sm font-semibold ${pipelineStyle.text} mb-3 mt-4 uppercase tracking-wide truncate`}>Lost</div>
                               <div className="flex-1 overflow-y-auto overflow-x-hidden pr-2 min-h-0">
-                                <div className="space-y-1">
+                          <div className="space-y-1">
                                   {!pipelineLoading && lostProjects.length > 0 ? (
                                     lostProjects.map((project, index) => 
                                       renderWonLostItem(project, index)
-                                    )
-                                  ) : (
-                                    <div className={`${pipelineStyle.text}/60 text-sm py-4`}>
+                              )
+                            ) : (
+                              <div className={`${pipelineStyle.text}/60 text-sm py-4`}>
                                       No lost projects
-                                    </div>
-                                  )}
+                              </div>
+                            )}
                                 </div>
                               </div>
-                            </div>
                           </div>
                         </div>
                       </div>
+                    </div>
                     )}
                 </Card>
-                
-                {/* Project Details Dialog */}
-                <Dialog open={isPipelineDialogOpen} onOpenChange={setIsPipelineDialogOpen}>
-                  <DialogContent 
-                    className="max-w-2xl"
-                    style={{
-                      backgroundColor: mode === 'chaos' ? '#1E3A8A' : mode === 'chill' ? '#FFFFFF' : '#1a1a1a',
-                      borderColor: borderColor,
-                      borderWidth: '2px',
-                      opacity: 1,
-                    }}
-                  >
-                    <DialogHeader>
-                      <DialogTitle className={pipelineStyle.text}>
-                        {selectedPipelineProject?.name}
-                      </DialogTitle>
-                      <DialogDescription className={`${pipelineStyle.text}/60`}>
-                        {selectedPipelineProject?.type || selectedPipelineProject?.description || 'No description'}
-                      </DialogDescription>
-                    </DialogHeader>
-                    
-                    {selectedPipelineProject && (
-                      <div className="space-y-4 mt-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Status</p>
-                            <p className={`${pipelineStyle.text}/80`}>{selectedPipelineProject.status}</p>
-                          </div>
-                          {selectedPipelineProject.due_date && (
+
+                  {/* Project Details Dialog */}
+                  <Dialog open={isPipelineDialogOpen} onOpenChange={setIsPipelineDialogOpen}>
+                    <DialogContent 
+                      className="max-w-2xl"
+                      style={{
+                        backgroundColor: mode === 'chaos' ? '#1E3A8A' : mode === 'chill' ? '#FFFFFF' : '#1a1a1a',
+                        borderColor: borderColor,
+                        borderWidth: '2px',
+                        opacity: 1,
+                      }}
+                    >
+                      <DialogHeader>
+                        <DialogTitle className={pipelineStyle.text}>
+                          {selectedPipelineProject?.name}
+                        </DialogTitle>
+                        <DialogDescription className={`${pipelineStyle.text}/60`}>
+                          {selectedPipelineProject?.type || selectedPipelineProject?.description || 'No description'}
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      {selectedPipelineProject && (
+                        <div className="space-y-4 mt-4">
+                          <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Due Date</p>
-                              <p className={`${pipelineStyle.text}/80`}>{formatDate(selectedPipelineProject.due_date)}</p>
+                              <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Status</p>
+                              <p className={`${pipelineStyle.text}/80`}>{selectedPipelineProject.status}</p>
+                            </div>
+                            {selectedPipelineProject.due_date && (
+                              <div>
+                                <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Due Date</p>
+                                <p className={`${pipelineStyle.text}/80`}>{formatDate(selectedPipelineProject.due_date)}</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {selectedPipelineProject.lead && (
+                            <div>
+                              <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Lead</p>
+                              <p className={`${pipelineStyle.text}/80`}>{selectedPipelineProject.lead}</p>
+                            </div>
+                          )}
+                          
+                          {selectedPipelineProject.team && (
+                            <div>
+                              <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Team</p>
+                              <p className={`${pipelineStyle.text}/80`}>{selectedPipelineProject.team}</p>
+                            </div>
+                          )}
+                          
+                          {selectedPipelineProject.description && (
+                            <div>
+                              <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Description</p>
+                              <p className={`${pipelineStyle.text}/80 whitespace-pre-wrap`}>{selectedPipelineProject.description}</p>
+                            </div>
+                          )}
+                          
+                          {selectedPipelineProject.notes && (
+                            <div>
+                              <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Notes</p>
+                              <p className={`${pipelineStyle.text}/80 whitespace-pre-wrap`}>{selectedPipelineProject.notes}</p>
+                            </div>
+                          )}
+                          
+                          {selectedPipelineProject.tier !== null && (
+                            <div>
+                              <p className="text-sm font-semibold text-white mb-1">Tier</p>
+                              <p className="text-white/80">{selectedPipelineProject.tier}</p>
+                            </div>
+                          )}
+                          
+                          {selectedPipelineProject.url && (
+                            <div>
+                              <p className="text-sm font-semibold text-white mb-1">URL</p>
+                              <a 
+                              href={selectedPipelineProject.url || undefined} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-white/80 hover:text-white underline"
+                              >
+                                {selectedPipelineProject.url}
+                              </a>
                             </div>
                           )}
                         </div>
-                        
-                        {selectedPipelineProject.lead && (
-                          <div>
-                            <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Lead</p>
-                            <p className={`${pipelineStyle.text}/80`}>{selectedPipelineProject.lead}</p>
-                          </div>
-                        )}
-                        
-                        {selectedPipelineProject.team && (
-                          <div>
-                            <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Team</p>
-                            <p className={`${pipelineStyle.text}/80`}>{selectedPipelineProject.team}</p>
-                          </div>
-                        )}
-                        
-                        {selectedPipelineProject.description && (
-                          <div>
-                            <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Description</p>
-                            <p className={`${pipelineStyle.text}/80 whitespace-pre-wrap`}>{selectedPipelineProject.description}</p>
-                          </div>
-                        )}
-                        
-                        {selectedPipelineProject.notes && (
-                          <div>
-                            <p className={`text-sm font-semibold ${pipelineStyle.text} mb-1`}>Notes</p>
-                            <p className={`${pipelineStyle.text}/80 whitespace-pre-wrap`}>{selectedPipelineProject.notes}</p>
-                          </div>
-                        )}
-                        
-                        {selectedPipelineProject.tier !== null && (
-                          <div>
-                            <p className="text-sm font-semibold text-white mb-1">Tier</p>
-                            <p className="text-white/80">{selectedPipelineProject.tier}</p>
-                          </div>
-                        )}
-                        
-                        {selectedPipelineProject.url && (
-                          <div>
-                            <p className="text-sm font-semibold text-white mb-1">URL</p>
-                            <a 
-                              href={selectedPipelineProject.url || undefined} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-white/80 hover:text-white underline"
-                            >
-                              {selectedPipelineProject.url}
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </DialogContent>
-                </Dialog>
-              </>
+                      )}
+                    </DialogContent>
+                  </Dialog>
+                </>
               )
             })()}
           </div>
@@ -3043,36 +2977,36 @@ export default function TeamDashboard() {
                       workSamples.map((sample) => (
                         <div key={sample.id} className="flex flex-col">
                           <div className="relative mb-3">
-                            {sample.thumbnail_url ? (
-                              <img 
-                                src={
-                                  // Use proxy immediately for Airtable URLs (they're expired)
-                                  sample.thumbnail_url.includes('airtable.com') || sample.thumbnail_url.includes('airtableusercontent.com')
-                                    ? `/api/work-samples/thumbnail?url=${encodeURIComponent(sample.thumbnail_url)}`
-                                    // For Supabase URLs, try direct first, fallback to proxy on error
-                                    : sample.thumbnail_url
-                                }
-                                alt={sample.project_name}
+                          {sample.thumbnail_url ? (
+                            <img 
+                              src={
+                                // Use proxy immediately for Airtable URLs (they're expired)
+                                sample.thumbnail_url.includes('airtable.com') || sample.thumbnail_url.includes('airtableusercontent.com')
+                                  ? `/api/work-samples/thumbnail?url=${encodeURIComponent(sample.thumbnail_url)}`
+                                  // For Supabase URLs, try direct first, fallback to proxy on error
+                                  : sample.thumbnail_url
+                              }
+                              alt={sample.project_name}
                                 className={`w-full aspect-video object-cover ${getRoundedClass('rounded-xl')} border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'}`}
-                                onError={(e) => {
-                                  // Try proxy if direct URL fails (for Supabase URLs)
-                                  const target = e.target as HTMLImageElement
-                                  const originalSrc = target.src
-                                  if (originalSrc.includes('supabase') && !originalSrc.includes('/api/work-samples/thumbnail')) {
-                                    target.src = `/api/work-samples/thumbnail?url=${encodeURIComponent(originalSrc)}`
-                                  } else {
-                                    // Hide broken image and show placeholder
-                                    target.style.display = 'none'
-                                    const placeholder = target.nextElementSibling as HTMLElement
-                                    if (placeholder) {
-                                      placeholder.style.display = 'flex'
-                                    }
+                              onError={(e) => {
+                                // Try proxy if direct URL fails (for Supabase URLs)
+                                const target = e.target as HTMLImageElement
+                                const originalSrc = target.src
+                                if (originalSrc.includes('supabase') && !originalSrc.includes('/api/work-samples/thumbnail')) {
+                                  target.src = `/api/work-samples/thumbnail?url=${encodeURIComponent(originalSrc)}`
+                                } else {
+                                  // Hide broken image and show placeholder
+                                  target.style.display = 'none'
+                                  const placeholder = target.nextElementSibling as HTMLElement
+                                  if (placeholder) {
+                                    placeholder.style.display = 'flex'
                                   }
-                                }}
-                              />
-                            ) : null}
+                                }
+                              }}
+                            />
+                          ) : null}
                             <div className={`w-full aspect-video ${getRoundedClass('rounded-xl')} bg-gray-200 flex items-center justify-center border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'} ${sample.thumbnail_url ? 'hidden' : ''}`}>
-                              <span className="text-gray-400 text-xs">No Image</span>
+                            <span className="text-gray-400 text-xs">No Image</span>
                             </div>
                             {/* Won Badge - appears over thumbnail when pitch is won */}
                             {sample.type?.name?.toLowerCase() === 'pitch' && sample.pitch_won && (
@@ -3089,19 +3023,19 @@ export default function TeamDashboard() {
                             
                             {/* Title with external link and won badge */}
                             <div className="flex items-center gap-2">
-                              {(sample.file_link || sample.file_url) ? (
-                                <a
-                                  href={sample.file_link || sample.file_url || '#'}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className={`text-base font-black uppercase ${textStyle} hover:opacity-70 transition-opacity flex items-center gap-1`}
-                                >
-                                  {sample.project_name}
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              ) : (
-                                <h3 className={`text-base font-black uppercase ${textStyle}`}>{sample.project_name}</h3>
-                              )}
+                            {(sample.file_link || sample.file_url) ? (
+                              <a
+                                href={sample.file_link || sample.file_url || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`text-base font-black uppercase ${textStyle} hover:opacity-70 transition-opacity flex items-center gap-1`}
+                              >
+                                {sample.project_name}
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            ) : (
+                              <h3 className={`text-base font-black uppercase ${textStyle}`}>{sample.project_name}</h3>
+                            )}
                               {isWonProject(sample.project_name) && (
                                 <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/40">
                                   <Check className="w-3 h-3 text-green-500" />
@@ -3259,7 +3193,7 @@ export default function TeamDashboard() {
                 <div className="flex items-center gap-2 text-sm mb-3" style={{ color: videoStyle.accent }}>
                   <Video className="w-4 h-4" />
                   <span className="uppercase tracking-wider font-black text-xs">Archive</span>
-                </div>
+        </div>
                 <h2 className={`text-3xl font-black mb-6 uppercase ${videoStyle.text}`}>VIDEO<br/>ARCHIVE</h2>
                 <div className="space-y-3 mb-4 flex-1">
                   <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-4 border-2`} style={{ borderColor: `${videoStyle.accent}40` }}>
@@ -3305,6 +3239,154 @@ export default function TeamDashboard() {
             )
           })()}
 
+        </div>
+
+        {/* Take a Break Section */}
+        <p className={`text-xs uppercase tracking-widest font-black mb-6 flex items-center gap-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : mode === 'code' ? 'text-[#808080] font-mono' : 'text-[#808080]'}`}>
+          {mode === 'code' ? (
+            <>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
+              <span className="text-[#808080]">TAKE A BREAK</span>
+              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
+            </>
+          ) : (
+            <>
+              <span className={`w-8 h-px ${mode === 'chaos' ? 'bg-[#333333]' : mode === 'chill' ? 'bg-[#8B4444]/30' : 'bg-[#333333]'}`}></span>
+          Take a Break
+              {(() => {
+                // RED SYSTEM colors: Coral Red (#FF4C4C), Crimson (#C41E3A), Peach (#FFD4C4), Ocean Blue (#00A3E0)
+                const redSystemColors = mode === 'chaos'
+                  ? ['#FF4C4C', '#C41E3A', '#00A3E0'] // Coral Red, Crimson, Ocean Blue
+                  : mode === 'chill'
+                  ? ['#FF4C4C', '#C41E3A', '#FFD4C4'] // Coral Red, Crimson, Peach
+                  : ['#FF4C4C', '#C41E3A', '#00A3E0']
+                return (
+                  <span className="flex items-center gap-1.5 ml-2">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: redSystemColors[0] }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: redSystemColors[1] }}></span>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: redSystemColors[2] }}></span>
+                  </span>
+                )
+              })()}
+            </>
+          )}
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 items-stretch">
+          {/* Playlist */}
+          {(() => {
+            const playlistStyle = mode === 'chaos' ? getSpecificCardStyle('playlist') : getCardStyle('vibes')
+            return (
+              <Card className={`${playlistStyle.bg} ${playlistStyle.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}
+                    style={playlistStyle.glow ? { boxShadow: `0 0 40px ${playlistStyle.glow}` } : {}}
+              >
+                <div className="flex items-center gap-2 text-sm mb-3" style={{ color: playlistStyle.accent }}>
+                  <Music className="w-4 h-4" />
+                  <span className="uppercase tracking-wider font-black text-xs">Weekly</span>
+                </div>
+                <h2 className={`text-3xl font-black mb-4 uppercase ${playlistStyle.text}`}>PLAYLIST</h2>
+                {playlistLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin" style={{ color: playlistStyle.accent }} />
+                  </div>
+                ) : weeklyPlaylist ? (
+                  <div className="flex-1">
+                    <SpotifyPlayer
+                      playlist={{
+                        title: weeklyPlaylist.title || 'Untitled Playlist',
+                        curator: weeklyPlaylist.curator,
+                        curatorPhotoUrl: weeklyPlaylist.curator_photo_url || undefined,
+                        coverUrl: weeklyPlaylist.cover_url || undefined,
+                        description: weeklyPlaylist.description || undefined,
+                        spotifyUrl: weeklyPlaylist.spotify_url || undefined,
+                        tracks: []
+                      }}
+                      onSpotifyLink={() => {
+                        if (weeklyPlaylist.spotify_url) {
+                          window.open(weeklyPlaylist.spotify_url, '_blank')
+                        }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center">
+                    <p className={`text-sm ${playlistStyle.text}/60`}>No playlist this week</p>
+                  </div>
+                )}
+              </Card>
+            )
+          })()}
+
+          {/* Must Reads */}
+          {(() => {
+            // RED SYSTEM: Use similar styling to other cards
+            const mustReadsStyle = mode === 'chaos' 
+              ? { bg: 'bg-[#000000]', border: 'border border-[#00A3E0]', glow: '', text: 'text-white', accent: '#00A3E0' }
+              : mode === 'chill'
+              ? { bg: 'bg-white', border: 'border border-[#00A3E0]/30', glow: '', text: 'text-[#4A1818]', accent: '#00A3E0' }
+              : { bg: 'bg-[#000000]', border: 'border border-[#00A3E0]', glow: '', text: 'text-white', accent: '#00A3E0' }
+            
+            return (
+              <Card className={`${mustReadsStyle.bg} ${mustReadsStyle.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}
+                    style={mustReadsStyle.glow ? { boxShadow: `0 0 40px ${mustReadsStyle.glow}` } : {}}
+              >
+                <div className="flex items-center gap-2 text-sm mb-3" style={{ color: mustReadsStyle.accent }}>
+                  <FileText className="w-4 h-4" />
+                  <span className="uppercase tracking-wider font-black text-xs">Latest</span>
+                </div>
+                <h2 className={`text-3xl font-black mb-4 uppercase ${mustReadsStyle.text}`}>MUST<br/>READS</h2>
+                {mustReadsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin" style={{ color: mustReadsStyle.accent }} />
+                  </div>
+                ) : latestMustReads.length > 0 ? (
+                  <div className="space-y-3 flex-1">
+                    {latestMustReads.map((read) => (
+                      <a
+                        key={read.id}
+                        href={read.article_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`block ${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-4 border-2 hover:opacity-80 transition-all`}
+                        style={{ borderColor: `${mustReadsStyle.accent}40` }}
+                      >
+                        <p className={`text-sm font-black mb-1 ${mustReadsStyle.text} line-clamp-2`}>{read.article_title}</p>
+                        <p className={`text-xs ${mustReadsStyle.text}/60`}>
+                          {new Date(read.created_at).toLocaleDateString()}
+                        </p>
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center">
+                    <p className={`text-sm ${mustReadsStyle.text}/60`}>No must reads yet</p>
+                  </div>
+                )}
+              </Card>
+            )
+          })()}
+
+          {/* Inspiration War */}
+          {(() => {
+            const inspirationStyle = mode === 'chaos' ? getSpecificCardStyle('inspiration-war') : getCardStyle('hero')
+            return (
+              <Card className={`${inspirationStyle.bg} ${inspirationStyle.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}
+                    style={inspirationStyle.glow ? { boxShadow: `0 0 40px ${inspirationStyle.glow}` } : {}}
+              >
+                <div className="flex items-center gap-2 text-sm mb-3" style={{ color: inspirationStyle.accent }}>
+                  <Lightbulb className="w-4 h-4" />
+                  <span className="uppercase tracking-wider font-black text-xs">TBD</span>
+                </div>
+                <h2 className={`text-3xl font-black mb-4 uppercase ${inspirationStyle.text}`}>INSPIRATION<br/>WAR</h2>
+                <div className="flex-1 flex items-center justify-center">
+                  <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-4 border-2 w-full`} style={{ borderColor: `${inspirationStyle.accent}40` }}>
+                    <p className={`text-sm font-black text-center ${inspirationStyle.text}`}>Coming Soon</p>
+                    <p className={`text-xs ${inspirationStyle.text}/60 text-center mt-2`}>Inspiration War section</p>
+                  </div>
+                </div>
+              </Card>
+            )
+          })()}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 items-stretch">
