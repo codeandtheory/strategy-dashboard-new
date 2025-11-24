@@ -2117,19 +2117,33 @@ export default function TeamDashboard() {
                   // First time seeing this event, add it
                   eventMap.set(eventKey, event)
                 } else {
-                  // Duplicate found - prefer office events over holidays
+                  // Duplicate found - check if it's in both office and holiday calendars
                   const isExistingHoliday = existingEvent.calendarId.includes('holiday')
                   const isCurrentHoliday = event.calendarId.includes('holiday')
                   const isExistingOffice = existingEvent.calendarId.includes('5b18ulcjgibgffc35hbtmv6sfs')
                   const isCurrentOffice = event.calendarId.includes('5b18ulcjgibgffc35hbtmv6sfs')
                   
-                  // Prefer office events over holidays when there's a duplicate
-                  if (isCurrentOffice && isExistingHoliday) {
-                    // Replace the holiday with the office event
-                    eventMap.set(eventKey, event)
+                  // If event appears in both office and holiday calendars, mark it as "office closed" holiday
+                  if ((isCurrentOffice && isExistingHoliday) || (isCurrentHoliday && isExistingOffice)) {
+                    // Create a merged event that indicates it's in both calendars
+                    const mergedEvent = {
+                      ...existingEvent,
+                      isOfficeClosed: true, // Flag to indicate office is closed
+                      // Keep the office event's calendar ID if it exists, otherwise holiday
+                      calendarId: isCurrentOffice ? event.calendarId : existingEvent.calendarId
+                    }
+                    eventMap.set(eventKey, mergedEvent)
+                  } else if (isCurrentOffice && isExistingOffice) {
+                    // Both are office events, keep existing
+                  } else if (isCurrentHoliday && isExistingHoliday) {
+                    // Both are holidays, keep existing
+                  } else {
+                    // Different types but not the office+holiday combo, prefer office
+                    if (isCurrentOffice) {
+                      eventMap.set(eventKey, event)
+                    }
+                    // Otherwise keep existing
                   }
-                  // If existing is office and current is holiday, keep existing (do nothing)
-                  // If both are same type, keep existing (first one wins)
                 }
                 
                 return eventMap
@@ -2156,7 +2170,7 @@ export default function TeamDashboard() {
             }
 
             // Get event color based on calendar type
-            const getEventColor = (event: typeof calendarEvents[0]) => {
+            const getEventColor = (event: typeof calendarEvents[0] & { isOfficeClosed?: boolean }) => {
               const calendarId = event.calendarId
               
               // Out of office (both calendars)
@@ -2169,8 +2183,12 @@ export default function TeamDashboard() {
                 return mode === 'chaos' ? '#1B4D7C' : '#9D4EFF' // Navy from BLUE SYSTEM
               }
               
-              // Holidays
-              if (calendarId.includes('holiday')) {
+              // Holidays - use different color if office is closed (event appears in both calendars)
+              if (calendarId.includes('holiday') || event.isOfficeClosed) {
+                if (event.isOfficeClosed) {
+                  // Office closed holiday - slightly darker/more saturated yellow
+                  return mode === 'chaos' ? '#FFA500' : '#FF8C00' // Orange-yellow to indicate office closed
+                }
                 return mode === 'chaos' ? '#FFD700' : '#FFC043' // Golden Yellow from BLUE SYSTEM contrast
               }
               
@@ -2396,7 +2414,7 @@ export default function TeamDashboard() {
                       borderColor: mode === 'chaos' ? '#0EA5E9' : mode === 'chill' ? 'rgba(74, 24, 24, 0.2)' : '#FFFFFF'
                     }}>
                       {/* Day headers with dark blue background */}
-                      <div className="grid grid-cols-7 mb-3 pb-3 rounded-t-lg" style={{ 
+                      <div className="grid grid-cols-7 mb-3 pb-3 pt-2 rounded-t-lg" style={{ 
                         backgroundColor: mode === 'chaos' ? '#1E3A8A' : mode === 'chill' ? '#4A1818' : '#000000',
                         borderBottom: `1px solid ${mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.3)' : 'rgba(255, 255, 255, 0.3)'}`
                       }}>
@@ -2412,7 +2430,7 @@ export default function TeamDashboard() {
                                 borderRight: index < 6 ? `1px solid ${mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.3)' : 'rgba(255, 255, 255, 0.3)'}` : 'none'
                               }}
                             >
-                              <p className={`text-xs font-black uppercase mb-1`} style={{ color: isToday ? mintColor : '#FFFFFF' }}>
+                              <p className={`text-xs font-black uppercase mb-0.5`} style={{ color: isToday ? mintColor : '#FFFFFF' }}>
                                 {isToday ? 'TODAY' : dayName}
                               </p>
                               <p className={`text-sm font-black`} style={{ color: '#FFFFFF' }}>{dayNumber}</p>
@@ -2423,7 +2441,7 @@ export default function TeamDashboard() {
                       
                       {/* Background grid for vertical lines (behind events) */}
                       <div className="absolute inset-x-4 bottom-4 top-20 pointer-events-none">
-                        <div className="grid grid-cols-7 h-full">
+                        <div className="grid grid-cols-7 gap-x-1 h-full">
                           {Array.from({ length: 7 }).map((_, index) => (
                             <div
                               key={index}
@@ -2461,8 +2479,8 @@ export default function TeamDashboard() {
                           
                           return (
                             <div key={event.id} className="relative mb-2">
-                              {/* Event bar spanning days - use grid for aligned columns */}
-                              <div className="grid grid-cols-7">
+                              {/* Event bar spanning days - use grid for aligned columns with padding */}
+                              <div className="grid grid-cols-7 gap-x-1">
                                 {getWeekDays().map((day, index) => {
                                   const isInSpan = index >= span.startDay && index <= span.endDay
                                   if (!isInSpan) {
@@ -2480,10 +2498,13 @@ export default function TeamDashboard() {
                                   return (
                                     <div
                                       key={index}
-                                      className={`${eventHeight} ${getRoundedClass(isStart && isEnd ? 'rounded-lg' : isStart ? 'rounded-l-lg' : isEnd ? 'rounded-r-lg' : '')} flex items-center px-2`}
+                                      className={`${eventHeight} ${getRoundedClass(isStart && isEnd ? 'rounded-lg' : isStart ? 'rounded-l-lg' : isEnd ? 'rounded-r-lg' : '')} flex items-center`}
                                       style={{ 
                                         backgroundColor: `${eventColor}88`,
                                         borderLeft: isStart ? `3px solid ${eventColor}` : 'none',
+                                        // Add padding: left padding on start, right padding on end
+                                        paddingLeft: isStart ? '0.75rem' : '0.25rem',
+                                        paddingRight: isEnd ? '0.75rem' : '0.25rem',
                                       }}
                                     >
                                       {isStart && (
