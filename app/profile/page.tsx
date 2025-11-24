@@ -231,6 +231,7 @@ export default function ProfilePage() {
     description: string | null
     date: string
     created_at: string
+    for_who?: string
   }>>([])
   const [loadingActivity, setLoadingActivity] = useState(false)
   const [expandedActivityTypes, setExpandedActivityTypes] = useState<Set<string>>(new Set(['snap', 'work_sample', 'pipeline_project']))
@@ -1011,28 +1012,53 @@ export default function ProfilePage() {
                               {/* Activities in this group - Collapsible */}
                               {isExpanded && (
                                 <div className="space-y-2">
-                                  {typeActivities.map((activity) => (
-                                    <div
-                                      key={`${activity.type}-${activity.id}`}
-                                      className={`${getFieldCardStyle().bg} ${getFieldCardStyle().border} ${getRoundedClass('rounded-xl')} p-3`}
-                                      style={{
-                                        borderTopWidth: '1px',
-                                        borderBottomWidth: '1px',
-                                        borderLeftWidth: '0',
-                                        borderRightWidth: '0'
-                                      }}
-                                    >
-                                      <div className="flex flex-col gap-1">
-                                        <span className={`text-xs ${getFieldCardStyle().hint}`}>
-                                          {new Date(activity.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                        </span>
-                                        <h3 className={`font-bold ${getFieldCardStyle().text}`}>{activity.title}</h3>
-                                        {activity.description && (
-                                          <p className={`text-sm ${getFieldCardStyle().hint}`}>{activity.description}</p>
-                                        )}
+                                  {typeActivities.map((activity) => {
+                                    // For snaps, display as: date - snap text (for who)
+                                    if (activity.type === 'snap') {
+                                      const dateStr = new Date(activity.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                                      const forWho = activity.for_who || 'Team'
+                                      return (
+                                        <div
+                                          key={`${activity.type}-${activity.id}`}
+                                          className={`${getFieldCardStyle().bg} ${getFieldCardStyle().border} ${getRoundedClass('rounded-xl')} p-3`}
+                                          style={{
+                                            borderTopWidth: '1px',
+                                            borderBottomWidth: '1px',
+                                            borderLeftWidth: '0',
+                                            borderRightWidth: '0'
+                                          }}
+                                        >
+                                          <p className={`text-sm ${getFieldCardStyle().text}`}>
+                                            {dateStr} - {activity.description} (for {forWho})
+                                          </p>
+                                        </div>
+                                      )
+                                    }
+                                    
+                                    // For other activity types, keep the original format
+                                    return (
+                                      <div
+                                        key={`${activity.type}-${activity.id}`}
+                                        className={`${getFieldCardStyle().bg} ${getFieldCardStyle().border} ${getRoundedClass('rounded-xl')} p-3`}
+                                        style={{
+                                          borderTopWidth: '1px',
+                                          borderBottomWidth: '1px',
+                                          borderLeftWidth: '0',
+                                          borderRightWidth: '0'
+                                        }}
+                                      >
+                                        <div className="flex flex-col gap-1">
+                                          <span className={`text-xs ${getFieldCardStyle().hint}`}>
+                                            {new Date(activity.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                          </span>
+                                          <h3 className={`font-bold ${getFieldCardStyle().text}`}>{activity.title}</h3>
+                                          {activity.description && (
+                                            <p className={`text-sm ${getFieldCardStyle().hint}`}>{activity.description}</p>
+                                          )}
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))}
+                                    )
+                                  })}
                                 </div>
                               )}
                             </div>

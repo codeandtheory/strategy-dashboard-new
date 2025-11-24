@@ -21,25 +21,31 @@ export async function GET(request: NextRequest) {
       description: string | null
       date: string
       created_at: string
+      for_who?: string
     }> = []
 
     // Fetch snaps submitted by user
     const { data: snaps, error: snapsError } = await supabase
       .from('snaps')
-      .select('id, snap_content, date, created_at')
+      .select('id, snap_content, date, created_at, mentioned, mentioned_user_profile:profiles!mentioned_user_id(full_name, email)')
       .eq('submitted_by', user.id)
       .order('created_at', { ascending: false })
       .limit(50)
 
     if (!snapsError && snaps) {
       snaps.forEach(snap => {
+        // Get the "for who" name - prefer full_name, fallback to email, then mentioned text
+        const mentionedUser = snap.mentioned_user_profile as any
+        const forWho = mentionedUser?.full_name || mentionedUser?.email || snap.mentioned || 'Team'
+        
         activities.push({
           type: 'snap',
           id: snap.id,
           title: 'Snap',
           description: snap.snap_content,
           date: snap.date,
-          created_at: snap.created_at
+          created_at: snap.created_at,
+          for_who: forWho
         })
       })
     }
