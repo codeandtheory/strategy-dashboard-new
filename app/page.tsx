@@ -2462,8 +2462,10 @@ export default function TeamDashboard() {
                       const oooPeople = Array.from(new Set(
                         oooEventsToday
                           .map(event => {
+                            // Remove [PENDING APPROVAL] prefix (case-insensitive)
+                            let summary = event.summary.replace(/^\[PENDING APPROVAL\]\s*/i, '')
+                            
                             // Extract name (usually before " - " or " vacation" etc)
-                            const summary = event.summary
                             const nameMatch = summary.match(/^([^-]+?)(?:\s*-\s*|\s+vacation|\s+parental|\s+leave)/i)
                             return nameMatch ? nameMatch[1].trim() : summary.split(' - ')[0].trim()
                           })
@@ -2474,15 +2476,16 @@ export default function TeamDashboard() {
                         return (
                           <div className="space-y-2">
                             <p className="text-xs uppercase tracking-wider font-black text-black/70 mb-2">Out of Office Today</p>
-                            <div className={`${getRoundedClass('rounded-lg')} p-3`} style={{ backgroundColor: '#FF6B6B33' }}>
-                              <div className="flex flex-wrap gap-2">
+                            <div className={`${getRoundedClass('rounded-lg')} p-4`} style={{ backgroundColor: '#FF6B6B20' }}>
+                              <div className="flex flex-wrap gap-2.5">
                                 {oooPeople.map((name, idx) => (
                                   <span 
                                     key={idx}
-                                    className={`text-xs font-black px-2 py-1 ${getRoundedClass('rounded')}`}
+                                    className={`text-sm font-semibold px-3 py-1.5 ${getRoundedClass('rounded-md')}`}
                                     style={{ 
-                                      backgroundColor: '#FF6B6B66',
-                                      color: '#FF6B6B'
+                                      backgroundColor: '#FF6B6B',
+                                      color: '#FFFFFF',
+                                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
                                     }}
                                   >
                                     {name}
