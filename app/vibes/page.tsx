@@ -459,40 +459,38 @@ export default function VibesPage() {
 
           {/* Weekly Playlist Card */}
           {(() => {
-            const style = getPlaylistCardStyle()
+            // Match dashboard styling: use playlist style for chaos, vibes style for others
+            const playlistStyle = mode === 'chaos' 
+              ? { text: 'text-white', accent: '#9333EA' } // Black bg with Purple accent (from dashboard)
+              : mode === 'chill'
+              ? { text: getTextClass(), accent: '#FFB5D8' }
+              : { text: getTextClass(), accent: '#FFFFFF' }
             return (
-              <Card className={`${style.bg} ${mode === 'chill' || mode === 'code' ? style.border || '' : style.border || 'border-0'} ${getRoundedClass('rounded-[2.5rem]')} p-6`}
-                    style={mode === 'chaos' && style.border?.includes('border-2') ? { borderColor: style.accent } : {}}
+              <Card className={`bg-transparent border-0 p-6 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}
               >
-                <p className={`text-xs uppercase tracking-wider font-black mb-2 ${style.text}`} style={{ opacity: 0.8 }}>WEEKLY</p>
-                <h2 className={`text-4xl font-black mb-6 uppercase`} style={{ color: style.accent }}>PLAYLIST</h2>
-                <div className="flex items-center justify-center mb-4">
-                  <div className={`w-16 h-16 ${getRoundedClass('rounded-xl')} flex items-center justify-center`} style={{ 
-                    backgroundColor: mode === 'chaos' ? '#D97706' : style.accent // Gold from YELLOW SYSTEM
-                  }}>
-                    <Music className="w-8 h-8" style={{ 
-                      color: mode === 'chill' ? '#4A1818' : mode === 'code' ? '#000000' : '#000000'
-                    }} />
-                  </div>
+                <div className="flex items-center gap-2 text-sm mb-3" style={{ color: playlistStyle.accent }}>
+                  <Music className="w-4 h-4" />
+                  <span className="uppercase tracking-wider font-black text-xs">Weekly</span>
                 </div>
+                <h2 className={`text-3xl font-black mb-4 uppercase ${playlistStyle.text}`}>PLAYLIST</h2>
                 {weeklyPlaylist ? (
-                  <>
-                    <p className={`text-lg font-black text-center mb-1 ${style.text}`}>{weeklyPlaylist.title || 'Untitled Playlist'}</p>
-                    <p className={`text-sm font-medium text-center mb-6 ${style.text}`} style={{ opacity: 0.8 }}>Curated by {weeklyPlaylist.curator}</p>
-                    <Button
-                      className={`w-full ${getRoundedClass('rounded-xl')} font-black h-12 uppercase flex items-center justify-center gap-2`}
-                      style={{ 
-                        backgroundColor: mode === 'chaos' ? '#FEF08A' : style.accent, // Light Yellow from YELLOW SYSTEM (complementary color)
-                        color: mode === 'chill' ? '#4A1818' : mode === 'code' ? '#000000' : '#000000'
-                      }}
-                      onClick={() => weeklyPlaylist.spotify_url && window.open(weeklyPlaylist.spotify_url, '_blank')}
-                    >
-                      <Play className="w-4 h-4" />
-                      Play on Spotify
-                    </Button>
-                  </>
+                  <div className="flex-1">
+                    <PlaylistCard
+                      id={weeklyPlaylist.id}
+                      title={weeklyPlaylist.title}
+                      curator={weeklyPlaylist.curator}
+                      description={weeklyPlaylist.description}
+                      spotify_url={weeklyPlaylist.spotify_url}
+                      cover_url={weeklyPlaylist.cover_url}
+                      curator_photo_url={weeklyPlaylist.curator_photo_url}
+                      date={weeklyPlaylist.date}
+                      week_label={weeklyPlaylist.week_label}
+                    />
+                  </div>
                 ) : (
-                  <p className={`text-sm font-medium text-center ${style.text}`} style={{ opacity: 0.8 }}>No playlist this week</p>
+                  <div className="flex-1 flex items-center justify-center">
+                    <p className={`text-sm ${playlistStyle.text}/60`}>No playlist this week</p>
+                  </div>
                 )}
               </Card>
             )
