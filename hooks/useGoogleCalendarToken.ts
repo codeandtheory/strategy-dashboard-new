@@ -54,6 +54,9 @@ export function useGoogleCalendarToken() {
           return
         }
 
+        // Get user email from Supabase to help GSI identify the account
+        const userEmail = session.user?.email
+        
         // Try Supabase provider token first (might work if scopes were requested)
         const providerToken = (session as any).provider_token
         if (providerToken) {
@@ -61,6 +64,10 @@ export function useGoogleCalendarToken() {
           // For now, we'll try GSI anyway since Supabase tokens often don't have calendar scopes
           console.log('ℹ️ Found provider token in Supabase session, but will try GSI for calendar scopes')
         }
+        
+        // Delay GSI request slightly to avoid immediate popup after Supabase login
+        // This gives the browser time to recognize the existing Google session
+        await new Promise(resolve => setTimeout(resolve, 1000))
 
         // Check if we have Google Client ID
         const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
@@ -102,10 +109,10 @@ export function useGoogleCalendarToken() {
         
         // For GSI token client, we need to ensure the origin is in authorized JavaScript origins
         // The redirect URI should be the current origin or a postMessage target
-        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        const tokenClientConfig: any = {
           client_id: clientId,
           scope: 'https://www.googleapis.com/auth/calendar.readonly',
-          callback: (response) => {
+          callback: (response: any) => {
             callbackFired = true
             if (response.access_token) {
               console.log('✅ Got Google Calendar token from GSI')
@@ -121,16 +128,26 @@ export function useGoogleCalendarToken() {
               // Check if it's a redirect URI error
               if (response.error === 'redirect_uri_mismatch') {
                 setError(`Redirect URI mismatch. Please add "${currentOrigin}" to authorized JavaScript origins in Google Cloud Console.`)
+              } else if (response.error === 'popup_closed_by_user') {
+                console.log('ℹ️ User closed the consent popup - will use service account fallback')
+                setLoading(false)
+                // Don't set error - allow fallback to service account
               } else {
                 setError('Failed to get calendar access token. User may have denied access.')
+                setLoading(false)
               }
-              setLoading(false)
             }
           },
-        })
+        }
+        
+        // If we have the user's email, we can hint GSI (though it doesn't directly support this)
+        // The delay above should help GSI detect the existing session
+        
+        const tokenClient = window.google.accounts.oauth2.initTokenClient(tokenClientConfig)
 
         // Request token (will show consent dialog if needed)
         // This is non-blocking - user can interact with the consent dialog
+        // Note: GSI will try to use the existing Google session if available
         try {
           tokenClient.requestAccessToken()
           setNeedsAuth(true) // We're requesting, so we might need user interaction
