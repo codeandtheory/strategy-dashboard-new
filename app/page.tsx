@@ -1008,19 +1008,21 @@ export default function TeamDashboard() {
       }
       
       try {
-        // Fetch both text and image in parallel for faster loading
-        const [textResponse, imageResponse] = await Promise.all([
-          fetch('/api/horoscope'),
-          fetch('/api/horoscope/avatar')
-        ])
+        // Fetch horoscope text first (it includes image_url now)
+        const textResponse = await fetch('/api/horoscope')
+        
+        // Process text response first to get image URL
+        const textData = await textResponse.json()
+        
+        // Then fetch image separately (for backwards compatibility and additional metadata)
+        const imageResponse = await fetch('/api/horoscope/avatar')
         
         if (!isMounted) {
           isFetching = false
           return // Don't process if component unmounted
         }
         
-        // Process text response
-        const textData = await textResponse.json()
+        // Process text response (already parsed above)
         if (!textResponse.ok) {
           console.error('Horoscope API error:', textResponse.status, textData)
           if (textResponse.status === 401) {
@@ -1046,6 +1048,14 @@ export default function TeamDashboard() {
           if (textData.star_sign) {
             // Use character_name from API if available, otherwise generate (for backwards compatibility)
             setCharacterName(textData.character_name || generateSillyCharacterName(textData.star_sign))
+          }
+          
+          // If image_url is in the text response, use it immediately (from n8n)
+          if (textData.image_url) {
+            console.log('✅ Using image URL from horoscope text response:', textData.image_url)
+            setHoroscopeImage(textData.image_url)
+            setHoroscopeImageLoading(false)
+            setHoroscopeImageError(null)
           }
         }
         
