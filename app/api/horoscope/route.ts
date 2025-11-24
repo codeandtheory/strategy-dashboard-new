@@ -541,18 +541,20 @@ export async function GET(request: NextRequest) {
         const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
         console.log('   Image buffer size:', imageBuffer.length, 'bytes')
         
-        // Upload to Supabase storage (avatars bucket)
+        // Upload to Supabase storage (horoscope-avatars bucket - separate from user avatars)
         // Use timestamp to preserve all generated images (don't overwrite)
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
         const fileName = `horoscope-${userId}-${todayDate}-${timestamp}.png`
         const filePath = `${userId}/${fileName}`
+        const bucketName = 'horoscope-avatars' // Separate bucket for horoscope images
         
         console.log('📤 Uploading image to Supabase storage...')
+        console.log('   Bucket:', bucketName)
         console.log('   File path:', filePath)
         console.log('   File size:', imageBuffer.length, 'bytes')
         
         const { error: uploadError } = await supabaseAdmin.storage
-          .from('avatars')
+          .from(bucketName)
           .upload(filePath, imageBuffer, {
             contentType: 'image/png',
             upsert: false, // Don't overwrite - preserve all images
@@ -572,7 +574,7 @@ export async function GET(request: NextRequest) {
         
         // Get public URL from Supabase storage
         const { data: urlData } = supabaseAdmin.storage
-          .from('avatars')
+          .from(bucketName)
           .getPublicUrl(filePath)
         
         if (!urlData || !urlData.publicUrl) {
@@ -601,7 +603,7 @@ export async function GET(request: NextRequest) {
         
         // Verify the uploaded file exists by checking storage
         const { data: fileData, error: fileCheckError } = await supabaseAdmin.storage
-          .from('avatars')
+          .from(bucketName)
           .list(userId, {
             limit: 1,
             search: fileName
