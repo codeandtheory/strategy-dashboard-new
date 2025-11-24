@@ -68,7 +68,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, status, name, type, description, due_date, lead, notes, team, url, tier, revenue } = body
+    const { id, status, name, type, description, due_date, lead, notes, team, url, tier, revenue, pitch_won } = body
 
     if (!id) {
       return NextResponse.json(
@@ -107,6 +107,7 @@ export async function PUT(request: NextRequest) {
     if (tier !== undefined) updateData.tier = tier !== null && tier !== '' ? tier : null
     // Only include revenue if it's provided (will error if column doesn't exist - user needs to run migration)
     if (revenue !== undefined) updateData.revenue = revenue !== null && revenue !== '' ? revenue : null
+    if (pitch_won !== undefined) updateData.pitch_won = pitch_won || false
 
     const { data, error } = await supabase
       .from('pipeline_projects')
@@ -160,7 +161,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, type, description, due_date, lead, notes, status, team, url, tier, revenue } = body
+    const { name, type, description, due_date, lead, notes, status, team, url, tier, revenue, pitch_won } = body
 
     if (!name || !status) {
       return NextResponse.json(
@@ -197,6 +198,10 @@ export async function POST(request: NextRequest) {
     // Only include revenue if provided (will fail gracefully if column doesn't exist)
     if (revenue !== undefined && revenue !== null && revenue !== '') {
       insertData.revenue = revenue
+    }
+    // Include pitch_won if provided
+    if (pitch_won !== undefined) {
+      insertData.pitch_won = pitch_won || false
     }
 
     const { data, error } = await supabase

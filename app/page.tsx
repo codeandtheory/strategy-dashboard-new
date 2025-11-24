@@ -127,6 +127,7 @@ export default function TeamDashboard() {
     team: string | null
     url: string | null
     tier: number | null
+    pitch_won: boolean | null
     updated_at: string | null
   }>>([])
   const [pipelineLoading, setPipelineLoading] = useState(true)
@@ -2573,7 +2574,7 @@ export default function TeamDashboard() {
                     </div>
                   ) : (
                     /* Horizontal banner view when not expanded */
-                    <div className="flex items-center justify-between gap-6 h-full">
+                    <div className="flex items-center justify-between gap-6 mb-4">
                       <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>THIS WEEK</h2>
                       <div className="flex gap-4 items-center">
                       {stats.map((stat, index) => (
@@ -2926,10 +2927,11 @@ export default function TeamDashboard() {
                 }
               }
               
-              // Check if a work sample matches a won pipeline project
+              // Check if a work sample matches a won pitch project
               const isWonProject = (projectName: string) => {
                 return pipelineData.some(p => 
-                  p.status === 'Won' && 
+                  p.type?.toLowerCase() === 'pitch' &&
+                  p.pitch_won === true &&
                   p.name.toLowerCase().trim() === projectName.toLowerCase().trim()
                 )
               }

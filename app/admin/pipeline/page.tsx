@@ -23,6 +23,7 @@ interface PipelineProject {
   url: string | null
   tier: number | null
   revenue: number | null
+  pitch_won: boolean | null
   created_at: string
   updated_at: string
 }
@@ -68,6 +69,7 @@ export default function PipelinePage() {
     url: '',
     tier: '',
     revenue: '',
+    pitch_won: false,
   })
 
   useEffect(() => {
@@ -127,6 +129,7 @@ export default function PipelinePage() {
       url: '',
       tier: '',
       revenue: '',
+      pitch_won: false,
     })
     setEditingProject(null)
   }
@@ -145,6 +148,7 @@ export default function PipelinePage() {
       url: project.url || '',
       tier: project.tier?.toString() || '',
       revenue: project.revenue ? formatCurrency(project.revenue) : '',
+      pitch_won: project.pitch_won || false,
     })
     setIsEditDialogOpen(true)
   }
@@ -204,6 +208,7 @@ export default function PipelinePage() {
           url: formData.url || null,
           tier: formData.tier ? parseInt(formData.tier) : null,
           revenue: formData.revenue ? parseFloat(parseCurrency(formData.revenue)) : null,
+          pitch_won: formData.pitch_won || false,
         }),
       })
 
@@ -512,6 +517,18 @@ export default function PipelinePage() {
                   rows={3}
                 />
               </div>
+              {formData.type.toLowerCase() === 'pitch' && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="pitch_won"
+                    checked={formData.pitch_won}
+                    onChange={(e) => setFormData({ ...formData, pitch_won: e.target.checked })}
+                    className="w-4 h-4 rounded border-white/20 bg-white/10 text-green-500 focus:ring-green-500"
+                  />
+                  <Label htmlFor="pitch_won" className={getTextClass()}>Won</Label>
+                </div>
+              )}
               <div className="flex justify-end gap-2 pt-4">
                 <Button
                   variant="outline"
@@ -693,13 +710,8 @@ export default function PipelinePage() {
                           {date}
                         </div>
                       )}
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="font-semibold text-black">
-                          {project.name}
-                        </div>
-                        <div className="px-2 py-0.5 rounded-full text-xs font-bold text-white bg-gradient-to-r from-green-500 to-emerald-500 shadow-sm">
-                          won!
-                        </div>
+                      <div className="font-semibold text-black mb-1">
+                        {project.name}
                       </div>
                       {displayText && (
                         <div className="text-xs text-black opacity-60 mb-1">
@@ -955,6 +967,18 @@ export default function PipelinePage() {
                 rows={3}
               />
             </div>
+            {formData.type.toLowerCase() === 'pitch' && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="edit_pitch_won"
+                  checked={formData.pitch_won}
+                  onChange={(e) => setFormData({ ...formData, pitch_won: e.target.checked })}
+                  className="w-4 h-4 rounded border-white/20 bg-white/10 text-green-500 focus:ring-green-500"
+                />
+                <Label htmlFor="edit_pitch_won" className={getTextClass()}>Won</Label>
+              </div>
+            )}
             <div className="flex justify-between items-center pt-4">
               <Button
                 variant="outline"
