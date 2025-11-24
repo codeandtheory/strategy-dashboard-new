@@ -100,8 +100,7 @@
     },
     {
       "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
+        "mode": "wait",
         "options": {}
       },
       "id": "merge-results",
@@ -177,7 +176,7 @@
           {
             "node": "Merge Results",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ],
