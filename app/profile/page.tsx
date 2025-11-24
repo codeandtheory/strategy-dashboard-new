@@ -14,6 +14,7 @@ import { Loader2, Calendar, Briefcase, Users, Upload, MapPin, Globe, FileText, D
 import Link from 'next/link'
 import { LocationAutocomplete } from '@/components/location-autocomplete'
 import { AccountMenu } from '@/components/account-menu'
+import { Footer } from '@/components/footer'
 
 type ProfileTab = 'profile' | 'avatars' | 'activity'
 
@@ -509,93 +510,142 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="max-w-[1200px] mx-auto px-6 py-4 flex-1 pb-0 pt-28">
+      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-20">
         <div className="flex gap-6">
-          {/* Left Sidebar Navigation */}
-          <Card className={`${cardStyle.bg} ${cardStyle.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} w-64 flex-shrink-0 h-fit`}>
-            <div className="space-y-2">
-              <button
-                onClick={() => setActiveTab('profile')}
-                className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
-                  activeTab === 'profile'
-                    ? mode === 'chaos' ? 'bg-[#C4F500] text-black' : mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818]' : 'bg-white text-black'
-                    : `${getTextClass()}/60 hover:${getTextClass()}/80`
-                }`}
-              >
-                <User className="w-5 h-5" />
-                <span className="font-semibold">Profile</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('avatars')}
-                className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
-                  activeTab === 'avatars'
-                    ? mode === 'chaos' ? 'bg-[#C4F500] text-black' : mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818]' : 'bg-white text-black'
-                    : `${getTextClass()}/60 hover:${getTextClass()}/80`
-                }`}
-              >
-                <ImageIcon className="w-5 h-5" />
-                <span className="font-semibold">Avatars</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('activity')}
-                className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
-                  activeTab === 'activity'
-                    ? mode === 'chaos' ? 'bg-[#C4F500] text-black' : mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818]' : 'bg-white text-black'
-                    : `${getTextClass()}/60 hover:${getTextClass()}/80`
-                }`}
-              >
-                <Activity className="w-5 h-5" />
-                <span className="font-semibold">Activity</span>
-              </button>
+          {/* Left Sidebar Card - Matching Snaps Page Style */}
+          <Card className={`w-80 ${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
+            borderColor: mode === 'chaos' ? '#00C896' : mode === 'chill' ? '#C8D961' : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
+          }}>
+            <div className="mb-6">
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#00C896]' : 'text-white'}`}>
+                ▼ NAVIGATION
+              </h3>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setActiveTab('profile')}
+                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                    activeTab === 'profile'
+                      ? mode === 'chaos'
+                        ? 'bg-[#00C896] text-black'
+                        : mode === 'chill'
+                        ? 'bg-[#C8D961] text-[#4A1818]'
+                        : 'bg-white text-black'
+                      : mode === 'chaos'
+                      ? 'bg-[#00C896]/30 text-black/80 hover:bg-[#00C896]/50 text-black'
+                      : mode === 'chill'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
+                  }`}
+                >
+                  <User className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">Profile</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('avatars')}
+                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                    activeTab === 'avatars'
+                      ? mode === 'chaos'
+                        ? 'bg-[#00C896] text-black'
+                        : mode === 'chill'
+                        ? 'bg-[#C8D961] text-[#4A1818]'
+                        : 'bg-white text-black'
+                      : mode === 'chaos'
+                      ? 'bg-[#00C896]/30 text-black/80 hover:bg-[#00C896]/50 text-black'
+                      : mode === 'chill'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
+                  }`}
+                >
+                  <ImageIcon className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">Avatars</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('activity')}
+                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                    activeTab === 'activity'
+                      ? mode === 'chaos'
+                        ? 'bg-[#00C896] text-black'
+                        : mode === 'chill'
+                        ? 'bg-[#C8D961] text-[#4A1818]'
+                        : 'bg-white text-black'
+                      : mode === 'chaos'
+                      ? 'bg-[#00C896]/30 text-black/80 hover:bg-[#00C896]/50 text-black'
+                      : mode === 'chill'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
+                  }`}
+                >
+                  <Activity className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">Activity</span>
+                </button>
+              </div>
             </div>
           </Card>
 
           {/* Main Content Area */}
-          <div className="flex-1">
+          <div className="flex-1 flex flex-col">
             {activeTab === 'profile' && (
-              <Card className={`${cardStyle.bg} ${cardStyle.border} p-8 ${getRoundedClass('rounded-[2.5rem]')}`}>
-                <div className="mb-8">
-                  <h1 className={`text-4xl font-black uppercase ${getTextClass()} mb-2`}>PROFILE SETTINGS</h1>
-                  <p className={`${getTextClass()}/70`}>
+              <>
+                {/* Header */}
+                <div className="mb-6">
+                  <h1 className={`text-4xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Profile Settings</h1>
+                  <p className={`${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mt-2`}>
                     Manage your profile information and preferences
                   </p>
                 </div>
 
-                {/* Avatar Section */}
-                <div className="mb-8 pb-8 border-b" style={{ borderColor: `${cardStyle.accent}40` }}>
-                  <Label className={`${getLabelClass()}`}>Profile Picture</Label>
-                  <div className="flex items-center gap-4">
-                    {displayAvatarUrl ? (
-                      <img
-                        src={displayAvatarUrl}
-                        alt={fullName || user.email || 'User'}
-                        className={`w-20 h-20 ${getRoundedClass('rounded-full')} object-cover border-2`}
-                        style={{ borderColor: cardStyle.accent }}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.style.display = 'none'
+                {/* Error/Success Messages */}
+                {error && (
+                  <Card className={`mb-4 p-4 ${getRoundedClass('rounded-xl')} bg-white border-2 border-red-500/20`}>
+                    <p className="text-sm text-red-600">{error}</p>
+                  </Card>
+                )}
+
+                {success && (
+                  <Card className={`mb-4 p-4 ${getRoundedClass('rounded-xl')} bg-white border-2 border-green-500/20`}>
+                    <p className="text-sm text-green-600">{success}</p>
+                  </Card>
+                )}
+
+                {/* Form Fields as Cards */}
+                <form onSubmit={handleSubmit} className="space-y-2">
+                  {/* Profile Picture Card */}
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}>
+                    <Label className={`text-sm font-semibold mb-3 block ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
+                      Profile Picture
+                    </Label>
+                    <div className="flex items-center gap-4">
+                      {displayAvatarUrl ? (
+                        <img
+                          src={displayAvatarUrl}
+                          alt={fullName || user.email || 'User'}
+                          className={`w-20 h-20 ${getRoundedClass('rounded-full')} object-cover border-2`}
+                          style={{ borderColor: mode === 'chaos' ? '#00C896' : mode === 'chill' ? '#C8D961' : '#000000' }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                          }}
+                        />
+                      ) : null}
+                      <div 
+                        className={`avatar-fallback w-20 h-20 ${getRoundedClass('rounded-full')} flex items-center justify-center text-2xl font-semibold border-2 ${displayAvatarUrl ? 'hidden' : ''}`}
+                        style={{ 
+                          backgroundColor: mode === 'chaos' ? '#00C896' : mode === 'chill' ? '#C8D961' : '#000000',
+                          borderColor: mode === 'chaos' ? '#00C896' : mode === 'chill' ? '#C8D961' : '#000000',
+                          color: '#FFFFFF'
                         }}
-                      />
-                    ) : null}
-                    <div 
-                      className={`avatar-fallback w-20 h-20 ${getRoundedClass('rounded-full')} flex items-center justify-center text-2xl font-semibold border-2 ${displayAvatarUrl ? 'hidden' : ''}`}
-                      style={{ 
-                        backgroundColor: `${cardStyle.accent}20`,
-                        borderColor: cardStyle.accent,
-                        color: cardStyle.text
-                      }}
-                    >
-                      {initials}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                      >
+                        {initials}
+                      </div>
+                      <div className="flex-1">
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={uploading}
-                          className={`${mode === 'chaos' ? 'border-[#C4F500] text-[#C4F500] hover:bg-[#C4F500]/10' : mode === 'chill' ? 'border-[#FFC043] text-[#FFC043] hover:bg-[#FFC043]/10' : 'border-white text-white hover:bg-white/10'}`}
+                          className={`${mode === 'chaos' ? 'border-[#00C896] text-[#00C896] hover:bg-[#00C896]/10' : mode === 'chill' ? 'border-[#C8D961] text-[#C8D961] hover:bg-[#C8D961]/10' : 'border-black text-black hover:bg-black/10'}`}
                         >
                           {uploading ? (
                             <>
@@ -616,37 +666,16 @@ export default function ProfilePage() {
                           onChange={handlePhotoUpload}
                           className="hidden"
                         />
+                        <p className={`text-xs mt-2 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-gray-500'}`}>
+                          JPG, PNG or GIF. Max size 5MB
+                        </p>
                       </div>
-                      <p className={getHintClass()}>
-                        JPG, PNG or GIF. Max size 5MB
-                      </p>
                     </div>
-                  </div>
-                </div>
-                
-                {error && (
-                  <div className={`mb-4 p-4 ${getRoundedClass('rounded-lg')} border-2 ${
-                    mode === 'chaos' ? 'bg-red-500/10 border-red-500/40' : 
-                    mode === 'chill' ? 'bg-red-500/10 border-red-500/30' : 
-                    'bg-red-500/10 border-red-500/40'
-                  }`}>
-                    <p className={`text-sm ${mode === 'chaos' ? 'text-red-400' : mode === 'chill' ? 'text-red-600' : 'text-red-400'}`}>{error}</p>
-                  </div>
-                )}
+                  </Card>
 
-                {success && (
-                  <div className={`mb-4 p-4 ${getRoundedClass('rounded-lg')} border-2 ${
-                    mode === 'chaos' ? 'bg-green-500/10 border-green-500/40' : 
-                    mode === 'chill' ? 'bg-green-500/10 border-green-500/30' : 
-                    'bg-green-500/10 border-green-500/40'
-                  }`}>
-                    <p className={`text-sm ${mode === 'chaos' ? 'text-green-400' : mode === 'chill' ? 'text-green-600' : 'text-green-400'}`}>{success}</p>
-                  </div>
-                )}
-                
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <Label htmlFor="full-name" className={getLabelClass()}>
+                  {/* Full Name Card */}
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}>
+                    <Label htmlFor="full-name" className={`text-sm font-semibold mb-2 block ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                       Full Name
                     </Label>
                     <Input
@@ -655,12 +684,13 @@ export default function ProfilePage() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Your full name"
-                      className={`w-full ${getInputClass()}`}
+                      className="w-full bg-white border-gray-300 text-black placeholder:text-gray-400"
                     />
-                  </div>
+                  </Card>
 
-                  <div>
-                    <Label htmlFor="pronouns" className={getLabelClass()}>
+                  {/* Pronouns Card */}
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}>
+                    <Label htmlFor="pronouns" className={`text-sm font-semibold mb-2 block ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                       Pronouns
                     </Label>
                     <Input
@@ -669,15 +699,16 @@ export default function ProfilePage() {
                       value={pronouns}
                       onChange={(e) => setPronouns(e.target.value)}
                       placeholder="e.g., she/her, he/him, they/them"
-                      className={`w-full ${getInputClass()}`}
+                      className="w-full bg-white border-gray-300 text-black placeholder:text-gray-400"
                     />
-                    <p className={getHintClass()}>
+                    <p className={`text-xs mt-1 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-gray-500'}`}>
                       Your pronouns (optional)
                     </p>
-                  </div>
+                  </Card>
 
-                  <div>
-                    <Label htmlFor="bio" className={`${getLabelClass()} flex items-center gap-2`}>
+                  {/* Bio Card */}
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}>
+                    <Label htmlFor="bio" className={`text-sm font-semibold mb-2 flex items-center gap-2 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                       <FileText className="w-4 h-4" />
                       Bio
                     </Label>
@@ -686,13 +717,14 @@ export default function ProfilePage() {
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       placeholder="Tell us about yourself..."
-                      className={`w-full min-h-[100px] ${getInputClass()}`}
+                      className="w-full min-h-[100px] bg-white border-gray-300 text-black placeholder:text-gray-400"
                       rows={4}
                     />
-                  </div>
+                  </Card>
 
-                  <div>
-                    <Label htmlFor="birthday" className={`${getLabelClass()} flex items-center gap-2`}>
+                  {/* Birthday Card */}
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}>
+                    <Label htmlFor="birthday" className={`text-sm font-semibold mb-2 flex items-center gap-2 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                       <Calendar className="w-4 h-4" />
                       Birthday
                     </Label>
@@ -713,15 +745,16 @@ export default function ProfilePage() {
                       }}
                       placeholder="MM/DD (e.g., 03/15)"
                       maxLength={5}
-                      className={`w-full ${getInputClass()}`}
+                      className="w-full bg-white border-gray-300 text-black placeholder:text-gray-400"
                     />
-                    <p className={getHintClass()}>
+                    <p className={`text-xs mt-1 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-gray-500'}`}>
                       Month and day only (required for horoscope generation)
                     </p>
-                  </div>
+                  </Card>
 
-                  <div>
-                    <Label htmlFor="start-date" className={`${getLabelClass()} flex items-center gap-2`}>
+                  {/* Start Date Card */}
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}>
+                    <Label htmlFor="start-date" className={`text-sm font-semibold mb-2 flex items-center gap-2 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                       <Calendar className="w-4 h-4" />
                       Start Date
                     </Label>
@@ -730,15 +763,16 @@ export default function ProfilePage() {
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className={`w-full ${getInputClass()}`}
+                      className="w-full bg-white border-gray-300 text-black placeholder:text-gray-400"
                     />
-                    <p className={getHintClass()}>
+                    <p className={`text-xs mt-1 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-gray-500'}`}>
                       Your start date (month, day, and year)
                     </p>
-                  </div>
+                  </Card>
 
-                  <div>
-                    <Label htmlFor="location" className={`${getLabelClass()} flex items-center gap-2`}>
+                  {/* Location Card */}
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}>
+                    <Label htmlFor="location" className={`text-sm font-semibold mb-2 flex items-center gap-2 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                       <MapPin className="w-4 h-4" />
                       Location
                     </Label>
@@ -746,14 +780,16 @@ export default function ProfilePage() {
                       value={location}
                       onChange={setLocation}
                       placeholder="Start typing a city or location..."
+                      className="w-full bg-white border-gray-300 text-black placeholder:text-gray-400"
                     />
-                    <p className={getHintClass()}>
+                    <p className={`text-xs mt-1 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-gray-500'}`}>
                       Start typing to see location suggestions
                     </p>
-                  </div>
+                  </Card>
 
-                  <div>
-                    <Label htmlFor="website" className={`${getLabelClass()} flex items-center gap-2`}>
+                  {/* Website Card */}
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}>
+                    <Label htmlFor="website" className={`text-sm font-semibold mb-2 flex items-center gap-2 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                       <Globe className="w-4 h-4" />
                       Website
                     </Label>
@@ -763,15 +799,16 @@ export default function ProfilePage() {
                       value={website}
                       onChange={(e) => setWebsite(e.target.value)}
                       placeholder="example.com or https://example.com"
-                      className={`w-full ${getInputClass()}`}
+                      className="w-full bg-white border-gray-300 text-black placeholder:text-gray-400"
                     />
-                    <p className={getHintClass()}>
+                    <p className={`text-xs mt-1 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-gray-500'}`}>
                       Your personal or professional website
                     </p>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="discipline" className={`${getLabelClass()} flex items-center gap-2`}>
+                  </Card>
+
+                  {/* Discipline Card */}
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}>
+                    <Label htmlFor="discipline" className={`text-sm font-semibold mb-2 flex items-center gap-2 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                       <Users className="w-4 h-4" />
                       Discipline
                     </Label>
@@ -781,161 +818,160 @@ export default function ProfilePage() {
                       value={discipline}
                       onChange={(e) => setDiscipline(e.target.value)}
                       placeholder="e.g., Design, Engineering, Marketing"
-                      className={`w-full ${getInputClass()}`}
+                      className="w-full bg-white border-gray-300 text-black placeholder:text-gray-400"
                     />
-                    <p className={getHintClass()}>
+                    <p className={`text-xs mt-1 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-gray-500'}`}>
                       Your department or team. This helps personalize your horoscope.
                     </p>
-                  </div>
+                  </Card>
                   
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => router.push('/')}
-                      className={`${mode === 'chaos' ? 'border-[#C4F500] text-[#C4F500] hover:bg-[#C4F500]/10' : mode === 'chill' ? 'border-[#FFC043] text-[#FFC043] hover:bg-[#FFC043]/10' : 'border-white text-white hover:bg-white/10'}`}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={saving}
-                      className={`${mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' : mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' : 'bg-white text-black hover:bg-white/80'}`}
-                    >
-                      {saving ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        'Save Changes'
-                      )}
-                    </Button>
-                  </div>
+                  {/* Save Button Card */}
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => router.push('/')}
+                        className={`${mode === 'chaos' ? 'border-[#00C896] text-[#00C896] hover:bg-[#00C896]/10' : mode === 'chill' ? 'border-[#C8D961] text-[#C8D961] hover:bg-[#C8D961]/10' : 'border-black text-black hover:bg-black/10'}`}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={saving}
+                        className={`${mode === 'chaos' ? 'bg-[#00C896] text-black hover:bg-[#00C896]/80' : mode === 'chill' ? 'bg-[#C8D961] text-[#4A1818] hover:bg-[#C8D961]/80' : 'bg-black text-white hover:bg-black/80'}`}
+                      >
+                        {saving ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Save Changes'
+                        )}
+                      </Button>
+                    </div>
+                  </Card>
                 </form>
-              </Card>
+              </>
             )}
 
             {activeTab === 'avatars' && (
-              <Card className={`${cardStyle.bg} ${cardStyle.border} p-8 ${getRoundedClass('rounded-[2.5rem]')}`}>
+              <>
                 <div className="mb-6">
-                  <h2 className={`text-2xl font-black uppercase ${getTextClass()} mb-2 flex items-center gap-2`}>
-                    <ImageIcon className="w-6 h-6" />
-                    HISTORICAL AVATARS
-                  </h2>
-                  <p className={`${getTextClass()}/70 text-sm`}>
+                  <h1 className={`text-4xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Historical Avatars</h1>
+                  <p className={`${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mt-2`}>
                     AI-generated horoscope avatars you can download
                   </p>
                 </div>
 
                 {loadingAvatars ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className={`w-6 h-6 animate-spin ${getTextClass()}`} />
-                  </div>
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-12 shadow-sm`}>
+                    <div className="flex items-center justify-center">
+                      <Loader2 className={`w-6 h-6 animate-spin ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`} />
+                    </div>
+                  </Card>
                 ) : avatarGallery.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {avatarGallery.map((avatar) => (
-                      <div
+                      <Card
                         key={avatar.id}
-                        className={`relative group ${getRoundedClass('rounded-xl')} overflow-hidden border-2 ${
-                          mode === 'chaos' ? 'border-[#C4F500]/40' : 
-                          mode === 'chill' ? 'border-[#FFC043]/30' : 
-                          'border-white/20'
-                        }`}
+                        className={`bg-white ${getRoundedClass('rounded-xl')} p-2 shadow-sm relative group overflow-hidden`}
                       >
                         <img
                           src={avatar.url}
                           alt={`Horoscope avatar ${avatar.date}`}
-                          className="w-full aspect-square object-cover"
+                          className="w-full aspect-square object-cover rounded-lg"
                         />
                         <div className={`absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center ${getRoundedClass('rounded-xl')}`}>
                           <Button
                             size="sm"
                             onClick={() => handleDownloadAvatar(avatar.url, avatar.date)}
-                            className={`${mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' : mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' : 'bg-white text-black hover:bg-white/80'}`}
+                            className={`${mode === 'chaos' ? 'bg-[#00C896] text-black hover:bg-[#00C896]/80' : mode === 'chill' ? 'bg-[#C8D961] text-[#4A1818] hover:bg-[#C8D961]/80' : 'bg-black text-white hover:bg-black/80'}`}
                           >
                             <Download className="w-4 h-4 mr-2" />
                             Download
                           </Button>
                         </div>
                         <div className={`absolute top-2 left-2 px-2 py-1 ${getRoundedClass('rounded-md')} text-xs font-bold ${
-                          mode === 'chaos' ? 'bg-[#C4F500] text-black' : 
-                          mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818]' : 
-                          'bg-white text-black'
+                          mode === 'chaos' ? 'bg-[#00C896] text-black' : 
+                          mode === 'chill' ? 'bg-[#C8D961] text-[#4A1818]' : 
+                          'bg-black text-white'
                         }`}>
                           {new Date(avatar.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </div>
-                      </div>
+                      </Card>
                     ))}
                   </div>
                 ) : (
-                  <div className={`text-center py-12 ${getTextClass()}/60`}>
-                    <Sparkles className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No avatars found. Generate a horoscope on the dashboard to see your avatars here.</p>
-                  </div>
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-12 shadow-sm text-center`}>
+                    <Sparkles className={`w-12 h-12 mx-auto mb-4 opacity-50 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`} />
+                    <p className={mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}>
+                      No avatars found. Generate a horoscope on the dashboard to see your avatars here.
+                    </p>
+                  </Card>
                 )}
-              </Card>
+              </>
             )}
 
             {activeTab === 'activity' && (
-              <Card className={`${cardStyle.bg} ${cardStyle.border} p-8 ${getRoundedClass('rounded-[2.5rem]')}`}>
+              <>
                 <div className="mb-6">
-                  <h2 className={`text-2xl font-black uppercase ${getTextClass()} mb-2 flex items-center gap-2`}>
-                    <Activity className="w-6 h-6" />
-                    YOUR ACTIVITY
-                  </h2>
-                  <p className={`${getTextClass()}/70 text-sm`}>
+                  <h1 className={`text-4xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Your Activity</h1>
+                  <p className={`${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mt-2`}>
                     All your contributions and submissions
                   </p>
                 </div>
 
                 {loadingActivity ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className={`w-6 h-6 animate-spin ${getTextClass()}`} />
-                  </div>
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-12 shadow-sm`}>
+                    <div className="flex items-center justify-center">
+                      <Loader2 className={`w-6 h-6 animate-spin ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`} />
+                    </div>
+                  </Card>
                 ) : activities.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     {activities.map((activity) => (
-                      <div
+                      <Card
                         key={`${activity.type}-${activity.id}`}
-                        className={`p-4 ${getRoundedClass('rounded-xl')} border-2 ${
-                          mode === 'chaos' ? 'border-[#C4F500]/40 bg-black/20' : 
-                          mode === 'chill' ? 'border-[#FFC043]/30 bg-white/50' : 
-                          'border-white/20 bg-black/20'
-                        }`}
+                        className={`bg-white ${getRoundedClass('rounded-xl')} p-4 shadow-sm`}
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              {activity.type === 'snap' && <Sparkles className={`w-4 h-4 ${getTextClass()}/60`} />}
-                              {activity.type === 'work_sample' && <FileText className={`w-4 h-4 ${getTextClass()}/60`} />}
-                              {activity.type === 'pipeline_project' && <Briefcase className={`w-4 h-4 ${getTextClass()}/60`} />}
-                              <span className={`text-sm font-semibold uppercase ${getTextClass()}`}>
+                              {activity.type === 'snap' && <Sparkles className={`w-4 h-4 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-black/60'}`} />}
+                              {activity.type === 'work_sample' && <FileText className={`w-4 h-4 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-black/60'}`} />}
+                              {activity.type === 'pipeline_project' && <Briefcase className={`w-4 h-4 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-black/60'}`} />}
+                              <span className={`text-sm font-semibold uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                                 {activity.type === 'snap' ? 'Snap' : activity.type === 'work_sample' ? 'Work Sample' : 'Pipeline Project'}
                               </span>
-                              <span className={`text-xs ${getTextClass()}/60`}>
+                              <span className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-black/60'}`}>
                                 {new Date(activity.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                               </span>
                             </div>
-                            <h3 className={`font-bold ${getTextClass()} mb-1`}>{activity.title}</h3>
+                            <h3 className={`font-bold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'} mb-1`}>{activity.title}</h3>
                             {activity.description && (
-                              <p className={`text-sm ${getTextClass()}/70 line-clamp-2`}>{activity.description}</p>
+                              <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-black/70'} line-clamp-2`}>{activity.description}</p>
                             )}
                           </div>
                         </div>
-                      </div>
+                      </Card>
                     ))}
                   </div>
                 ) : (
-                  <div className={`text-center py-12 ${getTextClass()}/60`}>
-                    <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No activity yet. Start contributing to see your activity here.</p>
-                  </div>
+                  <Card className={`bg-white ${getRoundedClass('rounded-xl')} p-12 shadow-sm text-center`}>
+                    <Activity className={`w-12 h-12 mx-auto mb-4 opacity-50 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`} />
+                    <p className={mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}>
+                      No activity yet. Start contributing to see your activity here.
+                    </p>
+                  </Card>
                 )}
-              </Card>
+              </>
             )}
           </div>
         </div>
+        
+        <Footer />
       </main>
     </div>
   )
