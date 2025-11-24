@@ -753,8 +753,18 @@ export async function GET(request: NextRequest) {
         console.log('   Saved record:', {
           id: upsertResult[0].id,
           date: upsertResult[0].date,
-          text_length: upsertResult[0].horoscope_text?.length || 0
+          text_length: upsertResult[0].horoscope_text?.length || 0,
+          image_url: upsertResult[0].image_url || 'MISSING',
+          image_url_length: upsertResult[0].image_url?.length || 0
         })
+        
+        // CRITICAL: Check if image_url was actually saved
+        if (!upsertResult[0].image_url || upsertResult[0].image_url.trim() === '') {
+          console.error('   ❌ CRITICAL: image_url is missing in upsert result!')
+          console.error('   This means the database save did not include the image_url field')
+        } else {
+          console.log('   ✅ image_url was saved successfully:', upsertResult[0].image_url.substring(0, 100) + '...')
+        }
       } else {
         console.warn('   ⚠️ Upsert succeeded but no data returned')
       }
@@ -763,7 +773,7 @@ export async function GET(request: NextRequest) {
       // If verification fails, this is a critical error - the save didn't work
       const { data: verifyRecord, error: verifyError } = await supabaseAdmin
         .from('horoscopes')
-        .select('horoscope_text, date, id')
+        .select('horoscope_text, date, id, image_url, image_prompt, prompt_slots_json')
         .eq('user_id', userId)
         .eq('date', todayDate)
         .maybeSingle()
