@@ -157,6 +157,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       title: 'ADMIN',
       sectionAccess: 'admin' as const,
       items: [
+        { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
         { href: '/admin/users', label: 'User Management', icon: Users, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
         { href: '/admin/notifications', label: 'Push Notifications', icon: Bell, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
       ]
