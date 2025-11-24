@@ -1069,6 +1069,10 @@ export default function TeamDashboard() {
           }
         } else {
           console.log('Horoscope data received:', textData)
+          console.log('   Has horoscope_text:', !!textData.horoscope_text)
+          console.log('   horoscope_text length:', textData.horoscope_text?.length || 0)
+          console.log('   star_sign:', textData.star_sign)
+          
           // Only set today's horoscope - historical horoscopes remain in database
           setHoroscope({
             star_sign: textData.star_sign,
@@ -1081,6 +1085,10 @@ export default function TeamDashboard() {
             // Use character_name from API if available, otherwise generate (for backwards compatibility)
             setCharacterName(textData.character_name || generateSillyCharacterName(textData.star_sign))
           }
+          
+          // Clear loading state for horoscope text
+          setHoroscopeLoading(false)
+          setHoroscopeError(null)
           
           // If image_url is in the text response, use it immediately (from n8n)
           if (textData.image_url) {
@@ -1138,18 +1146,38 @@ export default function TeamDashboard() {
         } else if (textData.image_url) {
           // Image URL was already set from text response above
           console.log('✅ Image URL already set from text response:', textData.image_url)
+          // Make sure loading is cleared
+          if (horoscopeImageLoading) {
+            setHoroscopeImageLoading(false)
+          }
         } else {
           console.warn('⚠️ No image URL found in either text or avatar response')
           console.warn('   Text response keys:', Object.keys(textData))
           console.warn('   Image data:', imageData)
+          // Still clear loading even if no image
+          setHoroscopeImageLoading(false)
         }
+        
+        // Final check - ensure loading states are cleared
+        console.log('📊 Final state check:', {
+          horoscopeLoading,
+          horoscopeImageLoading,
+          hasHoroscope: !!horoscope,
+          hasHoroscopeText: !!horoscope?.horoscope_text,
+          hasHoroscopeImage: !!horoscopeImage
+        })
       } catch (error: any) {
         console.error('Error fetching horoscope data:', error)
         setHoroscopeError('Failed to load horoscope: ' + (error.message || 'Unknown error'))
         setHoroscopeImageError('Failed to load horoscope image: ' + (error.message || 'Unknown error'))
+        // Clear loading on error
+        setHoroscopeLoading(false)
+        setHoroscopeImageLoading(false)
       } finally {
         isFetching = false // Reset fetching flag
         if (isMounted) {
+          // Double-check loading states are cleared
+          console.log('🔚 Finally block - ensuring loading states are cleared')
           setHoroscopeLoading(false)
           setHoroscopeImageLoading(false)
         }
