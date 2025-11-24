@@ -5,10 +5,12 @@ This document describes the n8n workflow structure for generating horoscope text
 ## Workflow Overview
 
 1. **Webhook Trigger** - Receives horoscope generation request from Next.js
-2. **OpenAI Text Transformation Node** - Transforms Cafe Astrology text to Co-Star style
-3. **Parse Text Result Node** - Extracts and validates JSON response
-4. **OpenAI Image Generation Node** - Generates horoscope image using DALL-E 3
-5. **Combine Results Node** - Merges text and image results
+2. **Parallel Execution**:
+   - **OpenAI Text Transformation Node** - Transforms Cafe Astrology text to Co-Star style
+   - **OpenAI Image Generation Node** - Generates horoscope image using DALL-E 3 (runs in parallel)
+3. **Parse Text Result Node** - Extracts and validates JSON response from text transformation
+4. **Merge Results Node** - Combines results from both parallel paths
+5. **Combine Results Node** - Merges text and image data into final format
 6. **Webhook Response** - Returns combined results to Next.js
 
 ## Node-by-Node Configuration
@@ -141,7 +143,21 @@ return {
 
 ---
 
-### 4. OpenAI Image Generation
+### 4. Merge Results
+
+**Node Type**: Merge
+
+**Settings**:
+- Mode: Combine
+- Combine By: Combine All
+
+**Purpose**: Waits for both parallel paths (text and image) to complete, then combines their outputs
+
+**Output**: Passes both text and image results to Combine Results node
+
+---
+
+### 5. OpenAI Image Generation (Parallel Path)
 
 **Node Type**: OpenAI (Image Generation)
 
@@ -166,7 +182,7 @@ return {
 
 ---
 
-### 5. Combine Results
+### 6. Combine Results
 
 **Node Type**: Code
 
@@ -210,7 +226,7 @@ return {
 
 ---
 
-### 6. Webhook Response
+### 7. Webhook Response
 
 **Node Type**: Respond to Webhook
 
@@ -244,23 +260,27 @@ Set these in your n8n environment:
 ```
 Webhook Trigger
     ↓
-OpenAI Text Transformation
-    ↓ (on error → Webhook Response with error)
-Parse Text Result
-    ↓
-OpenAI Image Generation
-    ↓ (on error → Webhook Response with error)
-Combine Results
-    ↓
-Webhook Response (success)
+    ├─→ OpenAI Text Transformation ─→ Parse Text Result ─┐
+    │                                                      │
+    └─→ OpenAI Image Generation ─────────────────────────┼─→ Merge Results ─→ Combine Results ─→ Webhook Response
+                                                          │
+    (on error from either path → Webhook Response with error)
 ```
+
+**Key Points:**
+- Text and Image generation run **in parallel** (simultaneously)
+- Both paths must complete before Merge Results node processes
+- Total execution time is determined by the **longer** of the two operations (not the sum)
 
 ## Synchronous Execution
 
 This workflow is designed for **synchronous execution**:
 - Next.js calls the webhook and waits for the response
-- n8n processes both text and image generation sequentially
-- Total execution time: ~20-40 seconds
+- n8n processes both text and image generation **in parallel** (simultaneously)
+- Total execution time: ~15-30 seconds (faster than sequential)
+  - Text transformation: ~5-10 seconds
+  - Image generation: ~15-30 seconds
+  - Total: ~15-30 seconds (max of both, not sum)
 - Next.js timeout: 60 seconds (configured in service)
 
 ## Error Handling
@@ -290,8 +310,10 @@ The Next.js application:
 
 ## Performance Considerations
 
-- **Sequential Processing**: Text and image are generated sequentially (not in parallel)
+- **Parallel Processing**: Text and image are generated **in parallel** for optimal performance
+- **Execution Time**: Total time is the maximum of both operations (~15-30s), not the sum
 - **Timeout**: 60-second timeout in Next.js to handle long-running requests
 - **Retry Logic**: 3 retries with exponential backoff for transient failures
 - **Rate Limiting**: n8n handles OpenAI rate limiting automatically
+- **Error Handling**: If either path fails, the workflow returns an error immediately
 
