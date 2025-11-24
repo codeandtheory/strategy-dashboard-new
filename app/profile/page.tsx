@@ -10,10 +10,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Calendar, Briefcase, Users, Upload, MapPin, Globe, FileText, Download, Image as ImageIcon, User, Activity, Sparkles } from 'lucide-react'
+import { Loader2, Calendar, Briefcase, Users, Upload, MapPin, Globe, FileText, Download, Image as ImageIcon, User, Activity, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
 import Link from 'next/link'
 import { LocationAutocomplete } from '@/components/location-autocomplete'
-import { AccountMenu } from '@/components/account-menu'
+import { SiteHeader } from '@/components/site-header'
 import { Footer } from '@/components/footer'
 
 type ProfileTab = 'profile' | 'avatars' | 'activity'
@@ -214,6 +214,7 @@ export default function ProfilePage() {
     created_at: string
   }>>([])
   const [loadingActivity, setLoadingActivity] = useState(false)
+  const [expandedActivityTypes, setExpandedActivityTypes] = useState<Set<string>>(new Set(['snap', 'work_sample', 'pipeline_project']))
   
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -526,35 +527,19 @@ export default function ProfilePage() {
   
   return (
     <div className={`flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
-      <header className={`border-b ${getBorderClass()} px-6 py-4 fixed top-0 left-0 right-0 z-50 ${getBgClass()}`}>
-        <div className="max-w-[1200px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link href="/" className={`w-10 h-10 ${getLogoBg()} ${getLogoText()} ${getRoundedClass('rounded-xl')} flex items-center justify-center font-black text-lg ${mode === 'code' ? 'font-mono' : ''}`}>
-              {mode === 'code' ? 'C:\\>' : 'D'}
-            </Link>
-            <nav className="flex items-center gap-6">
-              <Link href="/" className={getNavLinkClass()}>HOME</Link>
-              <Link href="/snaps" className={getNavLinkClass()}>SNAPS</Link>
-              <Link href="/resources" className={getNavLinkClass()}>RESOURCES</Link>
-              <Link href="/work-samples" className={getNavLinkClass()}>WORK</Link>
-              <a href="#" className={getNavLinkClass()}>TEAM</a>
-              <Link href="/vibes" className={getNavLinkClass()}>VIBES</Link>
-              <Link href="/playground" className={getNavLinkClass()}>PLAYGROUND</Link>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            <AccountMenu />
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
-      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-32">
+      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
         <div className="flex gap-6">
           {/* Left Sidebar Card - Matching Snaps Page Style */}
-          <Card className={`w-80 ${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit overflow-hidden`} style={{ 
-            borderColor: mode === 'chaos' ? '#00C896' : mode === 'chill' ? '#C8D961' : '#FFFFFF',
-            borderWidth: mode === 'chaos' ? '2px' : mode === 'chill' ? '2px' : '2px'
-          }}>
+          <div 
+            className={`w-80 ${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit overflow-hidden`} 
+            style={{ 
+              borderColor: mode === 'chaos' ? '#00C896' : mode === 'chill' ? '#C8D961' : '#FFFFFF',
+              borderWidth: mode === 'chaos' ? '2px' : mode === 'chill' ? '2px' : '2px',
+              borderRadius: mode === 'code' ? '0' : '2.5rem'
+            }}
+          >
             <div className="mb-6">
               <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#00C896]' : 'text-white'}`}>
                 ▼ NAVIGATION
@@ -619,7 +604,7 @@ export default function ProfilePage() {
                 </button>
               </div>
             </div>
-          </Card>
+          </div>
 
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col">
@@ -991,44 +976,71 @@ export default function ProfilePage() {
                       pipeline_project: Briefcase
                     }
 
+                    const toggleActivityType = (type: string) => {
+                      setExpandedActivityTypes(prev => {
+                        const newSet = new Set(prev)
+                        if (newSet.has(type)) {
+                          newSet.delete(type)
+                        } else {
+                          newSet.add(type)
+                        }
+                        return newSet
+                      })
+                    }
+
                     return (
-                      <div className="space-y-6">
+                      <div className="space-y-4">
                         {typeOrder.map((type) => {
                           const typeActivities = groupedActivities[type] || []
                           if (typeActivities.length === 0) return null
 
                           const IconComponent = typeIcons[type as keyof typeof typeIcons]
+                          const isExpanded = expandedActivityTypes.has(type)
 
                           return (
                             <div key={type} className="space-y-2">
-                              {/* Section Header */}
-                              <div className="flex items-center gap-3 mb-3">
+                              {/* Section Header - Clickable */}
+                              <button
+                                onClick={() => toggleActivityType(type)}
+                                className="w-full flex items-center gap-3 mb-2 hover:opacity-80 transition-opacity"
+                              >
                                 <IconComponent className={`w-5 h-5 ${getFieldCardStyle().text}`} />
-                                <h2 className={`text-xl font-black uppercase ${getFieldCardStyle().text}`}>
+                                <h2 className={`text-xl font-black uppercase ${getFieldCardStyle().text} flex-1 text-left`}>
                                   {typeLabels[type as keyof typeof typeLabels]} ({typeActivities.length})
                                 </h2>
-                              </div>
-                              {/* Activities in this group */}
-                              {typeActivities.map((activity) => (
-                                <Card
-                                  key={`${activity.type}-${activity.id}`}
-                                  className={`${getFieldCardStyle().bg} ${getFieldCardStyle().border} ${getRoundedClass('rounded-xl')} p-4`}
-                                >
-                                  <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-2">
+                                {isExpanded ? (
+                                  <ChevronUp className={`w-5 h-5 ${getFieldCardStyle().text}`} />
+                                ) : (
+                                  <ChevronDown className={`w-5 h-5 ${getFieldCardStyle().text}`} />
+                                )}
+                              </button>
+                              {/* Activities in this group - Collapsible */}
+                              {isExpanded && (
+                                <div className="space-y-2">
+                                  {typeActivities.map((activity) => (
+                                    <div
+                                      key={`${activity.type}-${activity.id}`}
+                                      className={`${getFieldCardStyle().bg} ${getFieldCardStyle().border} ${getRoundedClass('rounded-xl')} p-3`}
+                                      style={{
+                                        borderTopWidth: '1px',
+                                        borderBottomWidth: '1px',
+                                        borderLeftWidth: '0',
+                                        borderRightWidth: '0'
+                                      }}
+                                    >
+                                      <div className="flex flex-col gap-1">
                                         <span className={`text-xs ${getFieldCardStyle().hint}`}>
                                           {new Date(activity.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                         </span>
+                                        <h3 className={`font-bold ${getFieldCardStyle().text}`}>{activity.title}</h3>
+                                        {activity.description && (
+                                          <p className={`text-sm ${getFieldCardStyle().hint}`}>{activity.description}</p>
+                                        )}
                                       </div>
-                                      <h3 className={`font-bold ${getFieldCardStyle().text} mb-1`}>{activity.title}</h3>
-                                      {activity.description && (
-                                        <p className={`text-sm ${getFieldCardStyle().hint} line-clamp-2`}>{activity.description}</p>
-                                      )}
                                     </div>
-                                  </div>
-                                </Card>
-                              ))}
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )
                         })}
