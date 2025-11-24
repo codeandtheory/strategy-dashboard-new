@@ -101,6 +101,13 @@ async function getSupabaseAuthClient() {
 
 export async function GET(request: NextRequest) {
   try {
+    // Check for force regeneration parameter
+    const { searchParams } = new URL(request.url)
+    const forceRegenerate = searchParams.get('force') === 'true'
+    
+    if (forceRegenerate) {
+      console.log('🔄 FORCE REGENERATION requested - bypassing cache')
+    }
     // Get authenticated user from Supabase (server-side)
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -131,7 +138,7 @@ export async function GET(request: NextRequest) {
     
     const { data: cachedHoroscope, error: cacheError } = await supabaseAdmin
       .from('horoscopes')
-      .select('star_sign, horoscope_text, horoscope_dos, horoscope_donts, image_url, date, generated_at, character_name')
+      .select('star_sign, horoscope_text, horoscope_dos, horoscope_donts, image_url, date, generated_at, character_name, prompt_slots_json')
       .eq('user_id', userId)
       .eq('date', todayDate)
       .maybeSingle()
@@ -243,12 +250,20 @@ export async function GET(request: NextRequest) {
     // This prevents hitting billing limits by regenerating unnecessarily
     
     // SAFETY CHECK: If ANY record exists for today, check if it has text
-    if (cachedHoroscope) {
+    // Skip this check if force regeneration is requested
+    if (cachedHoroscope && !forceRegenerate) {
       if (cachedHoroscope.horoscope_text && cachedHoroscope.horoscope_text.trim() !== '') {
         console.log('✅ FOUND cached horoscope text in database - RETURNING CACHED (NO API CALL)')
+        console.log('   ⚠️ This horoscope was NOT generated via n8n - it is cached from a previous generation')
+        console.log('   To regenerate with n8n, add ?force=true to the URL')
         console.log('   Text length:', cachedHoroscope.horoscope_text.length)
+        console.log('   Text preview:', cachedHoroscope.horoscope_text.substring(0, 100) + '...')
         console.log('   Date:', cachedHoroscope.date)
         console.log('   Generated at:', cachedHoroscope.generated_at)
+        console.log('   Image URL:', cachedHoroscope.image_url || 'MISSING')
+        // Note: prompt_slots_json may not be in the select query, so we check safely
+        const hasPromptSlots = 'prompt_slots_json' in cachedHoroscope && !!cachedHoroscope.prompt_slots_json
+        console.log('   Has prompt slots:', hasPromptSlots)
         return NextResponse.json({
           star_sign: cachedHoroscope.star_sign,
           horoscope_text: cachedHoroscope.horoscope_text,
@@ -443,7 +458,8 @@ export async function GET(request: NextRequest) {
       console.log('✅ Built image prompt:', imagePrompt.substring(0, 200) + (imagePrompt.length > 200 ? '...' : ''))
       console.log('Prompt length:', imagePrompt.length)
       console.log('Prompt slots:', Object.keys(promptSlots || {}))
-      console.log('Built image prompt, calling n8n for text and image generation...')
+      console.log('🚀 Calling n8n workflow for text and image generation...')
+      console.log('   This will generate both the horoscope text AND the image via n8n')
       
       // Call n8n workflow for both text transformation and image generation
       const n8nResult = await generateHoroscopeViaN8n({
@@ -645,32 +661,38 @@ export async function GET(request: NextRequest) {
     
     // CRITICAL SAFETY CHECK: Double-check database one more time before saving
     // This prevents race conditions if multiple requests come in simultaneously
-    const { data: doubleCheckHoroscope } = await supabaseAdmin
-      .from('horoscopes')
-      .select('horoscope_text, image_url, prompt_slots_json, image_prompt')
-      .eq('user_id', userId)
-      .eq('date', todayDate)
-      .maybeSingle()
-    
-    if (doubleCheckHoroscope && doubleCheckHoroscope.horoscope_text && doubleCheckHoroscope.horoscope_text.trim() !== '') {
-      console.log('🛡️ SAFETY CHECK: Horoscope text was created between checks - returning cached instead of saving')
-      console.log('   This prevents duplicate API calls and billing limit hits')
-      console.log('   Cached horoscope preview:', doubleCheckHoroscope.horoscope_text.substring(0, 100))
-      console.log('   Generated horoscope preview:', horoscopeText.substring(0, 100))
-      console.log('   ⚠️ WARNING: Returning cached data instead of newly generated data!')
-      console.log('   Cached image_url:', doubleCheckHoroscope.image_url)
-      console.log('   Generated image_url:', imageUrl)
+    // Skip this check if force regeneration is requested
+    if (!forceRegenerate) {
+      const { data: doubleCheckHoroscope } = await supabaseAdmin
+        .from('horoscopes')
+        .select('horoscope_text, image_url, prompt_slots_json, image_prompt')
+        .eq('user_id', userId)
+        .eq('date', todayDate)
+        .maybeSingle()
       
-      // Return cached text to prevent duplicate generation
-      return NextResponse.json({
-        star_sign: starSign, // Use the star sign we calculated
-        horoscope_text: doubleCheckHoroscope.horoscope_text,
-        horoscope_dos: cachedHoroscope?.horoscope_dos || [],
-        horoscope_donts: cachedHoroscope?.horoscope_donts || [],
-        image_url: doubleCheckHoroscope.image_url || '',
-        character_name: cachedHoroscope?.character_name || characterName,
-        cached: true,
-      })
+      if (doubleCheckHoroscope && doubleCheckHoroscope.horoscope_text && doubleCheckHoroscope.horoscope_text.trim() !== '') {
+        console.log('🛡️ SAFETY CHECK: Horoscope text was created between checks - returning cached instead of saving')
+        console.log('   This prevents duplicate API calls and billing limit hits')
+        console.log('   ⚠️ WARNING: Returning cached data instead of newly generated n8n data!')
+        console.log('   Cached horoscope preview:', doubleCheckHoroscope.horoscope_text.substring(0, 100))
+        console.log('   Generated horoscope preview:', horoscopeText.substring(0, 100))
+        console.log('   Cached image_url:', doubleCheckHoroscope.image_url)
+        console.log('   Generated image_url:', imageUrl)
+        console.log('   To force save the new n8n-generated horoscope, add ?force=true to the URL')
+        
+        // Return cached text to prevent duplicate generation
+        return NextResponse.json({
+          star_sign: starSign, // Use the star sign we calculated
+          horoscope_text: doubleCheckHoroscope.horoscope_text,
+          horoscope_dos: cachedHoroscope?.horoscope_dos || [],
+          horoscope_donts: cachedHoroscope?.horoscope_donts || [],
+          image_url: doubleCheckHoroscope.image_url || '',
+          character_name: cachedHoroscope?.character_name || characterName,
+          cached: true,
+        })
+      }
+    } else {
+      console.log('🔄 FORCE MODE: Skipping safety check - will save n8n-generated horoscope even if cache exists')
     }
     
     // Save horoscope text to database
