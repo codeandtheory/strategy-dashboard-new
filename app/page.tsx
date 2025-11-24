@@ -2045,16 +2045,17 @@ export default function TeamDashboard() {
             const weekEnd = new Date(todayStart.getTime() + 7 * 24 * 60 * 60 * 1000)
             
             // Filter events and deduplicate
-            const filteredEvents = calendarEvents
-              .filter(event => {
-              const eventStart = event.start.dateTime 
-                ? new Date(event.start.dateTime)
-                : event.start.date 
-                  ? new Date(event.start.date)
-                  : null
-              
-              if (!eventStart) return false
-              
+            const filteredEvents = (() => {
+              // First, filter events by date range
+              const dateFilteredEvents = calendarEvents.filter(event => {
+                const eventStart = event.start.dateTime 
+                  ? new Date(event.start.dateTime)
+                  : event.start.date 
+                    ? new Date(event.start.date)
+                    : null
+                
+                if (!eventStart) return false
+                
                 // For week view, include events that overlap with the week
                 if (eventsExpanded) {
                   const eventEnd = event.end.dateTime 
@@ -2079,32 +2080,70 @@ export default function TeamDashboard() {
                   return eventStart >= todayStart && eventStart < todayEnd
                 }
               })
-              // Deduplicate events - same event might appear in multiple calendars
-              // Use a Map to track seen events by a unique key
-              .filter((event, index, self) => {
-                // Create a unique key from summary, start, and end
-                const eventStart = event.start.dateTime || event.start.date || ''
-                const eventEnd = event.end.dateTime || event.end.date || ''
-                const eventKey = `${event.summary}|${eventStart}|${eventEnd}`
+              
+              // Deduplicate events - same event might appear in multiple calendars (e.g., holidays and office events)
+              // Use a Map to track the best event for each normalized key
+              const eventMap = dateFilteredEvents.reduce((eventMap: Map<string, typeof calendarEvents[0]>, event) => {
+                // Normalize event summary (remove common variations, trim, lowercase for comparison)
+                const normalizeSummary = (summary: string) => {
+                  return summary
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, ' ') // Normalize whitespace
+                    .replace(/[^\w\s]/g, '') // Remove punctuation for comparison
+                }
                 
-                // Find first occurrence of this key
-                const firstIndex = self.findIndex(e => {
-                  const eStart = e.start.dateTime || e.start.date || ''
-                  const eEnd = e.end.dateTime || e.end.date || ''
-                  const eKey = `${e.summary}|${eStart}|${eEnd}`
-                  return eKey === eventKey
-                })
+                // Get event date (for all-day events, use date; for timed events, use dateTime)
+                const getEventDate = (event: typeof calendarEvents[0]) => {
+                  if (event.start.date) {
+                    return event.start.date // All-day event, date is YYYY-MM-DD
+                  } else if (event.start.dateTime) {
+                    const date = new Date(event.start.dateTime)
+                    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                  }
+                  return ''
+                }
                 
-                // Only keep the first occurrence
-                return firstIndex === index
-              })
-              // Sort by start time
-              .sort((a, b) => {
+                const eventDate = getEventDate(event)
+                const normalizedSummary = normalizeSummary(event.summary)
+                
+                // Create a unique key from normalized summary and date
+                const eventKey = `${normalizedSummary}|${eventDate}`
+                
+                // Check if we already have an event with this key
+                const existingEvent = eventMap.get(eventKey)
+                
+                if (!existingEvent) {
+                  // First time seeing this event, add it
+                  eventMap.set(eventKey, event)
+                } else {
+                  // Duplicate found - prefer office events over holidays
+                  const isExistingHoliday = existingEvent.calendarId.includes('holiday')
+                  const isCurrentHoliday = event.calendarId.includes('holiday')
+                  const isExistingOffice = existingEvent.calendarId.includes('5b18ulcjgibgffc35hbtmv6sfs')
+                  const isCurrentOffice = event.calendarId.includes('5b18ulcjgibgffc35hbtmv6sfs')
+                  
+                  // Prefer office events over holidays when there's a duplicate
+                  if (isCurrentOffice && isExistingHoliday) {
+                    // Replace the holiday with the office event
+                    eventMap.set(eventKey, event)
+                  }
+                  // If existing is office and current is holiday, keep existing (do nothing)
+                  // If both are same type, keep existing (first one wins)
+                }
+                
+                return eventMap
+              }, new Map())
+              
+              // Convert Map values to array and sort by start time
+              const deduplicatedEvents = Array.from(eventMap.values())
+              return deduplicatedEvents.sort((a, b) => {
                 const aStart = a.start.dateTime ? new Date(a.start.dateTime) : new Date(a.start.date || 0)
                 const bStart = b.start.dateTime ? new Date(b.start.dateTime) : new Date(b.start.date || 0)
                 return aStart.getTime() - bStart.getTime()
-            })
-
+              })
+            })()
+            
             // Format time for display
             const formatEventTime = (event: typeof calendarEvents[0]) => {
               if (event.start.dateTime) {
