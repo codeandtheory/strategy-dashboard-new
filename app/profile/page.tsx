@@ -1029,7 +1029,10 @@ export default function ProfilePage() {
                                           }}
                                         >
                                           <p className={`text-sm ${getFieldCardStyle().text}`}>
-                                            {dateStr} - {activity.description} (for {forWho})
+                                            {dateStr} - {activity.description}{' '}
+                                            <span className={`${getFieldCardStyle().hint} font-normal`}>
+                                              (for {forWho})
+                                            </span>
                                           </p>
                                         </div>
                                       )
