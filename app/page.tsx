@@ -1690,7 +1690,12 @@ export default function TeamDashboard() {
                       )
                     })}
                           <Button 
-                      onClick={() => setIsPlaylistDialogOpen(true)}
+                      onClick={() => {
+                        const playlistSection = document.getElementById('playlist-section')
+                        if (playlistSection) {
+                          playlistSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        }
+                      }}
                       className={`${mode === 'chaos' ? (isLightBg ? 'hover:bg-[#0F0F0F]' : 'hover:bg-[#2a2a2a]') + ' hover:scale-105' : mode === 'chill' ? 'hover:bg-[#3A1414]' : mode === 'code' ? 'hover:bg-[#1a1a1a] border border-[#FFFFFF]' : 'hover:bg-[#1a1a1a]'} font-semibold ${getRoundedClass('rounded-full')} py-3 md:py-4 px-6 md:px-8 text-base md:text-lg tracking-normal transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}
                       style={mode === 'chaos' ? {
                         backgroundColor: isLightBg ? '#000000' : '#1a1a1a',
@@ -2243,6 +2248,50 @@ export default function TeamDashboard() {
                 }
               })
               
+              // First, collect all holiday dates to mark office events on those days
+              const holidayDates = new Set<string>()
+              const getEventDateString = (event: typeof calendarEvents[0]) => {
+                if (event.start.date) {
+                  return event.start.date // All-day event, date is YYYY-MM-DD
+                } else if (event.start.dateTime) {
+                  const date = new Date(event.start.dateTime)
+                  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                }
+                return ''
+              }
+              
+              dateFilteredEvents.forEach(event => {
+                if (event.calendarId.includes('holiday')) {
+                  const startDate = getEventDateString(event)
+                  if (startDate) {
+                    // Add start date
+                    holidayDates.add(startDate)
+                    
+                    // If it's a multi-day holiday, add all days
+                    if (event.end.date) {
+                      const endDate = new Date(event.end.date)
+                      endDate.setDate(endDate.getDate() - 1) // Google Calendar end dates are exclusive
+                      const start = new Date(startDate)
+                      const current = new Date(start)
+                      while (current <= endDate) {
+                        const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`
+                        holidayDates.add(dateStr)
+                        current.setDate(current.getDate() + 1)
+                      }
+                    } else if (event.end.dateTime) {
+                      const endDate = new Date(event.end.dateTime)
+                      const start = new Date(startDate)
+                      const current = new Date(start)
+                      while (current <= endDate) {
+                        const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`
+                        holidayDates.add(dateStr)
+                        current.setDate(current.getDate() + 1)
+                      }
+                    }
+                  }
+                }
+              })
+              
               // Deduplicate events - same event might appear in multiple calendars (e.g., holidays and office events)
               // Use a Map to track the best event for each normalized key
               const eventMap = dateFilteredEvents.reduce((eventMap: Map<string, typeof calendarEvents[0] & { isOfficeClosed?: boolean }>, event) => {
@@ -2300,45 +2349,102 @@ export default function TeamDashboard() {
                   }
                 }
                 
+                // Helper function to check if an event is on a holiday date
+                const checkIfOnHolidayDate = (evt: typeof calendarEvents[0], evtDate: string): boolean => {
+                  let isOnHoliday = holidayDates.has(evtDate)
+                  
+                  // If it's a multi-day event, check if any day overlaps with a holiday
+                  if (!isOnHoliday) {
+                    if (evt.end.date) {
+                      const endDate = new Date(evt.end.date)
+                      endDate.setDate(endDate.getDate() - 1) // Google Calendar end dates are exclusive
+                      const start = new Date(evtDate)
+                      const current = new Date(start)
+                      while (current <= endDate && !isOnHoliday) {
+                        const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`
+                        if (holidayDates.has(dateStr)) {
+                          isOnHoliday = true
+                          break
+                        }
+                        current.setDate(current.getDate() + 1)
+                      }
+                    } else if (evt.end.dateTime) {
+                      const endDate = new Date(evt.end.dateTime)
+                      const start = new Date(evtDate)
+                      const current = new Date(start)
+                      while (current <= endDate && !isOnHoliday) {
+                        const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`
+                        if (holidayDates.has(dateStr)) {
+                          isOnHoliday = true
+                          break
+                        }
+                        current.setDate(current.getDate() + 1)
+                      }
+                    }
+                  }
+                  
+                  return isOnHoliday
+                }
+                
+                // Check if this office event is on a holiday date
+                const isOfficeEvent = event.calendarId.includes('5b18ulcjgibgffc35hbtmv6sfs')
+                const isOnHolidayDate = isOfficeEvent ? checkIfOnHolidayDate(event, eventDate) : false
+                
                 if (!existingEvent) {
                   // First time seeing this event, add it with normalized key
                   const eventKey = `${normalizedSummary}|${eventDate}`
-                  eventMap.set(eventKey, event)
+                  // If it's an office event on a holiday date, mark it as office closed
+                  const eventToAdd = isOfficeEvent && isOnHolidayDate 
+                    ? { ...event, isOfficeClosed: true }
+                    : event
+                  eventMap.set(eventKey, eventToAdd)
                 } else {
-                  // Duplicate found - check if it's in both office and holiday calendars
+                  // Duplicate found - check calendar types
                   const isExistingHoliday = existingEvent.calendarId.includes('holiday')
                   const isCurrentHoliday = event.calendarId.includes('holiday')
                   const isExistingOffice = existingEvent.calendarId.includes('5b18ulcjgibgffc35hbtmv6sfs')
                   const isCurrentOffice = event.calendarId.includes('5b18ulcjgibgffc35hbtmv6sfs')
                   
-                  // If event appears in both office and holiday calendars, mark it as "office closed" holiday
-                  // This means the office is closed for this holiday, so we only show it once with special color
-                  if ((isCurrentOffice && isExistingHoliday) || (isCurrentHoliday && isExistingOffice)) {
-                    // Create a merged event that indicates it's in both calendars (office closed)
-                    const mergedEvent = {
-                      ...(isCurrentOffice ? event : existingEvent), // Prefer the office event's details
-                      isOfficeClosed: true, // Flag to indicate office is closed
-                      // Use holiday calendar ID for color detection, but mark as office closed
-                      calendarId: isCurrentHoliday ? event.calendarId : existingEvent.calendarId
-                    }
-                    // Remove the old entry and add the merged one
+                  // If both are holidays, don't add (we don't show holidays)
+                  if (isCurrentHoliday && isExistingHoliday) {
+                    // Skip - we don't show holidays
+                  } else if (isCurrentHoliday) {
+                    // Current is holiday, existing is not - skip holiday (we don't show holidays)
+                  } else if (isExistingHoliday) {
+                    // Existing is holiday, current is not - replace with current (office event)
                     if (existingKey) {
                       eventMap.delete(existingKey)
                     }
                     const newKey = `${normalizedSummary}|${eventDate}`
-                    eventMap.set(newKey, mergedEvent)
+                    const eventToAdd = isCurrentOffice && isOnHolidayDate 
+                      ? { ...event, isOfficeClosed: true }
+                      : event
+                    eventMap.set(newKey, eventToAdd)
                   } else if (isCurrentOffice && isExistingOffice) {
                     // Both are office events, keep existing (don't add duplicate)
-                  } else if (isCurrentHoliday && isExistingHoliday) {
-                    // Both are holidays, keep existing (don't add duplicate)
+                    // But check if either event is on a holiday date and update accordingly
+                    const existingEventDate = getEventDate(existingEvent)
+                    const existingIsOnHoliday = checkIfOnHolidayDate(existingEvent, existingEventDate)
+                    const shouldBeOfficeClosed = isOnHolidayDate || existingIsOnHoliday
+                    
+                    if (shouldBeOfficeClosed && !(existingEvent as any).isOfficeClosed) {
+                      if (existingKey) {
+                        eventMap.delete(existingKey)
+                      }
+                      const newKey = `${normalizedSummary}|${eventDate}`
+                      eventMap.set(newKey, { ...existingEvent, isOfficeClosed: true })
+                    }
                   } else {
-                    // Different types but not the office+holiday combo, prefer office
+                    // Different types, prefer office
                     if (isCurrentOffice) {
                       if (existingKey) {
                         eventMap.delete(existingKey)
                       }
                       const newKey = `${normalizedSummary}|${eventDate}`
-                      eventMap.set(newKey, event)
+                      const eventToAdd = isOnHolidayDate 
+                        ? { ...event, isOfficeClosed: true }
+                        : event
+                      eventMap.set(newKey, eventToAdd)
                     }
                     // Otherwise keep existing
                   }
@@ -2350,15 +2456,11 @@ export default function TeamDashboard() {
               // Convert Map values to array
               const deduplicatedEvents = Array.from(eventMap.values())
               
-              // Filter out holidays that aren't also office events (only show holidays when office is closed)
+              // Filter out all holidays - we don't show holidays, only office events (which may be marked as office closed)
               const filteredDeduplicatedEvents = deduplicatedEvents.filter(event => {
                 const isHoliday = event.calendarId.includes('holiday')
-                // If it's a holiday, only show it if it's also marked as office closed
-                if (isHoliday) {
-                  return (event as any).isOfficeClosed === true
-                }
-                // Keep all non-holiday events
-                return true
+                // Don't show holidays at all
+                return !isHoliday
               })
               
               // Add birthdays and anniversaries at the top (only for week view)
@@ -2415,16 +2517,17 @@ export default function TeamDashboard() {
                 return mode === 'chaos' ? '#1B4D7C' : '#9D4EFF' // Navy from BLUE SYSTEM
               }
               
-              // Holidays - use different color if office is closed (event appears in both calendars)
-              if (calendarId.includes('holiday') || event.isOfficeClosed) {
-                if (event.isOfficeClosed) {
-                  // Office closed holiday - slightly darker/more saturated yellow
-                  return mode === 'chaos' ? '#FFA500' : '#FF8C00' // Orange-yellow to indicate office closed
-                }
-                return mode === 'chaos' ? '#FFD700' : '#FFC043' // Golden Yellow from BLUE SYSTEM contrast
+              // Office events on holiday dates (office closed) - check this before regular office events
+              if (event.isOfficeClosed) {
+                return mode === 'chaos' ? '#FFA500' : '#FF8C00' // Orange to indicate office closed
               }
               
               // Office events (default)
+              if (calendarId.includes('5b18ulcjgibgffc35hbtmv6sfs')) {
+                return mode === 'chaos' ? '#00A3E0' : '#00FF87' // Ocean from BLUE SYSTEM
+              }
+              
+              // Default fallback
               return mode === 'chaos' ? '#00A3E0' : '#00FF87' // Ocean from BLUE SYSTEM
             }
 
@@ -2631,7 +2734,7 @@ export default function TeamDashboard() {
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded" style={{ backgroundColor: mode === 'chaos' ? '#FFA500' : '#FF8C00' }}></div>
-                          <span className="text-[10px] text-black/80">Office Closed (Holidays)</span>
+                          <span className="text-[10px] text-black/80">Office Closed</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded" style={{ backgroundColor: mode === 'chaos' ? '#0EA5E9' : '#00FF87' }}></div>
@@ -2641,9 +2744,10 @@ export default function TeamDashboard() {
                     </div>
                     
                     {/* Calendar Container */}
-                    <div className={`${getRoundedClass('rounded-xl')} p-4 border-2 relative`} style={{ 
+                    <div className={`${getRoundedClass('rounded-xl')} border-2 relative`} style={{ 
                       backgroundColor: 'transparent',
-                      borderColor: mode === 'chaos' ? '#0EA5E9' : mode === 'chill' ? 'rgba(74, 24, 24, 0.2)' : '#FFFFFF'
+                      borderColor: mode === 'chaos' ? '#0EA5E9' : mode === 'chill' ? 'rgba(74, 24, 24, 0.2)' : '#FFFFFF',
+                      padding: '1rem'
                     }}>
                       {/* Day headers with dark blue background */}
                       {(() => {
@@ -2680,12 +2784,14 @@ export default function TeamDashboard() {
                       {(() => {
                         const hasBirthdaysOrAnniversaries = filteredEvents.some((e: any) => e.isBirthday || e.isAnniversary)
                         // Calculate top offset: if there are birthdays/anniversaries, start after them (top-20), otherwise start right after headers
-                        const topOffset = hasBirthdaysOrAnniversaries ? 'top-20' : 'top-0'
+                        // Header has pt-2 pb-3, so approximately 3.5rem from top of container
+                        const headerHeight = '3.5rem'
+                        const topOffset = hasBirthdaysOrAnniversaries ? 'top-20' : headerHeight
                         
                         return (
                           <>
                             {/* Background grid for vertical lines (behind events) */}
-                            <div className={`absolute inset-x-4 bottom-4 ${topOffset} pointer-events-none`}>
+                            <div className={`absolute inset-x-4 bottom-4 ${hasBirthdaysOrAnniversaries ? 'top-20' : ''} pointer-events-none`} style={hasBirthdaysOrAnniversaries ? {} : { top: headerHeight }}>
                               <div className="grid grid-cols-7 h-full">
                                 {Array.from({ length: 7 }).map((_, index) => (
                                   <div
@@ -2699,7 +2805,7 @@ export default function TeamDashboard() {
                             </div>
 
                             {/* Events as Gantt bars - use grid for aligned columns */}
-                            <div className={`space-y-2 relative z-10`}>
+                            <div className={`space-y-2 relative z-10`} style={{ marginTop: hasBirthdaysOrAnniversaries ? '0' : '0' }}>
                               {filteredEvents.map((event) => {
                           const eventColor = getEventColor(event)
                           const span = getEventSpan(event)
@@ -3791,8 +3897,7 @@ export default function TeamDashboard() {
           {(() => {
             const playlistStyle = mode === 'chaos' ? getSpecificCardStyle('playlist') : getCardStyle('vibes')
             return (
-              <Card className={`${playlistStyle.bg} ${playlistStyle.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}
-                    style={playlistStyle.glow ? { boxShadow: `0 0 40px ${playlistStyle.glow}` } : {}}
+              <Card id="playlist-section" className={`bg-transparent border-0 p-6 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}
               >
                 <div className="flex items-center gap-2 text-sm mb-3" style={{ color: playlistStyle.accent }}>
                   <Music className="w-4 h-4" />

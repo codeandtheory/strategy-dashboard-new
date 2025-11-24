@@ -343,3 +343,40 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// DELETE - Delete a playlist
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Playlist ID is required' },
+        { status: 400 }
+      )
+    }
+
+    const { error } = await supabase
+      .from('playlists')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error deleting playlist:', error)
+      return NextResponse.json(
+        { error: 'Failed to delete playlist' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error('Error in DELETE /api/playlists:', error)
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
