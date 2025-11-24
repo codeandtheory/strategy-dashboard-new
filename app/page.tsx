@@ -2551,11 +2551,11 @@ export default function TeamDashboard() {
               return (
                 <Card 
                   className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 flex flex-col`} 
-                  style={eventsExpanded ? { flex: '0 0 auto', minHeight: '0' } : { flex: '0 0 auto', height: 'auto', minHeight: '100px' }}
+                  style={eventsExpanded ? { flex: '0 0 auto', height: '280px', maxHeight: '280px' } : { flex: '0 0 auto', height: 'auto', minHeight: '100px' }}
                 >
                   {eventsExpanded ? (
                     /* Vertical stats view when expanded - Bold and clean */
-                    <div className="flex flex-col gap-2 h-full">
+                    <div className="flex flex-col gap-2">
                       <h2 className={`text-2xl font-black uppercase leading-none ${style.text} mb-3`}>THIS WEEK</h2>
                       {stats.map((stat, index) => (
                         <div key={stat.label} className="flex items-center justify-between">
