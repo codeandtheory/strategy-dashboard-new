@@ -188,6 +188,22 @@ export default function TeamDashboard() {
   // We're not using dynamic calendars to avoid personal calendars
   const [useDynamicCalendars, setUseDynamicCalendars] = useState(false)
 
+  // Check if we just authenticated to avoid double Google popup
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('just_authenticated') === 'true') {
+        // Set flag in sessionStorage so useGoogleCalendarToken can detect it
+        sessionStorage.setItem('just_authenticated', 'true')
+        sessionStorage.setItem('auth_timestamp', Date.now().toString())
+        // Remove the query parameter from URL without reload
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete('just_authenticated')
+        window.history.replaceState({}, '', newUrl.toString())
+      }
+    }
+  }, [])
+
   // Format today's date in user's timezone
   useEffect(() => {
     const updateDate = () => {
@@ -533,9 +549,11 @@ export default function TeamDashboard() {
         if (response.ok) {
           const result = await response.json()
           if (result.stats && Array.isArray(result.stats)) {
-            // Sort by position and extract title/value
+            // Filter to only positions 1-3, sort by position, and extract title/value
             const sorted = result.stats
+              .filter((stat: any) => stat.position >= 1 && stat.position <= 3)
               .sort((a: any, b: any) => a.position - b.position)
+              .slice(0, 3) // Ensure we only take 3 stats max
               .map((stat: any) => ({
                 position: stat.position,
                 title: stat.title || '',
@@ -2845,22 +2863,44 @@ export default function TeamDashboard() {
               const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
               const mintColor = mode === 'chaos' ? '#00A3E0' : '#00FF87' // Work section uses Ocean from BLUE SYSTEM
               // Use this week stats from API, or show loading/empty state
-              const stats = thisWeekStatsLoading 
-                ? [
-                    { value: '...', label: 'loading' },
-                    { value: '...', label: 'loading' },
-                    { value: '...', label: 'loading' },
-                  ]
-                : thisWeekStats.length > 0
-                ? thisWeekStats.map(stat => ({
+              // Only show exactly 3 stats - filter by position 1-3 and take first 3
+              let stats: Array<{ value: string; label: string }> = []
+              
+              if (thisWeekStatsLoading) {
+                stats = [
+                  { value: '...', label: 'loading' },
+                  { value: '...', label: 'loading' },
+                  { value: '...', label: 'loading' },
+                ]
+              } else if (thisWeekStats.length > 0) {
+                // Filter to only positions 1-3, sort, and take exactly 3
+                const filtered = thisWeekStats
+                  .filter(stat => stat.position >= 1 && stat.position <= 3)
+                  .sort((a, b) => a.position - b.position)
+                  .slice(0, 3)
+                  .map(stat => ({
                     value: stat.value,
                     label: stat.title,
                   }))
-                : [
-                    { value: '0', label: 'active projects' },
-                    { value: '0', label: 'new business' },
-                    { value: '0', label: 'pitches due' },
-                  ]
+                
+                // Ensure we have exactly 3 stats (pad with empty if needed)
+                while (filtered.length < 3) {
+                  filtered.push({ value: '0', label: '' })
+                }
+                // Strictly limit to exactly 3 stats
+                stats = filtered.slice(0, 3)
+                
+                // Debug: log if we have more than 3
+                if (filtered.length > 3) {
+                  console.warn('More than 3 stats detected, limiting to 3:', filtered.length)
+                }
+              } else {
+                stats = [
+                  { value: '0', label: 'active projects' },
+                  { value: '0', label: 'new business' },
+                  { value: '0', label: 'pitches due' },
+                ]
+              }
               return (
                 <Card 
                   className={`${style.bg} ${style.border} ${eventsExpanded ? 'p-6' : 'py-3 px-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 flex flex-col`} 
@@ -2871,9 +2911,9 @@ export default function TeamDashboard() {
                     <div className="flex flex-col gap-4 h-full">
                       <h2 className={`text-2xl font-black uppercase leading-none ${style.text}`}>THIS WEEK</h2>
                       <div className="flex items-center justify-between gap-4 flex-1">
-                      {stats.map((stat, index) => (
+                      {stats.slice(0, 3).map((stat, index) => (
                           <div 
-                            key={stat.label} 
+                            key={`stat-${index}-${stat.value}`} 
                             className="flex flex-col items-center justify-center flex-1"
                           >
                             <div 
@@ -2896,9 +2936,9 @@ export default function TeamDashboard() {
                     <div className="flex items-center justify-between gap-6 h-full">
                       <h2 className={`text-3xl font-black uppercase leading-none ${style.text} whitespace-nowrap`}>THIS WEEK</h2>
                       <div className="flex gap-4 items-center">
-                      {stats.map((stat, index) => (
+                      {stats.slice(0, 3).map((stat, index) => (
                         <div 
-                          key={stat.label} 
+                          key={`stat-${index}-${stat.value}`} 
                             className={`flex flex-row items-center justify-center px-4 py-3 gap-3 ${getRoundedClass('rounded-2xl')} transition-all duration-300`}
                           style={{
                             backgroundColor: mode === 'chaos' ? 'rgba(14, 165, 233, 0.25)' : mode === 'chill' ? 'rgba(74,24,24,0.15)' : 'rgba(0,0,0,0.25)',
@@ -3723,24 +3763,40 @@ export default function TeamDashboard() {
               <Card className={`${inspirationStyle.bg} ${inspirationStyle.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}
                     style={inspirationStyle.glow ? { boxShadow: `0 0 40px ${inspirationStyle.glow}` } : {}}
               >
-                <div className="flex items-center gap-2 text-sm mb-3" style={{ color: inspirationStyle.accent }}>
-                  <Lightbulb className="w-4 h-4" />
-                  <span className="uppercase tracking-wider font-black text-xs">TBD</span>
-                </div>
-                <h2 className={`text-3xl font-black mb-4 uppercase ${inspirationStyle.text}`}>INSPIRATION<br/>WAR</h2>
-                <div className="flex-1 flex items-center justify-center">
-                  <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-4 border-2 w-full`} style={{ borderColor: `${inspirationStyle.accent}40` }}>
-                    <p className={`text-sm font-black text-center ${inspirationStyle.text}`}>Coming Soon</p>
-                    <p className={`text-xs ${inspirationStyle.text}/60 text-center mt-2`}>Inspiration War section</p>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 text-sm mb-2" style={{ color: inspirationStyle.accent }}>
+                      <Lightbulb className="w-4 h-4" />
+                      <span className="uppercase tracking-wider font-black text-xs">Today's Theme</span>
+                    </div>
+                    <h2 className={`text-3xl font-black uppercase ${inspirationStyle.text}`}>INSPIRATION<br/>WAR</h2>
                   </div>
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: mode === 'chaos' ? '#1A1A1A' : mode === 'chill' ? '#4A1818' : '#000000' }}>
+                    <Sparkles className="w-6 h-6" style={{ color: inspirationStyle.accent }} />
+                  </div>
+                </div>
+                <div className={`${mode === 'chaos' ? 'bg-black/10 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/10'} rounded-2xl p-3 border-2 mb-4`} style={{ borderColor: `${inspirationStyle.accent}20` }}>
+                  <p className={`font-black text-sm text-center ${inspirationStyle.text}`}>Retro Futurism</p>
+                </div>
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  {[16, 15, 9, 9].map((votes, i) => (
+                    <div key={i} className={`${mode === 'chaos' ? 'bg-black/20 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/20'} rounded-2xl p-3 border-2 flex flex-col items-center justify-center hover:opacity-80 transition-all cursor-pointer group`} style={{ borderColor: `${inspirationStyle.accent}30` }}>
+                      <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">🎨</div>
+                      <p className={`text-xs font-black ${inspirationStyle.text}`}>~{votes}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <p className={`font-black ${inspirationStyle.text}`}>🎨 24 entries</p>
+                  <p className={`font-black ${inspirationStyle.text}`}>8h to vote</p>
                 </div>
               </Card>
             )
           })()}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 items-stretch">
-          {/* Loom Standup */}
+        {/* Loom Standup - Hidden for now */}
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 items-stretch">
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('loom-standup') : getCardStyle('team')
             const standupColors = mode === 'chaos'
@@ -3777,45 +3833,7 @@ export default function TeamDashboard() {
           </Card>
             )
           })()}
-
-          {/* Inspiration War */}
-          {(() => {
-            const style = mode === 'chaos' ? getSpecificCardStyle('inspiration-war') : getCardStyle('hero')
-            return (
-              <Card className={`${style.bg} ${style.border} p-8 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}
-                    style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
-              >
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                    <div className="flex items-center gap-2 text-sm mb-2" style={{ color: style.accent }}>
-                  <Lightbulb className="w-4 h-4" />
-                      <span className="uppercase tracking-wider font-black text-xs">Today's Theme</span>
-                </div>
-                    <h2 className={`text-4xl font-black uppercase ${style.text}`}>INSPIRATION<br/>WAR</h2>
-              </div>
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: mode === 'chaos' ? '#1A1A1A' : mode === 'chill' ? '#4A1818' : '#000000' }}>
-                    <Sparkles className="w-8 h-8" style={{ color: style.accent }} />
-              </div>
-            </div>
-                <div className={`${mode === 'chaos' ? 'bg-black/10 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/30' : 'bg-black/10'} rounded-2xl p-4 border-2 mb-6`} style={{ borderColor: `${style.accent}20` }}>
-                  <p className={`font-black text-lg text-center ${style.text}`}>Retro Futurism</p>
-            </div>
-            <div className="grid grid-cols-4 gap-3 mb-6">
-              {[16, 15, 9, 9].map((votes, i) => (
-                    <div key={i} className={`${mode === 'chaos' ? 'bg-black/20 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/20'} rounded-2xl p-4 border-2 flex flex-col items-center justify-center hover:opacity-80 transition-all cursor-pointer group`} style={{ borderColor: `${style.accent}30` }}>
-                  <div className="text-3xl mb-1 group-hover:scale-110 transition-transform">🎨</div>
-                      <p className={`text-xs font-black ${style.text}`}>~{votes}</p>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center justify-between text-sm">
-                  <p className={`font-black ${style.text}`}>🎨 24 entries</p>
-                  <p className={`font-black ${style.text}`}>8h to vote</p>
-            </div>
-          </Card>
-            )
-          })()}
-        </div>
+        </div> */}
 
 
         <Footer />
