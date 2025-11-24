@@ -30,9 +30,17 @@ export function useGoogleCalendarToken() {
   const [error, setError] = useState<string | null>(null)
   const [needsAuth, setNeedsAuth] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [isRequesting, setIsRequesting] = useState(false)
 
   useEffect(() => {
     async function getToken() {
+      // Prevent multiple simultaneous requests
+      if (isRequesting) {
+        console.log('⏸️ Google Calendar token request already in progress, skipping...')
+        return
+      }
+      
+      setIsRequesting(true)
       try {
         // Check cached token first
         const cachedToken = localStorage.getItem('google_calendar_token')
@@ -42,6 +50,16 @@ export function useGoogleCalendarToken() {
           console.log('✅ Using cached Google Calendar token')
           setAccessToken(cachedToken)
           setLoading(false)
+          setIsRequesting(false)
+          return
+        }
+        
+        // Check if user has previously denied access (prevent repeated popups)
+        const deniedAccess = sessionStorage.getItem('google_calendar_denied')
+        if (deniedAccess === 'true') {
+          console.log('ℹ️ User previously denied calendar access - skipping popup')
+          setLoading(false)
+          setIsRequesting(false)
           return
         }
 
@@ -52,6 +70,7 @@ export function useGoogleCalendarToken() {
         if (!session) {
           console.log('No Supabase session found')
           setLoading(false)
+          setIsRequesting(false)
           return
         }
 
@@ -113,6 +132,7 @@ export function useGoogleCalendarToken() {
         if (!clientId) {
           console.log('ℹ️ NEXT_PUBLIC_GOOGLE_CLIENT_ID not set - will use service account fallback')
           setLoading(false)
+          setIsRequesting(false)
           return
         }
 
@@ -139,6 +159,7 @@ export function useGoogleCalendarToken() {
         if (!window.google?.accounts?.oauth2) {
           console.log('ℹ️ Google Identity Services not available - will use service account fallback')
           setLoading(false)
+          setIsRequesting(false)
           return
         }
 
@@ -162,6 +183,9 @@ export function useGoogleCalendarToken() {
               setAccessToken(response.access_token)
               setNeedsAuth(false)
               setLoading(false)
+              setIsRequesting(false)
+              // Clear denied flag if user successfully granted access
+              sessionStorage.removeItem('google_calendar_denied')
             } else {
               console.error('No access token in GSI response:', response)
               // Check if it's a redirect URI error
@@ -169,11 +193,20 @@ export function useGoogleCalendarToken() {
                 setError(`Redirect URI mismatch. Please add "${currentOrigin}" to authorized JavaScript origins in Google Cloud Console.`)
               } else if (response.error === 'popup_closed_by_user') {
                 console.log('ℹ️ User closed the consent popup - will use service account fallback')
+                sessionStorage.setItem('google_calendar_denied', 'true')
                 setLoading(false)
+                setIsRequesting(false)
+                // Don't set error - allow fallback to service account
+              } else if (response.error === 'access_denied') {
+                console.log('ℹ️ User denied calendar access - will use service account fallback')
+                sessionStorage.setItem('google_calendar_denied', 'true')
+                setLoading(false)
+                setIsRequesting(false)
                 // Don't set error - allow fallback to service account
               } else {
                 setError('Failed to get calendar access token. User may have denied access.')
                 setLoading(false)
+                setIsRequesting(false)
               }
             }
           },
@@ -198,6 +231,7 @@ export function useGoogleCalendarToken() {
             setError(error.message || 'Failed to request calendar access')
           }
           setLoading(false)
+          setIsRequesting(false)
           return
         }
         
@@ -206,6 +240,7 @@ export function useGoogleCalendarToken() {
           if (!callbackFired) {
             console.log('ℹ️ GSI token request timed out - will use service account fallback')
             setLoading(false)
+            setIsRequesting(false)
             // Don't set error - allow fallback to service account
           }
         }, 30000) // 30 second timeout
@@ -213,21 +248,24 @@ export function useGoogleCalendarToken() {
         console.log('Could not get token:', error)
         setError(error.message)
         setLoading(false)
+        setIsRequesting(false)
       }
     }
     
     getToken()
-  }, [refreshTrigger])
+  }, [refreshTrigger, isRequesting])
 
   // Function to refresh the token (clears cache and requests new token)
   const refreshToken = () => {
     console.log('🔄 Refreshing Google Calendar token...')
-    // Clear cached token
+    // Clear cached token and denied flag
     localStorage.removeItem('google_calendar_token')
     localStorage.removeItem('google_calendar_token_expiry')
+    sessionStorage.removeItem('google_calendar_denied')
     setAccessToken(null)
     setError(null)
     setLoading(true)
+    setIsRequesting(false) // Reset requesting flag
     // Trigger useEffect to run again
     setRefreshTrigger(prev => prev + 1)
   }
