@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Calendar, Briefcase, Users, Upload, MapPin, Globe, FileText } from 'lucide-react'
+import { Loader2, Calendar, Briefcase, Users, Upload, MapPin, Globe, FileText, Download, Image as ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 import { LocationAutocomplete } from '@/components/location-autocomplete'
 import { AccountMenu } from '@/components/account-menu'
@@ -52,6 +52,23 @@ export default function ProfilePage() {
 
   const getRoundedClass = (defaultClass: string) => {
     return mode === 'code' ? 'rounded-none' : defaultClass
+  }
+
+  const getInputClass = () => {
+    switch (mode) {
+      case 'chaos': return 'bg-black/30 border-gray-600 text-white placeholder:text-gray-500'
+      case 'chill': return 'bg-white border-gray-300 text-[#4A1818] placeholder:text-gray-400'
+      case 'code': return 'bg-black/30 border-gray-600 text-white placeholder:text-gray-500'
+      default: return 'bg-black/30 border-gray-600 text-white placeholder:text-gray-500'
+    }
+  }
+
+  const getLabelClass = () => {
+    return `${getTextClass()} text-sm font-semibold mb-2 block`
+  }
+
+  const getHintClass = () => {
+    return `${getTextClass()}/60 text-xs mt-1`
   }
 
   const getLogoBg = () => {
@@ -107,6 +124,14 @@ export default function ProfilePage() {
   const [location, setLocation] = useState('')
   const [website, setWebsite] = useState('')
   const [discipline, setDiscipline] = useState('')
+  const [avatarGallery, setAvatarGallery] = useState<Array<{
+    name: string
+    url: string
+    created_at: string
+    updated_at: string
+    size: number
+  }>>([])
+  const [loadingAvatars, setLoadingAvatars] = useState(false)
   
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -168,6 +193,48 @@ export default function ProfilePage() {
       loadProfile()
     }
   }, [user, authLoading, supabase])
+
+  // Load avatar gallery
+  useEffect(() => {
+    async function loadAvatarGallery() {
+      if (!user) return
+      
+      setLoadingAvatars(true)
+      try {
+        const response = await fetch('/api/avatars/list')
+        if (response.ok) {
+          const result = await response.json()
+          setAvatarGallery(result.data || [])
+        }
+      } catch (err) {
+        console.error('Error loading avatar gallery:', err)
+      } finally {
+        setLoadingAvatars(false)
+      }
+    }
+    
+    if (!authLoading && user) {
+      loadAvatarGallery()
+    }
+  }, [user, authLoading])
+
+  const handleDownloadAvatar = async (avatarUrl: string, fileName: string) => {
+    try {
+      const response = await fetch(avatarUrl)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      console.error('Error downloading avatar:', err)
+      setError('Failed to download avatar')
+    }
+  }
   
   // Handle profile photo upload
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -372,9 +439,9 @@ export default function ProfilePage() {
   const displayAvatarUrl = avatarPreview || avatarUrl || user.user_metadata?.avatar_url || null
   
   return (
-    <div className={`min-h-screen flex flex-col ${getBgClass()} ${getTextClass()}`}>
+    <div className={`min-h-screen flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       <header className={`border-b ${getBorderClass()} px-6 py-4 fixed top-0 left-0 right-0 z-50 ${getBgClass()}`}>
-        <div className="max-w-[1200px] mx-auto flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className={`w-10 h-10 ${getLogoBg()} ${getLogoText()} ${getRoundedClass('rounded-xl')} flex items-center justify-center font-black text-lg ${mode === 'code' ? 'font-mono' : ''}`}>
               {mode === 'code' ? 'C:\\>' : 'D'}
@@ -394,14 +461,19 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-28">
-        <Card className={`p-8 ${getRoundedClass('rounded-[2.5rem]')}`}>
+      <main className="w-full px-6 py-10 flex-1 pt-28">
+        <div className="max-w-[1400px] mx-auto space-y-6">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Profile Settings</h1>
-            <p className="text-muted-foreground">
+            <h1 className={`text-4xl font-black uppercase ${getTextClass()} mb-2`}>PROFILE SETTINGS</h1>
+            <p className={`${getTextClass()}/70`}>
               Manage your profile information and preferences
             </p>
           </div>
+
+          <Card className={`p-8 ${getRoundedClass('rounded-[2.5rem]')} ${mode === 'chaos' ? 'bg-black border-[#C4F500]' : mode === 'chill' ? 'bg-white border-[#FFC043]/30' : 'bg-black border-white'}`}>
+            <div className="mb-8">
+              <h2 className={`text-2xl font-black uppercase ${getTextClass()} mb-2`}>PROFILE INFORMATION</h2>
+            </div>
 
           {/* Avatar Section with Upload */}
           <div className="mb-8 pb-8 border-b">
@@ -465,20 +537,28 @@ export default function ProfilePage() {
           </div>
           
           {error && (
-            <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-sm text-destructive">{error}</p>
+            <div className={`mb-4 p-4 ${getRoundedClass('rounded-lg')} border-2 ${
+              mode === 'chaos' ? 'bg-red-500/10 border-red-500/40' : 
+              mode === 'chill' ? 'bg-red-500/10 border-red-500/30' : 
+              'bg-red-500/10 border-red-500/40'
+            }`}>
+              <p className={`text-sm ${mode === 'chaos' ? 'text-red-400' : mode === 'chill' ? 'text-red-600' : 'text-red-400'}`}>{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="mb-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <p className="text-sm text-green-600 dark:text-green-400">{success}</p>
+            <div className={`mb-4 p-4 ${getRoundedClass('rounded-lg')} border-2 ${
+              mode === 'chaos' ? 'bg-green-500/10 border-green-500/40' : 
+              mode === 'chill' ? 'bg-green-500/10 border-green-500/30' : 
+              'bg-green-500/10 border-green-500/40'
+            }`}>
+              <p className={`text-sm ${mode === 'chaos' ? 'text-green-400' : mode === 'chill' ? 'text-green-600' : 'text-green-400'}`}>{success}</p>
             </div>
           )}
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <Label htmlFor="full-name" className="mb-2 block">
+              <Label htmlFor="full-name" className={getLabelClass()}>
                 Full Name
               </Label>
               <Input
@@ -487,12 +567,12 @@ export default function ProfilePage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Your full name"
-                className="w-full"
+                className={`w-full ${getInputClass()}`}
               />
             </div>
 
             <div>
-              <Label htmlFor="pronouns" className="mb-2 block">
+              <Label htmlFor="pronouns" className={getLabelClass()}>
                 Pronouns
               </Label>
               <Input
@@ -501,15 +581,15 @@ export default function ProfilePage() {
                 value={pronouns}
                 onChange={(e) => setPronouns(e.target.value)}
                 placeholder="e.g., she/her, he/him, they/them"
-                className="w-full"
+                className={`w-full ${getInputClass()}`}
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className={getHintClass()}>
                 Your pronouns (optional)
               </p>
             </div>
 
             <div>
-              <Label htmlFor="bio" className="flex items-center gap-2 mb-2">
+              <Label htmlFor="bio" className={`${getLabelClass()} flex items-center gap-2`}>
                 <FileText className="w-4 h-4" />
                 Bio
               </Label>
@@ -518,13 +598,13 @@ export default function ProfilePage() {
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Tell us about yourself..."
-                className="w-full min-h-[100px]"
+                className={`w-full min-h-[100px] ${getInputClass()}`}
                 rows={4}
               />
             </div>
 
             <div>
-              <Label htmlFor="birthday" className="flex items-center gap-2 mb-2">
+              <Label htmlFor="birthday" className={`${getLabelClass()} flex items-center gap-2`}>
                 <Calendar className="w-4 h-4" />
                 Birthday
               </Label>
@@ -546,15 +626,15 @@ export default function ProfilePage() {
                 }}
                 placeholder="MM/DD (e.g., 03/15)"
                 maxLength={5}
-                className="w-full"
+                className={`w-full ${getInputClass()}`}
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className={getHintClass()}>
                 Month and day only (required for horoscope generation)
               </p>
             </div>
 
             <div>
-              <Label htmlFor="start-date" className="flex items-center gap-2 mb-2">
+              <Label htmlFor="start-date" className={`${getLabelClass()} flex items-center gap-2`}>
                 <Calendar className="w-4 h-4" />
                 Start Date
               </Label>
@@ -563,15 +643,15 @@ export default function ProfilePage() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full"
+                className={`w-full ${getInputClass()}`}
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className={getHintClass()}>
                 Your start date (month, day, and year)
               </p>
             </div>
 
             <div>
-              <Label htmlFor="location" className="flex items-center gap-2 mb-2">
+              <Label htmlFor="location" className={`${getLabelClass()} flex items-center gap-2`}>
                 <MapPin className="w-4 h-4" />
                 Location
               </Label>
@@ -580,13 +660,13 @@ export default function ProfilePage() {
                 onChange={setLocation}
                 placeholder="Start typing a city or location..."
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className={getHintClass()}>
                 Start typing to see location suggestions
               </p>
             </div>
 
             <div>
-              <Label htmlFor="website" className="flex items-center gap-2 mb-2">
+              <Label htmlFor="website" className={`${getLabelClass()} flex items-center gap-2`}>
                 <Globe className="w-4 h-4" />
                 Website
               </Label>
@@ -596,15 +676,15 @@ export default function ProfilePage() {
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
                 placeholder="example.com or https://example.com"
-                className="w-full"
+                className={`w-full ${getInputClass()}`}
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className={getHintClass()}>
                 Your personal or professional website
               </p>
             </div>
             
             <div>
-              <Label htmlFor="discipline" className="flex items-center gap-2 mb-2">
+              <Label htmlFor="discipline" className={`${getLabelClass()} flex items-center gap-2`}>
                 <Users className="w-4 h-4" />
                 Discipline
               </Label>
@@ -614,9 +694,9 @@ export default function ProfilePage() {
                 value={discipline}
                 onChange={(e) => setDiscipline(e.target.value)}
                 placeholder="e.g., Design, Engineering, Marketing"
-                className="w-full"
+                className={`w-full ${getInputClass()}`}
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className={getHintClass()}>
                 Your department or team. This helps personalize your horoscope.
               </p>
             </div>
@@ -626,12 +706,14 @@ export default function ProfilePage() {
                 type="button"
                 variant="outline"
                 onClick={() => router.push('/')}
+                className={`${mode === 'chaos' ? 'border-[#C4F500] text-[#C4F500] hover:bg-[#C4F500]/10' : mode === 'chill' ? 'border-[#FFC043] text-[#FFC043] hover:bg-[#FFC043]/10' : 'border-white text-white hover:bg-white/10'}`}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={saving}
+                className={`${mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' : mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' : 'bg-white text-black hover:bg-white/80'}`}
               >
                 {saving ? (
                   <>
@@ -644,7 +726,70 @@ export default function ProfilePage() {
               </Button>
             </div>
           </form>
-        </Card>
+          </Card>
+
+          {/* Avatar Gallery */}
+          <Card className={`p-8 ${getRoundedClass('rounded-[2.5rem]')} ${mode === 'chaos' ? 'bg-black border-[#C4F500]' : mode === 'chill' ? 'bg-white border-[#FFC043]/30' : 'bg-black border-white'}`}>
+            <div className="mb-6">
+              <h2 className={`text-2xl font-black uppercase ${getTextClass()} mb-2 flex items-center gap-2`}>
+                <ImageIcon className="w-6 h-6" />
+                AVATAR GALLERY
+              </h2>
+              <p className={`${getTextClass()}/70 text-sm`}>
+                Previously generated avatars you can download
+              </p>
+            </div>
+
+            {loadingAvatars ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className={`w-6 h-6 animate-spin ${getTextClass()}`} />
+              </div>
+            ) : avatarGallery.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {avatarGallery.map((avatar, index) => (
+                  <div
+                    key={index}
+                    className={`relative group ${getRoundedClass('rounded-xl')} overflow-hidden border-2 ${
+                      mode === 'chaos' ? 'border-[#C4F500]/40' : 
+                      mode === 'chill' ? 'border-[#FFC043]/30' : 
+                      'border-white/20'
+                    }`}
+                  >
+                    <img
+                      src={avatar.url}
+                      alt={`Avatar ${index + 1}`}
+                      className="w-full aspect-square object-cover"
+                    />
+                    <div className={`absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center ${getRoundedClass('rounded-xl')}`}>
+                      <Button
+                        size="sm"
+                        onClick={() => handleDownloadAvatar(avatar.url, avatar.name)}
+                        className={`${mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' : mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' : 'bg-white text-black hover:bg-white/80'}`}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                    {avatar.name.includes('horoscope') && (
+                      <div className={`absolute top-2 right-2 px-2 py-1 ${getRoundedClass('rounded-md')} text-xs font-bold ${
+                        mode === 'chaos' ? 'bg-[#C4F500] text-black' : 
+                        mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818]' : 
+                        'bg-white text-black'
+                      }`}>
+                        Horoscope
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={`text-center py-12 ${getTextClass()}/60`}>
+                <ImageIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No avatars found. Upload a photo or generate a horoscope avatar to see them here.</p>
+              </div>
+            )}
+          </Card>
+        </div>
       </main>
     </div>
   )
