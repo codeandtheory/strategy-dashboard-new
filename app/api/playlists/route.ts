@@ -120,6 +120,28 @@ export async function GET(request: NextRequest) {
     const playlistsArray = Array.isArray(playlists) ? playlists : []
     console.log(`[API] Found ${playlistsArray.length} playlist(s) in database`)
 
+    // Look up curator avatars from profiles table (always get latest from profiles)
+    for (const playlist of playlistsArray) {
+      if (playlist.curator) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('avatar_url, full_name, email')
+            .or(`full_name.ilike.%${playlist.curator}%,email.ilike.%${playlist.curator}%`)
+            .limit(1)
+            .single()
+          
+          if (profile?.avatar_url) {
+            // Always use the latest avatar from profiles table
+            playlist.curator_photo_url = profile.avatar_url
+          }
+        } catch (err) {
+          // Silently continue if lookup fails
+          console.log(`[API] Could not find avatar for curator: ${playlist.curator}`)
+        }
+      }
+    }
+
     // If refresh is requested and we have playlists with Spotify URLs but missing metadata
     if (refreshSpotify && playlistsArray.length > 0) {
       const playlistsToRefresh = playlistsArray.filter(
