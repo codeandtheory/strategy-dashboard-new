@@ -2118,26 +2118,29 @@ export default function TeamDashboard() {
                 
                 // Process anniversaries (work start date)
                 if (profile.start_date) {
-                  const startDate = new Date(profile.start_date)
-                  const startMonth = startDate.getMonth() + 1
-                  const startDay = startDate.getDate()
-                  
-                  const anniversaryThisYear = new Date(currentYear, startMonth - 1, startDay)
-                  anniversaryThisYear.setHours(0, 0, 0, 0)
-                  
-                  // Check if anniversary falls in the week
-                  if (anniversaryThisYear >= weekStart && anniversaryThisYear < weekEnd) {
-                    const dateStr = `${currentYear}-${String(startMonth).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
-                    const years = currentYear - startDate.getFullYear()
-                    events.push({
-                      id: `anniversary-${profile.id}-${dateStr}`,
-                      summary: `🎉 ${profile.full_name || 'Unknown'} (${years} year${years !== 1 ? 's' : ''})`,
-                      start: { date: dateStr },
-                      end: { date: dateStr },
-                      calendarId: 'anniversaries',
-                      calendarName: 'Anniversaries',
-                      isAnniversary: true
-                    })
+                  // Parse start_date as local date (YYYY-MM-DD format)
+                  const [year, month, day] = profile.start_date.split('-').map(Number)
+                  if (year && month && day) {
+                    const startMonth = month
+                    const startDay = day
+                    
+                    const anniversaryThisYear = new Date(currentYear, startMonth - 1, startDay)
+                    anniversaryThisYear.setHours(0, 0, 0, 0)
+                    
+                    // Check if anniversary falls in the week
+                    if (anniversaryThisYear >= weekStart && anniversaryThisYear < weekEnd) {
+                      const dateStr = `${currentYear}-${String(startMonth).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
+                      const years = currentYear - year
+                      events.push({
+                        id: `anniversary-${profile.id}-${dateStr}`,
+                        summary: `🎉 ${profile.full_name || 'Unknown'} (${years} year${years !== 1 ? 's' : ''})`,
+                        start: { date: dateStr },
+                        end: { date: dateStr },
+                        calendarId: 'anniversaries',
+                        calendarName: 'Anniversaries',
+                        isAnniversary: true
+                      })
+                    }
                   }
                 }
               })
@@ -2253,8 +2256,8 @@ export default function TeamDashboard() {
               // Convert Map values to array and sort by start time
               const deduplicatedEvents = Array.from(eventMap.values())
               
-              // Add birthdays and anniversaries at the top
-              const birthdaysAndAnniversaries = getBirthdaysAndAnniversaries()
+              // Add birthdays and anniversaries at the top (only for week view)
+              const birthdaysAndAnniversaries = eventsExpanded ? getBirthdaysAndAnniversaries() : []
               
               // Combine and sort: birthdays/anniversaries first, then other events
               const allEvents = [...birthdaysAndAnniversaries, ...deduplicatedEvents].sort((a, b) => {
@@ -2266,8 +2269,8 @@ export default function TeamDashboard() {
                 if (!aIsSpecial && bIsSpecial) return 1
                 
                 // Within same category, sort by date
-                const aStart = a.start.dateTime ? new Date(a.start.dateTime) : new Date(a.start.date || 0)
-                const bStart = b.start.dateTime ? new Date(b.start.dateTime) : new Date(b.start.date || 0)
+                const aStart = a.start.dateTime ? new Date(a.start.dateTime) : (a.start.date ? new Date(a.start.date) : new Date(0))
+                const bStart = b.start.dateTime ? new Date(b.start.dateTime) : (b.start.date ? new Date(b.start.date) : new Date(0))
                 return aStart.getTime() - bStart.getTime()
               })
               
@@ -2565,7 +2568,7 @@ export default function TeamDashboard() {
                       
                       {/* Background grid for vertical lines (behind events) */}
                       <div className="absolute inset-x-4 bottom-4 top-20 pointer-events-none">
-                        <div className="grid grid-cols-7 gap-x-1 h-full">
+                        <div className="grid grid-cols-7 h-full">
                           {Array.from({ length: 7 }).map((_, index) => (
                             <div
                               key={index}
@@ -2603,8 +2606,8 @@ export default function TeamDashboard() {
                           
                           return (
                             <div key={event.id} className="relative mb-2">
-                              {/* Event bar spanning days - use grid for aligned columns with padding */}
-                              <div className="grid grid-cols-7 gap-x-1">
+                              {/* Event bar spanning days - continuous line with padding only on edges */}
+                              <div className="grid grid-cols-7">
                                 {getWeekDays().map((day, index) => {
                                   const isInSpan = index >= span.startDay && index <= span.endDay
                                   if (!isInSpan) {
@@ -2626,9 +2629,9 @@ export default function TeamDashboard() {
                                       style={{ 
                                         backgroundColor: `${eventColor}88`,
                                         borderLeft: isStart ? `3px solid ${eventColor}` : 'none',
-                                        // Add padding: left padding on start, right padding on end
-                                        paddingLeft: isStart ? '0.75rem' : '0.25rem',
-                                        paddingRight: isEnd ? '0.75rem' : '0.25rem',
+                                        // Only add padding on the far left and far right edges
+                                        paddingLeft: isStart ? '0.5rem' : '0',
+                                        paddingRight: isEnd ? '0.5rem' : '0',
                                       }}
                                     >
                                       {isStart && (
