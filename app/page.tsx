@@ -161,6 +161,12 @@ export default function TeamDashboard() {
     created_at: string
   }>>([])
   const [mustReadsLoading, setMustReadsLoading] = useState(true)
+  const [profiles, setProfiles] = useState<Array<{
+    id: string
+    full_name: string | null
+    birthday: string | null
+    start_date: string | null
+  }>>([])
   
   // Get Google Calendar access token using the user's existing Google session
   const { accessToken: googleCalendarToken, loading: tokenLoading, error: tokenError } = useGoogleCalendarToken()
@@ -645,6 +651,30 @@ export default function TeamDashboard() {
     
     fetchSnaps()
   }, [user, snapViewType])
+
+  // Fetch profiles for birthdays and anniversaries
+  useEffect(() => {
+    async function fetchProfiles() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, birthday, start_date')
+          .or('birthday.not.is.null,start_date.not.is.null')
+        
+        if (error) {
+          console.error('Error fetching profiles:', error)
+          return
+        }
+        
+        setProfiles(data || [])
+      } catch (error) {
+        console.error('Error fetching profiles:', error)
+      }
+    }
+    
+    fetchProfiles()
+  }, [])
 
   // Fetch user's calendars dynamically (if token is available)
   useEffect(() => {
@@ -2044,6 +2074,77 @@ export default function TeamDashboard() {
             const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
             const weekEnd = new Date(todayStart.getTime() + 7 * 24 * 60 * 60 * 1000)
             
+            // Calculate birthdays and anniversaries for the week
+            const getBirthdaysAndAnniversaries = () => {
+              const events: Array<{
+                id: string
+                summary: string
+                start: { date: string }
+                end: { date: string }
+                calendarId: string
+                calendarName: string
+                isBirthday?: boolean
+                isAnniversary?: boolean
+              }> = []
+              
+              const currentYear = now.getFullYear()
+              const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+              weekStart.setHours(0, 0, 0, 0)
+              const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
+              
+              profiles.forEach(profile => {
+                // Process birthdays
+                if (profile.birthday) {
+                  const [month, day] = profile.birthday.split('/').map(Number)
+                  if (month && day) {
+                    const birthdayThisYear = new Date(currentYear, month - 1, day)
+                    birthdayThisYear.setHours(0, 0, 0, 0)
+                    
+                    // Check if birthday falls in the week
+                    if (birthdayThisYear >= weekStart && birthdayThisYear < weekEnd) {
+                      const dateStr = `${currentYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                      events.push({
+                        id: `birthday-${profile.id}-${dateStr}`,
+                        summary: `🎂 ${profile.full_name || 'Unknown'}`,
+                        start: { date: dateStr },
+                        end: { date: dateStr },
+                        calendarId: 'birthdays',
+                        calendarName: 'Birthdays',
+                        isBirthday: true
+                      })
+                    }
+                  }
+                }
+                
+                // Process anniversaries (work start date)
+                if (profile.start_date) {
+                  const startDate = new Date(profile.start_date)
+                  const startMonth = startDate.getMonth() + 1
+                  const startDay = startDate.getDate()
+                  
+                  const anniversaryThisYear = new Date(currentYear, startMonth - 1, startDay)
+                  anniversaryThisYear.setHours(0, 0, 0, 0)
+                  
+                  // Check if anniversary falls in the week
+                  if (anniversaryThisYear >= weekStart && anniversaryThisYear < weekEnd) {
+                    const dateStr = `${currentYear}-${String(startMonth).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`
+                    const years = currentYear - startDate.getFullYear()
+                    events.push({
+                      id: `anniversary-${profile.id}-${dateStr}`,
+                      summary: `🎉 ${profile.full_name || 'Unknown'} (${years} year${years !== 1 ? 's' : ''})`,
+                      start: { date: dateStr },
+                      end: { date: dateStr },
+                      calendarId: 'anniversaries',
+                      calendarName: 'Anniversaries',
+                      isAnniversary: true
+                    })
+                  }
+                }
+              })
+              
+              return events
+            }
+
             // Filter events and deduplicate
             const filteredEvents = (() => {
               // First, filter events by date range
@@ -2151,13 +2252,28 @@ export default function TeamDashboard() {
               
               // Convert Map values to array and sort by start time
               const deduplicatedEvents = Array.from(eventMap.values())
-              return deduplicatedEvents.sort((a, b) => {
+              
+              // Add birthdays and anniversaries at the top
+              const birthdaysAndAnniversaries = getBirthdaysAndAnniversaries()
+              
+              // Combine and sort: birthdays/anniversaries first, then other events
+              const allEvents = [...birthdaysAndAnniversaries, ...deduplicatedEvents].sort((a, b) => {
+                // Birthdays and anniversaries always come first
+                const aIsSpecial = (a as any).isBirthday || (a as any).isAnniversary
+                const bIsSpecial = (b as any).isBirthday || (b as any).isAnniversary
+                
+                if (aIsSpecial && !bIsSpecial) return -1
+                if (!aIsSpecial && bIsSpecial) return 1
+                
+                // Within same category, sort by date
                 const aStart = a.start.dateTime ? new Date(a.start.dateTime) : new Date(a.start.date || 0)
                 const bStart = b.start.dateTime ? new Date(b.start.dateTime) : new Date(b.start.date || 0)
                 return aStart.getTime() - bStart.getTime()
               })
+              
+              return allEvents
             })()
-            
+
             // Format time for display
             const formatEventTime = (event: typeof calendarEvents[0]) => {
               if (event.start.dateTime) {
@@ -2170,8 +2286,16 @@ export default function TeamDashboard() {
             }
 
             // Get event color based on calendar type
-            const getEventColor = (event: typeof calendarEvents[0] & { isOfficeClosed?: boolean }) => {
+            const getEventColor = (event: typeof calendarEvents[0] & { isOfficeClosed?: boolean; isBirthday?: boolean; isAnniversary?: boolean }) => {
               const calendarId = event.calendarId
+              
+              // Birthdays and anniversaries
+              if (event.isBirthday) {
+                return '#FFB6C1' // Light pink for birthdays
+              }
+              if (event.isAnniversary) {
+                return '#FFD700' // Gold for anniversaries
+              }
               
               // Out of office (both calendars)
               if (calendarId.includes('6elnqlt8ok3kmcpim2vge0qqqk') || calendarId.includes('ojeuiov0bhit2k17g8d6gj4i68')) {
@@ -2577,30 +2701,111 @@ export default function TeamDashboard() {
                           .filter(Boolean)
                       ))
                       
-                      if (oooPeople.length > 0) {
-                        return (
-                          <div className="space-y-2">
-                            <p className="text-xs uppercase tracking-wider font-black text-black/70 mb-2">Out of Office Today</p>
-                            <div className={`${getRoundedClass('rounded-lg')} p-4`} style={{ backgroundColor: '#FF6B6B20' }}>
-                              <div className="flex flex-wrap gap-2.5">
-                                {oooPeople.map((name, idx) => (
-                                  <span 
-                                    key={idx}
-                                    className={`text-sm font-semibold px-3 py-1.5 ${getRoundedClass('rounded-md')}`}
-                                    style={{ 
-                                      backgroundColor: '#FF6B6B',
-                                      color: '#FFFFFF',
-                                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
-                                    }}
-                                  >
-                                    {name}
-                                  </span>
-                                ))}
+                      // Get birthdays and anniversaries for today
+                      const todayBirthdays: string[] = []
+                      const todayAnniversaries: Array<{ name: string; years: number }> = []
+                      
+                      const currentYear = now.getFullYear()
+                      const todayMonth = now.getMonth() + 1
+                      const todayDay = now.getDate()
+                      
+                      profiles.forEach(profile => {
+                        // Check birthdays
+                        if (profile.birthday) {
+                          const [month, day] = profile.birthday.split('/').map(Number)
+                          if (month === todayMonth && day === todayDay) {
+                            todayBirthdays.push(profile.full_name || 'Unknown')
+                          }
+                        }
+                        
+                        // Check anniversaries
+                        if (profile.start_date) {
+                          const startDate = new Date(profile.start_date)
+                          const startMonth = startDate.getMonth() + 1
+                          const startDay = startDate.getDate()
+                          
+                          if (startMonth === todayMonth && startDay === todayDay) {
+                            const years = currentYear - startDate.getFullYear()
+                            todayAnniversaries.push({
+                              name: profile.full_name || 'Unknown',
+                              years
+                            })
+                          }
+                        }
+                      })
+                      
+                      return (
+                        <div className="space-y-4">
+                          {oooPeople.length > 0 && (
+                            <div className="space-y-2">
+                              <p className="text-xs uppercase tracking-wider font-black text-black/70 mb-2">Out of Office Today</p>
+                              <div className={`${getRoundedClass('rounded-lg')} p-4`} style={{ backgroundColor: '#FF6B6B20' }}>
+                                <div className="flex flex-wrap gap-2.5">
+                                  {oooPeople.map((name, idx) => (
+                                    <span 
+                                      key={idx}
+                                      className={`text-sm font-semibold px-3 py-1.5 ${getRoundedClass('rounded-md')}`}
+                                      style={{ 
+                                        backgroundColor: '#FF6B6B',
+                                        color: '#FFFFFF',
+                                        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                                      }}
+                                    >
+                                      {name}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )
-                      }
+                          )}
+                          
+                          {todayBirthdays.length > 0 && (
+                            <div className="space-y-2">
+                              <p className="text-xs uppercase tracking-wider font-black text-black/70 mb-2">🎂 Birthdays Today</p>
+                              <div className={`${getRoundedClass('rounded-lg')} p-4`} style={{ backgroundColor: '#FFB6C120' }}>
+                                <div className="flex flex-wrap gap-2.5">
+                                  {todayBirthdays.map((name, idx) => (
+                                    <span 
+                                      key={idx}
+                                      className={`text-sm font-semibold px-3 py-1.5 ${getRoundedClass('rounded-md')}`}
+                                      style={{ 
+                                        backgroundColor: '#FFB6C1',
+                                        color: '#000000',
+                                        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                                      }}
+                                    >
+                                      {name}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {todayAnniversaries.length > 0 && (
+                            <div className="space-y-2">
+                              <p className="text-xs uppercase tracking-wider font-black text-black/70 mb-2">🎉 Anniversaries Today</p>
+                              <div className={`${getRoundedClass('rounded-lg')} p-4`} style={{ backgroundColor: '#FFD70020' }}>
+                                <div className="flex flex-wrap gap-2.5">
+                                  {todayAnniversaries.map((item, idx) => (
+                                    <span 
+                                      key={idx}
+                                      className={`text-sm font-semibold px-3 py-1.5 ${getRoundedClass('rounded-md')}`}
+                                      style={{ 
+                                        backgroundColor: '#FFD700',
+                                        color: '#000000',
+                                        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+                                      }}
+                                    >
+                                      {item.name} ({item.years} year{item.years !== 1 ? 's' : ''})
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
                       return null
                     })()}
                     
@@ -2642,7 +2847,6 @@ export default function TeamDashboard() {
                     { value: '...', label: 'loading' },
                     { value: '...', label: 'loading' },
                     { value: '...', label: 'loading' },
-                    { value: '...', label: 'loading' },
                   ]
                 : thisWeekStats.length > 0
                 ? thisWeekStats.map(stat => ({
@@ -2653,7 +2857,6 @@ export default function TeamDashboard() {
                     { value: '0', label: 'active projects' },
                     { value: '0', label: 'new business' },
                     { value: '0', label: 'pitches due' },
-                    { value: '0', label: 'active clients' },
                   ]
               return (
                 <Card 
