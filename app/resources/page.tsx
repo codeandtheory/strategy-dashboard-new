@@ -7,9 +7,7 @@ import { SiteHeader } from '@/components/site-header'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Search, ExternalLink, BookOpen, Loader2, Clock, TrendingUp, ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react'
-import Link from 'next/link'
+import { Search, ExternalLink, BookOpen, Loader2, Clock, TrendingUp, ArrowUp, ArrowDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Footer } from '@/components/footer'
@@ -46,7 +44,6 @@ export default function ResourcesPage() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [sortBy, setSortBy] = useState<'name' | 'category' | 'source' | 'views'>('name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
-  const [showFilters, setShowFilters] = useState(false)
 
   // Dashboard styling helpers
   const getBgClass = () => {
@@ -252,11 +249,11 @@ export default function ResourcesPage() {
 
   const getSortIcon = (field: 'name' | 'category' | 'source' | 'views') => {
     if (sortBy !== field) {
-      return <ArrowUpDown className="w-3 h-3 text-gray-400" />
+      return null
     }
     return sortOrder === 'asc' 
-      ? <ArrowUp className="w-3 h-3 text-gray-700" />
-      : <ArrowDown className="w-3 h-3 text-gray-700" />
+      ? <ArrowUp className="w-4 h-4" />
+      : <ArrowDown className="w-4 h-4" />
   }
 
   // Don't show full loading screen - render page structure immediately
@@ -268,300 +265,269 @@ export default function ResourcesPage() {
     <div className={`flex flex-col min-h-screen ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       <SiteHeader />
 
-      {/* Main Content */}
-      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24 w-full">
+      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
+        {loading && (
+          <div className="text-center py-8 mb-8">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: orangeColors.primary }} />
+            <p className={getTextClass()}>Loading resources...</p>
+          </div>
+        )}
         <div className="flex gap-6">
-          {/* Main Content Area */}
-          <div className="flex-1">
-            {/* Header with Title, Search, and Filters */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-8">
-                <h1 className={`text-4xl font-black uppercase ${getTextClass()}`}>RESOURCES</h1>
-                <div className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>
-                  {loading ? 'Loading...' : `${filteredResources.length} ${filteredResources.length === 1 ? 'resource' : 'resources'}`}
-                </div>
-              </div>
-
-              {/* Search Bar */}
-              <div className="relative mb-6">
-                <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`} />
-                <Input
-                  type="text"
-                  placeholder="Search resources..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`pl-12 pr-4 py-3 ${getRoundedClass('rounded-xl')} ${mode === 'chill' ? 'bg-white border-[#4A1818]/20' : mode === 'chaos' ? 'bg-[#2A2A2A] border-[#333333]' : 'bg-[#1a1a1a] border-white'} ${getTextClass()} text-base`}
-                />
-              </div>
-
-              {/* Filter and Sort Controls */}
-              <div className="flex flex-wrap items-center gap-4">
-                {/* Filter Buttons */}
-                <div className="flex flex-wrap gap-2 flex-1">
-                  {filters.map((filter) => (
-                    <button
-                      key={filter}
-                      onClick={() => setActiveFilter(filter)}
-                      className={`px-4 py-2 ${getRoundedClass('rounded-xl')} font-semibold uppercase text-sm transition-all ${
-                        activeFilter === filter
-                          ? `text-white`
-                          : mode === 'chill'
-                          ? 'text-[#4A1818]/60 hover:text-[#4A1818]'
-                          : 'text-white/60 hover:text-white'
-                      }`}
-                      style={{
-                        backgroundColor: activeFilter === filter ? orangeColors.primary : 'transparent',
-                        border: activeFilter === filter ? 'none' : `2px solid ${mode === 'chill' ? '#4A1818/20' : '#333333'}`
-                      }}
-                    >
-                      {getFilterDisplayName(filter)}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Sort Dropdown */}
-                <div className="flex items-center gap-2">
-                  <ArrowUpDown className={`w-4 h-4 ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`} />
-                  <select
-                    value={`${sortBy}-${sortOrder}`}
-                    onChange={(e) => {
-                      const [field, order] = e.target.value.split('-')
-                      setSortBy(field as 'name' | 'category' | 'source' | 'views')
-                      setSortOrder(order as 'asc' | 'desc')
-                    }}
-                    className={`h-12 px-4 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
-                      mode === 'chill' 
-                        ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-[#FFC043]' 
-                        : mode === 'chaos'
-                        ? 'bg-black/30 border-gray-600 text-white focus:ring-white'
-                        : 'bg-black/30 border-gray-600 text-white focus:ring-white'
-                    }`}
-                  >
-                    <option value="name-asc">Name (A-Z)</option>
-                    <option value="name-desc">Name (Z-A)</option>
-                    <option value="category-asc">Category (A-Z)</option>
-                    <option value="category-desc">Category (Z-A)</option>
-                    <option value="source-asc">Source (A-Z)</option>
-                    <option value="source-desc">Source (Z-A)</option>
-                    <option value="views-desc">Most Viewed</option>
-                    <option value="views-asc">Least Viewed</option>
-                  </select>
+          {/* Left Sidebar Card */}
+          <Card className={`w-80 ${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
+            borderColor: mode === 'chaos' ? orangeColors.primary : mode === 'chill' ? orangeColors.primaryPair : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
+          }}>
+            {/* Filters Section */}
+            <div className="mb-6">
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#FF8C42]' : 'text-white'}`}>
+                ▼ FILTERS
+              </h3>
+              <div className="space-y-2">
+                {filters.map((filter) => (
                   <button
-                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                    className={`h-12 px-4 ${getRoundedClass('rounded-xl')} border flex items-center justify-center transition-colors ${
-                      mode === 'chill' 
-                        ? 'bg-white border-gray-300 text-[#4A1818] hover:bg-gray-50' 
+                    key={filter}
+                    onClick={() => setActiveFilter(filter)}
+                    className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                      activeFilter === filter
+                        ? mode === 'chaos'
+                          ? 'bg-[#FF8C42] text-black'
+                          : mode === 'chill'
+                          ? 'bg-[#FF8C42] text-white'
+                          : 'bg-white text-black'
                         : mode === 'chaos'
-                        ? 'bg-black/30 border-gray-600 text-white hover:bg-black/50'
-                        : 'bg-black/30 border-gray-600 text-white hover:bg-black/50'
+                        ? 'bg-[#FF8C42]/30 text-white/80 hover:bg-[#FF8C42]/50 text-white'
+                        : mode === 'chill'
+                        ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                        : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                     }`}
-                    title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
                   >
-                    {sortOrder === 'asc' ? (
-                      <ArrowUp className="w-4 h-4" />
-                    ) : (
-                      <ArrowDown className="w-4 h-4" />
-                    )}
+                    <BookOpen className="w-4 h-4" />
+                    <span className="font-black uppercase text-sm">{getFilterDisplayName(filter)}</span>
                   </button>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Resource List Table */}
-            {loading ? (
-              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
-                <p className="text-gray-500 mt-4">Loading resources...</p>
+            {/* Divider */}
+            <div className={`h-px mb-6 ${mode === 'chaos' ? 'bg-[#FF8C42]/40' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`}></div>
+
+            {/* Sort Section */}
+            <div className="mb-6">
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-3 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#FF8C42]' : 'text-white'}`}>
+                Sort By
+              </h3>
+              <div className="space-y-2">
+                {(['name', 'category', 'source', 'views'] as const).map((field) => (
+                  <button
+                    key={field}
+                    onClick={() => handleSort(field)}
+                    className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center justify-between ${
+                      sortBy === field
+                        ? mode === 'chaos'
+                          ? 'bg-[#FF8C42] text-black'
+                          : mode === 'chill'
+                          ? 'bg-[#FF8C42] text-white'
+                          : 'bg-white text-black'
+                        : mode === 'chaos'
+                        ? 'bg-[#FF8C42]/30 text-white/80 hover:bg-[#FF8C42]/50 text-white'
+                        : mode === 'chill'
+                        ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                        : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
+                    }`}
+                  >
+                    <span className="font-black uppercase text-sm">
+                      {field === 'name' ? 'Name' : field === 'category' ? 'Category' : field === 'source' ? 'Source' : 'Views'}
+                    </span>
+                    {getSortIcon(field)}
+                  </button>
+                ))}
               </div>
-            ) : (
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th 
-                        className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                        onClick={() => handleSort('name')}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          Name
-                          {getSortIcon('name')}
-                        </div>
-                      </th>
-                      <th 
-                        className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                        onClick={() => handleSort('category')}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          Category
-                          {getSortIcon('category')}
-                        </div>
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Tags</th>
-                      <th 
-                        className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                        onClick={() => handleSort('source')}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          Source
-                          {getSortIcon('source')}
-                        </div>
-                      </th>
-                      <th 
-                        className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-12 cursor-pointer hover:bg-gray-100 transition-colors"
-                        onClick={() => handleSort('views')}
-                        title="View Count"
-                      >
-                        <div className="flex items-center justify-center gap-1.5">
-                          <TrendingUp className="w-3 h-3" />
-                          {getSortIcon('views')}
-                        </div>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filteredResources.map((resource) => (
-                      <tr
+            </div>
+
+            {/* Recently Viewed */}
+            {recentlyViewed.length > 0 && (
+              <>
+                <div className={`h-px mb-6 ${mode === 'chaos' ? 'bg-[#FF8C42]/40' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`}></div>
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className={`w-4 h-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#FF8C42]' : 'text-white'}`} />
+                    <h3 className={`font-bold uppercase text-xs ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#FF8C42]' : 'text-white'}`}>Recently Viewed</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {recentlyViewed.map((resource) => (
+                      <button
                         key={resource.id}
                         onClick={() => handleResourceClick(resource)}
-                        className="hover:bg-gray-50 cursor-pointer transition-colors"
+                        className="text-left w-full"
                       >
-                        <td className="px-4 py-2.5">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div 
-                              className={`w-6 h-6 ${getRoundedClass('rounded')} flex items-center justify-center flex-shrink-0`}
-                              style={{ backgroundColor: orangeColors.contrast }}
-                            >
-                              <BookOpen className="w-3 h-3 text-white" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="font-semibold text-sm text-gray-900 truncate">{resource.name}</div>
+                        <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/80 hover:text-[#4A1818]' : 'text-white/80 hover:text-white'} transition-colors line-clamp-1`}>{resource.name}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Most Used */}
+            {mostUsed.length > 0 && (
+              <div className={`mt-auto ${getRoundedClass('rounded-xl')} p-4`} style={{ 
+                backgroundColor: mode === 'chaos' ? orangeColors.primary : mode === 'chill' ? orangeColors.primary : orangeColors.primary
+              }}>
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                  <h3 className="text-xs uppercase tracking-wider font-black text-white">MOST USED</h3>
+                </div>
+                {mostUsed[0] && (
+                  <div className="mb-4">
+                    <p className="text-2xl font-black text-white mb-1 line-clamp-1">{mostUsed[0].name}</p>
+                    <p className="text-xs font-medium text-white/90">{mostUsed[0].view_count} views</p>
+                  </div>
+                )}
+                {mostUsed.length > 1 && (
+                  <div className="space-y-1">
+                    {mostUsed.slice(1, 4).map((resource) => (
+                      <button
+                        key={resource.id}
+                        onClick={() => handleResourceClick(resource)}
+                        className="text-left w-full"
+                      >
+                        <p className="text-xs text-white/90 hover:text-white transition-colors line-clamp-1">{resource.name}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col">
+            {/* Header */}
+            <div className="mb-6 flex items-center justify-between">
+              <h1 className={`text-4xl font-black uppercase ${getTextClass()}`}>RESOURCES</h1>
+              <div className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>
+                {loading ? 'Loading...' : `${filteredResources.length} ${filteredResources.length === 1 ? 'resource' : 'resources'}`}
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative mb-6">
+              <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`} />
+              <Input
+                type="text"
+                placeholder="Search resources..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`pl-12 pr-4 py-3 ${getRoundedClass('rounded-xl')} ${mode === 'chill' ? 'bg-white border-[#4A1818]/20' : mode === 'chaos' ? 'bg-[#2A2A2A] border-[#333333]' : 'bg-[#1a1a1a] border-white'} ${getTextClass()} text-base`}
+              />
+            </div>
+
+            {/* Resources List */}
+            <div className="space-y-2">
+              {filteredResources.length === 0 && !loading ? (
+                <Card className={`p-12 text-center ${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')}`}>
+                  <p className={getTextClass()}>
+                    {searchQuery ? 'No resources found matching your search.' : 'No resources found. Try adjusting your filters.'}
+                  </p>
+                </Card>
+              ) : (
+                <>
+                  {filteredResources.map((resource) => (
+                    <Card
+                      key={resource.id}
+                      onClick={() => handleResourceClick(resource)}
+                      className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4 shadow-sm cursor-pointer hover:opacity-90 transition-opacity`}
+                      style={{
+                        borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                        borderWidth: '1px'
+                      }}
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* Icon */}
+                        <div 
+                          className={`w-12 h-12 ${getRoundedClass('rounded-lg')} flex items-center justify-center flex-shrink-0`}
+                          style={{ backgroundColor: orangeColors.contrast }}
+                        >
+                          <BookOpen className="w-6 h-6 text-white" />
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-4 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className={`text-lg font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} mb-1`}>
+                                {resource.name}
+                              </h3>
                               {resource.description && (
-                                <div className="text-xs text-gray-500 mt-0.5 truncate max-w-md">{resource.description}</div>
+                                <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} line-clamp-2`}>
+                                  {resource.description}
+                                </p>
                               )}
                             </div>
+                            <ExternalLink className={`w-5 h-5 flex-shrink-0 ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'}`} />
                           </div>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <Badge 
-                            variant="outline"
-                            className={`${getRoundedClass('rounded')} text-xs px-2 py-0.5`}
-                            style={{ 
-                              borderColor: orangeColors.primaryPair,
-                              color: orangeColors.primaryPair,
-                              backgroundColor: 'transparent'
-                            }}
-                          >
-                            {resource.primary_category.split(' & ')[0]}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <div className="flex flex-wrap gap-1 max-w-xs">
+                          
+                          {/* Badges and Meta */}
+                          <div className="flex flex-wrap items-center gap-2 mt-3">
+                            <Badge 
+                              variant="outline"
+                              className={`${getRoundedClass('rounded')} text-xs px-2 py-0.5`}
+                              style={{ 
+                                borderColor: orangeColors.primaryPair,
+                                color: orangeColors.primaryPair,
+                                backgroundColor: 'transparent'
+                              }}
+                            >
+                              {resource.primary_category.split(' & ')[0]}
+                            </Badge>
+                            
                             {resource.secondary_tags.slice(0, 3).map((tag, idx) => (
                               <span
                                 key={idx}
-                                className={`text-xs px-1.5 py-0.5 ${getRoundedClass('rounded')} truncate`}
+                                className={`text-xs px-2 py-0.5 ${getRoundedClass('rounded')}`}
                                 style={{
                                   color: orangeColors.complementary,
-                                  backgroundColor: `${orangeColors.complementary}15`
+                                  backgroundColor: `${orangeColors.complementary}20`
                                 }}
                                 title={tag}
                               >
                                 {tag}
                               </span>
                             ))}
+                            
                             {resource.secondary_tags.length > 3 && (
-                              <span className="text-xs text-gray-400">+{resource.secondary_tags.length - 3}</span>
+                              <span className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'}`}>
+                                +{resource.secondary_tags.length - 3}
+                              </span>
                             )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          {resource.source && (
-                            <span className="text-xs text-gray-600 truncate block max-w-xs" title={resource.source}>{resource.source}</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5 text-center">
-                          <div className="flex items-center justify-center gap-2">
+                            
+                            {resource.source && (
+                              <span className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>
+                                • {resource.source}
+                              </span>
+                            )}
+                            
                             {resource.view_count > 0 && (
-                              <span className="text-xs text-gray-400">{resource.view_count}</span>
+                              <div className="flex items-center gap-1 ml-auto">
+                                <TrendingUp className={`w-3 h-3 ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'}`} />
+                                <span className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'}`}>
+                                  {resource.view_count}
+                                </span>
+                              </div>
                             )}
-                            <ExternalLink className="w-4 h-4 text-gray-400" />
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                </div>
-
-                {filteredResources.length === 0 && !loading && (
-                  <div className="text-center py-12">
-                    <p className="text-sm text-gray-500">
-                      No resources found. Try adjusting your search or filters.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Right Sidebar - Compact */}
-          <div className="w-64 space-y-4">
-            {/* Recently Viewed */}
-            {recentlyViewed.length > 0 && (
-              <Card className={`${getRoundedClass('rounded-lg')} p-4`} style={{ backgroundColor: orangeColors.primaryPair }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="w-4 h-4 text-white" />
-                  <h3 className="font-bold uppercase text-xs text-white">Recently Viewed</h3>
-                </div>
-                <div className="space-y-2">
-                  {recentlyViewed.map((resource) => (
-                    <button
-                      key={resource.id}
-                      onClick={() => handleResourceClick(resource)}
-                      className="text-left w-full"
-                    >
-                      <p className="text-xs text-white/90 hover:text-white transition-colors line-clamp-1">{resource.name}</p>
-                    </button>
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            {/* Most Used */}
-            {mostUsed.length > 0 && (
-              <Card className={`${getRoundedClass('rounded-lg')} p-4`} style={{ backgroundColor: orangeColors.contrast }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingUp className="w-4 h-4 text-white" />
-                  <h3 className="font-bold uppercase text-xs text-white">Most Used</h3>
-                </div>
-                <div className="space-y-2">
-                  {mostUsed.map((resource, idx) => (
-                    <div key={resource.id}>
-                      {idx === 0 && (
-                        <div 
-                          className={`${getRoundedClass('rounded')} p-2 mb-2`}
-                          style={{ backgroundColor: orangeColors.complementary }}
-                        >
-                          <p className="text-xs font-bold text-white line-clamp-1">{resource.name}</p>
-                          <p className="text-xs text-white/80 mt-0.5">{resource.view_count} views</p>
                         </div>
-                      )}
-                      {idx > 0 && (
-                        <button
-                          onClick={() => handleResourceClick(resource)}
-                          className="text-left w-full"
-                        >
-                          <p className="text-xs text-white/90 hover:text-white transition-colors line-clamp-1">{resource.name}</p>
-                        </button>
-                      )}
-                    </div>
+                      </div>
+                    </Card>
                   ))}
-                </div>
-              </Card>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
+        
+        <Footer />
       </main>
     </div>
   )
