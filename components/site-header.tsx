@@ -92,10 +92,11 @@ export function SiteHeader({ rightContent }: SiteHeaderProps = {}) {
           </Link>
           <nav className="flex items-center gap-6">
             <Link href="/" className={getNavLinkClass(isActive('/'))}>HOME</Link>
-            <Link href="/snaps" className={getNavLinkClass(isActive('/snaps'))}>SNAPS</Link>
-            <Link href="/resources" className={getNavLinkClass(isActive('/resources'))}>RESOURCES</Link>
             <Link href="/work-samples" className={getNavLinkClass(isActive('/work-samples'))}>WORK</Link>
+            <Link href="/resources" className={getNavLinkClass(isActive('/resources'))}>RESOURCES</Link>
+            <Link href="/media" className={getNavLinkClass(isActive('/media'))}>MEDIA</Link>
             <a href="#" className={getNavLinkClass(false)}>TEAM</a>
+            <Link href="/snaps" className={getNavLinkClass(isActive('/snaps'))}>SNAPS</Link>
             <Link href="/vibes" className={getNavLinkClass(isActive('/vibes'))}>VIBES</Link>
             <Link href="/playground" className={getNavLinkClass(isActive('/playground'))}>PLAYGROUND</Link>
           </nav>

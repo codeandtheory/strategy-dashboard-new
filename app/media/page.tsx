@@ -80,19 +80,19 @@ export default function MediaPage() {
   const [sortBy, setSortBy] = useState<SortField>('date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  // Get card style for media using RED SYSTEM (Video/Media)
-  // RED SYSTEM: Crimson (#C41E3A), Ocean Blue (#00A3E0), Peach (#FFD4C4)
-  const getCardStyle = () => {
-    if (mode === 'chaos') {
-      return { bg: 'bg-[#C41E3A]', border: 'border-0', text: 'text-white', accent: '#00A3E0' } // Crimson bg with Ocean Blue accent (RED SYSTEM)
-    } else if (mode === 'chill') {
-      return { bg: 'bg-white', border: 'border border-[#C41E3A]/30', text: 'text-[#4A1818]', accent: '#00A3E0' }
-    } else {
-      return { bg: 'bg-[#000000]', border: 'border border-[#C41E3A]', text: 'text-[#FFFFFF]', accent: '#00A3E0' }
+  // RED SYSTEM colors for media page
+  // Primary: Coral Red (#FF4C4C), Secondary: Crimson (#C41E3A), Lightest: Peach (#FFD4C4)
+  // Ocean Blue (#00A3E0) - buttons only
+  const getRedSystemColors = () => {
+    return {
+      primary: '#FF4C4C',    // Coral Red
+      secondary: '#C41E3A',  // Crimson
+      lightest: '#FFD4C4',  // Peach
+      button: '#00A3E0'     // Ocean Blue (buttons only)
     }
   }
 
-  const style = getCardStyle()
+  const redSystem = getRedSystemColors()
 
   // Dashboard styling helpers
   const getBgClass = () => {
@@ -114,9 +114,23 @@ export default function MediaPage() {
   }
 
   const getRoundedClass = (base: string) => {
-    if (mode === 'code') return 'rounded-none'
-    if (mode === 'chaos') return base.replace('rounded', 'rounded-[1.5rem]')
-    if (mode === 'chill') return base.replace('rounded', 'rounded-2xl')
+    if (mode === 'code') {
+      return base.replace(/rounded(-[tblr]{1,2})?(-\w+)?/g, (match, direction) => {
+        return direction ? `rounded${direction}-none` : 'rounded-none'
+      })
+    }
+    if (mode === 'chaos') {
+      // Replace rounded classes, preserving direction (t, b, l, r, tl, tr, bl, br)
+      return base.replace(/rounded(-[tblr]{1,2})?(-\w+)?/g, (match, direction) => {
+        return direction ? `rounded${direction}-[1.5rem]` : 'rounded-[1.5rem]'
+      })
+    }
+    if (mode === 'chill') {
+      // Replace rounded classes, preserving direction
+      return base.replace(/rounded(-[tblr]{1,2})?(-\w+)?/g, (match, direction) => {
+        return direction ? `rounded${direction}-2xl` : 'rounded-2xl'
+      })
+    }
     return base
   }
 
@@ -272,19 +286,16 @@ export default function MediaPage() {
       <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
         {loading && (
           <div className="text-center py-8 mb-8">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: style.accent }} />
+            <Loader2 className={`w-8 h-8 animate-spin mx-auto mb-4 ${getTextClass()}`} />
             <p className={getTextClass()}>Loading media...</p>
           </div>
         )}
         <div className="flex gap-6">
-          {/* Left Sidebar Card */}
-          <Card className={`w-80 ${mode === 'chaos' ? 'bg-[#C41E3A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
-            borderColor: mode === 'chaos' ? '#00A3E0' : mode === 'chill' ? '#C41E3A' : '#C41E3A',
-            borderWidth: mode === 'chaos' ? '2px' : mode === 'chill' ? '2px' : '2px'
-          }}>
+          {/* Left Sidebar Card - RED SYSTEM background */}
+          <Card className={`w-80 ${mode === 'chaos' ? 'bg-[#FF4C4C]' : mode === 'chill' ? 'bg-[#FFD4C4]' : 'bg-[#C41E3A]'} ${getRoundedClass('rounded-2xl')} p-6 flex flex-col h-fit border-0`}>
             {/* Navigation Section */}
             <div className="mb-6">
-              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-white' : 'text-white'}`}>
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                 ▼ NAVIGATION
               </h3>
               <div className="space-y-2">
@@ -292,17 +303,12 @@ export default function MediaPage() {
                   onClick={() => setActiveTab('all')}
                   className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
                     activeTab === 'all'
-                      ? mode === 'chaos'
-                        ? 'bg-[#00A3E0] text-white'
-                        : mode === 'chill'
-                        ? 'bg-[#00A3E0] text-white'
-                        : 'bg-[#00A3E0] text-white'
-                      : mode === 'chaos'
-                      ? 'bg-[#00A3E0]/30 text-white/80 hover:bg-[#00A3E0]/50'
+                      ? 'text-white'
                       : mode === 'chill'
-                      ? 'bg-[#00A3E0]/20 text-[#4A1818]/60 hover:bg-[#00A3E0]/30'
-                      : 'bg-[#00A3E0]/30 text-white/60 hover:bg-[#00A3E0]/50'
+                      ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
+                      : 'bg-black/20 text-black/80 hover:bg-black/30'
                   }`}
+                  style={activeTab === 'all' ? { backgroundColor: redSystem.button } : {}}
                 >
                   <span className="font-black uppercase text-sm">All Media</span>
                   <span className="ml-auto text-xs opacity-60">{mustReads.length + videos.length + news.length}</span>
@@ -311,17 +317,12 @@ export default function MediaPage() {
                   onClick={() => setActiveTab('must-reads')}
                   className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
                     activeTab === 'must-reads'
-                      ? mode === 'chaos'
-                        ? 'bg-[#00A3E0] text-white'
-                        : mode === 'chill'
-                        ? 'bg-[#00A3E0] text-white'
-                        : 'bg-[#00A3E0] text-white'
-                      : mode === 'chaos'
-                      ? 'bg-[#00A3E0]/30 text-white/80 hover:bg-[#00A3E0]/50'
+                      ? 'text-white'
                       : mode === 'chill'
-                      ? 'bg-[#00A3E0]/20 text-[#4A1818]/60 hover:bg-[#00A3E0]/30'
-                      : 'bg-[#00A3E0]/30 text-white/60 hover:bg-[#00A3E0]/50'
+                      ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
+                      : 'bg-black/20 text-black/80 hover:bg-black/30'
                   }`}
+                  style={activeTab === 'must-reads' ? { backgroundColor: redSystem.button } : {}}
                 >
                   <BookOpen className="w-4 h-4" />
                   <span className="font-black uppercase text-sm">Must Reads</span>
@@ -331,17 +332,12 @@ export default function MediaPage() {
                   onClick={() => setActiveTab('videos')}
                   className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
                     activeTab === 'videos'
-                      ? mode === 'chaos'
-                        ? 'bg-[#00A3E0] text-white'
-                        : mode === 'chill'
-                        ? 'bg-[#00A3E0] text-white'
-                        : 'bg-[#00A3E0] text-white'
-                      : mode === 'chaos'
-                      ? 'bg-[#00A3E0]/30 text-white/80 hover:bg-[#00A3E0]/50'
+                      ? 'text-white'
                       : mode === 'chill'
-                      ? 'bg-[#00A3E0]/20 text-[#4A1818]/60 hover:bg-[#00A3E0]/30'
-                      : 'bg-[#00A3E0]/30 text-white/60 hover:bg-[#00A3E0]/50'
+                      ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
+                      : 'bg-black/20 text-black/80 hover:bg-black/30'
                   }`}
+                  style={activeTab === 'videos' ? { backgroundColor: redSystem.button } : {}}
                 >
                   <Video className="w-4 h-4" />
                   <span className="font-black uppercase text-sm">Videos</span>
@@ -351,17 +347,12 @@ export default function MediaPage() {
                   onClick={() => setActiveTab('news')}
                   className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
                     activeTab === 'news'
-                      ? mode === 'chaos'
-                        ? 'bg-[#00A3E0] text-white'
-                        : mode === 'chill'
-                        ? 'bg-[#00A3E0] text-white'
-                        : 'bg-[#00A3E0] text-white'
-                      : mode === 'chaos'
-                      ? 'bg-[#00A3E0]/30 text-white/80 hover:bg-[#00A3E0]/50'
+                      ? 'text-white'
                       : mode === 'chill'
-                      ? 'bg-[#00A3E0]/20 text-[#4A1818]/60 hover:bg-[#00A3E0]/30'
-                      : 'bg-[#00A3E0]/30 text-white/60 hover:bg-[#00A3E0]/50'
+                      ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
+                      : 'bg-black/20 text-black/80 hover:bg-black/30'
                   }`}
+                  style={activeTab === 'news' ? { backgroundColor: redSystem.button } : {}}
                 >
                   <Newspaper className="w-4 h-4" />
                   <span className="font-black uppercase text-sm">News</span>
@@ -371,18 +362,16 @@ export default function MediaPage() {
             </div>
 
             {/* Divider */}
-            <div className={`h-px mb-6 ${mode === 'chaos' ? 'bg-[#00A3E0]/40' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`}></div>
+            <div className={`h-px mb-6 ${mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-black/20'}`}></div>
 
             {/* Back to Dashboard */}
             <div className="mt-auto">
               <Link
                 href="/"
                 className={`flex items-center gap-2 px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all ${
-                  mode === 'chaos'
-                    ? 'bg-[#00A3E0]/30 text-white/80 hover:bg-[#00A3E0]/50'
-                    : mode === 'chill'
-                    ? 'bg-[#00A3E0]/20 text-[#4A1818]/60 hover:bg-[#00A3E0]/30'
-                    : 'bg-[#00A3E0]/30 text-white/60 hover:bg-[#00A3E0]/50'
+                  mode === 'chill'
+                    ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
+                    : 'bg-black/20 text-black/80 hover:bg-black/30'
                 }`}
               >
                 <Home className="w-4 h-4" />
@@ -405,7 +394,7 @@ export default function MediaPage() {
             <div className="mb-6 space-y-4">
               {/* Search Bar */}
               <div className="relative">
-                <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5`} style={{ color: style.accent }} />
+                <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${getTextClass()}/50`} />
                 <Input
                   type="text"
                   placeholder="Search media..."
@@ -415,12 +404,9 @@ export default function MediaPage() {
                     mode === 'chill' 
                       ? 'bg-white border-gray-300 text-[#4A1818] placeholder:text-gray-400' 
                       : mode === 'chaos'
-                      ? 'bg-black/40 border-2 text-white placeholder:text-white/60'
-                      : 'bg-black/40 border-2 text-white placeholder:text-white/60'
+                      ? 'bg-black/30 border-gray-600 text-white placeholder:text-gray-500'
+                      : 'bg-black/30 border-gray-600 text-white placeholder:text-gray-500'
                   }`}
-                  style={{
-                    borderColor: mode === 'chaos' || mode === 'code' ? style.accent : undefined
-                  }}
                 />
               </div>
 
@@ -433,16 +419,13 @@ export default function MediaPage() {
                     <select
                       value={filterCategory}
                       onChange={(e) => setFilterCategory(e.target.value)}
-                      className={`h-12 px-4 ${getRoundedClass('rounded-xl')} text-sm font-medium border-2 focus:outline-none focus:ring-2 ${
+                      className={`h-12 px-4 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
                         mode === 'chill' 
-                          ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-[#00A3E0]' 
+                          ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-gray-400' 
                           : mode === 'chaos'
-                          ? 'bg-black/40 text-white focus:ring-white'
-                          : 'bg-black/40 text-white focus:ring-white'
+                          ? 'bg-black/30 border-gray-600 text-white focus:ring-gray-500'
+                          : 'bg-black/30 border-gray-600 text-white focus:ring-gray-500'
                       }`}
-                      style={{
-                        borderColor: mode === 'chaos' || mode === 'code' ? style.accent : undefined
-                      }}
                     >
                       <option value="all">All Categories</option>
                       {categories.map(cat => (
@@ -458,16 +441,13 @@ export default function MediaPage() {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortField)}
-                    className={`h-12 px-4 ${getRoundedClass('rounded-xl')} text-sm font-medium border-2 focus:outline-none focus:ring-2 ${
+                    className={`h-12 px-4 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
                       mode === 'chill' 
-                        ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-[#00A3E0]' 
+                        ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-gray-400' 
                         : mode === 'chaos'
-                        ? 'bg-black/40 text-white focus:ring-white'
-                        : 'bg-black/40 text-white focus:ring-white'
+                        ? 'bg-black/30 border-gray-600 text-white focus:ring-gray-500'
+                        : 'bg-black/30 border-gray-600 text-white focus:ring-gray-500'
                     }`}
-                    style={{
-                      borderColor: mode === 'chaos' || mode === 'code' ? style.accent : undefined
-                    }}
                   >
                     <option value="date">Date</option>
                     <option value="title">Title</option>
@@ -475,16 +455,13 @@ export default function MediaPage() {
                   </select>
                   <button
                     onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                    className={`h-12 px-4 ${getRoundedClass('rounded-xl')} border-2 flex items-center justify-center transition-colors ${
+                    className={`h-12 px-4 ${getRoundedClass('rounded-xl')} border flex items-center justify-center transition-colors ${
                       mode === 'chill' 
                         ? 'bg-white border-gray-300 text-[#4A1818] hover:bg-gray-50' 
                         : mode === 'chaos'
-                        ? 'bg-black/40 text-white hover:bg-black/60'
-                        : 'bg-black/40 text-white hover:bg-black/60'
+                        ? 'bg-black/30 border-gray-600 text-white hover:bg-black/50'
+                        : 'bg-black/30 border-gray-600 text-white hover:bg-black/50'
                     }`}
-                    style={{
-                      borderColor: mode === 'chaos' || mode === 'code' ? style.accent : undefined
-                    }}
                     title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
                   >
                     {sortOrder === 'asc' ? (
@@ -505,66 +482,52 @@ export default function MediaPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredItems.map((item) => (
                   <Card
                     key={item.id}
-                    className={`${getRoundedClass('rounded-xl')} p-4 h-full flex flex-col ${
-                      mode === 'chill' 
-                        ? 'bg-white border-gray-200' 
-                        : mode === 'chaos'
-                        ? 'bg-[#2A2A2A] border-[#333333]'
-                        : 'bg-[#1a1a1a] border-white'
-                    }`}
+                    className={`${getBgClass()} border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'} ${getRoundedClass('rounded-2xl')} overflow-hidden p-2`}
                   >
+                    <div className="flex flex-col">
                     {item.type === 'must-read' ? (
                       <>
-                        <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start justify-between mb-3 px-4 pt-2">
                           <div className="flex items-center gap-2">
-                            <BookOpen className={`w-4 h-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`} />
-                            <Badge 
-                              variant="outline"
-                              className={`${getRoundedClass('rounded')} text-xs`}
-                              style={{
-                                borderColor: style.accent,
-                                color: style.accent
-                              }}
-                            >
-                              Article
-                            </Badge>
+                            <BookOpen className={`w-4 h-4 ${getTextClass()}/70`} />
+                            <div className={`inline-flex items-center px-3 py-1 rounded ${getRoundedClass('rounded-md')} ${mode === 'chaos' ? 'bg-gray-800' : mode === 'chill' ? 'bg-gray-200' : 'bg-gray-800'} w-fit`}>
+                              <span className={`text-xs font-medium ${getTextClass()}`}>Article</span>
+                            </div>
                           </div>
                           {item.pinned && (
                             <Badge className="bg-yellow-500 text-black text-xs">Pinned</Badge>
                           )}
                         </div>
-                        <h3 className={`font-bold text-lg mb-2 ${mode === 'chill' ? 'text-gray-900' : 'text-white'} line-clamp-2`}>
+                        <h3 className={`text-xl font-black uppercase ${getTextClass()} mb-2 px-4 line-clamp-2`}>
                           {item.article_title}
                         </h3>
                         {item.summary && (
-                          <p className={`text-sm mb-3 ${mode === 'chill' ? 'text-gray-600' : 'text-gray-300'} line-clamp-2`}>
+                          <p className={`text-sm ${getTextClass()}/80 mb-3 px-4 line-clamp-2`}>
                             {item.summary}
                           </p>
                         )}
-                        <div className="flex flex-wrap gap-2 mb-3">
+                        <div className="flex flex-wrap gap-2 mb-3 px-4">
                           {item.category && (
-                            <Badge variant="outline" className="text-xs">
-                              {item.category}
-                            </Badge>
+                            <div className={`inline-flex items-center px-3 py-1 rounded ${getRoundedClass('rounded-md')} ${mode === 'chaos' ? 'bg-gray-800' : mode === 'chill' ? 'bg-gray-200' : 'bg-gray-800'} w-fit`}>
+                              <span className={`text-xs font-medium ${getTextClass()}`}>{item.category}</span>
+                            </div>
                           )}
                           {item.source && (
-                            <Badge variant="outline" className="text-xs">
-                              {item.source}
-                            </Badge>
+                            <div className={`inline-flex items-center px-3 py-1 rounded ${getRoundedClass('rounded-md')} ${mode === 'chaos' ? 'bg-gray-800' : mode === 'chill' ? 'bg-gray-200' : 'bg-gray-800'} w-fit`}>
+                              <span className={`text-xs font-medium ${getTextClass()}`}>{item.source}</span>
+                            </div>
                           )}
                         </div>
-                        <div className="mt-auto">
+                        <div className="mt-auto px-4 pb-4">
                           <a
                             href={item.article_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`inline-flex items-center gap-2 text-sm font-semibold ${
-                              mode === 'chill' ? 'text-[#4A1818] hover:text-[#3A1414]' : 'text-white hover:text-gray-300'
-                            } transition-colors`}
+                            className={`inline-flex items-center gap-2 text-sm font-semibold ${getTextClass()} hover:opacity-70 transition-opacity`}
                           >
                             Read Article
                             <ExternalLink className="w-4 h-4" />
@@ -573,56 +536,47 @@ export default function MediaPage() {
                       </>
                     ) : item.type === 'video' ? (
                       <>
-                        <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start justify-between mb-3 px-4 pt-2">
                           <div className="flex items-center gap-2">
-                            <Video className={`w-4 h-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`} />
-                            <Badge 
-                              variant="outline"
-                              className={`${getRoundedClass('rounded')} text-xs`}
-                              style={{
-                                borderColor: style.accent,
-                                color: style.accent
-                              }}
-                            >
-                              Video
-                            </Badge>
+                            <Video className={`w-4 h-4 ${getTextClass()}/70`} />
+                            <div className={`inline-flex items-center px-3 py-1 rounded ${getRoundedClass('rounded-md')} ${mode === 'chaos' ? 'bg-gray-800' : mode === 'chill' ? 'bg-gray-200' : 'bg-gray-800'} w-fit`}>
+                              <span className={`text-xs font-medium ${getTextClass()}`}>Video</span>
+                            </div>
                           </div>
                           {item.pinned && (
                             <Badge className="bg-yellow-500 text-black text-xs">Pinned</Badge>
                           )}
                         </div>
-                        <h3 className={`font-bold text-lg mb-2 ${mode === 'chill' ? 'text-gray-900' : 'text-white'} line-clamp-2`}>
+                        <h3 className={`text-xl font-black uppercase ${getTextClass()} mb-2 px-4 line-clamp-2`}>
                           {item.title}
                         </h3>
                         {item.description && (
-                          <p className={`text-sm mb-3 ${mode === 'chill' ? 'text-gray-600' : 'text-gray-300'} line-clamp-2`}>
+                          <p className={`text-sm ${getTextClass()}/80 mb-3 px-4 line-clamp-2`}>
                             {item.description}
                           </p>
                         )}
-                        <div className="mb-3">
+                        <div className="mb-3 px-4">
                           <VideoEmbed
                             videoUrl={item.video_url}
                             platform={item.platform}
                             thumbnailUrl={item.thumbnail_url}
                             aspectRatio="16/9"
-                            className="rounded-lg"
+                            className={getRoundedClass('rounded-xl')}
                           />
                         </div>
-                        <div className="flex flex-wrap gap-2 mb-3">
+                        <div className="flex flex-wrap gap-2 mb-3 px-4">
                           {item.category && (
-                            <Badge variant="outline" className="text-xs">
-                              {item.category}
-                            </Badge>
+                            <div className={`inline-flex items-center px-3 py-1 rounded ${getRoundedClass('rounded-md')} ${mode === 'chaos' ? 'bg-gray-800' : mode === 'chill' ? 'bg-gray-200' : 'bg-gray-800'} w-fit`}>
+                              <span className={`text-xs font-medium ${getTextClass()}`}>{item.category}</span>
+                            </div>
                           )}
                         </div>
-                        <div className="mt-auto">
+                        <div className="mt-auto px-4 pb-4">
                           <a
                             href={item.video_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`inline-flex items-center gap-2 text-sm font-semibold ${
-                              mode === 'chill' ? 'text-[#4A1818] hover:text-[#3A1414]' : 'text-white hover:text-gray-300'
-                            } transition-colors`}
+                            className={`inline-flex items-center gap-2 text-sm font-semibold ${getTextClass()} hover:opacity-70 transition-opacity`}
                           >
                             Watch Video
                             <ExternalLink className="w-4 h-4" />
@@ -630,6 +584,7 @@ export default function MediaPage() {
                         </div>
                       </>
                     ) : null}
+                    </div>
                   </Card>
                 ))}
               </div>
