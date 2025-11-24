@@ -63,7 +63,7 @@ export default function WorkSampleAdmin() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTypeId, setFilterTypeId] = useState<string | null>(null)
   const [filterAuthorId, setFilterAuthorId] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<string>('created_at')
+  const [sortBy, setSortBy] = useState<string>('date')
   const [sortOrder, setSortOrder] = useState<string>('desc')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [editingItem, setEditingItem] = useState<WorkSample | null>(null)
@@ -1083,8 +1083,8 @@ export default function WorkSampleAdmin() {
               }}
               className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} h-8 px-2 text-xs ${getRoundedClass('rounded-md')}`}
             >
-              <option value="created_at-desc">Date (Newest)</option>
-              <option value="created_at-asc">Date (Oldest)</option>
+              <option value="date-desc">Date (Newest)</option>
+              <option value="date-asc">Date (Oldest)</option>
               <option value="project_name-asc">Project Name (A-Z)</option>
               <option value="project_name-desc">Project Name (Z-A)</option>
               <option value="author_id-asc">Author (A-Z)</option>
