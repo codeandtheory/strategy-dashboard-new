@@ -2675,6 +2675,30 @@ export default function TeamDashboard() {
                   </div>
                 )
               }
+
+              const renderWonLostItem = (project: typeof pipelineData[0], index: number) => {
+                const date = formatDate(project.due_date)
+                const displayText = project.type || project.description || 'Unknown'
+                return (
+                  <div key={project.id} className="flex items-start gap-2 py-1.5">
+                    {/* Dot on the left */}
+                    <div 
+                      className="shrink-0 w-2 h-2 rounded-full mt-2"
+                      style={{
+                        backgroundColor: pipelineStyle.accent,
+                      }}
+                    />
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 text-sm">
+                      {date && (
+                        <div className={`${pipelineStyle.text}/60 mb-1 text-xs`}>{date}</div>
+                      )}
+                      <div className={`font-bold ${pipelineStyle.text} truncate`}>{project.name}</div>
+                      <div className={`${pipelineStyle.text}/60 truncate text-xs`}>{displayText}</div>
+                    </div>
+                  </div>
+                )
+              }
               
               return (
                 <>
@@ -2734,13 +2758,13 @@ export default function TeamDashboard() {
                       </div>
                     ) : (
                       /* 3-column view when collapsed */
-                      <div className="flex flex-col h-full">
+                      <div className="flex flex-col" style={{ height: 'calc(100% - 350px)' }}>
                         <h2 className={`text-2xl mb-4 font-black uppercase ${pipelineStyle.text}`}>PIPELINE</h2>
-                        <div className="grid grid-cols-3 gap-4 flex-1 overflow-hidden">
+                        <div className="grid grid-cols-3 gap-4 flex-1 overflow-hidden" style={{ height: '400px' }}>
                           {/* Column 1: In Progress */}
                           <div className="flex flex-col overflow-hidden">
                             <div className={`text-sm font-semibold ${pipelineStyle.text} mb-3 uppercase tracking-wide`}>In Progress</div>
-                            <div className="flex-1 overflow-y-auto pr-2">
+                            <div className="overflow-y-auto pr-2" style={{ height: '370px' }}>
                               <div className="space-y-1">
                                 {!pipelineLoading && inProgressProjects.length > 0 ? (
                                   inProgressProjects.map((project, index) => 
@@ -2758,7 +2782,7 @@ export default function TeamDashboard() {
                           {/* Column 2: Pending Decision */}
                           <div className="flex flex-col overflow-hidden">
                             <div className={`text-sm font-semibold ${pipelineStyle.text} mb-3 uppercase tracking-wide`}>Pending Decision</div>
-                            <div className="flex-1 overflow-y-auto pr-2">
+                            <div className="overflow-y-auto pr-2" style={{ height: '370px' }}>
                               <div className="space-y-1">
                                 {!pipelineLoading && pendingDecisionProjects.length > 0 ? (
                                   pendingDecisionProjects.map((project, index) => 
@@ -2776,13 +2800,13 @@ export default function TeamDashboard() {
                           {/* Column 3: Won / Lost Split */}
                           <div className="flex flex-col overflow-hidden">
                             {/* Won - Top Half */}
-                            <div className="flex flex-col flex-1 min-h-0 mb-4">
+                            <div className="flex flex-col mb-4">
                               <div className={`text-sm font-semibold ${pipelineStyle.text} mb-3 uppercase tracking-wide`}>Won</div>
-                              <div className="flex-1 overflow-y-auto pr-2">
+                              <div className="overflow-y-auto pr-2" style={{ height: '175px' }}>
                                 <div className="space-y-1">
                                   {!pipelineLoading && wonProjects.length > 0 ? (
                                     wonProjects.map((project, index) => 
-                                      renderProjectItem(project, index, wonProjects.length)
+                                      renderWonLostItem(project, index)
                                     )
                                   ) : (
                                     <div className={`${pipelineStyle.text}/60 text-sm py-4`}>
@@ -2794,13 +2818,13 @@ export default function TeamDashboard() {
                             </div>
                             
                             {/* Lost - Bottom Half */}
-                            <div className="flex flex-col flex-1 min-h-0 border-t" style={{ borderColor: `${borderColor}40` }}>
+                            <div className="flex flex-col border-t" style={{ borderColor: `${borderColor}40` }}>
                               <div className={`text-sm font-semibold ${pipelineStyle.text} mb-3 mt-4 uppercase tracking-wide`}>Lost</div>
-                              <div className="flex-1 overflow-y-auto pr-2">
+                              <div className="overflow-y-auto pr-2" style={{ height: '175px' }}>
                                 <div className="space-y-1">
                                   {!pipelineLoading && lostProjects.length > 0 ? (
                                     lostProjects.map((project, index) => 
-                                      renderProjectItem(project, index, lostProjects.length)
+                                      renderWonLostItem(project, index)
                                     )
                                   ) : (
                                     <div className={`${pipelineStyle.text}/60 text-sm py-4`}>
