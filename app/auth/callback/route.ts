@@ -83,8 +83,10 @@ export async function GET(request: NextRequest) {
       console.log('Cookies being set in response:', allCookies.map(c => c.name))
 
       // Successfully authenticated, redirect to home with cookies set
-      // The response object already has the cookies set from the exchangeCodeForSession call
-      return response
+      // Add a query parameter to indicate we just authenticated (to avoid double popup)
+      const redirectUrl = new URL(`${origin}/`)
+      redirectUrl.searchParams.set('just_authenticated', 'true')
+      return NextResponse.redirect(redirectUrl.toString())
     } catch (error: any) {
       console.error('Error in auth callback:', error)
       return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message || 'Authentication failed')}`)

@@ -17,10 +17,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch stat configurations
+    // Fetch stat configurations - only positions 1-3
     const { data: statsConfig, error: configError } = await supabase
       .from('this_week_stats')
       .select('*')
+      .gte('position', 1)
+      .lte('position', 3)
       .order('position', { ascending: true })
 
     if (configError) {
@@ -67,14 +69,14 @@ export async function GET(request: NextRequest) {
         let title = ''
 
         switch (stat.database_stat_key) {
-          case 'active_projects':
+          case 'active_pitches':
             // Count pipeline projects with status "In Progress"
             const { count: activeCount } = await supabase
               .from('pipeline_projects')
               .select('*', { count: 'exact', head: true })
               .eq('status', 'In Progress')
             value = (activeCount || 0).toString()
-            title = 'active projects'
+            title = 'active pitches'
             break
 
           case 'new_business':
@@ -99,26 +101,81 @@ export async function GET(request: NextRequest) {
             title = 'pitches due'
             break
 
-          case 'active_clients':
-            // Count unique clients from work samples in last 12 months
-            const twelveMonthsAgo = new Date()
-            twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
-            const twelveMonthsAgoStr = twelveMonthsAgo.toISOString().split('T')[0]
-            
-            const { data: workSamples } = await supabase
-              .from('work_samples')
-              .select('client')
-              .gte('date', twelveMonthsAgoStr)
-              .not('client', 'is', null)
+          case 'total_team_members':
+            // Count active team members from profiles (is_active = true, or all if is_active doesn't exist)
+            const { count: teamMembersCount } = await supabase
+              .from('profiles')
+              .select('*', { count: 'exact', head: true })
+              .or('is_active.eq.true,is_active.is.null')
+            value = (teamMembersCount || 0).toString()
+            title = 'total team members'
+            break
 
-            const uniqueClients = new Set<string>()
-            workSamples?.forEach((sample: { client: string }) => {
-              if (sample.client && sample.client.trim()) {
-                uniqueClients.add(sample.client.trim())
-              }
-            })
-            value = uniqueClients.size.toString()
-            title = 'active clients'
+          case 'total_birthdays':
+            // Count profiles with birthday recorded
+            const { count: birthdaysCount } = await supabase
+              .from('profiles')
+              .select('*', { count: 'exact', head: true })
+              .not('birthday', 'is', null)
+              .neq('birthday', '')
+            value = (birthdaysCount || 0).toString()
+            title = 'total birthdays'
+            break
+
+          case 'total_anniversaries':
+            // Count profiles with start_date recorded
+            const { count: anniversariesCount } = await supabase
+              .from('profiles')
+              .select('*', { count: 'exact', head: true })
+              .not('start_date', 'is', null)
+            value = (anniversariesCount || 0).toString()
+            title = 'total anniversaries'
+            break
+
+          case 'total_snaps':
+            // Count total snaps
+            const { count: snapsCount } = await supabase
+              .from('snaps')
+              .select('*', { count: 'exact', head: true })
+            value = (snapsCount || 0).toString()
+            title = 'total snaps'
+            break
+
+          case 'won_projects':
+            // Count pipeline projects with status "Won"
+            const { count: wonCount } = await supabase
+              .from('pipeline_projects')
+              .select('*', { count: 'exact', head: true })
+              .eq('status', 'Won')
+            value = (wonCount || 0).toString()
+            title = 'won projects'
+            break
+
+          case 'total_work_samples':
+            // Count total work samples
+            const { count: workSamplesCount } = await supabase
+              .from('work_samples')
+              .select('*', { count: 'exact', head: true })
+            value = (workSamplesCount || 0).toString()
+            title = 'total work samples'
+            break
+
+          case 'total_decks':
+            // Count total decks
+            const { count: decksCount } = await supabase
+              .from('decks')
+              .select('*', { count: 'exact', head: true })
+            value = (decksCount || 0).toString()
+            title = 'total decks'
+            break
+
+          case 'total_resources':
+            // Count total resources
+            const { count: resourcesCount } = await supabase
+              .from('resources')
+              .select('*', { count: 'exact', head: true })
+            value = (resourcesCount || 0).toString()
+            title = 'total resources'
             break
 
           default:

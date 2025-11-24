@@ -57,17 +57,55 @@ export function useGoogleCalendarToken() {
         // Get user email from Supabase to help GSI identify the account
         const userEmail = session.user?.email
         
-        // Try Supabase provider token first (might work if scopes were requested)
+        // Try Supabase provider token first (might work if scopes were requested during OAuth)
         const providerToken = (session as any).provider_token
         if (providerToken) {
-          // Test if this token works by trying to use it
-          // For now, we'll try GSI anyway since Supabase tokens often don't have calendar scopes
-          console.log('ℹ️ Found provider token in Supabase session, but will try GSI for calendar scopes')
+          console.log('ℹ️ Found provider token in Supabase session')
+          // Try using the provider token - if it has calendar scopes, we can use it directly
+          // Test the token by making a simple API call
+          try {
+            const testResponse = await fetch(`https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=1`, {
+              headers: {
+                'Authorization': `Bearer ${providerToken}`
+              }
+            })
+            if (testResponse.ok) {
+              console.log('✅ Provider token works for calendar access - using it instead of GSI')
+              // Cache the token
+              const expiry = Date.now() + (3600 * 1000) - (5 * 60 * 1000) // 1 hour minus 5 min buffer
+              localStorage.setItem('google_calendar_token', providerToken)
+              localStorage.setItem('google_calendar_token_expiry', expiry.toString())
+              setAccessToken(providerToken)
+              setLoading(false)
+              return // Successfully using provider token, no need for GSI
+            } else {
+              console.log('ℹ️ Provider token doesn\'t have calendar scopes, will use GSI')
+            }
+          } catch (error) {
+            console.log('ℹ️ Could not verify provider token, will use GSI')
+          }
         }
         
-        // Delay GSI request slightly to avoid immediate popup after Supabase login
-        // This gives the browser time to recognize the existing Google session
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Check if we just came from OAuth callback to avoid double popup
+        const justAuthenticated = sessionStorage.getItem('just_authenticated')
+        const authTimestamp = sessionStorage.getItem('auth_timestamp')
+        const now = Date.now()
+        
+        // If we just authenticated (within last 10 seconds), delay longer or skip popup
+        if (justAuthenticated === 'true' && authTimestamp) {
+          const timeSinceAuth = now - parseInt(authTimestamp)
+          if (timeSinceAuth < 10000) { // Less than 10 seconds since auth
+            console.log('ℹ️ Just authenticated, waiting longer before requesting calendar token to avoid double popup')
+            // Wait longer to let Google session fully establish
+            await new Promise(resolve => setTimeout(resolve, 5000))
+            // Clear the flag after delay
+            sessionStorage.removeItem('just_authenticated')
+            sessionStorage.removeItem('auth_timestamp')
+          }
+        } else {
+          // Normal delay for existing sessions
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
 
         // Check if we have Google Client ID
         const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID

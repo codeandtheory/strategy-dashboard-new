@@ -1020,13 +1020,7 @@ export default function ProfilePage() {
                                       return (
                                         <div
                                           key={`${activity.type}-${activity.id}`}
-                                          className={`${getFieldCardStyle().bg} ${getFieldCardStyle().border} ${getRoundedClass('rounded-xl')} p-3`}
-                                          style={{
-                                            borderTopWidth: '1px',
-                                            borderBottomWidth: '1px',
-                                            borderLeftWidth: '0',
-                                            borderRightWidth: '0'
-                                          }}
+                                          className="py-2 border-b border-gray-600/30 last:border-b-0"
                                         >
                                           <p className={`text-sm ${getFieldCardStyle().text}`}>
                                             {dateStr} - {activity.description}{' '}

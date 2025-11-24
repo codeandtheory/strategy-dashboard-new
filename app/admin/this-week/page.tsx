@@ -21,10 +21,17 @@ interface StatConfig {
 }
 
 const DATABASE_STATS = [
-  { key: 'active_projects', label: 'Active Projects', description: 'Pipeline projects with status "In Progress"' },
+  { key: 'active_pitches', label: 'Active Pitches', description: 'Pipeline projects with status "In Progress"' },
   { key: 'new_business', label: 'New Business', description: 'Pipeline projects created in last 7 days' },
   { key: 'pitches_due', label: 'Pitches Due', description: 'Pipeline projects with due date in next 7 days' },
-  { key: 'active_clients', label: 'Active Clients', description: 'Unique clients from work samples (last 12 months)' },
+  { key: 'total_team_members', label: 'Total Team Members', description: 'Total active team members' },
+  { key: 'total_birthdays', label: 'Total Birthdays', description: 'Team members with birthdays recorded' },
+  { key: 'total_anniversaries', label: 'Total Anniversaries', description: 'Team members with start dates recorded' },
+  { key: 'total_snaps', label: 'Total Snaps', description: 'Total recognition snaps in the system' },
+  { key: 'won_projects', label: 'Won Projects', description: 'Pipeline projects with status "Won"' },
+  { key: 'total_work_samples', label: 'Total Work Samples', description: 'Total work samples in the system' },
+  { key: 'total_decks', label: 'Total Decks', description: 'Total decks in the system' },
+  { key: 'total_resources', label: 'Total Resources', description: 'Total resources in the system' },
 ]
 
 export default function ThisWeekPage() {
