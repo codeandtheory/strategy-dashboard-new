@@ -173,22 +173,34 @@ export async function GET(request: NextRequest) {
         }
 
         // Transform events to our format
-        const transformedEvents: CalendarEvent[] = events.map((event) => ({
-          id: event.id || '',
-          summary: event.summary || 'No Title',
-          start: {
-            dateTime: event.start?.dateTime || undefined,
-            date: event.start?.date || undefined,
-          },
-          end: {
-            dateTime: event.end?.dateTime || undefined,
-            date: event.end?.date || undefined,
-          },
-          location: event.location || undefined,
-          description: event.description || undefined,
-          calendarId: decodedCalendarId,
-          calendarName: calendarName,
-        }))
+        const transformedEvents: CalendarEvent[] = events.map((event) => {
+          // Check if this is an OOO calendar
+          const isOOOCalendar = decodedCalendarId.includes('6elnqlt8ok3kmcpim2vge0qqqk') || 
+                                decodedCalendarId.includes('ojeuiov0bhit2k17g8d6gj4i68')
+          
+          // Remove '[Pending approval] ' prefix from OOO calendar event names
+          let summary = event.summary || 'No Title'
+          if (isOOOCalendar && summary.startsWith('[Pending approval] ')) {
+            summary = summary.replace(/^\[Pending approval\] /, '')
+          }
+          
+          return {
+            id: event.id || '',
+            summary: summary,
+            start: {
+              dateTime: event.start?.dateTime || undefined,
+              date: event.start?.date || undefined,
+            },
+            end: {
+              dateTime: event.end?.dateTime || undefined,
+              date: event.end?.date || undefined,
+            },
+            location: event.location || undefined,
+            description: event.description || undefined,
+            calendarId: decodedCalendarId,
+            calendarName: calendarName,
+          }
+        })
 
         allEvents.push(...transformedEvents)
         successfulCalendars.push(decodedCalendarId)
