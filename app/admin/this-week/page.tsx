@@ -43,6 +43,7 @@ export default function ThisWeekPage() {
   const [draggedStat, setDraggedStat] = useState<string | null>(null)
   const [draggedPosition, setDraggedPosition] = useState<number | null>(null)
   const [calculatingValues, setCalculatingValues] = useState(false)
+  const [availableStatsValues, setAvailableStatsValues] = useState<Map<string, string>>(new Map())
 
   const getBgClass = () => {
     switch (mode) {
@@ -103,21 +104,51 @@ export default function ThisWeekPage() {
     return DATABASE_STATS.filter(stat => !selectedKeys.includes(stat.key))
   }
 
-  // Fetch calculated values for database stats
-  const fetchCalculatedValues = async () => {
+  // Calculate a single stat value
+  const calculateStatValue = async (statKey: string): Promise<string> => {
+    try {
+      // Create a temporary stat config to calculate
+      const tempResponse = await fetch('/api/this-week-stats/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ database_stat_key: statKey }),
+      })
+      if (tempResponse.ok) {
+        const data = await tempResponse.json()
+        return data.value || '0'
+      }
+    } catch (error) {
+      console.error(`Error calculating stat ${statKey}:`, error)
+    }
+    return '0'
+  }
+
+  // Fetch calculated values for all available stats
+  const fetchAllStatValues = async () => {
     try {
       setCalculatingValues(true)
+      const availableKeys = getAvailableStats().map(s => s.key)
+      const valueMap = new Map<string, string>()
+      
+      // Calculate values for all available stats in parallel
+      await Promise.all(
+        availableKeys.map(async (key) => {
+          const value = await calculateStatValue(key)
+          valueMap.set(key, value)
+        })
+      )
+      
+      setAvailableStatsValues(valueMap)
+      
+      // Also fetch selected stats values
       const response = await fetch('/api/this-week-stats')
       if (response.ok) {
         const data = await response.json()
         if (data.stats && data.stats.length > 0) {
-          // Create a map of calculated values by database_stat_key (for database stats) or position (for custom)
-          const valueMap = new Map<string, string>()
+          const selectedValueMap = new Map<string, string>()
           data.stats.forEach((stat: any) => {
             if (stat.stat_type === 'database' && stat.database_stat_key) {
-              valueMap.set(stat.database_stat_key, stat.value)
-            } else if (stat.stat_type === 'custom') {
-              valueMap.set(`custom-${stat.position}`, stat.value)
+              selectedValueMap.set(stat.database_stat_key, stat.value)
             }
           })
           
@@ -126,7 +157,7 @@ export default function ThisWeekPage() {
             if (stat.stat_type === 'database' && stat.database_stat_key) {
               return {
                 ...stat,
-                calculatedValue: valueMap.get(stat.database_stat_key) || '0'
+                calculatedValue: selectedValueMap.get(stat.database_stat_key) || '0'
               }
             } else if (stat.stat_type === 'custom') {
               return {
@@ -136,12 +167,6 @@ export default function ThisWeekPage() {
             }
             return stat
           }))
-        } else {
-          // If no stats from API, but we have local stats, set calculated values to 0 for database stats
-          setSelectedStats(prev => prev.map(stat => ({
-            ...stat,
-            calculatedValue: stat.stat_type === 'database' ? '0' : (stat.custom_value || '0')
-          })))
         }
       }
     } catch (error) {
@@ -149,6 +174,11 @@ export default function ThisWeekPage() {
     } finally {
       setCalculatingValues(false)
     }
+  }
+
+  // Fetch calculated values for database stats (legacy - for selected stats only)
+  const fetchCalculatedValues = async () => {
+    await fetchAllStatValues()
   }
 
   // Fetch current stats configuration
@@ -183,6 +213,10 @@ export default function ThisWeekPage() {
         toast.error('Failed to load stats configuration')
       } finally {
         setLoading(false)
+        // Fetch all stat values after loading
+        setTimeout(() => {
+          fetchAllStatValues()
+        }, 100)
       }
     }
 
@@ -191,15 +225,14 @@ export default function ThisWeekPage() {
 
   // Refresh calculated values when database stats are added/changed
   useEffect(() => {
-    const hasDatabaseStats = selectedStats.some(s => s.stat_type === 'database' && s.database_stat_key)
-    if (hasDatabaseStats && !loading) {
+    if (!loading) {
       // Small delay to ensure state is updated
       const timer = setTimeout(() => {
-        fetchCalculatedValues()
+        fetchAllStatValues()
       }, 200)
       return () => clearTimeout(timer)
     }
-  }, [selectedStats.map(s => `${s.position}-${s.database_stat_key}`).join(',')]) // Refresh when database stat keys change
+  }, [selectedStats.map(s => `${s.position}-${s.database_stat_key}`).join(','), loading]) // Refresh when database stat keys change
 
   const handleDragStart = (e: React.DragEvent, statKey: string) => {
     setDraggedStat(statKey)
@@ -441,7 +474,7 @@ export default function ThisWeekPage() {
                 </div>
               </div>
 
-              <div className="space-y-4 min-h-[400px]">
+              <div className="space-y-3 min-h-[300px]">
                 {[1, 2, 3].map((slotPosition) => {
                   const stat = selectedStats.find(s => s.position === slotPosition)
                   return (
@@ -449,28 +482,28 @@ export default function ThisWeekPage() {
                       key={slotPosition}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, slotPosition)}
-                      className={`${cardStyle.border} border-2 border-dashed ${getRoundedClass('rounded-xl')} p-4 min-h-[120px] transition-all ${
+                      className={`${cardStyle.border} border-2 border-dashed ${getRoundedClass('rounded-xl')} p-3 min-h-[90px] transition-all ${
                         stat ? cardStyle.bg : 'bg-transparent'
                       }`}
                     >
                       {stat ? (
-                        <div className="flex items-start gap-4">
+                        <div className="flex items-start gap-3">
                           <div
                             draggable
                             onDragStart={(e) => handleDragStartPosition(e, stat.position)}
                             onDragEnd={handleDragEnd}
-                            className="cursor-move flex items-center justify-center p-2 hover:opacity-70 transition-opacity"
+                            className="cursor-move flex items-center justify-center p-1.5 hover:opacity-70 transition-opacity"
                           >
-                            <GripVertical className={`w-5 h-5 ${getTextClass()}`} />
+                            <GripVertical className={`w-4 h-4 ${getTextClass()}`} />
                           </div>
                           
-                          <div className="flex-1 space-y-3">
+                          <div className="flex-1 space-y-2">
                             {stat.stat_type === 'database' ? (
                               <>
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Database className={`w-4 h-4 ${getTextClass()}`} />
-                                    <span className={`font-medium ${getTextClass()}`}>
+                                  <div className="flex items-center gap-1.5">
+                                    <Database className={`w-3.5 h-3.5 ${getTextClass()}`} />
+                                    <span className={`font-medium text-xs ${getTextClass()}`}>
                                       {DATABASE_STATS.find(s => s.key === stat.database_stat_key)?.label || 'Unknown'}
                                     </span>
                                   </div>
@@ -478,22 +511,22 @@ export default function ThisWeekPage() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleRemoveStat(stat.position)}
-                                    className="h-8 w-8 p-0"
+                                    className="h-6 w-6 p-0"
                                   >
-                                    <X className={`w-4 h-4 ${getTextClass()}`} />
+                                    <X className={`w-3.5 h-3.5 ${getTextClass()}`} />
                                   </Button>
                                 </div>
-                                <div className="flex items-baseline gap-3">
-                                  <div className={`text-3xl font-black ${getTextClass()}`}>
+                                <div className="flex items-baseline gap-2">
+                                  <div className={`text-2xl font-black ${getTextClass()}`}>
                                     {calculatingValues && !stat.calculatedValue ? (
-                                      <Loader2 className="w-6 h-6 animate-spin" />
+                                      <Loader2 className="w-5 h-5 animate-spin" />
                                     ) : stat.calculatedValue !== undefined ? (
                                       stat.calculatedValue
                                     ) : (
-                                      <span className={`text-lg ${getTextClass()}/50`}>—</span>
+                                      <span className={`text-base ${getTextClass()}/50`}>—</span>
                                     )}
                                   </div>
-                                  <p className={`text-xs ${getTextClass()}/60`}>
+                                  <p className={`text-[10px] ${getTextClass()}/50`}>
                                     {DATABASE_STATS.find(s => s.key === stat.database_stat_key)?.description}
                                   </p>
                                 </div>
@@ -501,36 +534,36 @@ export default function ThisWeekPage() {
                             ) : (
                               <>
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Type className={`w-4 h-4 ${getTextClass()}`} />
-                                    <span className={`font-medium ${getTextClass()}`}>Custom Stat</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <Type className={`w-3.5 h-3.5 ${getTextClass()}`} />
+                                    <span className={`font-medium text-xs ${getTextClass()}`}>Custom Stat</span>
                                   </div>
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleRemoveStat(stat.position)}
-                                    className="h-8 w-8 p-0"
+                                    className="h-6 w-6 p-0"
                                   >
-                                    <X className={`w-4 h-4 ${getTextClass()}`} />
+                                    <X className={`w-3.5 h-3.5 ${getTextClass()}`} />
                                   </Button>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-1.5">
                                   <div>
-                                    <Label className={`text-xs ${getTextClass()}`}>Title</Label>
+                                    <Label className={`text-[10px] ${getTextClass()}`}>Title</Label>
                                     <Input
                                       value={stat.custom_title || ''}
                                       onChange={(e) => updateStat(stat.position, { custom_title: e.target.value })}
                                       placeholder="e.g., team members"
-                                      className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} text-sm`}
+                                      className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} text-xs h-8`}
                                     />
                                   </div>
                                   <div>
-                                    <Label className={`text-xs ${getTextClass()}`}>Value</Label>
+                                    <Label className={`text-[10px] ${getTextClass()}`}>Value</Label>
                                     <Input
                                       value={stat.custom_value || ''}
                                       onChange={(e) => updateStat(stat.position, { custom_value: e.target.value })}
                                       placeholder="e.g., 25"
-                                      className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} text-sm`}
+                                      className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} text-xs h-8`}
                                     />
                                   </div>
                                 </div>
@@ -539,8 +572,8 @@ export default function ThisWeekPage() {
                           </div>
                         </div>
                       ) : (
-                        <div className={`flex items-center justify-center h-full ${getTextClass()}/40 text-sm`}>
-                          Drop a stat here or add a custom one
+                        <div className={`flex items-center justify-center h-full ${getTextClass()}/40 text-xs`}>
+                          Drop a stat here
                         </div>
                       )}
                     </div>
@@ -558,21 +591,31 @@ export default function ThisWeekPage() {
                 <h2 className={`text-lg font-black uppercase ${getTextClass()}`}>Available Stats</h2>
               </div>
               
-              <div className="space-y-3 mb-4">
-                {availableStats.map((stat) => (
-                  <div
-                    key={stat.key}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, stat.key)}
-                    onDragEnd={handleDragEnd}
-                    className={`${cardStyle.border} border p-3 ${getRoundedClass('rounded-lg')} cursor-move hover:opacity-80 transition-opacity`}
-                  >
-                    <div className={`font-medium text-sm ${getTextClass()} mb-1`}>{stat.label}</div>
-                    <div className={`text-xs ${getTextClass()}/60`}>{stat.description}</div>
-                  </div>
-                ))}
+              <div className="space-y-2 mb-4">
+                {availableStats.map((stat) => {
+                  const calculatedValue = availableStatsValues.get(stat.key) || (calculatingValues ? '...' : '—')
+                  return (
+                    <div
+                      key={stat.key}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, stat.key)}
+                      onDragEnd={handleDragEnd}
+                      className={`${cardStyle.border} border p-2.5 ${getRoundedClass('rounded-xl')} cursor-move hover:opacity-80 transition-all hover:scale-[1.02]`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className={`font-medium text-xs ${getTextClass()} truncate`}>{stat.label}</div>
+                          <div className={`text-[10px] ${getTextClass()}/50 truncate`}>{stat.description}</div>
+                        </div>
+                        <div className={`text-lg font-black ${getTextClass()} shrink-0`}>
+                          {calculatedValue}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
                 {availableStats.length === 0 && (
-                  <p className={`text-sm ${getTextClass()}/60 text-center py-4`}>All stats are selected</p>
+                  <p className={`text-xs ${getTextClass()}/60 text-center py-3`}>All stats are selected</p>
                 )}
               </div>
 

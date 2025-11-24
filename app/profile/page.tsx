@@ -234,7 +234,7 @@ export default function ProfilePage() {
     for_who?: string
   }>>([])
   const [loadingActivity, setLoadingActivity] = useState(false)
-  const [expandedActivityTypes, setExpandedActivityTypes] = useState<Set<string>>(new Set(['snap', 'work_sample', 'pipeline_project']))
+  const [expandedActivityTypes, setExpandedActivityTypes] = useState<Set<string>>(new Set())
   
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -1013,9 +1013,10 @@ export default function ProfilePage() {
                               {isExpanded && (
                                 <div className="space-y-2">
                                   {typeActivities.map((activity) => {
+                                    const dateStr = new Date(activity.date || activity.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                                    
                                     // For snaps, display as: date - snap text (for who)
                                     if (activity.type === 'snap') {
-                                      const dateStr = new Date(activity.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                                       const forWho = activity.for_who || 'Team'
                                       return (
                                         <div
@@ -1032,27 +1033,67 @@ export default function ProfilePage() {
                                       )
                                     }
                                     
-                                    // For other activity types, keep the original format
+                                    // For work samples, display as: date - project_name - description
+                                    if (activity.type === 'work_sample') {
+                                      return (
+                                        <div
+                                          key={`${activity.type}-${activity.id}`}
+                                          className="py-2 border-b border-gray-600/30 last:border-b-0"
+                                        >
+                                          <p className={`text-sm ${getFieldCardStyle().text}`}>
+                                            {dateStr} - {activity.title}
+                                            {activity.description && (
+                                              <>
+                                                {' '}-{' '}
+                                                <span className={`${getFieldCardStyle().hint} font-normal`}>
+                                                  {activity.description}
+                                                </span>
+                                              </>
+                                            )}
+                                          </p>
+                                        </div>
+                                      )
+                                    }
+                                    
+                                    // For pipeline projects, display as: date - name - description
+                                    if (activity.type === 'pipeline_project') {
+                                      return (
+                                        <div
+                                          key={`${activity.type}-${activity.id}`}
+                                          className="py-2 border-b border-gray-600/30 last:border-b-0"
+                                        >
+                                          <p className={`text-sm ${getFieldCardStyle().text}`}>
+                                            {dateStr} - {activity.title}
+                                            {activity.description && (
+                                              <>
+                                                {' '}-{' '}
+                                                <span className={`${getFieldCardStyle().hint} font-normal`}>
+                                                  {activity.description}
+                                                </span>
+                                              </>
+                                            )}
+                                          </p>
+                                        </div>
+                                      )
+                                    }
+                                    
+                                    // Fallback for any other activity types
                                     return (
                                       <div
                                         key={`${activity.type}-${activity.id}`}
-                                        className={`${getFieldCardStyle().bg} ${getFieldCardStyle().border} ${getRoundedClass('rounded-xl')} p-3`}
-                                        style={{
-                                          borderTopWidth: '1px',
-                                          borderBottomWidth: '1px',
-                                          borderLeftWidth: '0',
-                                          borderRightWidth: '0'
-                                        }}
+                                        className="py-2 border-b border-gray-600/30 last:border-b-0"
                                       >
-                                        <div className="flex flex-col gap-1">
-                                          <span className={`text-xs ${getFieldCardStyle().hint}`}>
-                                            {new Date(activity.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                          </span>
-                                          <h3 className={`font-bold ${getFieldCardStyle().text}`}>{activity.title}</h3>
+                                        <p className={`text-sm ${getFieldCardStyle().text}`}>
+                                          {dateStr} - {activity.title}
                                           {activity.description && (
-                                            <p className={`text-sm ${getFieldCardStyle().hint}`}>{activity.description}</p>
+                                            <>
+                                              {' '}-{' '}
+                                              <span className={`${getFieldCardStyle().hint} font-normal`}>
+                                                {activity.description}
+                                              </span>
+                                            </>
                                           )}
-                                        </div>
+                                        </p>
                                       </div>
                                     )
                                   })}

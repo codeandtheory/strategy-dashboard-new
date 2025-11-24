@@ -527,10 +527,10 @@ export default function TeamDashboard() {
         if (response.ok) {
           const result = await response.json()
           if (result.data && Array.isArray(result.data)) {
-            // Get pinned videos first, then fill with recent videos up to 4 total
+            // Get pinned videos first, then fill with recent videos - only show 1 video
             const pinnedVideos = result.data.filter((v: any) => v.pinned)
             const otherVideos = result.data.filter((v: any) => !v.pinned)
-            const allVideos = [...pinnedVideos, ...otherVideos].slice(0, 4)
+            const allVideos = [...pinnedVideos, ...otherVideos].slice(0, 1)
             setVideos(allVideos)
           }
         }
