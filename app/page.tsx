@@ -136,12 +136,12 @@ export default function TeamDashboard() {
   const [selectedPipelineProject, setSelectedPipelineProject] = useState<typeof pipelineData[0] | null>(null)
   const [isPipelineDialogOpen, setIsPipelineDialogOpen] = useState(false)
   const [completedFilter, setCompletedFilter] = useState<'Pending Decision' | 'Won' | 'Lost'>('Pending Decision')
-  const [pipelineStats, setPipelineStats] = useState<{
-    activeProjects: number
-    newBusiness: number
-    pitchesDue: number
-  } | null>(null)
-  const [pipelineStatsLoading, setPipelineStatsLoading] = useState(true)
+  const [thisWeekStats, setThisWeekStats] = useState<Array<{
+    position: number
+    title: string
+    value: string
+  }>>([])
+  const [thisWeekStatsLoading, setThisWeekStatsLoading] = useState(true)
   const [weeklyPlaylist, setWeeklyPlaylist] = useState<{
     id: string
     date: string
@@ -516,40 +516,42 @@ export default function TeamDashboard() {
     fetchPipeline()
   }, [user])
 
-  // Fetch pipeline stats
+  // Fetch this week stats
   useEffect(() => {
-    async function fetchPipelineStats() {
+    async function fetchThisWeekStats() {
       if (!user) return
       
       try {
-        setPipelineStatsLoading(true)
-        const response = await fetch('/api/pipeline/stats')
+        setThisWeekStatsLoading(true)
+        const response = await fetch('/api/this-week-stats')
         if (response.ok) {
           const result = await response.json()
-          setPipelineStats(result)
+          if (result.stats && Array.isArray(result.stats)) {
+            // Sort by position and extract title/value
+            const sorted = result.stats
+              .sort((a: any, b: any) => a.position - b.position)
+              .map((stat: any) => ({
+                position: stat.position,
+                title: stat.title || '',
+                value: stat.value || '0',
+              }))
+            setThisWeekStats(sorted)
+          } else {
+            setThisWeekStats([])
+          }
         } else {
-          console.error('Pipeline stats API error:', response.status, response.statusText)
-          // Set default values on error
-          setPipelineStats({
-            activeProjects: 0,
-            newBusiness: 0,
-            pitchesDue: 0
-          })
+          console.error('This week stats API error:', response.status, response.statusText)
+          setThisWeekStats([])
         }
       } catch (error) {
-        console.error('Error fetching pipeline stats:', error)
-        // Set default values on error
-        setPipelineStats({
-          activeProjects: 0,
-          newBusiness: 0,
-          pitchesDue: 0
-        })
+        console.error('Error fetching this week stats:', error)
+        setThisWeekStats([])
       } finally {
-        setPipelineStatsLoading(false)
+        setThisWeekStatsLoading(false)
       }
     }
     
-    fetchPipelineStats()
+    fetchThisWeekStats()
   }, [user])
 
   // Fetch weekly playlist
@@ -2526,11 +2528,25 @@ export default function TeamDashboard() {
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
               const mintColor = mode === 'chaos' ? '#00A3E0' : '#00FF87' // Work section uses Ocean from BLUE SYSTEM
-              const stats = [
-                { value: pipelineStatsLoading ? '...' : (pipelineStats?.activeProjects?.toString() || '0'), label: 'active projects' },
-                { value: pipelineStatsLoading ? '...' : (pipelineStats?.newBusiness?.toString() || '0'), label: 'new business' },
-                { value: pipelineStatsLoading ? '...' : (pipelineStats?.pitchesDue?.toString() || '0'), label: 'pitches due' },
-              ]
+              // Use this week stats from API, or show loading/empty state
+              const stats = thisWeekStatsLoading 
+                ? [
+                    { value: '...', label: 'loading' },
+                    { value: '...', label: 'loading' },
+                    { value: '...', label: 'loading' },
+                    { value: '...', label: 'loading' },
+                  ]
+                : thisWeekStats.length > 0
+                ? thisWeekStats.map(stat => ({
+                    value: stat.value,
+                    label: stat.title,
+                  }))
+                : [
+                    { value: '0', label: 'active projects' },
+                    { value: '0', label: 'new business' },
+                    { value: '0', label: 'pitches due' },
+                    { value: '0', label: 'active clients' },
+                  ]
               return (
                 <Card 
                   className={`${style.bg} ${style.border} ${eventsExpanded ? 'p-6' : 'py-3 px-6'} ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 flex flex-col`} 

@@ -1,12 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
 // WeatherAPI.com base URL
 const WEATHERAPI_BASE = 'https://api.weatherapi.com/v1'
+
+// OpenAI clients with fallback support
+let openaiClient: OpenAI | null = null
+let fallbackClient: OpenAI | null = null
+
+function getOpenAIClient(useFallback = false): OpenAI {
+  if (useFallback) {
+    const fallbackKey = process.env.OPENAI_API_KEY_FALLBACK
+    if (!fallbackKey) {
+      throw new Error('Fallback OpenAI API key not configured')
+    }
+    if (!fallbackClient) {
+      fallbackClient = new OpenAI({
+        apiKey: fallbackKey,
+      })
+    }
+    return fallbackClient
+  }
+
+  if (openaiClient) {
+    return openaiClient
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY is not set')
+  }
+
+  openaiClient = new OpenAI({
+    apiKey,
+  })
+
+  return openaiClient
+}
+
+/**
+ * Call OpenAI with automatic fallback to secondary API key on quota errors
+ */
+async function callOpenAIWithFallback<T>(
+  apiCall: (client: OpenAI) => Promise<T>
+): Promise<T> {
+  try {
+    const client = getOpenAIClient(false)
+    return await apiCall(client)
+  } catch (error: any) {
+    // If we get a 429 (quota exceeded) or 401 (invalid key) and have a fallback, try it
+    const hasFallback = !!process.env.OPENAI_API_KEY_FALLBACK
+    if (
+      hasFallback &&
+      (error?.status === 429 || error?.status === 401 || error?.message?.includes('quota') || error?.code === 'insufficient_quota')
+    ) {
+      console.log('Primary OpenAI API key failed, trying fallback key...')
+      const fallbackClient = getOpenAIClient(true)
+      return await apiCall(fallbackClient)
+    }
+    throw error
+  }
+}
 
 /**
  * Get weather emoji based on weather condition
@@ -24,6 +78,7 @@ function getWeatherEmoji(condition: string, isDay: boolean = true): string {
 
 /**
  * Generate work-related weather report using OpenAI
+ * Uses fallback API key and proxy support if configured
  */
 async function generateWorkWeatherReport(
   temperature: number,
@@ -49,28 +104,82 @@ Examples:
 Make it relevant, practical, and work-focused. Keep it concise and friendly.`
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a helpful assistant that provides brief, practical work-related weather tips.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
+    const openaiProxyUrl = process.env.OPENAI_PROXY_URL
+    const openaiChatModel = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini'
+    let completion: any
+
+    const messages = [
+      {
+        role: 'system' as const,
+        content: 'You are a helpful assistant that provides brief, practical work-related weather tips.',
+      },
+      {
+        role: 'user' as const,
+        content: prompt,
+      },
+    ]
+
+    const requestBody = {
+      model: openaiChatModel,
+      messages,
       max_tokens: 100,
       temperature: 0.7,
-    })
+    }
 
-    return response.choices[0]?.message?.content?.trim() || 'Check the weather before heading out today!'
-  } catch (error) {
+    // Use proxy if configured (n8n/Elvex), otherwise use direct OpenAI with fallback
+    if (openaiProxyUrl) {
+      console.log('Using proxy for OpenAI weather report:', openaiProxyUrl)
+      
+      // Check if this is Elvex (simple proxy) or n8n (needs type wrapper)
+      const isElvex = openaiProxyUrl.includes('/v1/chat/completions') || 
+                      openaiProxyUrl.includes('elvex')
+      
+      const proxyRequestBody = isElvex 
+        ? requestBody  // Elvex: send OpenAI format directly
+        : { type: 'chat', ...requestBody }  // n8n: wrap with type field
+
+      const response = await fetch(openaiProxyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(proxyRequestBody),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Proxy API call failed: ${response.status} ${errorText}`)
+      }
+
+      completion = await response.json()
+    } else {
+      // Use direct OpenAI with automatic fallback to secondary API key on quota errors
+      completion = await callOpenAIWithFallback(async (openai) => {
+        return await openai.chat.completions.create(requestBody)
+      })
+    }
+
+    return completion.choices[0]?.message?.content?.trim() || 'Check the weather before heading out today!'
+  } catch (error: any) {
     console.error('Error generating work weather report:', error)
-    // Fallback message
+    
+    // Check if it's a quota/billing error - don't retry, just use fallback message
+    if (error?.status === 429 && (error?.code === 'insufficient_quota' || error?.message?.includes('quota'))) {
+      console.warn('OpenAI quota exceeded, using fallback weather message')
+    }
+    
+    // Fallback message based on condition
     if (condition.toLowerCase().includes('rain')) {
       return 'Bring an umbrella to brainstorms today - it\'s wet out there!'
+    }
+    if (condition.toLowerCase().includes('sun') || condition.toLowerCase().includes('clear')) {
+      return 'Perfect weather for a walking meeting - take advantage of the sunshine!'
+    }
+    if (condition.toLowerCase().includes('cold') || temperature < 50) {
+      return 'Layer up for that client site visit - it\'s chilly today.'
+    }
+    if (condition.toLowerCase().includes('wind')) {
+      return 'Hold onto your notes in outdoor meetings - it\'s breezy!'
     }
     return 'Check the weather before heading out today!'
   }

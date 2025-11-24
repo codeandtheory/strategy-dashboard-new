@@ -99,7 +99,7 @@ async function fetchSpotifyPlaylistData(spotifyUrl: string) {
 // GET - Fetch all playlists, with optional Spotify data refresh
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     const refreshSpotify = searchParams.get('refresh') === 'true'
     
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
 // PUT - Update an existing playlist
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const body = await request.json()
 
     const { id, date, title, curator, description, spotify_url, apple_playlist_url, cover_url, curator_photo_url, week_label } = body
@@ -267,7 +267,7 @@ export async function PUT(request: NextRequest) {
 // POST - Create a new playlist
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const body = await request.json()
 
     const { date, title, curator, description, spotify_url, apple_playlist_url, cover_url, curator_photo_url, week_label } = body

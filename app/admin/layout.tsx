@@ -23,7 +23,8 @@ import {
   Upload,
   Newspaper,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  BarChart3
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -139,6 +140,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       items: [
         { href: '/admin/pipeline', label: 'Pipeline', icon: GitBranch, permission: null, sectionAccess: 'leadership' as const },
         { href: '/admin/news', label: 'News', icon: Newspaper, permission: null, sectionAccess: 'leadership' as const },
+        { href: '/admin/this-week', label: 'This Week Stats', icon: BarChart3, permission: null, sectionAccess: 'leadership' as const },
         { href: '/admin/curator-rotation', label: 'Curator Rotation', icon: RotateCw, permission: null, sectionAccess: 'leadership' as const },
         { href: '/admin/video', label: 'Video', icon: Upload, permission: null, sectionAccess: 'leadership' as const },
       ]
