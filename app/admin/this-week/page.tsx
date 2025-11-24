@@ -57,12 +57,28 @@ export default function ThisWeekPage() {
     }
   }
 
-  const getBorderClass = () => {
-    switch (mode) {
-      case 'chaos': return 'border-[#333333]'
-      case 'chill': return 'border-[#8B4444]/30'
-      case 'code': return 'border-[#FFFFFF]/30'
-      default: return 'border-[#333333]'
+  const getCardStyle = () => {
+    if (mode === 'chaos') {
+      return { 
+        bg: 'bg-[#000000]', 
+        border: 'border border-[#C4F500]', 
+        text: 'text-white', 
+        accent: '#C4F500' 
+      }
+    } else if (mode === 'chill') {
+      return { 
+        bg: 'bg-white', 
+        border: 'border border-[#FFC043]/30', 
+        text: 'text-[#4A1818]', 
+        accent: '#FFC043' 
+      }
+    } else {
+      return { 
+        bg: 'bg-[#000000]', 
+        border: 'border border-[#FFFFFF]', 
+        text: 'text-[#FFFFFF]', 
+        accent: '#FFFFFF' 
+      }
     }
   }
 
@@ -71,6 +87,8 @@ export default function ThisWeekPage() {
     if (mode === 'chill') return base.replace('rounded', 'rounded-2xl')
     return base
   }
+
+  const cardStyle = getCardStyle()
 
   // Fetch current stats configuration
   useEffect(() => {
@@ -186,7 +204,7 @@ export default function ThisWeekPage() {
 
   if (loading) {
     return (
-      <div className={`${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
+      <div className={`${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'} min-h-screen p-6`}>
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin" />
         </div>
@@ -195,13 +213,14 @@ export default function ThisWeekPage() {
   }
 
   return (
-    <div className={`${getBgClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
-      <div className="mb-8">
-        <h1 className={`text-4xl font-black uppercase ${getTextClass()} mb-2`}>This Week Stats</h1>
-        <p className={`${getTextClass()}/70 font-normal`}>Configure the 4 statistics displayed in the "This Week" card on the dashboard.</p>
-      </div>
+    <div className={`${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'} min-h-screen p-6`}>
+      <div className="max-w-[1200px] mx-auto">
+        <div className="mb-4">
+          <h1 className={`text-2xl font-black uppercase tracking-wider ${getTextClass()} mb-1`}>This Week Stats</h1>
+          <p className={`${getTextClass()}/70 text-sm font-normal`}>Configure the 4 statistics displayed in the "This Week" card on the dashboard.</p>
+        </div>
 
-      <Card className={`${getBgClass()} border ${getBorderClass()} p-6 ${getRoundedClass('rounded-xl')}`}>
+      <Card className={`${cardStyle.bg} ${cardStyle.border} border p-6 ${getRoundedClass('rounded-xl')}`}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <BarChart3 className={`w-6 h-6 ${getTextClass()}`} />
@@ -234,7 +253,7 @@ export default function ThisWeekPage() {
           {stats.map((stat, index) => (
             <Card
               key={stat.position}
-              className={`${getBgClass()} border ${getBorderClass()} p-6 ${getRoundedClass('rounded-xl')}`}
+              className={`${cardStyle.bg} ${cardStyle.border} border p-6 ${getRoundedClass('rounded-xl')}`}
             >
               <div className="flex items-start gap-4">
                 {/* Position indicator and move buttons */}
@@ -272,7 +291,7 @@ export default function ThisWeekPage() {
                 <div className="flex-1 space-y-4">
                   {/* Stat type selector */}
                   <div>
-                    <Label className={getTextClass()}>Stat Type</Label>
+                    <Label className={cardStyle.text}>Stat Type</Label>
                     <Select
                       value={stat.stat_type}
                       onValueChange={(value: 'database' | 'custom') => {
@@ -284,7 +303,7 @@ export default function ThisWeekPage() {
                         })
                       }}
                     >
-                      <SelectTrigger className={getBgClass()}>
+                      <SelectTrigger className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -307,12 +326,12 @@ export default function ThisWeekPage() {
                   {/* Database stat selector */}
                   {stat.stat_type === 'database' && (
                     <div>
-                      <Label className={getTextClass()}>Database Stat</Label>
+                      <Label className={cardStyle.text}>Database Stat</Label>
                       <Select
                         value={stat.database_stat_key || ''}
                         onValueChange={(value) => updateStat(stat.position, { database_stat_key: value })}
                       >
-                        <SelectTrigger className={getBgClass()}>
+                        <SelectTrigger className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}>
                           <SelectValue placeholder="Select a database stat" />
                         </SelectTrigger>
                         <SelectContent>
@@ -333,21 +352,21 @@ export default function ThisWeekPage() {
                   {stat.stat_type === 'custom' && (
                     <>
                       <div>
-                        <Label className={getTextClass()}>Title</Label>
+                        <Label className={cardStyle.text}>Title</Label>
                         <Input
                           value={stat.custom_title || ''}
                           onChange={(e) => updateStat(stat.position, { custom_title: e.target.value })}
                           placeholder="e.g., team members"
-                          className={getBgClass()}
+                          className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
                         />
                       </div>
                       <div>
-                        <Label className={getTextClass()}>Value</Label>
+                        <Label className={cardStyle.text}>Value</Label>
                         <Input
                           value={stat.custom_value || ''}
                           onChange={(e) => updateStat(stat.position, { custom_value: e.target.value })}
                           placeholder="e.g., 25"
-                          className={getBgClass()}
+                          className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
                         />
                       </div>
                     </>
@@ -358,6 +377,7 @@ export default function ThisWeekPage() {
           ))}
         </div>
       </Card>
+      </div>
     </div>
   )
 }

@@ -26,12 +26,28 @@ export default function NotificationsPage() {
     }
   }
 
-  const getBorderClass = () => {
-    switch (mode) {
-      case 'chaos': return 'border-[#333333]'
-      case 'chill': return 'border-[#8B4444]/30'
-      case 'code': return 'border-[#FFFFFF]/30'
-      default: return 'border-[#333333]'
+  const getCardStyle = () => {
+    if (mode === 'chaos') {
+      return { 
+        bg: 'bg-[#000000]', 
+        border: 'border border-[#C4F500]', 
+        text: 'text-white', 
+        accent: '#C4F500' 
+      }
+    } else if (mode === 'chill') {
+      return { 
+        bg: 'bg-white', 
+        border: 'border border-[#FFC043]/30', 
+        text: 'text-[#4A1818]', 
+        accent: '#FFC043' 
+      }
+    } else {
+      return { 
+        bg: 'bg-[#000000]', 
+        border: 'border border-[#FFFFFF]', 
+        text: 'text-[#FFFFFF]', 
+        accent: '#FFFFFF' 
+      }
     }
   }
 
@@ -41,14 +57,17 @@ export default function NotificationsPage() {
     return base
   }
 
-  return (
-    <div className={`${getBgClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
-      <div className="mb-8">
-        <h1 className={`text-4xl font-black uppercase ${getTextClass()} mb-2`}>Push Notifications</h1>
-        <p className={`${getTextClass()}/70 font-normal`}>Send important announcements and updates to the team.</p>
-      </div>
+  const cardStyle = getCardStyle()
 
-      <Card className={`${getBgClass()} border ${getBorderClass()} p-6 ${getRoundedClass('rounded-xl')}`}>
+  return (
+    <div className={`${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'} min-h-screen p-6`}>
+      <div className="max-w-[1200px] mx-auto">
+        <div className="mb-4">
+          <h1 className={`text-2xl font-black uppercase tracking-wider ${getTextClass()} mb-1`}>Push Notifications</h1>
+          <p className={`${getTextClass()}/70 text-sm font-normal`}>Send important announcements and updates to the team.</p>
+        </div>
+
+      <Card className={`${cardStyle.bg} ${cardStyle.border} border p-6 ${getRoundedClass('rounded-xl')}`}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Bell className={`w-6 h-6 ${getTextClass()}`} />
@@ -66,10 +85,11 @@ export default function NotificationsPage() {
           </Button>
         </div>
 
-        <div className={`text-center py-12 ${getTextClass()}/70`}>
+        <div className={`text-center py-12 ${cardStyle.text}/70`}>
           <p className="text-lg">Push notification management coming soon.</p>
         </div>
       </Card>
+      </div>
     </div>
   )
 }
