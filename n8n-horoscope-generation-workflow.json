@@ -1,0 +1,199 @@
+{
+  "name": "Horoscope Generation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "horoscope-generation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "horoscope-generation-webhook"
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "complete",
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.9,
+          "responseFormat": {
+            "type": "json_object"
+          },
+          "maxTokens": 600
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON."
+            },
+            {
+              "role": "user",
+              "content": "=Transform this horoscope from Cafe Astrology into the irreverent, silly style of Co-Star. Make it witty, slightly sarcastic, and fun. Keep the core meaning but make it more casual and entertaining.\n\nOriginal horoscope for {{ $json['starSign'] }}:\n{{ $json['cafeAstrologyText'] }}\n\nReturn a JSON object with this exact structure:\n{\n  \"horoscope\": \"An irreverent, expanded version of the horoscope in Co-Star's style. Make it approximately 150 words. Keep it witty, casual, and entertaining while expanding on the themes from the original. Break it into multiple paragraphs for readability.\",\n  \"dos\": [\"Do thing 1\", \"Do thing 2\", \"Do thing 3\"],\n  \"donts\": [\"Don't thing 1\", \"Don't thing 2\", \"Don't thing 3\"]\n}\n\nMake the do's and don'ts silly, specific, and related to the horoscope content. They should be funny and slightly absurd but still relevant."
+            }
+          ]
+        }
+      },
+      "id": "text-transformation",
+      "name": "OpenAI Text Transformation",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.3,
+      "position": [460, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      },
+      "continueOnFail": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse OpenAI response - extract JSON from choices[0].message.content\nconst openAiOutput = $input.item.json;\nlet textResult = openAiOutput;\n\n// Extract content from OpenAI response structure\nif (openAiOutput.choices && openAiOutput.choices[0] && openAiOutput.choices[0].message) {\n  textResult = openAiOutput.choices[0].message.content;\n}\n\n// Parse JSON if it's a string\nlet parsedText = textResult;\nif (typeof textResult === 'string') {\n  try {\n    parsedText = JSON.parse(textResult);\n  } catch (e) {\n    // If parsing fails, try to extract JSON from text\n    const jsonMatch = textResult.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      parsedText = JSON.parse(jsonMatch[0]);\n    } else {\n      throw new Error('Could not parse text transformation response as JSON');\n    }\n  }\n}\n\n// Validate structure\nif (!parsedText.horoscope || !Array.isArray(parsedText.dos) || !Array.isArray(parsedText.donts)) {\n  throw new Error('Invalid response format from OpenAI text transformation');\n}\n\n// Store text result and pass through original webhook data for image generation\nreturn {\n  json: {\n    horoscope: parsedText.horoscope,\n    dos: parsedText.dos,\n    donts: parsedText.donts,\n    imagePrompt: $('Webhook').item.json.imagePrompt,\n    slots: $('Webhook').item.json.slots,\n    reasoning: $('Webhook').item.json.reasoning\n  }\n};"
+      },
+      "id": "parse-text-result",
+      "name": "Parse Text Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "create",
+        "model": "dall-e-3",
+        "prompt": "={{ $json['imagePrompt'] }}",
+        "options": {
+          "size": "1024x1024",
+          "quality": "standard",
+          "n": 1
+        }
+      },
+      "id": "image-generation",
+      "name": "OpenAI Image Generation",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.3,
+      "position": [900, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      },
+      "continueOnFail": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract image URL from OpenAI response\nconst imageOutput = $input.item.json;\nlet imageUrl = null;\n\n// OpenAI image generation returns data array\nif (imageOutput.data && imageOutput.data[0] && imageOutput.data[0].url) {\n  imageUrl = imageOutput.data[0].url;\n} else if (imageOutput.url) {\n  imageUrl = imageOutput.url;\n}\n\nif (!imageUrl) {\n  throw new Error('Failed to extract image URL from OpenAI response');\n}\n\n// Get text result from previous node\nconst textResult = $('Parse Text Result').item.json;\n\n// Combine all results\nreturn {\n  json: {\n    horoscope: textResult.horoscope,\n    dos: textResult.dos,\n    donts: textResult.donts,\n    imageUrl: imageUrl,\n    prompt: textResult.imagePrompt,\n    slots: textResult.slots,\n    reasoning: textResult.reasoning\n  }\n};"
+      },
+      "id": "combine-results",
+      "name": "Combine Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Text Transformation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Text Transformation": {
+      "main": [
+        [
+          {
+            "node": "Parse Text Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Text Result": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Image Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Image Generation": {
+      "main": [
+        [
+          {
+            "node": "Combine Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Results": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+

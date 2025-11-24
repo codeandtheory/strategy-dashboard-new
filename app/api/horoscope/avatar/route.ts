@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateHoroscopeImage } from '@/lib/openai'
 import { fetchHoroscopeConfig } from '@/lib/horoscope-config'
 import { createClient } from '@/lib/supabase/server'
 
@@ -327,40 +326,86 @@ export async function GET(request: NextRequest) {
     }
     */
     
-    // Only generate new image if there's NO cached image at all
-    // This ensures we only generate once per day and avoid hitting billing limits
-    console.log('⚠️ NO cached image found in database for user', userId, 'on date', todayDate)
-    console.log('   Cached horoscope exists:', !!cachedHoroscope)
-    console.log('   Has image_url:', !!cachedHoroscope?.image_url)
-    console.log('   Image URL value:', cachedHoroscope?.image_url || 'null/empty')
-    console.log('   Double-check result:', !!doubleCheckHoroscope?.image_url)
-    console.log('   ⚠️ PROCEEDING TO GENERATE NEW IMAGE (this will call OpenAI API)')
-    console.log('   ⚠️ THIS IS THE ONLY GENERATION FOR TODAY - NO MORE WILL BE GENERATED')
+    // Image generation is now handled in the main horoscope route via n8n
+    // This endpoint now just returns the cached image if it exists
+    // If no image exists, it means the horoscope hasn't been generated yet
+    if (!cachedHoroscope?.image_url) {
+      console.log('⚠️ No image found in database. Image generation is now handled by the main horoscope route.')
+      console.log('   Please call /api/horoscope first to generate both text and image via n8n.')
+      return NextResponse.json(
+        { 
+          error: 'Image not found. Please generate horoscope first by calling /api/horoscope endpoint.',
+          details: 'Image generation is now combined with text generation in the main horoscope route.'
+        },
+        { status: 404 }
+      )
+    }
     
-    // Generate new image with new slot-based prompt system
-    const { imageUrl, prompt, slots, reasoning } = await generateHoroscopeImage(
-      supabaseAdmin,
-      userId,
-      todayDate,
-      {
-        name: profile.full_name || userEmail || 'User',
-        role: profile.role || null,
-        hobbies: profile.hobbies || null,
-        starSign: starSign,
-        element: userProfile.element,
-        likes_fantasy: profile.likes_fantasy || false,
-        likes_scifi: profile.likes_scifi || false,
-        likes_cute: profile.likes_cute || false,
-        likes_minimal: profile.likes_minimal || false,
-        hates_clowns: profile.hates_clowns || false,
-      },
-      userProfile.weekday,
-      userProfile.season
+    // Return the existing image URL and related data
+    // Image is already stored in Supabase storage by the main route
+    const imageUrl = cachedHoroscope.image_url
+    const prompt = cachedHoroscope.image_prompt || ''
+    const slots = cachedHoroscope.prompt_slots_json || {}
+    const reasoning = {} // Not stored in database, but kept for API compatibility
+    
+    console.log('✅ Returning cached image from database')
+    
+    // Resolve slot IDs to labels for display (same logic as before)
+    const slotLabels: any = {}
+    const slotIds = [
+      slots.style_medium_id,
+      slots.style_reference_id,
+      slots.subject_role_id,
+      slots.subject_twist_id,
+      slots.setting_place_id,
+      slots.setting_time_id,
+      slots.activity_id,
+      slots.mood_vibe_id,
+      slots.color_palette_id,
+      slots.camera_frame_id,
+      slots.lighting_style_id,
+      ...(slots.constraints_ids || [])
+    ].filter(Boolean)
+    
+    if (slotIds.length > 0) {
+      const { data: catalogItems } = await supabaseAdmin
+        .from('prompt_slot_catalogs')
+        .select('id, label')
+        .in('id', slotIds)
+      
+      if (catalogItems) {
+        const catalogMap = new Map(catalogItems.map(item => [item.id, item]))
+        slotLabels.style_medium = catalogMap.get(slots.style_medium_id)?.label
+        slotLabels.style_reference = catalogMap.get(slots.style_reference_id)?.label
+        slotLabels.subject_role = catalogMap.get(slots.subject_role_id)?.label
+        slotLabels.subject_twist = slots.subject_twist_id ? catalogMap.get(slots.subject_twist_id)?.label : null
+        slotLabels.setting_place = catalogMap.get(slots.setting_place_id)?.label
+        slotLabels.setting_time = catalogMap.get(slots.setting_time_id)?.label
+        slotLabels.activity = catalogMap.get(slots.activity_id)?.label
+        slotLabels.mood_vibe = catalogMap.get(slots.mood_vibe_id)?.label
+        slotLabels.color_palette = catalogMap.get(slots.color_palette_id)?.label
+        slotLabels.camera_frame = catalogMap.get(slots.camera_frame_id)?.label
+        slotLabels.lighting_style = catalogMap.get(slots.lighting_style_id)?.label
+        slotLabels.constraints = (slots.constraints_ids || []).map((id: string) => catalogMap.get(id)?.label).filter(Boolean)
+      }
+    }
+    
+    return NextResponse.json({
+      image_url: imageUrl,
+      image_prompt: prompt,
+      prompt_slots: slots,
+      prompt_slots_labels: Object.keys(slotLabels).length > 0 ? slotLabels : null,
+      prompt_slots_reasoning: reasoning,
+      cached: true,
+    })
+  } catch (error: any) {
+    console.error('Error in horoscope avatar API:', error)
+    return NextResponse.json(
+      { error: error.message || 'Failed to get horoscope avatar' },
+      { status: 500 }
     )
-    
-    // Download the image from OpenAI and upload to Supabase storage to prevent expiration
-    console.log('📥 Downloading image from OpenAI and uploading to Supabase storage...')
-    let permanentImageUrl = imageUrl
+  }
+}
     try {
       // Download the image
       const imageResponse = await fetch(imageUrl)

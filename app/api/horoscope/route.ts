@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { transformHoroscopeToCoStarStyle, generateHoroscopeImage } from '@/lib/openai'
+import { generateHoroscopeViaN8n } from '@/lib/n8n-horoscope-service'
 import { fetchCafeAstrologyHoroscope } from '@/lib/cafe-astrology'
 import { generateSillyCharacterName } from '@/lib/silly-names'
 import {
@@ -13,6 +13,8 @@ import {
   makeResolvedChoices,
 } from '@/lib/horoscope-engine'
 import { fetchHoroscopeConfig } from '@/lib/horoscope-config'
+import { buildHoroscopePrompt, type UserProfile as PromptUserProfile } from '@/lib/horoscope-prompt-builder'
+import { updateUserAvatarState } from '@/lib/horoscope-catalogs'
 import { createClient } from '@/lib/supabase/server'
 
 // Supabase client setup - uses service role for database operations
@@ -327,10 +329,10 @@ export async function GET(request: NextRequest) {
     console.log('   ⚠️ PROCEEDING TO GENERATE NEW HOROSCOPE (this will call OpenAI API)')
     console.log('   ⚠️ THIS IS THE ONLY GENERATION FOR TODAY - NO MORE WILL BE GENERATED')
     
-    // Fetch user profile to get birthday, discipline (department), role (title)
+    // Fetch user profile to get birthday, discipline (department), role (title), and image generation preferences
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('birthday, discipline, role')
+      .select('birthday, discipline, role, full_name, hobbies, likes_fantasy, likes_scifi, likes_cute, likes_minimal, hates_clowns')
       .eq('id', userId)
       .single()
 
@@ -385,12 +387,15 @@ export async function GET(request: NextRequest) {
     const characterName = generateSillyCharacterName(starSign)
     console.log('Generated character name:', characterName)
     
-    // Fetch from Cafe Astrology and transform to Co-Star style
+    // Fetch from Cafe Astrology and generate via n8n
     console.log('Generating horoscope for:', { starSign, profile: userProfile })
     let horoscopeText: string
     let horoscopeDos: string[]
     let horoscopeDonts: string[]
     let imageUrl: string
+    let imagePrompt: string
+    let promptSlots: any
+    let promptReasoning: any
     
     try {
       console.log('Fetching horoscope from Cafe Astrology...')
@@ -400,32 +405,152 @@ export async function GET(request: NextRequest) {
       const cafeAstrologyText = await fetchCafeAstrologyHoroscope(starSign)
       console.log('Fetched horoscope from Cafe Astrology')
       
-      // Transform to Co-Star style (image generation is now separate)
-      // This calls OpenAI API - if it fails due to quota, we should not proceed
-      console.log('⚠️ About to call OpenAI API for text transformation - this will use API credits')
-      const transformed = await transformHoroscopeToCoStarStyle(cafeAstrologyText, starSign)
-      horoscopeText = transformed.horoscope
-      horoscopeDos = transformed.dos
-      horoscopeDonts = transformed.donts
+      // Build image prompt using slot-based system (keep this logic in Next.js)
+      console.log('Building image prompt with slot-based system...')
+      const promptUserProfile: PromptUserProfile = {
+        id: userId,
+        name: profile.full_name || 'User',
+        role: profile.role || null,
+        hobbies: profile.hobbies || null,
+        starSign: starSign,
+        element: userProfile.element,
+        likes_fantasy: profile.likes_fantasy || false,
+        likes_scifi: profile.likes_scifi || false,
+        likes_cute: profile.likes_cute || false,
+        likes_minimal: profile.likes_minimal || false,
+        hates_clowns: profile.hates_clowns || false,
+      }
+      
+      const { prompt, slots, reasoning } = await buildHoroscopePrompt(
+        supabaseAdmin,
+        userId,
+        todayDate,
+        promptUserProfile,
+        userProfile.weekday,
+        userProfile.season
+      )
+      
+      imagePrompt = prompt
+      promptSlots = slots
+      promptReasoning = reasoning
+      
+      console.log('Built image prompt, calling n8n for text and image generation...')
+      
+      // Call n8n workflow for both text transformation and image generation
+      const n8nResult = await generateHoroscopeViaN8n({
+        cafeAstrologyText,
+        starSign,
+        imagePrompt,
+        slots: promptSlots,
+        reasoning: promptReasoning,
+        userId,
+        date: todayDate,
+      })
+      
+      horoscopeText = n8nResult.horoscope
+      horoscopeDos = n8nResult.dos
+      horoscopeDonts = n8nResult.donts
+      imageUrl = n8nResult.imageUrl
+      
+      // Update user avatar state (same logic as in generateHoroscopeImage)
+      const { data: styleReference } = await supabaseAdmin
+        .from('prompt_slot_catalogs')
+        .select('style_group_id')
+        .eq('id', promptSlots.style_reference_id)
+        .single()
+      
+      const selectedStyleGroupId = styleReference?.style_group_id
+      
+      const { data: avatarState } = await supabaseAdmin
+        .from('user_avatar_state')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+      
+      const recentStyleGroupIds = avatarState?.recent_style_group_ids || []
+      const recentStyleReferenceIds = avatarState?.recent_style_reference_ids || []
+      const recentSubjectRoleIds = avatarState?.recent_subject_role_ids || []
+      const recentSettingPlaceIds = avatarState?.recent_setting_place_ids || []
+      
+      const updatedStyleGroupIds = selectedStyleGroupId
+        ? [...recentStyleGroupIds.filter((id) => id !== selectedStyleGroupId), selectedStyleGroupId].slice(-7)
+        : recentStyleGroupIds
+      
+      const updatedStyleReferenceIds = [
+        ...recentStyleReferenceIds.filter((id) => id !== promptSlots.style_reference_id),
+        promptSlots.style_reference_id,
+      ].slice(-7)
+      
+      const updatedSubjectRoleIds = [
+        ...recentSubjectRoleIds.filter((id) => id !== promptSlots.subject_role_id),
+        promptSlots.subject_role_id,
+      ].slice(-7)
+      
+      const updatedSettingPlaceIds = [
+        ...recentSettingPlaceIds.filter((id) => id !== promptSlots.setting_place_id),
+        promptSlots.setting_place_id,
+      ].slice(-7)
+      
+      await updateUserAvatarState(supabaseAdmin, userId, {
+        last_generated_date: todayDate,
+        recent_style_group_ids: updatedStyleGroupIds,
+        recent_style_reference_ids: updatedStyleReferenceIds,
+        recent_subject_role_ids: updatedSubjectRoleIds,
+        recent_setting_place_ids: updatedSettingPlaceIds,
+      })
+      
+      // Download the image from OpenAI and upload to Supabase storage to prevent expiration
+      console.log('📥 Downloading image from OpenAI and uploading to Supabase storage...')
+      let permanentImageUrl = imageUrl
+      try {
+        // Download the image
+        const imageResponse = await fetch(imageUrl)
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to download image: ${imageResponse.statusText}`)
+        }
+        const imageBlob = await imageResponse.blob()
+        const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
+        
+        // Upload to Supabase storage (avatars bucket)
+        const fileName = `horoscope-${userId}-${todayDate}.png`
+        const filePath = `${userId}/${fileName}`
+        
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from('avatars')
+          .upload(filePath, imageBuffer, {
+            contentType: 'image/png',
+            upsert: true, // Overwrite if exists
+          })
+        
+        if (uploadError) {
+          console.error('⚠️ Error uploading image to Supabase storage:', uploadError)
+          // Don't fail the request if image upload fails - use original URL
+          console.log('   Using original OpenAI image URL instead')
+        } else {
+          // Get public URL from Supabase storage
+          const { data: urlData } = supabaseAdmin.storage
+            .from('avatars')
+            .getPublicUrl(filePath)
+          
+          permanentImageUrl = urlData.publicUrl
+          console.log('✅ Image uploaded to Supabase storage:', permanentImageUrl)
+        }
+      } catch (imageError: any) {
+        console.error('⚠️ Error processing image upload:', imageError)
+        // Don't fail the request if image processing fails - use original URL
+        console.log('   Using original OpenAI image URL instead')
+      }
+      
+      imageUrl = permanentImageUrl
       
       const elapsedTime = Date.now() - startTime
-      console.log(`✅ Horoscope text generation completed in ${elapsedTime}ms`)
-      
-      // Get image URL from database (it should already be generated by the image endpoint)
-      const { data: cachedImage } = await supabaseAdmin
-        .from('horoscopes')
-        .select('image_url')
-        .eq('user_id', userId)
-        .eq('date', todayDate)
-        .maybeSingle()
-      
-      imageUrl = cachedImage?.image_url || ''
+      console.log(`✅ Horoscope generation completed via n8n in ${elapsedTime}ms`)
       
       console.log('Horoscope generated successfully:', { 
         horoscopeText: horoscopeText.substring(0, 50) + '...', 
         dosCount: horoscopeDos.length,
         dontsCount: horoscopeDonts.length,
-        imageUrl 
+        hasImageUrl: !!imageUrl
       })
     } catch (error: any) {
       console.error('❌ Error generating horoscope:', error)
@@ -433,31 +558,29 @@ export async function GET(request: NextRequest) {
       console.error('   Error type:', error.type)
       console.error('   Error status:', error.status)
       
-      // Check for quota/billing errors - return specific error
-      if (error.code === 'insufficient_quota' || error.status === 429) {
-        const quotaError = 'OpenAI quota exceeded. Please check your OpenAI account billing settings. The system attempted to generate but your account has no remaining credits.'
-        console.error('🚫 QUOTA ERROR:', quotaError)
+      // Handle n8n-specific errors
+      if (error.message?.includes('n8n webhook')) {
+        console.error('🚫 N8N WEBHOOK ERROR:', error.message)
         return NextResponse.json(
           { 
-            error: quotaError,
-            code: error.code || 'insufficient_quota',
-            details: 'Your OpenAI account has exceeded its quota. Please add credits or upgrade your plan.'
+            error: `Failed to generate horoscope via n8n: ${error.message}`,
+            code: 'n8n_error',
+            details: 'The horoscope generation service is temporarily unavailable. Please try again later.'
           },
-          { status: 429 }
+          { status: 503 }
         )
       }
       
-      // Check for billing limit errors
-      if (error.code === 'billing_hard_limit_reached' || error.status === 400) {
-        const billingError = 'OpenAI billing hard limit reached. Please check your OpenAI account billing settings and add payment method if needed.'
-        console.error('🚫 BILLING LIMIT ERROR:', billingError)
+      // Handle timeout errors
+      if (error.message?.includes('timeout')) {
+        console.error('🚫 TIMEOUT ERROR:', error.message)
         return NextResponse.json(
           { 
-            error: billingError,
-            code: error.code || 'billing_hard_limit_reached',
-            details: 'Your OpenAI account has reached its billing limit. Please add a payment method or increase your spending limit.'
+            error: 'Horoscope generation timed out. The request took too long to process.',
+            code: 'timeout',
+            details: 'Please try again. If the problem persists, contact support.'
           },
-          { status: 402 }
+          { status: 504 }
         )
       }
       
@@ -465,7 +588,7 @@ export async function GET(request: NextRequest) {
         { 
           error: `Failed to generate horoscope: ${error.message || 'Unknown error'}`,
           code: error.code,
-          details: error.details
+          details: error.details || error.message
         },
         { status: error.status || 500 }
       )
@@ -515,20 +638,9 @@ export async function GET(request: NextRequest) {
       character_name: characterName,
       date: todayDate, // Explicitly set date to ensure consistency
       generated_at: new Date().toISOString(),
-    }
-    
-    // Preserve existing image data if it exists
-    if (existingHoroscope?.image_url) {
-      upsertData.image_url = existingHoroscope.image_url
-      console.log('   Preserving existing image_url')
-    }
-    if (existingHoroscope?.prompt_slots_json) {
-      upsertData.prompt_slots_json = existingHoroscope.prompt_slots_json
-      console.log('   Preserving existing prompt_slots_json')
-    }
-    if (existingHoroscope?.image_prompt) {
-      upsertData.image_prompt = existingHoroscope.image_prompt
-      console.log('   Preserving existing image_prompt')
+      image_url: imageUrl, // Set image URL from n8n result
+      prompt_slots_json: promptSlots, // Set prompt slots from prompt building
+      image_prompt: imagePrompt, // Set image prompt
     }
     
     console.log('💾 Saving horoscope text to database...')

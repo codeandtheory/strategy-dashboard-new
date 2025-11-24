@@ -10,8 +10,9 @@ This document describes the environment variables needed for the n8n-based deck 
 # Internal API Token (shared secret with n8n)
 INTERNAL_API_TOKEN=your-secure-random-token-here
 
-# n8n Webhook URL (for triggering processing)
+# n8n Webhook URLs (for triggering processing)
 NEXT_PUBLIC_N8N_WEBHOOK_URL=https://your-n8n-host/webhook/work-sample-uploaded
+NEXT_PUBLIC_N8N_HOROSCOPE_WEBHOOK_URL=https://your-n8n-host/webhook-test/horoscope-generation
 
 # Supabase Configuration (required)
 SUPABASE_URL=https://your-project.supabase.co
