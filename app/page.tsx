@@ -2347,14 +2347,25 @@ export default function TeamDashboard() {
                 return eventMap
               }, new Map())
               
-              // Convert Map values to array and sort by start time
+              // Convert Map values to array
               const deduplicatedEvents = Array.from(eventMap.values())
+              
+              // Filter out holidays that aren't also office events (only show holidays when office is closed)
+              const filteredDeduplicatedEvents = deduplicatedEvents.filter(event => {
+                const isHoliday = event.calendarId.includes('holiday')
+                // If it's a holiday, only show it if it's also marked as office closed
+                if (isHoliday) {
+                  return (event as any).isOfficeClosed === true
+                }
+                // Keep all non-holiday events
+                return true
+              })
               
               // Add birthdays and anniversaries at the top (only for week view)
               const birthdaysAndAnniversaries = eventsExpanded ? getBirthdaysAndAnniversaries() : []
               
               // Combine and sort: birthdays/anniversaries first, then other events
-              const allEvents = [...birthdaysAndAnniversaries, ...deduplicatedEvents].sort((a, b) => {
+              const allEvents = [...birthdaysAndAnniversaries, ...filteredDeduplicatedEvents].sort((a, b) => {
                 // Birthdays and anniversaries always come first
                 const aIsSpecial = (a as any).isBirthday || (a as any).isAnniversary
                 const bIsSpecial = (b as any).isBirthday || (b as any).isAnniversary
@@ -2619,8 +2630,8 @@ export default function TeamDashboard() {
                           <span className="text-[10px] text-black/80">Strategy Team</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded" style={{ backgroundColor: mode === 'chaos' ? '#EAB308' : '#FFC043' }}></div>
-                          <span className="text-[10px] text-black/80">Holidays</span>
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: mode === 'chaos' ? '#FFA500' : '#FF8C00' }}></div>
+                          <span className="text-[10px] text-black/80">Office Closed (Holidays)</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded" style={{ backgroundColor: mode === 'chaos' ? '#0EA5E9' : '#00FF87' }}></div>
@@ -2635,10 +2646,13 @@ export default function TeamDashboard() {
                       borderColor: mode === 'chaos' ? '#0EA5E9' : mode === 'chill' ? 'rgba(74, 24, 24, 0.2)' : '#FFFFFF'
                     }}>
                       {/* Day headers with dark blue background */}
-                      <div className="grid grid-cols-7 mb-3 pb-3 pt-2 rounded-t-lg" style={{ 
-                        backgroundColor: mode === 'chaos' ? '#1E3A8A' : mode === 'chill' ? '#4A1818' : '#000000',
-                        borderBottom: `1px solid ${mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.3)' : 'rgba(255, 255, 255, 0.3)'}`
-                      }}>
+                      {(() => {
+                        const hasBirthdaysOrAnniversaries = filteredEvents.some((e: any) => e.isBirthday || e.isAnniversary)
+                        return (
+                          <div className={`grid grid-cols-7 pb-3 pt-2 rounded-t-lg ${hasBirthdaysOrAnniversaries ? 'mb-3' : 'mb-0'}`} style={{ 
+                            backgroundColor: mode === 'chaos' ? '#1E3A8A' : mode === 'chill' ? '#4A1818' : '#000000',
+                            borderBottom: `1px solid ${mode === 'chaos' ? 'rgba(14, 165, 233, 0.3)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.3)' : 'rgba(255, 255, 255, 0.3)'}`
+                          }}>
                         {getWeekDays().map((day, index) => {
                           const isToday = day.toDateString() === now.toDateString()
                           const dayName = day.toLocaleDateString('en-US', { weekday: 'short' })
@@ -2658,11 +2672,14 @@ export default function TeamDashboard() {
                             </div>
                           )
                         })}
-                      </div>
+                          </div>
+                        )
+                      })()}
                       
                       {/* Check if there are any birthdays/anniversaries to determine top spacing */}
                       {(() => {
                         const hasBirthdaysOrAnniversaries = filteredEvents.some((e: any) => e.isBirthday || e.isAnniversary)
+                        // Calculate top offset: if there are birthdays/anniversaries, start after them (top-20), otherwise start right after headers
                         const topOffset = hasBirthdaysOrAnniversaries ? 'top-20' : 'top-0'
                         
                         return (
@@ -2682,7 +2699,7 @@ export default function TeamDashboard() {
                             </div>
 
                             {/* Events as Gantt bars - use grid for aligned columns */}
-                            <div className={`space-y-2 relative z-10 ${hasBirthdaysOrAnniversaries ? '' : 'mt-0'}`}>
+                            <div className={`space-y-2 relative z-10`}>
                               {filteredEvents.map((event) => {
                           const eventColor = getEventColor(event)
                           const span = getEventSpan(event)
@@ -3671,7 +3688,7 @@ export default function TeamDashboard() {
                   <span className="uppercase tracking-wider font-black text-xs">Archive</span>
         </div>
                 <h2 className={`text-3xl font-black mb-6 uppercase ${videoStyle.text}`}>VIDEO<br/>ARCHIVE</h2>
-                <div className="space-y-3 mb-4 flex-1 overflow-y-auto">
+                <div className="mb-4 flex-1 overflow-y-auto">
                   {videosLoading ? (
                     <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-4 border-2 flex items-center justify-center`} style={{ borderColor: `${videoStyle.accent}40` }}>
                       <Loader2 className={`w-5 h-5 animate-spin ${videoStyle.text}`} />
@@ -3682,20 +3699,18 @@ export default function TeamDashboard() {
                       <p className={`text-xs font-medium ${videoStyle.text}/70`}>Videos will appear here</p>
                     </div>
                   ) : (
-                    videos.map((video) => (
-                      <div key={video.id} className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-2 border-2`} style={{ borderColor: `${videoStyle.accent}40` }}>
-                        <div className="mb-2">
-                          <p className={`text-sm font-semibold ${videoStyle.text} line-clamp-2`}>{video.title}</p>
-                        </div>
-                        <VideoEmbed
-                          videoUrl={video.video_url}
-                          platform={video.platform}
-                          thumbnailUrl={video.thumbnail_url}
-                          aspectRatio="16/9"
-                          className="border-0"
-                        />
+                    <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-2 border-2`} style={{ borderColor: `${videoStyle.accent}40` }}>
+                      <div className="mb-2">
+                        <p className={`text-sm font-semibold ${videoStyle.text} line-clamp-2`}>{videos[0].title}</p>
                       </div>
-                    ))
+                      <VideoEmbed
+                        videoUrl={videos[0].video_url}
+                        platform={videos[0].platform}
+                        thumbnailUrl={videos[0].thumbnail_url}
+                        aspectRatio="16/9"
+                        className="border-0"
+                      />
+                    </div>
                   )}
                 </div>
                 <Link href="/admin/video">
