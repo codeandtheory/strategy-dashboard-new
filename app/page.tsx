@@ -3084,53 +3084,37 @@ export default function TeamDashboard() {
         </p>
 
         <div className="mb-6">
-          <Card className={`${mode === 'chaos' ? 'bg-black/40 border-gray-600' : mode === 'chill' ? 'bg-white border-gray-300' : 'bg-black/40 border-gray-600'} border p-4 ${getRoundedClass('rounded-xl')}`}>
-            <form onSubmit={(e) => { e.preventDefault(); }} className="flex items-center">
-              <div className="relative w-full">
-                <Search className={`absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 ${mode === 'chaos' ? 'text-white/50' : mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'}`} />
-                <Input
-                  type="text"
-                  value={resourcesSearchQuery}
-                  onChange={(e) => setResourcesSearchQuery(e.target.value)}
-                  placeholder="Search..."
-                  className={`pl-8 h-8 w-full text-xs ${mode === 'chaos' ? 'bg-black/30 border-gray-600 text-white placeholder:text-gray-500' : mode === 'chill' ? 'bg-white border-gray-300 text-[#4A1818] placeholder:text-gray-400' : 'bg-black/30 border-gray-600 text-white placeholder:text-gray-500'}`}
-                />
-              </div>
-            </form>
-          </Card>
+          {(() => {
+            const style = mode === 'chaos' ? getSpecificCardStyle('search') : getCardStyle('vibes')
+            return (
+              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
+                    style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
+              >
+                <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
+                  <Search className="w-4 h-4" />
+                  <span className="uppercase tracking-wider font-black text-xs">Find Anything</span>
+                </div>
+                <h2 className={`text-4xl font-black mb-6 uppercase ${style.text}`}>SEARCH</h2>
+                <div className="relative">
+                  <Input 
+                    placeholder="Resources, people, projects..."
+                    className={`${mode === 'chaos' ? 'bg-black/40 border-zinc-700' : mode === 'chill' ? 'bg-[#F5E6D3]/50 border-[#8B4444]/30' : 'bg-black/40 border-zinc-700'} ${style.text} placeholder:${style.text}/50 rounded-xl h-14 pr-14 font-medium`}
+                  />
+                  <Button className="absolute right-2 top-2 rounded-lg h-10 w-10 p-0" style={{ backgroundColor: style.accent, color: mode === 'chill' ? '#4A1818' : '#000000' }}>
+                    <Search className="w-5 h-5" />
+                  </Button>
+                </div>
+              </Card>
+            )
+          })()}
         </div>
 
-        <p className={`text-xs uppercase tracking-widest font-black mb-6 flex items-center gap-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : mode === 'code' ? 'text-[#808080] font-mono' : 'text-[#808080]'}`}>
-          {mode === 'code' ? (
-            <>
-              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
-              <span className="text-[#808080]">MORE MODULES</span>
-              <span className="text-[#FFFFFF]">════════════════════════════════════════</span>
-            </>
-          ) : (
-            <>
-              <span className={`w-8 h-px ${mode === 'chaos' ? 'bg-[#333333]' : mode === 'chill' ? 'bg-[#8B4444]/30' : 'bg-[#333333]'}`}></span>
-          More Modules
-              {(() => {
-                const colors = getSectionAccentColors('community')
-                return (
-                  <span className="flex items-center gap-1.5 ml-2">
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[0] }}></span>
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[1] }}></span>
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: colors[2] }}></span>
-                  </span>
-                )
-              })()}
-            </>
-          )}
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 items-stretch">
           {/* Ask The Hive */}
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('ask-hive') : getCardStyle('community')
             return (
-              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} md:col-span-1 h-full flex flex-col`}
+              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}
                     style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
               >
                 <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
@@ -3167,7 +3151,7 @@ export default function TeamDashboard() {
               : { bg: 'bg-[#000000]', border: 'border border-[#00A3E0]', glow: '', text: 'text-white', accent: '#00A3E0' } // Black bg with Ocean Blue accent
             
             return (
-              <Card className={`${redSystemStyle.bg} ${redSystemStyle.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} md:col-span-2 h-full flex flex-col`}
+              <Card className={`${redSystemStyle.bg} ${redSystemStyle.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}
                     style={redSystemStyle.glow ? { boxShadow: `0 0 40px ${redSystemStyle.glow}` } : {}}
               >
                 <div className="flex items-center gap-2 text-sm mb-3" style={{ color: redSystemStyle.accent }}>
@@ -3268,32 +3252,6 @@ export default function TeamDashboard() {
           })()}
         </div>
 
-        <div className="grid grid-cols-1 gap-6 mb-12">
-          {/* Search */}
-          {(() => {
-            const style = mode === 'chaos' ? getSpecificCardStyle('search') : getCardStyle('vibes')
-            return (
-              <Card className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')}`}
-                    style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
-              >
-                <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
-              <Search className="w-4 h-4" />
-                  <span className="uppercase tracking-wider font-black text-xs">Find Anything</span>
-            </div>
-                <h2 className={`text-4xl font-black mb-6 uppercase ${style.text}`}>SEARCH</h2>
-            <div className="relative">
-              <Input 
-                placeholder="Resources, people, projects..."
-                    className={`${mode === 'chaos' ? 'bg-black/40 border-zinc-700' : mode === 'chill' ? 'bg-[#F5E6D3]/50 border-[#8B4444]/30' : 'bg-black/40 border-zinc-700'} ${style.text} placeholder:${style.text}/50 rounded-xl h-14 pr-14 font-medium`}
-              />
-                  <Button className="absolute right-2 top-2 rounded-lg h-10 w-10 p-0" style={{ backgroundColor: style.accent, color: mode === 'chill' ? '#4A1818' : '#000000' }}>
-                <Search className="w-5 h-5" />
-              </Button>
-            </div>
-          </Card>
-            )
-          })()}
-        </div>
 
         <Footer />
       </main>
