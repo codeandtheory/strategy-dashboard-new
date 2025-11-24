@@ -1008,14 +1008,46 @@ export default function TeamDashboard() {
       }
       
       try {
-        // Fetch horoscope text first (it includes image_url now)
+        // Fetch horoscope text first (it includes image_url from n8n)
         const textResponse = await fetch('/api/horoscope')
         
         // Process text response first to get image URL
         const textData = await textResponse.json()
         
-        // Then fetch image separately (for backwards compatibility and additional metadata)
-        const imageResponse = await fetch('/api/horoscope/avatar')
+        // Only fetch avatar endpoint if we don't have image_url from main endpoint
+        // This prevents race conditions where avatar endpoint returns old cached data
+        let imageResponse = null
+        let imageData = null
+        
+        if (!textData.image_url && textResponse.ok) {
+          // No image URL in main response, try avatar endpoint
+          console.log('No image_url in main response, fetching from avatar endpoint...')
+          imageResponse = await fetch('/api/horoscope/avatar')
+          imageData = await imageResponse.json()
+        } else if (textData.image_url) {
+          // We have image URL from main endpoint, use it directly
+          console.log('✅ Using image_url from main horoscope endpoint:', textData.image_url.substring(0, 50) + '...')
+          // Create a mock response object for consistency
+          imageData = {
+            image_url: textData.image_url,
+            image_prompt: null, // Will be fetched from avatar endpoint if needed
+            prompt_slots: null,
+            prompt_slots_labels: null,
+            prompt_slots_reasoning: null,
+          }
+          // Still fetch avatar endpoint for metadata (slots, reasoning) but don't wait for it
+          fetch('/api/horoscope/avatar').then(async (response) => {
+            if (response.ok) {
+              const metadata = await response.json()
+              setHoroscopeImagePrompt(metadata.image_prompt || null)
+              setHoroscopeImageSlots(metadata.prompt_slots || null)
+              setHoroscopeImageSlotsLabels(metadata.prompt_slots_labels || null)
+              setHoroscopeImageSlotsReasoning(metadata.prompt_slots_reasoning || null)
+            }
+          }).catch(err => {
+            console.warn('Failed to fetch avatar metadata:', err)
+          })
+        }
         
         if (!isMounted) {
           isFetching = false
@@ -1059,9 +1091,12 @@ export default function TeamDashboard() {
           }
         }
         
-        // Process image response
-        const imageData = await imageResponse.json()
-        if (!imageResponse.ok) {
+        // Process image response (if we fetched it)
+        if (imageResponse) {
+          imageData = await imageResponse.json()
+        }
+        
+        if (imageResponse && !imageResponse.ok) {
           console.error('Horoscope image API error:', imageResponse.status, imageData)
           if (imageResponse.status === 401) {
             setHoroscopeImageError('Please log in to view your horoscope image')
@@ -1074,7 +1109,7 @@ export default function TeamDashboard() {
           } else {
             setHoroscopeImageError(imageData.error || 'Failed to load horoscope image')
           }
-        } else {
+        } else if (imageData && imageData.image_url) {
           console.log('Horoscope image received:', imageData)
           console.log('Reasoning received:', imageData.prompt_slots_reasoning)
           // Only set today's image - historical images remain in database
@@ -1084,6 +1119,9 @@ export default function TeamDashboard() {
           setHoroscopeImageSlotsLabels(imageData.prompt_slots_labels || null)
           setHoroscopeImageSlotsReasoning(imageData.prompt_slots_reasoning || null)
           console.log('Reasoning state set to:', imageData.prompt_slots_reasoning)
+        } else if (textData.image_url) {
+          // Image URL was already set from text response above
+          console.log('✅ Image URL already set from text response')
         }
       } catch (error: any) {
         console.error('Error fetching horoscope data:', error)
