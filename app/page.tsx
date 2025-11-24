@@ -2551,7 +2551,7 @@ export default function TeamDashboard() {
               return (
                 <Card 
                   className={`${style.bg} ${style.border} p-6 ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 flex flex-col`} 
-                  style={eventsExpanded ? { flex: '0 0 auto', height: '280px', maxHeight: '280px' } : { flex: '0 0 auto', height: 'auto', minHeight: '100px' }}
+                  style={eventsExpanded ? { flex: '0 0 auto', height: '180px', maxHeight: '180px' } : { flex: '0 0 auto', height: 'auto', minHeight: '100px' }}
                 >
                   {eventsExpanded ? (
                     /* Vertical stats view when expanded - Bold and clean */
