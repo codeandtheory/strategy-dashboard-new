@@ -277,7 +277,7 @@ return [{
 ```
 
 **Connections**:
-- Main output → "Log Prompt Before OpenAI"
+- Main output → "Log Prompt Before OpenAI" (IMPORTANT: Connect Validate Image Prompt to Log Prompt Before OpenAI, NOT directly to OpenAI Image Generation)
 - Error output → "Webhook Response"
 
 ---
