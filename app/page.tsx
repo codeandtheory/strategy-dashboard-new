@@ -3779,7 +3779,7 @@ export default function TeamDashboard() {
             )
           })()}
 
-          {/* Video Archive */}
+          {/* Latest Video */}
           {(() => {
             // RED SYSTEM: Crimson bg with Ocean Blue accent (no colored borders on colored backgrounds)
             const videoStyle = mode === 'chaos' 
@@ -3794,9 +3794,9 @@ export default function TeamDashboard() {
               >
                 <div className="flex items-center gap-2 text-sm mb-3" style={{ color: videoStyle.accent }}>
                   <Video className="w-4 h-4" />
-                  <span className="uppercase tracking-wider font-black text-xs">Archive</span>
+                  <span className="uppercase tracking-wider font-black text-xs">Watch</span>
         </div>
-                <h2 className={`text-3xl font-black mb-6 uppercase ${videoStyle.text}`}>VIDEO<br/>ARCHIVE</h2>
+                <h2 className={`text-3xl font-black mb-6 uppercase ${videoStyle.text}`}>LATEST<br/>VIDEO</h2>
                 <div className="mb-4 flex-1 overflow-y-auto">
                   {videosLoading ? (
                     <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-4 border-2 flex items-center justify-center`} style={{ borderColor: `${videoStyle.accent}40` }}>
@@ -3822,7 +3822,7 @@ export default function TeamDashboard() {
                     </div>
                   )}
                 </div>
-                <Link href="/admin/video">
+                <Link href="/media">
                   <Button className={`w-full ${mode === 'chaos' ? 'bg-black text-[#00A3E0] hover:bg-[#0F0F0F]' : mode === 'chill' ? 'bg-[#4A1818] text-[#00A3E0] hover:bg-[#3A1414]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black rounded-full h-10 text-sm uppercase`}>
                     View Archive
                   </Button>

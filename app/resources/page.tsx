@@ -12,6 +12,7 @@ import { Search, ExternalLink, BookOpen, Loader2, Clock, TrendingUp, ArrowUpDown
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Footer } from '@/components/footer'
 
 interface Resource {
   id: string

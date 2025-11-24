@@ -1,0 +1,565 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/auth-context'
+import { useMode } from '@/contexts/mode-context'
+import { SiteHeader } from '@/components/site-header'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { 
+  Search, 
+  BookOpen, 
+  Video, 
+  Newspaper, 
+  ExternalLink, 
+  Loader2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Filter,
+  Home
+} from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { VideoEmbed } from '@/components/video-embed'
+
+interface MustRead {
+  id: string
+  article_title: string
+  article_url: string
+  notes: string | null
+  pinned: boolean
+  category: string | null
+  source: string | null
+  summary: string | null
+  tags: string[] | null
+  submitted_by: string | null
+  created_at: string
+  submitted_by_profile?: {
+    id: string
+    email: string
+    full_name: string | null
+  } | null
+}
+
+interface VideoItem {
+  id: string
+  title: string
+  video_url: string
+  description: string | null
+  thumbnail_url: string | null
+  category: string | null
+  tags: string[] | null
+  platform: string | null
+  pinned: boolean
+  created_at: string
+  submitted_by_profile?: {
+    id: string
+    email: string
+    full_name: string | null
+  } | null
+}
+
+type MediaType = 'all' | 'must-reads' | 'videos' | 'news'
+type SortField = 'title' | 'date' | 'category'
+
+export default function MediaPage() {
+  const { user, loading: authLoading } = useAuth()
+  const { mode } = useMode()
+  const router = useRouter()
+
+  const [activeTab, setActiveTab] = useState<MediaType>('all')
+  const [mustReads, setMustReads] = useState<MustRead[]>([])
+  const [videos, setVideos] = useState<VideoItem[]>([])
+  const [news, setNews] = useState<any[]>([]) // Placeholder for news
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterCategory, setFilterCategory] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<SortField>('date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+
+  // Dashboard styling helpers
+  const getBgClass = () => {
+    switch (mode) {
+      case 'chaos': return 'bg-[#1A1A1A]'
+      case 'chill': return 'bg-[#F5E6D3]'
+      case 'code': return 'bg-black'
+      default: return 'bg-[#1A1A1A]'
+    }
+  }
+
+  const getTextClass = () => {
+    switch (mode) {
+      case 'chaos': return 'text-white'
+      case 'chill': return 'text-[#4A1818]'
+      case 'code': return 'text-[#FFFFFF]'
+      default: return 'text-white'
+    }
+  }
+
+  const getRoundedClass = (base: string) => {
+    if (mode === 'code') return 'rounded-none'
+    if (mode === 'chaos') return base.replace('rounded', 'rounded-[1.5rem]')
+    if (mode === 'chill') return base.replace('rounded', 'rounded-2xl')
+    return base
+  }
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login')
+    }
+  }, [user, authLoading, router])
+
+  // Fetch all media data
+  useEffect(() => {
+    async function fetchMedia() {
+      if (!user) return
+
+      setLoading(true)
+      try {
+        // Fetch all data in parallel
+        const [mustReadsRes, videosRes] = await Promise.all([
+          fetch('/api/must-reads'),
+          fetch('/api/videos')
+        ])
+
+        if (mustReadsRes.ok) {
+          const mustReadsData = await mustReadsRes.json()
+          setMustReads(mustReadsData.data || [])
+        }
+
+        if (videosRes.ok) {
+          const videosData = await videosRes.json()
+          setVideos(videosData.data || [])
+        }
+
+        // News placeholder - will be implemented later
+        setNews([])
+      } catch (error) {
+        console.error('Error fetching media:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMedia()
+  }, [user])
+
+  // Filter and sort combined results
+  const getFilteredAndSortedItems = () => {
+    let items: any[] = []
+
+    // Combine items based on active tab
+    if (activeTab === 'all' || activeTab === 'must-reads') {
+      items = [...items, ...mustReads.map(mr => ({ ...mr, type: 'must-read' as const }))]
+    }
+    if (activeTab === 'all' || activeTab === 'videos') {
+      items = [...items, ...videos.map(v => ({ ...v, type: 'video' as const }))]
+    }
+    if (activeTab === 'all' || activeTab === 'news') {
+      items = [...items, ...news.map(n => ({ ...n, type: 'news' as const }))]
+    }
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      items = items.filter(item => {
+        if (item.type === 'must-read') {
+          return item.article_title?.toLowerCase().includes(query) ||
+                 item.article_url?.toLowerCase().includes(query) ||
+                 item.notes?.toLowerCase().includes(query) ||
+                 item.source?.toLowerCase().includes(query) ||
+                 item.summary?.toLowerCase().includes(query) ||
+                 item.tags?.some((tag: string) => tag.toLowerCase().includes(query))
+        } else if (item.type === 'video') {
+          return item.title?.toLowerCase().includes(query) ||
+                 item.description?.toLowerCase().includes(query) ||
+                 item.category?.toLowerCase().includes(query) ||
+                 item.tags?.some((tag: string) => tag.toLowerCase().includes(query))
+        }
+        return true
+      })
+    }
+
+    // Apply category filter
+    if (filterCategory !== 'all') {
+      items = items.filter(item => {
+        if (item.type === 'must-read') {
+          return item.category === filterCategory
+        } else if (item.type === 'video') {
+          return item.category === filterCategory
+        }
+        return false
+      })
+    }
+
+    // Apply sorting
+    items.sort((a, b) => {
+      let aValue: string | number
+      let bValue: string | number
+
+      if (sortBy === 'title') {
+        aValue = (a.type === 'must-read' ? a.article_title : a.title || '').toLowerCase()
+        bValue = (b.type === 'must-read' ? b.article_title : b.title || '').toLowerCase()
+      } else if (sortBy === 'category') {
+        aValue = (a.category || '').toLowerCase()
+        bValue = (b.category || '').toLowerCase()
+      } else {
+        // date
+        aValue = new Date(a.created_at || 0).getTime()
+        bValue = new Date(b.created_at || 0).getTime()
+      }
+
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1
+      return 0
+    })
+
+    return items
+  }
+
+  const filteredItems = getFilteredAndSortedItems()
+
+  // Get unique categories
+  const categories = Array.from(new Set([
+    ...mustReads.map(mr => mr.category).filter(Boolean),
+    ...videos.map(v => v.category).filter(Boolean)
+  ])) as string[]
+
+  const handleSort = (field: SortField) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(field)
+      setSortOrder('desc')
+    }
+  }
+
+  const getSortIcon = (field: SortField) => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="w-3 h-3 text-gray-400" />
+    }
+    return sortOrder === 'asc' 
+      ? <ArrowUp className="w-3 h-3 text-gray-700" />
+      : <ArrowDown className="w-3 h-3 text-gray-700" />
+  }
+
+  if (!user && !authLoading) {
+    return null
+  }
+
+  return (
+    <div className={`flex flex-col min-h-screen ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
+      <SiteHeader />
+
+      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
+        <div className="flex gap-6">
+          {/* Left Sidebar Navigation */}
+          <Card className={`w-1/4 ${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-4 flex flex-col sticky top-24 h-fit`} style={{ 
+            borderColor: mode === 'chaos' ? '#00C896' : mode === 'chill' ? '#C8D961' : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
+          }}>
+            <div className="mb-4">
+              <h1 className={`text-xl font-black uppercase tracking-wider ${getTextClass()} mb-1`}>Media</h1>
+            </div>
+
+            <nav className="space-y-1">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`w-full text-left px-3 py-2 ${getRoundedClass('rounded-lg')} transition-all flex items-center gap-2 ${
+                  activeTab === 'all'
+                    ? mode === 'chaos' ? 'bg-[#00C896] text-black' : mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818]' : 'bg-white text-black'
+                    : `${getTextClass()}/60 hover:${getTextClass()} hover:bg-black/10`
+                }`}
+              >
+                <span className="font-semibold text-sm">All Media</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('must-reads')}
+                className={`w-full text-left px-3 py-2 ${getRoundedClass('rounded-lg')} transition-all flex items-center gap-2 ${
+                  activeTab === 'must-reads'
+                    ? mode === 'chaos' ? 'bg-[#00C896] text-black' : mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818]' : 'bg-white text-black'
+                    : `${getTextClass()}/60 hover:${getTextClass()} hover:bg-black/10`
+                }`}
+              >
+                <BookOpen className="w-4 h-4" />
+                <span className="font-semibold text-sm">Must Reads</span>
+                <span className="ml-auto text-xs opacity-60">{mustReads.length}</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('videos')}
+                className={`w-full text-left px-3 py-2 ${getRoundedClass('rounded-lg')} transition-all flex items-center gap-2 ${
+                  activeTab === 'videos'
+                    ? mode === 'chaos' ? 'bg-[#00C896] text-black' : mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818]' : 'bg-white text-black'
+                    : `${getTextClass()}/60 hover:${getTextClass()} hover:bg-black/10`
+                }`}
+              >
+                <Video className="w-4 h-4" />
+                <span className="font-semibold text-sm">Videos</span>
+                <span className="ml-auto text-xs opacity-60">{videos.length}</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('news')}
+                className={`w-full text-left px-3 py-2 ${getRoundedClass('rounded-lg')} transition-all flex items-center gap-2 ${
+                  activeTab === 'news'
+                    ? mode === 'chaos' ? 'bg-[#00C896] text-black' : mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818]' : 'bg-white text-black'
+                    : `${getTextClass()}/60 hover:${getTextClass()} hover:bg-black/10`
+                }`}
+              >
+                <Newspaper className="w-4 h-4" />
+                <span className="font-semibold text-sm">News</span>
+                <span className="ml-auto text-xs opacity-60">{news.length}</span>
+              </button>
+            </nav>
+
+            <div className="mt-4 pt-4 border-t space-y-1">
+              <Link
+                href="/"
+                className={`flex items-center gap-2 px-3 py-2 ${getRoundedClass('rounded-lg')} ${getTextClass()}/60 hover:${getTextClass()} hover:bg-black/10 transition-colors text-sm`}
+              >
+                <Home className="w-4 h-4" />
+                <span className="font-medium">← Back to Dashboard</span>
+              </Link>
+            </div>
+          </Card>
+
+          {/* Main Content Area */}
+          <div className="flex-1">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className={`text-4xl font-black uppercase ${getTextClass()}`}>MEDIA ARCHIVE</h1>
+              <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'} mt-2`}>
+                {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'}
+              </p>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="mb-6 space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`} />
+                <Input
+                  type="text"
+                  placeholder="Search media..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={`pl-12 pr-4 h-12 ${getRoundedClass('rounded-xl')} ${mode === 'chill' ? 'bg-white border-gray-300 text-[#4A1818] placeholder:text-gray-400' : mode === 'chaos' ? 'bg-black/30 border-gray-600 text-white placeholder:text-gray-500' : 'bg-black/30 border-gray-600 text-white placeholder:text-gray-500'}`}
+                />
+              </div>
+
+              {/* Filters and Sort */}
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Category Filter */}
+                {categories.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Filter className={`w-4 h-4 ${getTextClass()}/70`} />
+                    <select
+                      value={filterCategory}
+                      onChange={(e) => setFilterCategory(e.target.value)}
+                      className={`h-12 px-4 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
+                        mode === 'chill' 
+                          ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-[#FFC043]' 
+                          : mode === 'chaos'
+                          ? 'bg-black/30 border-gray-600 text-white focus:ring-white'
+                          : 'bg-black/30 border-gray-600 text-white focus:ring-white'
+                      }`}
+                    >
+                      <option value="all">All Categories</option>
+                      {categories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Sort */}
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className={`w-4 h-4 ${getTextClass()}/70`} />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortField)}
+                    className={`h-12 px-4 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
+                      mode === 'chill' 
+                        ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-[#FFC043]' 
+                        : mode === 'chaos'
+                        ? 'bg-black/30 border-gray-600 text-white focus:ring-white'
+                        : 'bg-black/30 border-gray-600 text-white focus:ring-white'
+                    }`}
+                  >
+                    <option value="date">Date</option>
+                    <option value="title">Title</option>
+                    <option value="category">Category</option>
+                  </select>
+                  <button
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    className={`h-12 px-4 ${getRoundedClass('rounded-xl')} border flex items-center justify-center transition-colors ${
+                      mode === 'chill' 
+                        ? 'bg-white border-gray-300 text-[#4A1818] hover:bg-gray-50' 
+                        : mode === 'chaos'
+                        ? 'bg-black/30 border-gray-600 text-white hover:bg-black/50'
+                        : 'bg-black/30 border-gray-600 text-white hover:bg-black/50'
+                    }`}
+                    title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                  >
+                    {sortOrder === 'asc' ? (
+                      <ArrowUp className="w-4 h-4" />
+                    ) : (
+                      <ArrowDown className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Media Items Grid */}
+            {loading ? (
+              <div className="text-center py-12">
+                <Loader2 className={`w-8 h-8 animate-spin mx-auto mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`} />
+                <p className={getTextClass()}>Loading media...</p>
+              </div>
+            ) : filteredItems.length === 0 ? (
+              <div className="text-center py-12">
+                <p className={`text-lg ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>
+                  No media found. Try adjusting your search or filters.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredItems.map((item) => (
+                  <Card
+                    key={item.id}
+                    className={`${getRoundedClass('rounded-xl')} p-4 h-full flex flex-col ${
+                      mode === 'chill' 
+                        ? 'bg-white border-gray-200' 
+                        : mode === 'chaos'
+                        ? 'bg-[#2A2A2A] border-[#333333]'
+                        : 'bg-[#1a1a1a] border-white'
+                    }`}
+                  >
+                    {item.type === 'must-read' ? (
+                      <>
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className={`w-4 h-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`} />
+                            <Badge 
+                              variant="outline"
+                              className={`${getRoundedClass('rounded')} text-xs`}
+                              style={{
+                                borderColor: mode === 'chill' ? '#FFC043' : '#00C896',
+                                color: mode === 'chill' ? '#FFC043' : '#00C896'
+                              }}
+                            >
+                              Article
+                            </Badge>
+                          </div>
+                          {item.pinned && (
+                            <Badge className="bg-yellow-500 text-black text-xs">Pinned</Badge>
+                          )}
+                        </div>
+                        <h3 className={`font-bold text-lg mb-2 ${mode === 'chill' ? 'text-gray-900' : 'text-white'} line-clamp-2`}>
+                          {item.article_title}
+                        </h3>
+                        {item.summary && (
+                          <p className={`text-sm mb-3 ${mode === 'chill' ? 'text-gray-600' : 'text-gray-300'} line-clamp-2`}>
+                            {item.summary}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {item.category && (
+                            <Badge variant="outline" className="text-xs">
+                              {item.category}
+                            </Badge>
+                          )}
+                          {item.source && (
+                            <Badge variant="outline" className="text-xs">
+                              {item.source}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="mt-auto">
+                          <a
+                            href={item.article_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`inline-flex items-center gap-2 text-sm font-semibold ${
+                              mode === 'chill' ? 'text-[#4A1818] hover:text-[#3A1414]' : 'text-white hover:text-gray-300'
+                            } transition-colors`}
+                          >
+                            Read Article
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </>
+                    ) : item.type === 'video' ? (
+                      <>
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Video className={`w-4 h-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`} />
+                            <Badge 
+                              variant="outline"
+                              className={`${getRoundedClass('rounded')} text-xs`}
+                              style={{
+                                borderColor: mode === 'chill' ? '#FFC043' : '#00C896',
+                                color: mode === 'chill' ? '#FFC043' : '#00C896'
+                              }}
+                            >
+                              Video
+                            </Badge>
+                          </div>
+                          {item.pinned && (
+                            <Badge className="bg-yellow-500 text-black text-xs">Pinned</Badge>
+                          )}
+                        </div>
+                        <h3 className={`font-bold text-lg mb-2 ${mode === 'chill' ? 'text-gray-900' : 'text-white'} line-clamp-2`}>
+                          {item.title}
+                        </h3>
+                        {item.description && (
+                          <p className={`text-sm mb-3 ${mode === 'chill' ? 'text-gray-600' : 'text-gray-300'} line-clamp-2`}>
+                            {item.description}
+                          </p>
+                        )}
+                        <div className="mb-3">
+                          <VideoEmbed
+                            videoUrl={item.video_url}
+                            platform={item.platform}
+                            thumbnailUrl={item.thumbnail_url}
+                            aspectRatio="16/9"
+                            className="rounded-lg"
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {item.category && (
+                            <Badge variant="outline" className="text-xs">
+                              {item.category}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="mt-auto">
+                          <a
+                            href={item.video_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`inline-flex items-center gap-2 text-sm font-semibold ${
+                              mode === 'chill' ? 'text-[#4A1818] hover:text-[#3A1414]' : 'text-white hover:text-gray-300'
+                            } transition-colors`}
+                          >
+                            Watch Video
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </>
+                    ) : null}
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
