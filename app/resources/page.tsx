@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Search, ExternalLink, BookOpen, Loader2, Clock, TrendingUp } from 'lucide-react'
+import { Search, ExternalLink, BookOpen, Loader2, Clock, TrendingUp, ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -43,6 +43,9 @@ export default function ResourcesPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
+  const [sortBy, setSortBy] = useState<'name' | 'category' | 'source' | 'views'>('name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [showFilters, setShowFilters] = useState(false)
 
   // Dashboard styling helpers
   const getBgClass = () => {
@@ -113,7 +116,7 @@ export default function ResourcesPage() {
     }
   }, [user, authLoading, router])
 
-  // Fetch resources
+  // Fetch all resources once on initial load
   useEffect(() => {
     async function fetchResources() {
       if (!user) return
@@ -121,15 +124,13 @@ export default function ResourcesPage() {
       setLoading(true)
       try {
         const params = new URLSearchParams()
-        if (searchQuery) params.append('search', searchQuery)
-        if (activeFilter !== 'all') params.append('filter', activeFilter)
         if (user.id) params.append('userId', user.id)
 
+        // Fetch all resources without filters - we'll filter client-side
         const response = await fetch(`/api/resources?${params.toString()}`)
         if (response.ok) {
           const result = await response.json()
           setResources(result.data || [])
-          setFilteredResources(result.data || [])
           setRecentlyViewed(result.recentlyViewed || [])
           setMostUsed(result.mostUsed || [])
         }
@@ -141,9 +142,9 @@ export default function ResourcesPage() {
     }
 
     fetchResources()
-  }, [user, searchQuery, activeFilter])
+  }, [user]) // Only fetch when user changes, not on filter/search changes
 
-  // Filter resources based on search and category
+  // Filter and sort resources
   useEffect(() => {
     let filtered = resources
 
@@ -166,20 +167,62 @@ export default function ResourcesPage() {
       )
     }
 
+    // Apply sorting
+    filtered = [...filtered].sort((a, b) => {
+      let aValue: string | number
+      let bValue: string | number
+
+      switch (sortBy) {
+        case 'name':
+          aValue = a.name.toLowerCase()
+          bValue = b.name.toLowerCase()
+          break
+        case 'category':
+          aValue = a.primary_category.toLowerCase()
+          bValue = b.primary_category.toLowerCase()
+          break
+        case 'source':
+          aValue = (a.source || '').toLowerCase()
+          bValue = (b.source || '').toLowerCase()
+          break
+        case 'views':
+          aValue = a.view_count
+          bValue = b.view_count
+          break
+        default:
+          aValue = a.name.toLowerCase()
+          bValue = b.name.toLowerCase()
+      }
+
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1
+      return 0
+    })
+
     setFilteredResources(filtered)
-  }, [resources, searchQuery, activeFilter])
+  }, [resources, searchQuery, activeFilter, sortBy, sortOrder])
 
   const handleResourceClick = async (resource: Resource) => {
+    // Open in new tab immediately (don't wait for API call)
+    window.open(resource.link, '_blank')
+    
+    // Record view in background (non-blocking)
     if (user) {
-      // Record view
-      await fetch('/api/resources', {
+      fetch('/api/resources', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resourceId: resource.id, userId: user.id })
-      })
+      }).then(() => {
+        // Update view count locally without refetching
+        setResources(prevResources => 
+          prevResources.map(r => 
+            r.id === resource.id 
+              ? { ...r, view_count: r.view_count + 1 }
+              : r
+          )
+        )
+      }).catch(err => console.error('Error recording view:', err))
     }
-    // Open in new tab
-    window.open(resource.link, '_blank')
   }
 
   const filters: FilterType[] = [
@@ -195,6 +238,24 @@ export default function ResourcesPage() {
   const getFilterDisplayName = (filter: FilterType) => {
     if (filter === 'all') return 'All'
     return filter.split(' & ')[0] // Return first part (e.g., "Communication" from "Communication & Presentation")
+  }
+
+  const handleSort = (field: 'name' | 'category' | 'source' | 'views') => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(field)
+      setSortOrder('asc')
+    }
+  }
+
+  const getSortIcon = (field: 'name' | 'category' | 'source' | 'views') => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="w-3 h-3 text-gray-400" />
+    }
+    return sortOrder === 'asc' 
+      ? <ArrowUp className="w-3 h-3 text-gray-700" />
+      : <ArrowDown className="w-3 h-3 text-gray-700" />
   }
 
   if (authLoading || loading) {
@@ -235,27 +296,61 @@ export default function ResourcesPage() {
                 />
               </div>
 
-              {/* Filter Buttons - Compact */}
-              <div className="flex flex-wrap gap-2">
-                {filters.map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setActiveFilter(filter)}
-                    className={`px-3 py-1.5 ${getRoundedClass('rounded-md')} font-semibold uppercase text-xs transition-all ${
-                      activeFilter === filter
-                        ? `text-white`
-                        : mode === 'chill'
-                        ? 'text-[#4A1818]/60 hover:text-[#4A1818]'
-                        : 'text-white/60 hover:text-white'
-                    }`}
-                    style={{
-                      backgroundColor: activeFilter === filter ? orangeColors.primary : 'transparent',
-                      border: activeFilter === filter ? 'none' : `1px solid ${mode === 'chill' ? '#4A1818/20' : '#333333'}`
+              {/* Filter and Sort Controls */}
+              <div className="flex items-center justify-between gap-4">
+                {/* Filter Buttons - Compact */}
+                <div className="flex flex-wrap gap-2 flex-1">
+                  {filters.map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setActiveFilter(filter)}
+                      className={`px-3 py-1.5 ${getRoundedClass('rounded-md')} font-semibold uppercase text-xs transition-all ${
+                        activeFilter === filter
+                          ? `text-white`
+                          : mode === 'chill'
+                          ? 'text-[#4A1818]/60 hover:text-[#4A1818]'
+                          : 'text-white/60 hover:text-white'
+                      }`}
+                      style={{
+                        backgroundColor: activeFilter === filter ? orangeColors.primary : 'transparent',
+                        border: activeFilter === filter ? 'none' : `1px solid ${mode === 'chill' ? '#4A1818/20' : '#333333'}`
+                      }}
+                    >
+                      {getFilterDisplayName(filter)}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sort Dropdown */}
+                <div className="flex items-center gap-2">
+                  <label className={`text-xs font-semibold ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-white/80'}`}>
+                    Sort:
+                  </label>
+                  <select
+                    value={`${sortBy}-${sortOrder}`}
+                    onChange={(e) => {
+                      const [field, order] = e.target.value.split('-')
+                      setSortBy(field as 'name' | 'category' | 'source' | 'views')
+                      setSortOrder(order as 'asc' | 'desc')
                     }}
+                    className={`px-3 py-1.5 ${getRoundedClass('rounded-md')} text-xs font-semibold border ${
+                      mode === 'chill' 
+                        ? 'bg-white border-[#4A1818]/20 text-[#4A1818]' 
+                        : mode === 'chaos'
+                        ? 'bg-[#2A2A2A] border-[#333333] text-white'
+                        : 'bg-[#1a1a1a] border-white text-white'
+                    }`}
                   >
-                    {getFilterDisplayName(filter)}
-                  </button>
-                ))}
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="category-asc">Category (A-Z)</option>
+                    <option value="category-desc">Category (Z-A)</option>
+                    <option value="source-asc">Source (A-Z)</option>
+                    <option value="source-desc">Source (Z-A)</option>
+                    <option value="views-desc">Most Viewed</option>
+                    <option value="views-asc">Least Viewed</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -265,11 +360,44 @@ export default function ResourcesPage() {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Category</th>
+                      <th 
+                        className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => handleSort('name')}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          Name
+                          {getSortIcon('name')}
+                        </div>
+                      </th>
+                      <th 
+                        className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => handleSort('category')}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          Category
+                          {getSortIcon('category')}
+                        </div>
+                      </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Tags</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Source</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-12"></th>
+                      <th 
+                        className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => handleSort('source')}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          Source
+                          {getSortIcon('source')}
+                        </div>
+                      </th>
+                      <th 
+                        className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-12 cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => handleSort('views')}
+                        title="View Count"
+                      >
+                        <div className="flex items-center justify-center gap-1.5">
+                          <TrendingUp className="w-3 h-3" />
+                          {getSortIcon('views')}
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -334,7 +462,12 @@ export default function ResourcesPage() {
                           )}
                         </td>
                         <td className="px-4 py-2.5 text-center">
-                          <ExternalLink className="w-4 h-4 text-gray-400 mx-auto" />
+                          <div className="flex items-center justify-center gap-2">
+                            {resource.view_count > 0 && (
+                              <span className="text-xs text-gray-400">{resource.view_count}</span>
+                            )}
+                            <ExternalLink className="w-4 h-4 text-gray-400" />
+                          </div>
                         </td>
                       </tr>
                     ))}
