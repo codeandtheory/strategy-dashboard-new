@@ -2032,10 +2032,10 @@ export default function TeamDashboard() {
         {/* Text along right edge - positioned outside Card and section */}
         {horoscopeImage && characterName && (
           <div 
-            className="fixed z-30 pointer-events-none"
+            className="absolute z-30 pointer-events-none"
             style={{ 
-              right: '20px',
-              top: '50%',
+              right: '-80px',
+              top: 'calc(50% + 96px)',
               transform: 'translateY(-50%) rotate(82deg)',
               transformOrigin: 'right center'
             }}
