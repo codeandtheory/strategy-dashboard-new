@@ -43,12 +43,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (mounted) {
           setUser(session?.user ?? null)
           setLoading(false)
-          
-          if (session) {
-            console.log('Initial session loaded:', session.user.email)
-          } else {
-            console.log('No initial session found')
-          }
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error)
@@ -72,7 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email || 'no session')
+      // Only log non-routine auth events (errors, sign outs)
+      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Auth state changed:', event, session?.user?.email || 'no session')
+        }
+      }
       
       if (mounted) {
         setUser(session?.user ?? null)

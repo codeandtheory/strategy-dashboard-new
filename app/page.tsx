@@ -872,16 +872,11 @@ export default function TeamDashboard() {
     async function fetchCalendarEvents() {
       if (!user) return
       
-      // Prevent duplicate fetches: only fetch if user changed or if not already in progress
+      // Prevent duplicate fetches: only fetch if user changed, or if not already in progress
       const userChanged = lastCalendarFetchUserRef.current !== user.id
-      const shouldFetch = userChanged || (!calendarFetchInProgressRef.current && !googleCalendarToken && !tokenLoading)
       
-      if (!shouldFetch && calendarFetchInProgressRef.current) {
-        return // Already fetching, skip
-      }
-      
-      // Don't refetch if we just have token loading state changes (unless user changed)
-      if (!userChanged && tokenLoading && calendarFetchInProgressRef.current) {
+      // Skip if already fetching (unless user changed or token just became available)
+      if (calendarFetchInProgressRef.current && !userChanged) {
         return
       }
 
@@ -1017,7 +1012,7 @@ export default function TeamDashboard() {
         clearTimeout(refreshTimeoutRef.current)
       }
     }
-  }, [user, eventsExpanded, googleCalendarToken, calendarIds]) // Removed tokenLoading and tokenError from dependencies to prevent duplicate fetches
+  }, [user, eventsExpanded, googleCalendarToken, calendarIds, refreshCalendarToken]) // Removed tokenLoading and tokenError from dependencies to prevent duplicate fetches
 
   const handleSnapAdded = async () => {
     // Refresh snaps list for the logged-in user
