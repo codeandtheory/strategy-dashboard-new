@@ -1850,7 +1850,7 @@ export default function TeamDashboard() {
               >
                 {/* Black masked section on the right with transform/rotation - contains horoscope image */}
                 {mode === 'chaos' && (
-                  <div className={`absolute top-1/2 right-0 -translate-y-1/2 w-[40%] aspect-[5/4] ${getBgClass()} ${getRoundedClass('rounded-[2.5rem]')} transform -translate-x-[100px] -rotate-12 overflow-hidden`}>
+                  <div className={`absolute top-1/2 right-0 -translate-y-1/2 w-[40%] aspect-[5/4] ${getBgClass()} ${getRoundedClass('rounded-[2.5rem]')} transform -translate-x-[100px] -rotate-12 overflow-hidden border-4 border-white shadow-2xl`} style={{ boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(255, 255, 255, 0.3)' }}>
                     {horoscopeImageLoading ? (
                       <div className="w-full h-full flex flex-col items-center justify-center p-4">
                         <Loader2 className="w-8 h-8 animate-spin text-white mb-3" />
@@ -1887,9 +1887,10 @@ export default function TeamDashboard() {
                     {/* Text along right edge - Chaos mode */}
                     {horoscopeImage && characterName && (
                       <div 
-                        className="absolute top-1/2 right-0 -translate-y-1/2 z-20 pointer-events-none"
+                        className="absolute top-1/2 z-20 pointer-events-none"
                         style={{ 
-                          transform: 'translateY(-50%) translateX(20px) rotate(-12deg)',
+                          right: '100px',
+                          transform: 'translateY(-50%) translateX(20px) rotate(75deg)',
                           transformOrigin: 'right center'
                         }}
                       >
@@ -1906,8 +1907,11 @@ export default function TeamDashboard() {
                   </div>
                 )}
                 {mode !== 'chaos' && (
-                  <div className={`absolute top-1/2 right-0 -translate-y-1/2 w-[45%] aspect-[5/4] ${getBgClass()} transform -translate-x-[100px] overflow-hidden`} 
-                       style={{ clipPath: 'polygon(8% 0, 100% 0, 100% 100%, 0% 100%)' }} 
+                  <div className={`absolute top-1/2 right-0 -translate-y-1/2 w-[45%] aspect-[5/4] ${getBgClass()} transform -translate-x-[100px] overflow-hidden border-4 border-white shadow-2xl`} 
+                       style={{ 
+                         clipPath: 'polygon(8% 0, 100% 0, 100% 100%, 0% 100%)',
+                         boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(255, 255, 255, 0.3)'
+                       }} 
                   >
                     {horoscopeImageLoading ? (
                       <div className="w-full h-full flex flex-col items-center justify-center p-4">
@@ -1947,9 +1951,10 @@ export default function TeamDashboard() {
                 {/* Text along right edge - Non-chaos mode */}
                 {horoscopeImage && characterName && mode !== 'chaos' && (
                   <div 
-                    className="absolute top-1/2 right-0 -translate-y-1/2 z-20 pointer-events-none"
+                    className="absolute top-1/2 z-20 pointer-events-none"
                     style={{ 
-                      transform: 'translateY(-50%) translateX(20px)',
+                      right: '100px',
+                      transform: 'translateY(-50%) translateX(20px) rotate(75deg)',
                       transformOrigin: 'right center'
                     }}
                   >
