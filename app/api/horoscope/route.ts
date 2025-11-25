@@ -554,12 +554,12 @@ export async function GET(request: NextRequest) {
         const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
         console.log('   Image buffer size:', imageBuffer.length, 'bytes')
         
-        // Upload to Supabase storage (horoscope-avatars bucket - separate from user avatars)
-        // Use timestamp to preserve all generated images (don't overwrite)
+        // Upload to Supabase storage (avatars bucket - same as profile avatar gallery)
+        // Use timestamp to preserve all generated images in the avatar gallery
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
         const fileName = `horoscope-${userId}-${todayDate}-${timestamp}.png`
         const filePath = `${userId}/${fileName}`
-        const bucketName = 'horoscope-avatars' // Separate bucket for horoscope images
+        const bucketName = 'avatars' // Same bucket as profile avatar gallery
         
         console.log('📤 Uploading image to Supabase storage...')
         console.log('   Bucket:', bucketName)
@@ -709,9 +709,22 @@ export async function GET(request: NextRequest) {
     // In both cases, we should save the new horoscope
     
     // Save horoscope text to database
-    // Use upsert to handle both insert and update in one operation
-    // This ensures the date is always set correctly and avoids race conditions
-    // First check if a record exists to preserve image_url and prompt_slots_json
+    // Delete old horoscope records (keep only today's) - we only want to save the image, not historical horoscopes
+    // This ensures the avatar gallery has all images, but we don't keep old horoscope text
+    const { error: deleteOldError } = await supabaseAdmin
+      .from('horoscopes')
+      .delete()
+      .eq('user_id', userId)
+      .neq('date', todayDate) // Delete all records except today's
+    
+    if (deleteOldError) {
+      console.warn('⚠️ Warning: Could not delete old horoscope records:', deleteOldError)
+      // Don't fail - continue with save
+    } else {
+      console.log('🗑️ Deleted old horoscope records (keeping only today\'s)')
+    }
+    
+    // Check if today's record exists (we'll upsert it)
     const { data: existingHoroscope } = await supabaseAdmin
       .from('horoscopes')
       .select('image_url, prompt_slots_json, image_prompt')
