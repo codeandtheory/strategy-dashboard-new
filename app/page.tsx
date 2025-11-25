@@ -1884,26 +1884,26 @@ export default function TeamDashboard() {
                         />
                       </div>
                     ) : null}
-                    {/* Text along right edge - Chaos mode */}
-                    {horoscopeImage && characterName && (
-                      <div 
-                        className="absolute top-1/2 z-20 pointer-events-none"
-                        style={{ 
-                          right: '100px',
-                          transform: 'translateY(-50%) translateX(15px) rotate(82deg)',
-                          transformOrigin: 'right center'
-                        }}
-                      >
-                        <div 
-                          className="text-white font-bold text-sm md:text-base whitespace-nowrap"
-                          style={{
-                            textShadow: '0 0 8px rgba(255, 255, 255, 0.8)'
-                          }}
-                        >
-                          Today, you're giving...
-                        </div>
-                      </div>
-                    )}
+                  </div>
+                )}
+                {/* Text along right edge - Chaos mode */}
+                {horoscopeImage && characterName && mode === 'chaos' && (
+                  <div 
+                    className="absolute top-1/2 z-20 pointer-events-none"
+                    style={{ 
+                      right: '85px',
+                      transform: 'translateY(-50%) translateX(-80px) rotate(82deg)',
+                      transformOrigin: 'right center'
+                    }}
+                  >
+                    <div 
+                      className="text-white font-bold text-sm md:text-base whitespace-nowrap"
+                      style={{
+                        textShadow: '0 0 8px rgba(255, 255, 255, 0.8)'
+                      }}
+                    >
+                      Today, you're giving...
+                    </div>
                   </div>
                 )}
                 {mode !== 'chaos' && (
@@ -1953,8 +1953,8 @@ export default function TeamDashboard() {
                   <div 
                     className="absolute top-1/2 z-20 pointer-events-none"
                     style={{ 
-                      right: '100px',
-                      transform: 'translateY(-50%) translateX(15px) rotate(82deg)',
+                      right: '85px',
+                      transform: 'translateY(-50%) translateX(-80px) rotate(82deg)',
                       transformOrigin: 'right center'
                     }}
                   >

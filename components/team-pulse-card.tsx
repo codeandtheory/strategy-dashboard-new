@@ -460,9 +460,18 @@ export function TeamPulseCard() {
             )}
           </div>
           
-          <div className="flex items-center gap-2">
-            <Lock className="w-3 h-3 flex-shrink-0" style={{ color: '#6B2E8C' }} />
-            <p className="text-xs leading-relaxed" style={{ color: '#6B2E8C' }}>Your response is private and only added to the group average</p>
+          <div className="space-y-2 mb-4">
+            <div className="flex items-start gap-2">
+              <Lock className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: '#6B2E8C' }} />
+              <div className="space-y-1.5">
+                <p className="text-xs leading-relaxed" style={{ color: '#6B2E8C' }}>
+                  Slide a rating to share how things feel today. You get a random question each time. Answer as many or as few as you like. Your input stays private and only shifts the group score.
+                </p>
+                <p className="text-xs leading-relaxed" style={{ color: '#6B2E8C' }}>
+                  For anything personal, talk with your manager or leadership.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
         
