@@ -153,6 +153,24 @@ export async function GET(request: NextRequest) {
       .eq('date', todayDate)
       .maybeSingle()
     
+    // CRITICAL: Also check if the horoscope was actually generated today in the user's timezone
+    // This handles the case where old records have UTC dates that match today's EST date
+    let isFromToday = false
+    if (cachedHoroscope?.generated_at) {
+      const generatedAt = new Date(cachedHoroscope.generated_at)
+      const generatedAtInUserTz = getTodayDateInTimezone(userTimezone, generatedAt)
+      isFromToday = generatedAtInUserTz === todayDate
+      
+      console.log('🔍 DEBUG: Avatar generated_at validation:', {
+        generatedAt: cachedHoroscope.generated_at,
+        generatedAtISO: generatedAt.toISOString(),
+        generatedAtInUserTz,
+        todayDate,
+        isFromToday,
+        hoursAgo: (now.getTime() - generatedAt.getTime()) / (1000 * 60 * 60)
+      })
+    }
+    
     console.log('🔍 DEBUG: Avatar query result:', {
       found: !!cachedHoroscope,
       error: cacheError?.message || null,
@@ -162,7 +180,10 @@ export async function GET(request: NextRequest) {
       queryDate: todayDate,
       queryDateType: typeof todayDate,
       datesEqual: cachedHoroscope?.date ? cachedHoroscope.date === todayDate : false,
-      datesEqualString: cachedHoroscope?.date ? String(cachedHoroscope.date) === todayDate : false
+      datesEqualString: cachedHoroscope?.date ? String(cachedHoroscope.date) === todayDate : false,
+      generatedAt: cachedHoroscope?.generated_at || null,
+      isFromToday,
+      shouldRegenerate: !isFromToday
     })
     
     if (cacheError) {

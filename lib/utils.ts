@@ -24,10 +24,11 @@ export function getTodayDateUTC(): string {
  * This allows horoscopes to regenerate based on the user's local day.
  * 
  * @param timezone - IANA timezone identifier (e.g., "America/Los_Angeles", "America/New_York")
- * @returns {string} Today's date in YYYY-MM-DD format for the specified timezone
+ * @param date - Optional Date object to format (defaults to now)
+ * @returns {string} Date in YYYY-MM-DD format for the specified timezone
  */
-export function getTodayDateInTimezone(timezone: string): string {
-  const now = new Date()
+export function getTodayDateInTimezone(timezone: string, date?: Date): string {
+  const dateToFormat = date || new Date()
   
   // Format date in the specified timezone
   // Using toLocaleString with timezone option to get the date in that timezone
@@ -39,5 +40,5 @@ export function getTodayDateInTimezone(timezone: string): string {
   })
   
   // en-CA locale gives us YYYY-MM-DD format directly
-  return formatter.format(now)
+  return formatter.format(dateToFormat)
 }
