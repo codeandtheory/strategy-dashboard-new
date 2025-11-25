@@ -16,7 +16,7 @@ import { fetchHoroscopeConfig } from '@/lib/horoscope-config'
 import { buildHoroscopePrompt, type UserProfile as PromptUserProfile } from '@/lib/horoscope-prompt-builder'
 import { updateUserAvatarState } from '@/lib/horoscope-catalogs'
 import { createClient } from '@/lib/supabase/server'
-import { getTodayDateUTC } from '@/lib/utils'
+import { getTodayDateUTC, getTodayDateInTimezone } from '@/lib/utils'
 
 // Supabase client setup - uses service role for database operations
 // This bypasses RLS so the API can insert/update horoscopes
@@ -125,14 +125,41 @@ export async function GET(request: NextRequest) {
     // Use admin client for database operations (bypasses RLS)
     const supabaseAdmin = await getSupabaseAdminClient()
     
-    // Get today's date in YYYY-MM-DD format using UTC (consistent across all timezones)
-    const todayDate = getTodayDateUTC()
+    // Fetch user profile FIRST to get timezone for date calculation
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('birthday, discipline, role, full_name, hobbies, likes_fantasy, likes_scifi, likes_cute, likes_minimal, hates_clowns, timezone')
+      .eq('id', userId)
+      .single()
+
+    if (profileError || !profile) {
+      return NextResponse.json(
+        { error: 'User profile not found. Please complete your profile.' },
+        { status: 404 }
+      )
+    }
+    
+    // Use user's timezone if available, otherwise fall back to UTC
+    // This ensures horoscopes regenerate based on the user's local day
+    const userTimezone = profile.timezone || 'UTC'
+    const todayDate = userTimezone && userTimezone !== 'UTC' 
+      ? getTodayDateInTimezone(userTimezone)
+      : getTodayDateUTC()
     const now = new Date()
     
     console.log('🔍 Checking database for cached horoscope text - user:', userId)
-    console.log('   Today (UTC):', todayDate)
+    console.log('   User timezone:', userTimezone)
+    console.log('   Today (user timezone):', todayDate)
     console.log('   Current UTC time:', now.toISOString())
     console.log('   Current local time:', now.toLocaleString())
+    console.log('🔍 DEBUG: Date calculation with timezone:', {
+      userTimezone,
+      calculatedDate: todayDate,
+      usingLocalTime: userTimezone && userTimezone !== 'UTC',
+      fallbackToUTC: !userTimezone || userTimezone === 'UTC',
+      utcDate: getTodayDateUTC(),
+      datesDiffer: todayDate !== getTodayDateUTC()
+    })
     
     // CRITICAL: Check database FIRST before any generation
     // This is the primary check to prevent unnecessary API calls
@@ -400,7 +427,7 @@ export async function GET(request: NextRequest) {
     // Generation is now enabled even when database is empty
     // BUT: We should have already found it in the checks above
     // If we get here, something is wrong with our logic
-    console.log('⚠️ NO cached horoscope text found in database for user', userId, 'on date', todayDate)
+    console.log('⚠️ NO cached horoscope text found in database for user', userId, 'on date', todayDate, '(user timezone:', userTimezone, ')')
     console.log('   🔍 DEBUG: Generation decision details:', {
       cachedHoroscopeExists: !!cachedHoroscope,
       cachedDate: cachedHoroscope?.date || null,
@@ -420,10 +447,10 @@ export async function GET(request: NextRequest) {
     console.log('   ⚠️ PROCEEDING TO GENERATE NEW HOROSCOPE (this will call OpenAI API)')
     console.log('   ⚠️ THIS IS THE ONLY GENERATION FOR TODAY - NO MORE WILL BE GENERATED')
     
-    // Fetch user profile to get birthday, discipline (department), role (title), and image generation preferences
+    // Fetch user profile to get birthday, discipline (department), role (title), image generation preferences, and timezone
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('birthday, discipline, role, full_name, hobbies, likes_fantasy, likes_scifi, likes_cute, likes_minimal, hates_clowns')
+      .select('birthday, discipline, role, full_name, hobbies, likes_fantasy, likes_scifi, likes_cute, likes_minimal, hates_clowns, timezone')
       .eq('id', userId)
       .single()
 
@@ -433,6 +460,20 @@ export async function GET(request: NextRequest) {
         { status: 404 }
       )
     }
+    
+    // Use user's timezone if available, otherwise fall back to UTC
+    // This ensures horoscopes regenerate based on the user's local day
+    const userTimezone = profile.timezone || 'UTC'
+    const todayDate = userTimezone && userTimezone !== 'UTC' 
+      ? getTodayDateInTimezone(userTimezone)
+      : getTodayDateUTC()
+    
+    console.log('🔍 DEBUG: Date calculation with timezone:', {
+      userTimezone,
+      calculatedDate: todayDate,
+      usingLocalTime: userTimezone && userTimezone !== 'UTC',
+      fallbackToUTC: !userTimezone || userTimezone === 'UTC'
+    })
     
     // Parse birthday - could be stored as "MM/DD", "MM-DD", or separate fields
     let birthdayMonth: number | null = null

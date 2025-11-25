@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchHoroscopeConfig } from '@/lib/horoscope-config'
 import { createClient } from '@/lib/supabase/server'
-import { getTodayDateUTC } from '@/lib/utils'
+import { getTodayDateUTC, getTodayDateInTimezone } from '@/lib/utils'
 
 // Supabase client setup - uses service role for database operations
 async function getSupabaseAdminClient() {
@@ -42,10 +42,10 @@ export async function GET(request: NextRequest) {
     const userId = user.id
     const userEmail = user.email
 
-    // Fetch user profile to get birthday, discipline, role, name, hobbies, and preferences
+    // Fetch user profile to get birthday, discipline, role, name, hobbies, preferences, and timezone
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('birthday, discipline, role, full_name, hobbies, likes_fantasy, likes_scifi, likes_cute, likes_minimal, hates_clowns')
+      .select('birthday, discipline, role, full_name, hobbies, likes_fantasy, likes_scifi, likes_cute, likes_minimal, hates_clowns, timezone')
       .eq('id', userId)
       .single()
 
@@ -91,8 +91,11 @@ export async function GET(request: NextRequest) {
     const { userProfile, resolvedChoices, starSign } = config
     
     // Check for cached image - only generate once per user per day
-    // Use UTC for date calculation (consistent across all timezones)
-    const todayDate = getTodayDateUTC()
+    // Use user's timezone if available, otherwise fall back to UTC
+    const userTimezone = profile.timezone || 'UTC'
+    const todayDate = userTimezone && userTimezone !== 'UTC' 
+      ? getTodayDateInTimezone(userTimezone)
+      : getTodayDateUTC()
     const now = new Date()
     
     console.log('🔍 Checking database for cached image - user:', userId)
