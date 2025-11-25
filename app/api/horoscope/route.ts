@@ -139,16 +139,16 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // Use PST/PDT timezone for date calculation (America/Los_Angeles)
-    // This ensures horoscopes regenerate based on Pacific time, not UTC
+    // Use EST/EDT timezone for date calculation (America/New_York)
+    // This ensures horoscopes regenerate based on Eastern time, not UTC
     // This fixes the issue where horoscopes generated late at night UTC were showing the next day
-    const defaultTimezone = 'America/Los_Angeles' // PST/PDT
+    const defaultTimezone = 'America/New_York' // EST/EDT
     const userTimezone = profile.timezone || defaultTimezone
     const todayDate = getTodayDateInTimezone(userTimezone)
     const now = new Date()
     
     console.log('🔍 Checking database for cached horoscope text - user:', userId)
-    console.log('   User timezone:', userTimezone, '(from profile:', profile.timezone || 'not set, using default PST)')
+    console.log('   User timezone:', userTimezone, '(from profile:', profile.timezone || 'not set, using default EST)')
     console.log('   Today (user timezone):', todayDate)
     console.log('   Today (UTC):', getTodayDateUTC())
     console.log('   Current UTC time:', now.toISOString())

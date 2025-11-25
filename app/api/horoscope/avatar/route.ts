@@ -91,9 +91,9 @@ export async function GET(request: NextRequest) {
     const { userProfile, resolvedChoices, starSign } = config
     
     // Check for cached image - only generate once per user per day
-    // Use PST/PDT timezone for date calculation (America/Los_Angeles)
-    // This ensures horoscopes regenerate based on Pacific time, not UTC
-    const defaultTimezone = 'America/Los_Angeles' // PST/PDT
+    // Use EST/EDT timezone for date calculation (America/New_York)
+    // This ensures horoscopes regenerate based on Eastern time, not UTC
+    const defaultTimezone = 'America/New_York' // EST/EDT
     const userTimezone = profile.timezone || defaultTimezone
     const todayDate = getTodayDateInTimezone(userTimezone)
     const now = new Date()
