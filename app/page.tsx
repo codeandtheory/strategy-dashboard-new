@@ -1889,8 +1889,8 @@ export default function TeamDashboard() {
                       <div 
                         className="absolute top-1/2 z-20 pointer-events-none"
                         style={{ 
-                          right: '0',
-                          transform: 'translateY(-50%) translateX(80px) rotate(82deg)',
+                          right: '100px',
+                          transform: 'translateY(-50%) translateX(15px) rotate(82deg)',
                           transformOrigin: 'right center'
                         }}
                       >
@@ -1953,8 +1953,8 @@ export default function TeamDashboard() {
                   <div 
                     className="absolute top-1/2 z-20 pointer-events-none"
                     style={{ 
-                      right: '0',
-                      transform: 'translateY(-50%) translateX(80px) rotate(82deg)',
+                      right: '100px',
+                      transform: 'translateY(-50%) translateX(15px) rotate(82deg)',
                       transformOrigin: 'right center'
                     }}
                   >
@@ -3596,16 +3596,16 @@ export default function TeamDashboard() {
                 const type = project.type || project.description || ''
                 const displayText = type ? `${clientName} - ${type}` : clientName
                 return (
-                  <div key={project.id} className="flex items-center gap-2 py-1">
+                  <div key={project.id} className="flex items-start gap-2 py-1">
                     {/* Dot on the left */}
                     <div 
-                      className="shrink-0 w-2 h-2 rounded-full"
+                      className="shrink-0 w-2 h-2 rounded-full mt-1.5"
                       style={{
                         backgroundColor: pipelineStyle.accent,
                       }}
                     />
-                    {/* Content - single line */}
-                    <div className={`text-sm ${pipelineStyle.text} truncate`}>
+                    {/* Content - wraps */}
+                    <div className={`text-sm ${pipelineStyle.text} break-words min-w-0 flex-1`}>
                       {displayText}
                     </div>
                   </div>
