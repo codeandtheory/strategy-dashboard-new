@@ -951,7 +951,7 @@ export async function GET(request: NextRequest) {
       })
       
       // Verify the save by querying it back
-      const { data: verifySave, error: verifyError } = await supabaseAdmin
+      const { data: verifySave, error: verifySaveError } = await supabaseAdmin
         .from('horoscopes')
         .select('id, date, generated_at, horoscope_text, image_url')
         .eq('user_id', userId)
@@ -970,7 +970,7 @@ export async function GET(request: NextRequest) {
           hasImage: !!verifySave.image_url
         })
       } else {
-        console.error('❌ DEBUG: Could not verify saved record!', verifyError?.message)
+        console.error('❌ DEBUG: Could not verify saved record!', verifySaveError?.message)
       }
       if (upsertResult && upsertResult.length > 0) {
         console.log('   Saved record:', {
@@ -997,17 +997,17 @@ export async function GET(request: NextRequest) {
       await new Promise(resolve => setTimeout(resolve, 100))
       
       // First verification - immediate check
-      const { data: verifyRecord, error: verifyError } = await supabaseAdmin
+      const { data: verifyRecord, error: verifyRecordError } = await supabaseAdmin
         .from('horoscopes')
         .select('horoscope_text, date, id, image_url, image_prompt, prompt_slots_json, generated_at')
         .eq('user_id', userId)
         .eq('date', todayDate)
         .maybeSingle()
       
-      if (verifyError) {
-        console.error('   ❌ CRITICAL: Error verifying saved record:', verifyError)
+      if (verifyRecordError) {
+        console.error('   ❌ CRITICAL: Error verifying saved record:', verifyRecordError)
         console.error('   This means the save may have failed silently!')
-        throw new Error(`Database verification failed: ${verifyError.message}`)
+        throw new Error(`Database verification failed: ${verifyRecordError.message}`)
       } else if (verifyRecord) {
         console.log('   ✅ Verified: Record exists in database')
         console.log('   Record ID:', verifyRecord.id)
