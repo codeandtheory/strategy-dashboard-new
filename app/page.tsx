@@ -2034,9 +2034,9 @@ export default function TeamDashboard() {
           <div 
             className="absolute z-30 pointer-events-none"
             style={{ 
-              right: '-80px',
-              top: 'calc(50% + 96px)',
-              transform: 'translateY(-50%) rotate(82deg)',
+              right: '-20px',
+              top: 'calc(50% + 140px)',
+              transform: 'translateY(-50%) rotate(75deg)',
               transformOrigin: 'right center'
             }}
           >
