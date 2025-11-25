@@ -554,12 +554,13 @@ export async function GET(request: NextRequest) {
         const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
         console.log('   Image buffer size:', imageBuffer.length, 'bytes')
         
-        // Upload to Supabase storage (avatars bucket - same as profile avatar gallery)
-        // Use timestamp to preserve all generated images in the avatar gallery
+        // Upload to Supabase storage (horoscope-avatars bucket - separate from profile avatars)
+        // These images will appear in the profile avatar gallery but are stored separately
+        // Use timestamp to preserve all generated images
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
         const fileName = `horoscope-${userId}-${todayDate}-${timestamp}.png`
         const filePath = `${userId}/${fileName}`
-        const bucketName = 'avatars' // Same bucket as profile avatar gallery
+        const bucketName = 'horoscope-avatars' // Separate bucket for horoscope-generated images
         
         console.log('📤 Uploading image to Supabase storage...')
         console.log('   Bucket:', bucketName)

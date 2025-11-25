@@ -14,38 +14,78 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // List all files in the user's avatar folder
-    const { data: files, error: listError } = await supabase.storage
-      .from('avatars')
-      .list(user.id, {
-        limit: 100,
-        sortBy: { column: 'created_at', order: 'desc' }
-      })
+    // List files from both buckets: profile avatars and horoscope avatars
+    const [profileAvatarsResult, horoscopeAvatarsResult] = await Promise.all([
+      // Profile avatars (user-uploaded profile photos)
+      supabase.storage
+        .from('avatars')
+        .list(user.id, {
+          limit: 100,
+          sortBy: { column: 'created_at', order: 'desc' }
+        }),
+      // Horoscope avatars (AI-generated horoscope images)
+      supabase.storage
+        .from('horoscope-avatars')
+        .list(user.id, {
+          limit: 100,
+          sortBy: { column: 'created_at', order: 'desc' }
+        })
+    ])
 
-    if (listError) {
-      console.error('Error listing avatars:', listError)
-      return NextResponse.json(
-        { error: 'Failed to list avatars', details: listError.message },
-        { status: 500 }
-      )
+    const profileFiles = profileAvatarsResult.data || []
+    const horoscopeFiles = horoscopeAvatarsResult.data || []
+
+    if (profileAvatarsResult.error) {
+      console.error('Error listing profile avatars:', profileAvatarsResult.error)
+    }
+    if (horoscopeAvatarsResult.error) {
+      console.error('Error listing horoscope avatars:', horoscopeAvatarsResult.error)
     }
 
-    // Get public URLs for all files
-    const avatars = files
-      .filter(file => file.name) // Filter out folders
-      .map(file => {
-        const { data: { publicUrl } } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(`${user.id}/${file.name}`)
-        
-        return {
-          name: file.name,
-          url: publicUrl,
-          created_at: file.created_at,
-          updated_at: file.updated_at,
-          size: file.metadata?.size || 0
-        }
+    // Combine avatars from both buckets
+    const avatars = [
+      // Profile avatars
+      ...profileFiles
+        .filter(file => file.name) // Filter out folders
+        .map(file => {
+          const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(`${user.id}/${file.name}`)
+          
+          return {
+            name: file.name,
+            url: publicUrl,
+            source: 'profile' as const,
+            created_at: file.created_at,
+            updated_at: file.updated_at,
+            size: file.metadata?.size || 0
+          }
+        }),
+      // Horoscope avatars
+      ...horoscopeFiles
+        .filter(file => file.name) // Filter out folders
+        .map(file => {
+          const { data: { publicUrl } } = supabase.storage
+            .from('horoscope-avatars')
+            .getPublicUrl(`${user.id}/${file.name}`)
+          
+          return {
+            name: file.name,
+            url: publicUrl,
+            source: 'horoscope' as const,
+            created_at: file.created_at,
+            updated_at: file.updated_at,
+            size: file.metadata?.size || 0
+          }
+        })
+    ]
+      .sort((a, b) => {
+        // Sort by created_at descending (newest first)
+        const dateA = new Date(a.created_at || 0).getTime()
+        const dateB = new Date(b.created_at || 0).getTime()
+        return dateB - dateA
       })
+      .slice(0, 100) // Limit total results
 
     return NextResponse.json({ data: avatars })
   } catch (error: any) {
