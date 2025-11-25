@@ -91,12 +91,19 @@ export async function GET(request: NextRequest) {
     const { userProfile, resolvedChoices, starSign } = config
     
     // Check for cached image - only generate once per user per day
-    // Use user's timezone if available, otherwise fall back to UTC
-    const userTimezone = profile.timezone || 'UTC'
-    const todayDate = userTimezone && userTimezone !== 'UTC' 
-      ? getTodayDateInTimezone(userTimezone)
-      : getTodayDateUTC()
+    // Use PST/PDT timezone for date calculation (America/Los_Angeles)
+    // This ensures horoscopes regenerate based on Pacific time, not UTC
+    const defaultTimezone = 'America/Los_Angeles' // PST/PDT
+    const userTimezone = profile.timezone || defaultTimezone
+    const todayDate = getTodayDateInTimezone(userTimezone)
     const now = new Date()
+    
+    console.log('🔍 DEBUG: Avatar date calculation:', {
+      userTimezone,
+      calculatedDate: todayDate,
+      utcDate: getTodayDateUTC(),
+      datesDiffer: todayDate !== getTodayDateUTC()
+    })
     
     console.log('🔍 Checking database for cached image - user:', userId)
     console.log('   Today (UTC):', todayDate)

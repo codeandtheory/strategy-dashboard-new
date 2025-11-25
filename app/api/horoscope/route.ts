@@ -139,26 +139,26 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // Use user's timezone if available, otherwise fall back to UTC
-    // This ensures horoscopes regenerate based on the user's local day
-    const userTimezone = profile.timezone || 'UTC'
-    const todayDate = userTimezone && userTimezone !== 'UTC' 
-      ? getTodayDateInTimezone(userTimezone)
-      : getTodayDateUTC()
+    // Use PST/PDT timezone for date calculation (America/Los_Angeles)
+    // This ensures horoscopes regenerate based on Pacific time, not UTC
+    // This fixes the issue where horoscopes generated late at night UTC were showing the next day
+    const defaultTimezone = 'America/Los_Angeles' // PST/PDT
+    const userTimezone = profile.timezone || defaultTimezone
+    const todayDate = getTodayDateInTimezone(userTimezone)
     const now = new Date()
     
     console.log('🔍 Checking database for cached horoscope text - user:', userId)
-    console.log('   User timezone:', userTimezone)
+    console.log('   User timezone:', userTimezone, '(from profile:', profile.timezone || 'not set, using default PST)')
     console.log('   Today (user timezone):', todayDate)
+    console.log('   Today (UTC):', getTodayDateUTC())
     console.log('   Current UTC time:', now.toISOString())
     console.log('   Current local time:', now.toLocaleString())
     console.log('🔍 DEBUG: Date calculation with timezone:', {
       userTimezone,
       calculatedDate: todayDate,
-      usingLocalTime: userTimezone && userTimezone !== 'UTC',
-      fallbackToUTC: !userTimezone || userTimezone === 'UTC',
       utcDate: getTodayDateUTC(),
-      datesDiffer: todayDate !== getTodayDateUTC()
+      datesDiffer: todayDate !== getTodayDateUTC(),
+      usingDefaultTimezone: !profile.timezone
     })
     
     // CRITICAL: Check database FIRST before any generation
