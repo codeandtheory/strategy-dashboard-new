@@ -99,6 +99,40 @@ export async function GET(request: NextRequest) {
     console.log('   Today (UTC):', todayDate)
     console.log('   Current UTC time:', now.toISOString())
     console.log('   Current local time:', now.toLocaleString())
+    console.log('🔍 DEBUG: Date calculation details:', {
+      utcYear: now.getUTCFullYear(),
+      utcMonth: now.getUTCMonth() + 1,
+      utcDate: now.getUTCDate(),
+      utcHours: now.getUTCHours(),
+      utcMinutes: now.getUTCMinutes(),
+      calculatedDate: todayDate,
+      dateString: todayDate,
+      dateStringLength: todayDate.length
+    })
+    
+    // DEBUG: First, get ALL horoscopes for this user to see what dates exist
+    const { data: allHoroscopesDebug, error: debugError } = await supabaseAdmin
+      .from('horoscopes')
+      .select('id, date, generated_at, image_url')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .limit(10)
+    
+    if (!debugError && allHoroscopesDebug) {
+      console.log('🔍 DEBUG: All horoscope records for user:', allHoroscopesDebug.map(h => ({
+        id: h.id,
+        date: h.date,
+        dateType: typeof h.date,
+        dateString: String(h.date),
+        dateLength: String(h.date).length,
+        generated_at: h.generated_at,
+        hasImage: !!h.image_url,
+        dateMatchesToday: String(h.date) === todayDate,
+        dateMatchesTodayStrict: h.date === todayDate
+      })))
+    } else {
+      console.log('⚠️ DEBUG: Could not fetch all horoscopes:', debugError?.message)
+    }
     
     // CRITICAL: Check database FIRST before any generation
     // This is the primary check to prevent unnecessary API calls
@@ -108,6 +142,18 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId)
       .eq('date', todayDate)
       .maybeSingle()
+    
+    console.log('🔍 DEBUG: Avatar query result:', {
+      found: !!cachedHoroscope,
+      error: cacheError?.message || null,
+      cachedDate: cachedHoroscope?.date || null,
+      cachedDateType: cachedHoroscope?.date ? typeof cachedHoroscope.date : null,
+      cachedDateString: cachedHoroscope?.date ? String(cachedHoroscope.date) : null,
+      queryDate: todayDate,
+      queryDateType: typeof todayDate,
+      datesEqual: cachedHoroscope?.date ? cachedHoroscope.date === todayDate : false,
+      datesEqualString: cachedHoroscope?.date ? String(cachedHoroscope.date) === todayDate : false
+    })
     
     if (cacheError) {
       console.error('❌ Error checking database cache:', cacheError)

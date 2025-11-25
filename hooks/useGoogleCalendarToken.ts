@@ -38,13 +38,11 @@ export function useGoogleCalendarToken() {
     async function getToken() {
       // Prevent multiple simultaneous requests
       if (isRequestingRef.current) {
-        console.log('⏸️ Google Calendar token request already in progress, skipping...')
         return
       }
       
       // If we already have a valid token, don't request again
       if (hasFetchedRef.current && accessToken) {
-        console.log('✅ Already have Google Calendar token, skipping request')
         setLoading(false)
         return
       }
@@ -56,7 +54,6 @@ export function useGoogleCalendarToken() {
         const tokenExpiry = localStorage.getItem('google_calendar_token_expiry')
         
         if (cachedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry)) {
-              console.log('✅ Using cached Google Calendar token')
               setAccessToken(cachedToken)
               setLoading(false)
               isRequestingRef.current = false
@@ -67,7 +64,6 @@ export function useGoogleCalendarToken() {
         // Check if user has previously denied access (prevent repeated popups)
         const deniedAccess = sessionStorage.getItem('google_calendar_denied')
         if (deniedAccess === 'true') {
-          console.log('ℹ️ User previously denied calendar access - skipping popup')
           setLoading(false)
           isRequestingRef.current = false
           return
@@ -78,7 +74,6 @@ export function useGoogleCalendarToken() {
         const { data: { session } } = await supabase.auth.getSession()
         
         if (!session) {
-          console.log('No Supabase session found')
           setLoading(false)
           isRequestingRef.current = false
           return

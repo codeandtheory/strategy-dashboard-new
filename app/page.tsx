@@ -671,39 +671,35 @@ export default function TeamDashboard() {
     async function fetchWeeklyPlaylist() {
       if (!user) return
       
+      // Only fetch if we haven't fetched for this user yet
+      if (playlistFetchedForUserRef.current === user.id) {
+        return
+      }
+      
       try {
         setPlaylistLoading(true)
-        console.log('[Frontend] Fetching weekly playlist...')
         // Try with refresh to get Spotify metadata if missing
         const response = await fetch('/api/playlists?refresh=true')
-        console.log('[Frontend] Playlist API response status:', response.status, response.statusText)
         
         if (response.ok) {
           const playlists = await response.json()
-          console.log('[Frontend] Received playlists:', playlists)
-          console.log('[Frontend] Playlists type:', typeof playlists)
-          console.log('[Frontend] Is array:', Array.isArray(playlists))
-          console.log('[Frontend] Playlists length:', playlists?.length ?? 'null/undefined')
           
           if (playlists && Array.isArray(playlists) && playlists.length > 0) {
             // Get the most recent playlist
-            console.log('[Frontend] Setting weekly playlist:', playlists[0])
             setWeeklyPlaylist(playlists[0])
           } else {
-            console.log('[Frontend] No playlists found or empty array')
             setWeeklyPlaylist(null)
           }
+          
+          // Mark as fetched for this user
+          playlistFetchedForUserRef.current = user.id
         } else {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-          console.error('[Frontend] Playlist API error response:', response.status, errorData)
+          console.error('[Frontend] Playlist API error:', response.status, errorData)
           setWeeklyPlaylist(null)
         }
       } catch (error) {
         console.error('[Frontend] Error fetching playlist:', error)
-        if (error instanceof Error) {
-          console.error('[Frontend] Error message:', error.message)
-          console.error('[Frontend] Error stack:', error.stack)
-        }
         setWeeklyPlaylist(null)
       } finally {
         setPlaylistLoading(false)
@@ -866,15 +862,31 @@ export default function TeamDashboard() {
   const lastTokenRefreshRef = useRef<number>(0) // Track last token refresh timestamp
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null) // Track debounce timeout
   
+  // Track fetch state to prevent duplicate API calls
+  const playlistFetchedForUserRef = useRef<string | null>(null) // Track which user we've fetched playlist for
+  const calendarFetchInProgressRef = useRef(false) // Track if calendar fetch is in progress
+  const lastCalendarFetchUserRef = useRef<string | null>(null) // Track last user we fetched calendar for
+  
   // Fetch calendar events
   useEffect(() => {
     async function fetchCalendarEvents() {
-      // Don't wait for token - proceed immediately
-      // If token becomes available later, it will be used on next fetch
-      // This ensures calendar loads even if popup is blocked
-      if (tokenLoading && !googleCalendarToken && !tokenError) {
-        console.log('⏳ Token is loading, but proceeding with fallback authentication...')
+      if (!user) return
+      
+      // Prevent duplicate fetches: only fetch if user changed or if not already in progress
+      const userChanged = lastCalendarFetchUserRef.current !== user.id
+      const shouldFetch = userChanged || (!calendarFetchInProgressRef.current && !googleCalendarToken && !tokenLoading)
+      
+      if (!shouldFetch && calendarFetchInProgressRef.current) {
+        return // Already fetching, skip
       }
+      
+      // Don't refetch if we just have token loading state changes (unless user changed)
+      if (!userChanged && tokenLoading && calendarFetchInProgressRef.current) {
+        return
+      }
+
+      calendarFetchInProgressRef.current = true
+      lastCalendarFetchUserRef.current = user.id
 
       try {
         setCalendarLoading(true)
@@ -894,26 +906,12 @@ export default function TeamDashboard() {
         let apiUrl = `/api/calendar?calendarIds=${calendarIdsParam}&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&maxResults=50`
         if (googleCalendarToken) {
           apiUrl += `&accessToken=${encodeURIComponent(googleCalendarToken)}`
-          console.log('✅ Using Google OAuth token for calendar access')
-        } else {
-          console.warn('⚠️ No Google OAuth token available - will use service account or fallback auth')
-          if (tokenError) {
-            console.error('Token error:', tokenError)
-          }
         }
         
         const response = await fetch(apiUrl)
 
         if (response.ok) {
           const result = await response.json()
-          console.log('Calendar API response:', { 
-            eventCount: result.count, 
-            events: result.events,
-            successfulCalendars: result.successfulCalendars,
-            failedCalendars: result.failedCalendars,
-            failedDetails: result.failedCalendarDetails,
-            tokenExpired: result.tokenExpired
-          })
           
           // Check if token expired and refresh if needed
           if (result.tokenExpired && googleCalendarToken && refreshCalendarToken) {
@@ -941,6 +939,7 @@ export default function TeamDashboard() {
                   refreshCalendarToken()
                   // Wait a bit for token to refresh, then retry
                   setTimeout(() => {
+                    calendarFetchInProgressRef.current = false // Reset before retry
                     fetchCalendarEvents()
                   }, 2000)
                 } else {
@@ -956,12 +955,10 @@ export default function TeamDashboard() {
           }
           
           if (result.failedCalendars > 0) {
-            console.warn(`${result.failedCalendars} calendar(s) failed to load. Check server logs for details.`)
             const failedDetails = result.failedCalendarDetails || []
             
             if (result.count === 0 && result.successfulCalendars === 0) {
               // Only show error if no events were loaded at all (all calendars failed)
-              // Create a more user-friendly error message
               const failedCount = failedDetails.length
               const hasCodeAndTheoryCalendars = failedDetails.some((f: any) => 
                 f.id.includes('codeandtheory.com_')
@@ -976,11 +973,11 @@ export default function TeamDashboard() {
               }
               
               setCalendarError(`Some calendars are not accessible. ${errorSummary}: Calendar not found or not accessible`)
+              console.warn(`${result.failedCalendars} calendar(s) failed to load. Check server logs for details.`)
             } else {
               // Some calendars worked, so clear any previous error
-              // We'll just log a warning in the console instead of showing an error
               setCalendarError(null)
-              console.info(`Successfully loaded events from ${result.successfulCalendars} calendar(s). ${result.failedCalendars} calendar(s) could not be accessed.`)
+              // Only log if all calendars failed, otherwise it's expected behavior
             }
           } else {
             // No failed calendars, clear any previous error
@@ -989,15 +986,11 @@ export default function TeamDashboard() {
           
           if (result.authInfo) {
             setServiceAccountEmail(result.authInfo)
-            console.log(`Authentication method: ${result.usingOAuth2 ? 'OAuth2' : 'Service Account'}`)
-            console.log(`Auth info: ${result.authInfo}`)
           }
           
           if (result.events && Array.isArray(result.events)) {
             setCalendarEvents(result.events)
-            console.log(`Loaded ${result.events.length} calendar events from ${result.successfulCalendars} calendar(s)`)
           } else {
-            console.warn('No events array in response:', result)
             setCalendarEvents([])
           }
         } else {
@@ -1010,6 +1003,7 @@ export default function TeamDashboard() {
         setCalendarError(error.message || 'Failed to load calendar events')
       } finally {
         setCalendarLoading(false)
+        calendarFetchInProgressRef.current = false
       }
     }
 
@@ -1023,7 +1017,7 @@ export default function TeamDashboard() {
         clearTimeout(refreshTimeoutRef.current)
       }
     }
-  }, [user, eventsExpanded, googleCalendarToken, tokenLoading, tokenError, calendarIds])
+  }, [user, eventsExpanded, googleCalendarToken, calendarIds]) // Removed tokenLoading and tokenError from dependencies to prevent duplicate fetches
 
   const handleSnapAdded = async () => {
     // Refresh snaps list for the logged-in user
@@ -1930,45 +1924,22 @@ export default function TeamDashboard() {
                 )}
                 {/* Text along right edge - aligned with inner edge of Card */}
                 {horoscopeImage && characterName && (
-                  <>
+                  <div 
+                    className="absolute top-1/2 z-30 pointer-events-none"
+                    style={{ 
+                      right: '20px',
+                      transform: 'translateY(-50%) rotate(82deg)',
+                      transformOrigin: 'right center'
+                    }}
+                  >
                     <div 
-                      className="absolute top-1/2 z-30 pointer-events-none"
-                      style={{ 
-                        right: '20px',
-                        transform: 'translateY(-50%) rotate(82deg)',
-                        transformOrigin: 'right center'
-                      }}
+                      className={`font-black text-base md:text-lg whitespace-nowrap uppercase tracking-tight ${
+                        mode === 'chill' ? 'text-[#FFC043]' : 'text-white'
+                      }`}
                     >
-                      <div 
-                        className={`font-black text-base md:text-lg whitespace-nowrap uppercase tracking-tight ${
-                          mode === 'chill' ? 'text-[#FFC043]' : 'text-white'
-                        }`}
-                        style={{
-                          textShadow: mode === 'chill' ? '0 0 8px rgba(255, 192, 67, 0.8)' : '0 0 8px rgba(255, 255, 255, 0.8)'
-                        }}
-                      >
-                        TODAY, YOU'RE GIVING...
-                      </div>
+                      TODAY, YOU'RE GIVING...
                     </div>
-                    {/* Arrow between text and image */}
-                    <div 
-                      className="absolute top-1/2 z-30 pointer-events-none"
-                      style={{ 
-                        right: '60px',
-                        transform: 'translateY(-50%) rotate(82deg)',
-                        transformOrigin: 'center center'
-                      }}
-                    >
-                      <ArrowRight 
-                        className={`w-6 h-6 ${
-                          mode === 'chill' ? 'text-[#FFC043]' : 'text-white'
-                        }`}
-                        style={{
-                          filter: mode === 'chill' ? 'drop-shadow(0 0 4px rgba(255, 192, 67, 0.8))' : 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))'
-                        }}
-                      />
-                    </div>
-                  </>
+                  </div>
                 )}
                 <div className="relative z-10 p-6 md:p-8 h-full flex flex-col justify-between">
                   <div>

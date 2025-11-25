@@ -138,6 +138,41 @@ export async function GET(request: NextRequest) {
     // This is the primary check to prevent unnecessary API calls
     // Use multiple strategies to find records (exact date match, date range, recent records)
     console.log('🔍 Checking database with date:', todayDate, 'type:', typeof todayDate)
+    console.log('🔍 DEBUG: Date calculation details:', {
+      utcYear: now.getUTCFullYear(),
+      utcMonth: now.getUTCMonth() + 1,
+      utcDate: now.getUTCDate(),
+      utcHours: now.getUTCHours(),
+      utcMinutes: now.getUTCMinutes(),
+      calculatedDate: todayDate,
+      dateString: todayDate,
+      dateStringLength: todayDate.length
+    })
+    
+    // DEBUG: First, get ALL horoscopes for this user to see what dates exist
+    const { data: allHoroscopesDebug, error: debugError } = await supabaseAdmin
+      .from('horoscopes')
+      .select('id, date, generated_at, horoscope_text, image_url')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .limit(10)
+    
+    if (!debugError && allHoroscopesDebug) {
+      console.log('🔍 DEBUG: All horoscope records for user:', allHoroscopesDebug.map(h => ({
+        id: h.id,
+        date: h.date,
+        dateType: typeof h.date,
+        dateString: String(h.date),
+        dateLength: String(h.date).length,
+        generated_at: h.generated_at,
+        hasText: !!h.horoscope_text,
+        hasImage: !!h.image_url,
+        dateMatchesToday: String(h.date) === todayDate,
+        dateMatchesTodayStrict: h.date === todayDate
+      })))
+    } else {
+      console.log('⚠️ DEBUG: Could not fetch all horoscopes:', debugError?.message)
+    }
     
     const { data: cachedHoroscope, error: cacheError } = await supabaseAdmin
       .from('horoscopes')
@@ -145,6 +180,18 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId)
       .eq('date', todayDate)
       .maybeSingle()
+    
+    console.log('🔍 DEBUG: Query result:', {
+      found: !!cachedHoroscope,
+      error: cacheError?.message || null,
+      cachedDate: cachedHoroscope?.date || null,
+      cachedDateType: cachedHoroscope?.date ? typeof cachedHoroscope.date : null,
+      cachedDateString: cachedHoroscope?.date ? String(cachedHoroscope.date) : null,
+      queryDate: todayDate,
+      queryDateType: typeof todayDate,
+      datesEqual: cachedHoroscope?.date ? cachedHoroscope.date === todayDate : false,
+      datesEqualString: cachedHoroscope?.date ? String(cachedHoroscope.date) === todayDate : false
+    })
     
     if (cacheError) {
       console.error('❌ Error checking database cache:', cacheError)
@@ -261,16 +308,32 @@ export async function GET(request: NextRequest) {
     // CACHE CHECK: Return cached horoscope if it exists and force regeneration is not requested
     // This ensures horoscope text is generated ONCE per day per user and cached in the database
     // This prevents hitting billing limits by regenerating unnecessarily
+    console.log('🔍 DEBUG: Cache check decision:', {
+      hasCachedHoroscope: !!cachedHoroscope,
+      forceRegenerate,
+      willReturnCached: !!cachedHoroscope && !forceRegenerate,
+      cachedDate: cachedHoroscope?.date,
+      todayDate,
+      dateComparison: {
+        strict: cachedHoroscope?.date === todayDate,
+        string: cachedHoroscope?.date ? String(cachedHoroscope.date) === todayDate : false,
+        cachedString: cachedHoroscope?.date ? String(cachedHoroscope.date) : null,
+        todayString: todayDate
+      }
+    })
+    
     if (cachedHoroscope && !forceRegenerate) {
       // Verify the cached horoscope has all required data
       if (cachedHoroscope.horoscope_text && cachedHoroscope.image_url) {
         console.log('✅ Returning cached horoscope from database')
-        console.log('   Cached date:', cachedHoroscope.date, '(type:', typeof cachedHoroscope.date, ')')
+        console.log('   Cached date:', cachedHoroscope.date, '(type:', typeof cachedHoroscope.date, ', string:', String(cachedHoroscope.date), ')')
         console.log('   Expected date:', todayDate, '(type:', typeof todayDate, ')')
-        console.log('   Dates match:', cachedHoroscope.date === todayDate)
+        console.log('   Dates match (strict):', cachedHoroscope.date === todayDate)
+        console.log('   Dates match (string):', String(cachedHoroscope.date) === todayDate)
         console.log('   Generated at:', cachedHoroscope.generated_at)
         console.log('   Text length:', cachedHoroscope.horoscope_text.length)
         console.log('   Has image URL:', !!cachedHoroscope.image_url)
+        console.log('   ⚠️ DEBUG: This cached horoscope is being returned - is the date correct?')
         
         return NextResponse.json({
           star_sign: cachedHoroscope.star_sign,
@@ -338,10 +401,22 @@ export async function GET(request: NextRequest) {
     // BUT: We should have already found it in the checks above
     // If we get here, something is wrong with our logic
     console.log('⚠️ NO cached horoscope text found in database for user', userId, 'on date', todayDate)
-    console.log('   Cached horoscope exists:', !!cachedHoroscope)
-    console.log('   Has horoscope_text:', !!cachedHoroscope?.horoscope_text)
-    console.log('   Text value:', cachedHoroscope?.horoscope_text || 'null/empty')
-    console.log('   Any records for user:', !!allUserRecords && allUserRecords.length > 0)
+    console.log('   🔍 DEBUG: Generation decision details:', {
+      cachedHoroscopeExists: !!cachedHoroscope,
+      cachedDate: cachedHoroscope?.date || null,
+      cachedDateString: cachedHoroscope?.date ? String(cachedHoroscope.date) : null,
+      todayDate,
+      datesMatch: cachedHoroscope?.date ? cachedHoroscope.date === todayDate : false,
+      hasText: !!cachedHoroscope?.horoscope_text,
+      hasImage: !!cachedHoroscope?.image_url,
+      anyRecordsForUser: !!allUserRecords && allUserRecords.length > 0,
+      recentHoroscopesCount: recentHoroscopes?.length || 0,
+      recentHoroscopesDates: recentHoroscopes?.map(h => ({
+        date: h.date,
+        dateString: String(h.date),
+        matchesToday: String(h.date) === todayDate
+      })) || []
+    })
     console.log('   ⚠️ PROCEEDING TO GENERATE NEW HOROSCOPE (this will call OpenAI API)')
     console.log('   ⚠️ THIS IS THE ONLY GENERATION FOR TODAY - NO MORE WILL BE GENERATED')
     
@@ -775,10 +850,22 @@ export async function GET(request: NextRequest) {
     console.log('💾 Preparing to save horoscope with image URL:', {
       user_id: upsertData.user_id,
       date: upsertData.date,
+      dateType: typeof upsertData.date,
+      dateString: String(upsertData.date),
+      dateLength: String(upsertData.date).length,
+      todayDateCalculated: todayDate,
+      datesMatch: upsertData.date === todayDate,
       has_image_url: !!upsertData.image_url,
       image_url_length: upsertData.image_url?.length || 0,
       image_url_preview: upsertData.image_url?.substring(0, 100) || 'MISSING',
       is_supabase_url: upsertData.image_url?.includes('supabase.co') || false
+    })
+    console.log('🔍 DEBUG: Date being saved to database:', {
+      value: upsertData.date,
+      type: typeof upsertData.date,
+      stringValue: String(upsertData.date),
+      expectedFormat: 'YYYY-MM-DD',
+      matchesExpected: String(upsertData.date).match(/^\d{4}-\d{2}-\d{2}$/) !== null
     })
     
     console.log('💾 Saving horoscope to database...')
@@ -858,6 +945,33 @@ export async function GET(request: NextRequest) {
       }
     } else {
       console.log('✅ Successfully saved horoscope text for user', userId, 'on date', todayDate)
+      console.log('🔍 DEBUG: Verification - querying back the saved record:', {
+        savedDate: todayDate,
+        savedDateType: typeof todayDate
+      })
+      
+      // Verify the save by querying it back
+      const { data: verifySave, error: verifyError } = await supabaseAdmin
+        .from('horoscopes')
+        .select('id, date, generated_at, horoscope_text, image_url')
+        .eq('user_id', userId)
+        .eq('date', todayDate)
+        .maybeSingle()
+      
+      if (verifySave) {
+        console.log('🔍 DEBUG: Verified saved record:', {
+          id: verifySave.id,
+          date: verifySave.date,
+          dateType: typeof verifySave.date,
+          dateString: String(verifySave.date),
+          matchesSaved: String(verifySave.date) === todayDate,
+          generated_at: verifySave.generated_at,
+          hasText: !!verifySave.horoscope_text,
+          hasImage: !!verifySave.image_url
+        })
+      } else {
+        console.error('❌ DEBUG: Could not verify saved record!', verifyError?.message)
+      }
       if (upsertResult && upsertResult.length > 0) {
         console.log('   Saved record:', {
           id: upsertResult[0].id,
