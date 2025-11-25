@@ -77,6 +77,32 @@ export default function TeamDashboard() {
   const [horoscopeImageLoading, setHoroscopeImageLoading] = useState(true)
   const [horoscopeError, setHoroscopeError] = useState<string | null>(null)
   const [horoscopeImageError, setHoroscopeImageError] = useState<string | null>(null)
+  
+  // Rotating loading messages
+  const horoscopeLoadingMessages = [
+    'Consulting the cosmos...',
+    'Reading the stars...',
+    'Channeling universal wisdom...',
+    'Aligning with celestial frequencies...',
+    'Decoding cosmic signals...',
+    'Tuning into the universe...',
+    'Receiving astral guidance...',
+    'Translating stellar messages...',
+  ]
+  
+  const imageLoadingMessages = [
+    'Scanning your vibe...',
+    'Conducting a competitive audit...',
+    'Analyzing your energy signature...',
+    'Running a vibe check...',
+    'Assessing your aura...',
+    'Measuring your frequency...',
+    'Calibrating your energy output...',
+    'Mapping your energetic landscape...',
+  ]
+  
+  const [horoscopeLoadingMessageIndex, setHoroscopeLoadingMessageIndex] = useState(0)
+  const [imageLoadingMessageIndex, setImageLoadingMessageIndex] = useState(0)
   const [userName, setUserName] = useState<string>('Friend')
   const [userFirstName, setUserFirstName] = useState<string>('')
   const [temperature, setTemperature] = useState<string | null>(null)
@@ -184,6 +210,25 @@ export default function TeamDashboard() {
   
   // Get Google Calendar access token using the user's existing Google session
   const { accessToken: googleCalendarToken, loading: tokenLoading, error: tokenError, refreshToken: refreshCalendarToken } = useGoogleCalendarToken()
+
+  // Rotate loading messages while loading
+  useEffect(() => {
+    if (horoscopeLoading) {
+      const interval = setInterval(() => {
+        setHoroscopeLoadingMessageIndex((prev) => (prev + 1) % horoscopeLoadingMessages.length)
+      }, 2000) // Change message every 2 seconds
+      return () => clearInterval(interval)
+    }
+  }, [horoscopeLoading, horoscopeLoadingMessages.length])
+
+  useEffect(() => {
+    if (horoscopeImageLoading) {
+      const interval = setInterval(() => {
+        setImageLoadingMessageIndex((prev) => (prev + 1) % imageLoadingMessages.length)
+      }, 2000) // Change message every 2 seconds
+      return () => clearInterval(interval)
+    }
+  }, [horoscopeImageLoading, imageLoadingMessages.length])
 
   // Calendar IDs - can be hardcoded or dynamically fetched
   const [calendarIds, setCalendarIds] = useState<string[]>([
@@ -1807,8 +1852,104 @@ export default function TeamDashboard() {
                 {mode === 'chaos' && (
                   <div className={`absolute top-1/2 right-0 -translate-y-1/2 w-[40%] aspect-[5/4] ${getBgClass()} ${getRoundedClass('rounded-[2.5rem]')} transform -translate-x-[100px] -rotate-12 overflow-hidden`}>
                     {horoscopeImageLoading ? (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Loader2 className="w-8 h-8 animate-spin text-white" />
+                      <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                        <Loader2 className="w-8 h-8 animate-spin text-white mb-3" />
+                        <p className="text-white text-xs text-center font-medium max-w-[120px]">
+                          {imageLoadingMessages[imageLoadingMessageIndex]}
+                        </p>
+                      </div>
+                    ) : horoscopeImageError ? (
+                      <div className="w-full h-full flex items-center justify-center p-8">
+                        <p className="text-white text-sm text-center">{horoscopeImageError}</p>
+                      </div>
+                    ) : horoscopeImage ? (
+                      <div className="relative w-full h-full">
+                        <img 
+                          src={horoscopeImage} 
+                          alt="Horoscope portrait"
+                          className="w-full h-full object-cover"
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                          onError={(e) => {
+                            // Image failed to load (likely expired URL from old system)
+                            // New images are stored in Supabase and won't expire
+                            // Just hide the broken image
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                            // Only show error for old expired URLs, not for new Supabase-stored images
+                            if (horoscopeImage && horoscopeImage.includes('oaidalleapiprodscus')) {
+                              setHoroscopeImageError('Image URL has expired. A new image will be generated tomorrow.')
+                              console.log('Image URL expired (old OpenAI URL). New images are stored permanently in Supabase.')
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : null}
+                    {/* Curvy arrow pointing to character image - Chaos mode */}
+                    {horoscopeImage && characterName && (
+                      <div className="absolute top-1/2 right-[40%] -translate-y-1/2 z-20 pointer-events-none" style={{ transform: 'translateY(-50%) translateX(-20px)' }}>
+                        <div className="relative">
+                          {/* Curvy hand-drawn arrow SVG */}
+                          <svg 
+                            width="180" 
+                            height="120" 
+                            viewBox="0 0 180 120" 
+                            className="absolute"
+                            style={{ 
+                              transform: 'rotate(-15deg)',
+                              filter: 'drop-shadow(0 0 8px rgba(196, 245, 0, 0.5))'
+                            }}
+                          >
+                            {/* Curvy arrow path with hand-drawn style */}
+                            <path
+                              d="M 20 100 Q 40 80, 60 70 T 100 50 Q 120 45, 140 50 L 160 45 L 155 50 L 160 55 L 140 50"
+                              stroke="#C4F500"
+                              strokeWidth="3"
+                              fill="none"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              style={{
+                                strokeDasharray: '2,2',
+                                animation: 'dash 3s linear infinite'
+                              }}
+                            />
+                            {/* Additional wavy line for hand-drawn effect */}
+                            <path
+                              d="M 25 95 Q 45 75, 65 65 T 105 45"
+                              stroke="#C4F500"
+                              strokeWidth="1.5"
+                              fill="none"
+                              strokeLinecap="round"
+                              opacity="0.6"
+                            />
+                          </svg>
+                          {/* Text label */}
+                          <div 
+                            className="absolute top-[-10px] left-[60px] whitespace-nowrap"
+                            style={{
+                              color: '#C4F500',
+                              fontSize: '14px',
+                              fontWeight: 'bold',
+                              textShadow: '0 0 8px rgba(196, 245, 0, 0.8)',
+                              transform: 'rotate(-15deg)'
+                            }}
+                          >
+                            today, you're giving
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {mode !== 'chaos' && (
+                  <div className={`absolute top-1/2 right-0 -translate-y-1/2 w-[45%] aspect-[5/4] ${getBgClass()} transform -translate-x-[100px] overflow-hidden`} 
+                       style={{ clipPath: 'polygon(8% 0, 100% 0, 100% 100%, 0% 100%)' }} 
+                  >
+                    {horoscopeImageLoading ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                        <Loader2 className="w-8 h-8 animate-spin text-white mb-3" />
+                        <p className="text-white text-xs text-center font-medium max-w-[120px]">
+                          {imageLoadingMessages[imageLoadingMessageIndex]}
+                        </p>
                       </div>
                     ) : horoscopeImageError ? (
                       <div className="w-full h-full flex items-center justify-center p-8">
@@ -1838,40 +1979,58 @@ export default function TeamDashboard() {
                     ) : null}
                   </div>
                 )}
-                {mode !== 'chaos' && (
-                  <div className={`absolute top-1/2 right-0 -translate-y-1/2 w-[45%] aspect-[5/4] ${getBgClass()} transform -translate-x-[100px] overflow-hidden`} 
-                       style={{ clipPath: 'polygon(8% 0, 100% 0, 100% 100%, 0% 100%)' }} 
-                  >
-                    {horoscopeImageLoading ? (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Loader2 className="w-8 h-8 animate-spin text-white" />
-                      </div>
-                    ) : horoscopeImageError ? (
-                      <div className="w-full h-full flex items-center justify-center p-8">
-                        <p className="text-white text-sm text-center">{horoscopeImageError}</p>
-                      </div>
-                    ) : horoscopeImage ? (
-                      <div className="relative w-full h-full">
-                        <img 
-                          src={horoscopeImage} 
-                          alt="Horoscope portrait"
-                          className="w-full h-full object-cover"
-                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
-                          onError={(e) => {
-                            // Image failed to load (likely expired URL from old system)
-                            // New images are stored in Supabase and won't expire
-                            // Just hide the broken image
-                            const target = e.target as HTMLImageElement
-                            target.style.display = 'none'
-                            // Only show error for old expired URLs, not for new Supabase-stored images
-                            if (horoscopeImage && horoscopeImage.includes('oaidalleapiprodscus')) {
-                              setHoroscopeImageError('Image URL has expired. A new image will be generated tomorrow.')
-                              console.log('Image URL expired (old OpenAI URL). New images are stored permanently in Supabase.')
-                            }
+                {/* Curvy arrow pointing to character image */}
+                {horoscopeImage && characterName && (
+                  <div className="absolute top-1/2 right-[45%] -translate-y-1/2 z-20 pointer-events-none" style={{ transform: 'translateY(-50%) translateX(-20px)' }}>
+                    <div className="relative">
+                      {/* Curvy hand-drawn arrow SVG */}
+                      <svg 
+                        width="180" 
+                        height="120" 
+                        viewBox="0 0 180 120" 
+                        className="absolute"
+                        style={{ 
+                          transform: 'rotate(-15deg)',
+                          filter: mode === 'chaos' ? 'drop-shadow(0 0 8px rgba(196, 245, 0, 0.5))' : mode === 'chill' ? 'drop-shadow(0 0 8px rgba(255, 192, 67, 0.5))' : 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.5))'
+                        }}
+                      >
+                        {/* Curvy arrow path with hand-drawn style */}
+                        <path
+                          d="M 20 100 Q 40 80, 60 70 T 100 50 Q 120 45, 140 50 L 160 45 L 155 50 L 160 55 L 140 50"
+                          stroke={mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF'}
+                          strokeWidth="3"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{
+                            strokeDasharray: '2,2',
+                            animation: 'dash 3s linear infinite'
                           }}
                         />
+                        {/* Additional wavy line for hand-drawn effect */}
+                        <path
+                          d="M 25 95 Q 45 75, 65 65 T 105 45"
+                          stroke={mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF'}
+                          strokeWidth="1.5"
+                          fill="none"
+                          strokeLinecap="round"
+                          opacity="0.6"
+                        />
+                      </svg>
+                      {/* Text label */}
+                      <div 
+                        className="absolute top-[-10px] left-[60px] whitespace-nowrap"
+                        style={{
+                          color: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF',
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          textShadow: mode === 'chaos' ? '0 0 8px rgba(196, 245, 0, 0.8)' : mode === 'chill' ? '0 0 8px rgba(255, 192, 67, 0.8)' : '0 0 8px rgba(255, 255, 255, 0.8)',
+                          transform: 'rotate(-15deg)'
+                        }}
+                      >
+                        today, you're giving
                       </div>
-                    ) : null}
+                    </div>
                   </div>
                 )}
                 <div className="relative z-10 p-6 md:p-8 h-full flex flex-col justify-between">
@@ -2097,7 +2256,7 @@ export default function TeamDashboard() {
               >
                   <div className="flex items-center gap-2 text-sm mb-3" style={{ color: style.accent }}>
                 <Sparkles className="w-4 h-4" />
-                    <span className="uppercase tracking-wider font-black text-xs">Your Horoscope</span>
+                    <span className="uppercase tracking-wider font-black text-xs">The universe tagged you in some feedback</span>
               </div>
                   {characterName ? (
                     <h2 className={`text-4xl font-black mb-6 uppercase`} style={{ color: style.accent }}>
@@ -2108,8 +2267,11 @@ export default function TeamDashboard() {
                   )}
                   
                   {horoscopeLoading ? (
-                    <div className="flex items-center justify-center py-8">
+                    <div className="flex flex-col items-center justify-center py-8 gap-3">
                       <Loader2 className={`w-6 h-6 animate-spin ${style.text}`} />
+                      <p className={`text-sm font-medium ${style.text} text-center`}>
+                        {horoscopeLoadingMessages[horoscopeLoadingMessageIndex]}
+                      </p>
               </div>
                   ) : horoscopeError ? (
                     <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-4 border-2`} style={{ borderColor: `${style.accent}40` }}>
