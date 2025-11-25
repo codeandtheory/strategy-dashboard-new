@@ -1841,7 +1841,7 @@ export default function TeamDashboard() {
 
       <main className="max-w-[1200px] mx-auto px-6 py-4 flex-1 pb-0 pt-24">
         {/* Hero Section - Full Width */}
-        <section className="mb-12">
+        <section className="mb-12 relative">
           {(() => {
             const style = mode === 'chaos' ? getSpecificCardStyle('hero-large') : getCardStyle('hero')
             return (
@@ -1886,26 +1886,6 @@ export default function TeamDashboard() {
                     ) : null}
                   </div>
                 )}
-                {/* Text along right edge - Chaos mode */}
-                {horoscopeImage && characterName && mode === 'chaos' && (
-                  <div 
-                    className="absolute top-1/2 z-20 pointer-events-none"
-                    style={{ 
-                      right: '85px',
-                      transform: 'translateY(-50%) translateX(-80px) rotate(82deg)',
-                      transformOrigin: 'right center'
-                    }}
-                  >
-                    <div 
-                      className="text-white font-bold text-sm md:text-base whitespace-nowrap"
-                      style={{
-                        textShadow: '0 0 8px rgba(255, 255, 255, 0.8)'
-                      }}
-                    >
-                      Today, you're giving...
-                    </div>
-                  </div>
-                )}
                 {mode !== 'chaos' && (
                   <div className={`absolute top-1/2 right-0 -translate-y-1/2 w-[45%] aspect-[5/4] ${getBgClass()} transform -translate-x-[100px] overflow-hidden border-4 border-white shadow-2xl`} 
                        style={{ 
@@ -1948,21 +1928,22 @@ export default function TeamDashboard() {
                     ) : null}
                   </div>
                 )}
-                {/* Text along right edge - Non-chaos mode */}
-                {horoscopeImage && characterName && mode !== 'chaos' && (
+                {/* Text along right edge - aligned with inner edge of Card */}
+                {horoscopeImage && characterName && (
                   <div 
-                    className="absolute top-1/2 z-20 pointer-events-none"
+                    className="absolute top-1/2 z-30 pointer-events-none"
                     style={{ 
-                      right: '85px',
-                      transform: 'translateY(-50%) translateX(-80px) rotate(82deg)',
+                      right: '10px',
+                      transform: 'translateY(-50%) rotate(90deg)',
                       transformOrigin: 'right center'
                     }}
                   >
                     <div 
-                      className="font-bold text-sm md:text-base whitespace-nowrap"
+                      className={`font-bold text-sm md:text-base whitespace-nowrap ${
+                        mode === 'chill' ? 'text-[#FFC043]' : 'text-white'
+                      }`}
                       style={{
-                        textShadow: mode === 'chill' ? '0 0 8px rgba(255, 192, 67, 0.8)' : '0 0 8px rgba(255, 255, 255, 0.8)',
-                        color: mode === 'chill' ? '#FFC043' : '#FFFFFF'
+                        textShadow: mode === 'chill' ? '0 0 8px rgba(255, 192, 67, 0.8)' : '0 0 8px rgba(255, 255, 255, 0.8)'
                       }}
                     >
                       Today, you're giving...
