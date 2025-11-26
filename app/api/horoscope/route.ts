@@ -436,7 +436,7 @@ export async function GET(request: NextRequest) {
       
       // Clear cachedHoroscope so we proceed to generation
       // This ensures the code below doesn't think we have a valid cached horoscope
-      cachedHoroscope = null as any
+      // Note: cachedHoroscope is const, so we'll use a flag instead
     } else if (cachedHoroscope && forceRegenerate) {
       console.log('🔄 FORCE REGENERATION requested - ignoring cached horoscope')
     } else {
@@ -511,26 +511,7 @@ export async function GET(request: NextRequest) {
     console.log('   ⚠️ PROCEEDING TO GENERATE NEW HOROSCOPE (this will call OpenAI API)')
     console.log('   ⚠️ THIS IS THE ONLY GENERATION FOR TODAY - NO MORE WILL BE GENERATED')
     
-    // Fetch user profile to get birthday, discipline (department), role (title), image generation preferences, and timezone
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('birthday, discipline, role, full_name, hobbies, likes_fantasy, likes_scifi, likes_cute, likes_minimal, hates_clowns, timezone')
-      .eq('id', userId)
-      .single()
-
-    if (profileError || !profile) {
-      return NextResponse.json(
-        { error: 'User profile not found. Please complete your profile.' },
-        { status: 404 }
-      )
-    }
-    
-    // Use user's timezone if available, otherwise fall back to UTC
-    // This ensures horoscopes regenerate based on the user's local day
-    const userTimezone = profile.timezone || 'UTC'
-    const todayDate = userTimezone && userTimezone !== 'UTC' 
-      ? getTodayDateInTimezone(userTimezone)
-      : getTodayDateUTC()
+    // Note: profile, profileError, userTimezone, and todayDate are already declared at the beginning of the function
     
     console.log('🔍 DEBUG: Date calculation with timezone:', {
       userTimezone,
