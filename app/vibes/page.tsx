@@ -285,7 +285,7 @@ export default function VibesPage() {
 
           {/* Most Recent Poll */}
           <Card 
-            className={`${getRoundedClass('rounded-[2.5rem]')} p-6`}
+            className={`${getRoundedClass('rounded-[2.5rem]')} p-6 h-full flex flex-col`}
             style={{
               backgroundColor: mode === 'chaos' 
                 ? 'rgba(255, 255, 255, 0.05)' 
@@ -309,7 +309,7 @@ export default function VibesPage() {
             </p>
             
             {/* Chart and Fun Fact Side by Side */}
-            <div className="grid grid-cols-2 gap-6 mb-4">
+            <div className="flex-1 grid grid-cols-2 gap-6">
               {/* Horizontal Bar Chart - 1/2 width (left) */}
               <div className="space-y-3">
                 {(() => {
@@ -399,20 +399,6 @@ export default function VibesPage() {
                           </div>
                         )
                       })}
-                      
-                      {/* And then there was one section */}
-                      {oneVoters.length > 0 && (
-                        <div className="mt-6 pt-6 border-t" style={{ borderColor: mode === 'chaos' ? 'rgba(255, 255, 255, 0.1)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.1)' }}>
-                          <p className={`text-base font-black mb-3 ${getTextClass()}`}>
-                            And then there was one
-                          </p>
-                          <ul className={`space-y-1 text-sm ${getTextClass()} opacity-70`}>
-                            {oneVoters.map((name, idx) => (
-                              <li key={idx}>• {name}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
                     </>
                   )
                 })()}
@@ -461,19 +447,58 @@ export default function VibesPage() {
                   : '1px solid rgba(255, 255, 255, 0.1)'
               }}
               onClick={() => {
+                const allData = [
+                  { name: 'Stuffing', count: 7 },
+                  { name: 'Mashed potatoes', count: 3 },
+                  { name: 'Peking duck', count: 2 },
+                  { name: 'Pumpkin pie', count: 2 },
+                  { name: 'Gravy', count: 2 },
+                  { name: 'Fried turkey', count: 1 },
+                  { name: 'Turkey breast', count: 1 },
+                  { name: 'Peppercorn encrusted filet mignon', count: 1 },
+                  { name: 'Outdoor KBBQ', count: 1 },
+                  { name: 'Chicken biriyani', count: 1 },
+                  { name: 'Jollof rice', count: 1 },
+                  { name: 'Arepas', count: 1 },
+                  { name: 'Empanadas', count: 1 },
+                  { name: 'Ham', count: 1 },
+                  { name: 'Funeral potatoes', count: 1 },
+                  { name: 'Cornbread', count: 1 },
+                  { name: 'Corn soufflé', count: 1 },
+                  { name: 'Fire-roasted sweet potatoes', count: 1 },
+                  { name: 'Butternut squash', count: 1 },
+                  { name: 'Sweet potato pie', count: 1 },
+                  { name: 'Caramel custard', count: 1 },
+                  { name: 'Custard pie', count: 1 },
+                  { name: 'Dessert spread', count: 1 },
+                  { name: 'Dots candy', count: 1 },
+                  { name: 'Trolli exploding worms', count: 1 },
+                  { name: 'White Monster', count: 1 },
+                  { name: 'Eggnog', count: 1 },
+                  { name: 'Appetizer red wine', count: 1 },
+                  { name: 'Dinner red wine', count: 1 },
+                  { name: 'Dessert amaro', count: 1 },
+                  { name: 'Peanut butter whiskey "during gravy"', count: 1 },
+                  { name: 'Skinny French cigarette', count: 1 },
+                  { name: 'Capri cigarettes with my mother in law and great aunt', count: 1 },
+                  { name: 'Caviar before dinner', count: 1 },
+                  { name: 'Cheese plate before', count: 1 },
+                  { name: 'All of the above mixed together in one perfect bite', count: 1 },
+                  { name: 'Green bean casserole', count: 1 },
+                  { name: 'Horseradish mashed potatoes', count: 1 },
+                  { name: 'Hongshaorou', count: 1 },
+                ]
+                const chartData = allData.filter(item => item.count > 1)
+                const oneVoters = allData.filter(item => item.count === 1).map(item => item.name)
+                
                 setSelectedPoll({
                   id: 'thanksgiving-grub',
                   title: 'Thanksgiving Grub',
                   question: 'What are your top Thanksgiving dishes?',
                   date: 'November 2024',
                   totalResponses: 14,
-                  data: [
-                    { name: 'Stuffing', count: 7 },
-                    { name: 'Mashed potatoes', count: 3 },
-                    { name: 'Peking duck', count: 2 },
-                    { name: 'Pumpkin pie', count: 2 },
-                    { name: 'Gravy', count: 2 },
-                  ]
+                  data: chartData,
+                  oneVoters: oneVoters
                 })
                 setIsPollDialogOpen(true)
               }}
@@ -488,6 +513,61 @@ export default function VibesPage() {
               <div className={`flex items-center justify-between text-xs opacity-60 ${getTextClass()}`}>
                 <span>14 responses</span>
                 <span>Nov 2024</span>
+              </div>
+            </Card>
+
+            {/* Top 5 Movie Soundtracks Poll Card */}
+            <Card 
+              className={`${getRoundedClass('rounded-[2.5rem]')} p-6 cursor-pointer transition-all hover:scale-105 hover:shadow-2xl`}
+              style={{
+                backgroundColor: mode === 'chaos' 
+                  ? 'rgba(255, 255, 255, 0.05)' 
+                  : mode === 'chill'
+                  ? 'rgba(74, 24, 24, 0.05)'
+                  : 'rgba(255, 255, 255, 0.05)',
+                border: mode === 'chaos' 
+                  ? '1px solid rgba(255, 255, 255, 0.1)' 
+                  : mode === 'chill'
+                  ? '1px solid rgba(74, 24, 24, 0.1)'
+                  : '1px solid rgba(255, 255, 255, 0.1)'
+              }}
+              onClick={() => {
+                const ranking = [
+                  { rank: 1, name: 'Garden State' },
+                  { rank: 2, name: 'Good Will Hunting' },
+                  { rank: 3, name: 'Purple Rain' },
+                  { rank: 4, name: 'Interstellar' },
+                  { rank: 5, name: 'Trainspotting' },
+                  { rank: 6, name: 'Scott Pilgrim vs the World' },
+                  { rank: 7, name: 'Marie Antoinette' },
+                  { rank: 8, name: 'The Royal Tenenbaums' },
+                  { rank: 9, name: 'Twilight' },
+                  { rank: 10, name: 'Black Panther' },
+                ]
+                
+                setSelectedPoll({
+                  id: 'top-5-movie-soundtracks',
+                  title: 'Top 5 Movie Soundtracks',
+                  question: 'Top 5 movie sound tracks - ranked. You can choose to isolate musicals from non-musicals or combine',
+                  askedBy: 'Rebecca Smith',
+                  date: 'November 21, 2024',
+                  totalResponses: 3,
+                  ranking: ranking,
+                  isRanking: true
+                })
+                setIsPollDialogOpen(true)
+              }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <BarChart3 className="w-6 h-6" style={{ color: redSystem.primary }} />
+                <h3 className={`text-xl font-black uppercase ${getTextClass()}`}>Top 5 Movie Soundtracks</h3>
+              </div>
+              <p className={`text-sm mb-4 ${getTextClass()} opacity-70`}>
+                Top 5 movie sound tracks - ranked. You can choose to isolate musicals from non-musicals or combine
+              </p>
+              <div className={`flex items-center justify-between text-xs opacity-60 ${getTextClass()}`}>
+                <span>3 responses</span>
+                <span>Nov 21</span>
               </div>
             </Card>
           </div>
@@ -540,7 +620,7 @@ export default function VibesPage() {
                     {selectedPoll.title}
                   </DialogTitle>
                   <p className={`text-sm ${getTextClass()} opacity-60`}>
-                    {selectedPoll.date} • {selectedPoll.totalResponses} responses
+                    {selectedPoll.askedBy ? `Asked by ${selectedPoll.askedBy} • ` : ''}{selectedPoll.date} • {selectedPoll.totalResponses} responses
                   </p>
                 </DialogHeader>
                 
@@ -549,54 +629,111 @@ export default function VibesPage() {
                     {selectedPoll.question}
                   </h3>
                   
-                  {/* Bar Chart */}
-                  <div className="my-8">
-                    <div className="space-y-4">
-                      {selectedPoll.data
-                        .sort((a: any, b: any) => b.count - a.count)
-                        .map((item: any, index: number) => {
-                          const maxCount = Math.max(...selectedPoll.data.map((d: any) => d.count))
-                          const percentage = (item.count / maxCount) * 100
-                          const isTop = index === 0
-                          
-                          return (
-                            <div key={item.name} className="relative">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className={`text-sm font-semibold ${getTextClass()}`}>
-                                  {item.name}
-                                </span>
-                                <span 
-                                  className={`text-lg font-black ${getTextClass()}`}
-                                  style={{ color: isTop ? redSystem.primary : undefined }}
-                                >
-                                  {item.count}
-                                </span>
-                              </div>
-                              <div 
-                                className={`${getRoundedClass('rounded-full')} h-8 overflow-hidden relative`}
-                                style={{
-                                  backgroundColor: mode === 'chaos' 
-                                    ? 'rgba(255, 255, 255, 0.1)' 
-                                    : mode === 'chill'
-                                    ? 'rgba(74, 24, 24, 0.1)'
-                                    : 'rgba(255, 255, 255, 0.1)'
-                                }}
-                              >
-                                <div
-                                  className="h-full transition-all duration-1000 flex items-center px-4"
-                                  style={{
-                                    width: `${percentage}%`,
-                                    backgroundColor: isTop 
-                                      ? redSystem.primary
-                                      : 'rgba(255, 76, 76, 0.4)'
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          )
-                        })}
+                  {/* Ranking Poll Display */}
+                  {selectedPoll.isRanking && selectedPoll.ranking && (
+                    <div className="my-8">
+                      <ol className={`space-y-3 ${getTextClass()}`}>
+                        {selectedPoll.ranking.map((item: any) => (
+                          <li key={item.rank} className="flex items-center gap-4">
+                            <span 
+                              className={`text-2xl font-black ${getTextClass()}`}
+                              style={{ color: item.rank <= 5 ? redSystem.primary : undefined, minWidth: '2rem' }}
+                            >
+                              {item.rank}.
+                            </span>
+                            <span className={`text-lg font-semibold ${getTextClass()}`}>
+                              {item.name}
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
+                      
+                      {/* Venn Diagram */}
+                      <div className="mt-8 pt-8 border-t" style={{ borderColor: mode === 'chaos' ? 'rgba(255, 255, 255, 0.1)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.1)' }}>
+                        <p className={`text-xl font-black mb-4 ${getTextClass()}`}>
+                          Slouching Protagonists vs Significant Chairs
+                        </p>
+                        <div className="flex justify-center">
+                          <img 
+                            src="/venn_movies.png" 
+                            alt="Venn diagram showing Slouching Protagonists vs Significant Chairs"
+                            className="max-w-full h-auto"
+                            style={{ maxHeight: '500px' }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.style.display = 'none'
+                            }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  
+                  {/* Count-based Poll Display */}
+                  {!selectedPoll.isRanking && selectedPoll.data && (
+                    <>
+                      {/* Bar Chart */}
+                      <div className="my-8">
+                        <div className="space-y-4">
+                          {selectedPoll.data
+                            .sort((a: any, b: any) => b.count - a.count)
+                            .map((item: any, index: number) => {
+                              const maxCount = Math.max(...selectedPoll.data.map((d: any) => d.count))
+                              const percentage = (item.count / maxCount) * 100
+                              const isTop = index === 0
+                              
+                              return (
+                                <div key={item.name} className="relative">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className={`text-sm font-semibold ${getTextClass()}`}>
+                                      {item.name}
+                                    </span>
+                                    <span 
+                                      className={`text-lg font-black ${getTextClass()}`}
+                                      style={{ color: isTop ? redSystem.primary : undefined }}
+                                    >
+                                      {item.count}
+                                    </span>
+                                  </div>
+                                  <div 
+                                    className={`${getRoundedClass('rounded-full')} h-8 overflow-hidden relative`}
+                                    style={{
+                                      backgroundColor: mode === 'chaos' 
+                                        ? 'rgba(255, 255, 255, 0.1)' 
+                                        : mode === 'chill'
+                                        ? 'rgba(74, 24, 24, 0.1)'
+                                        : 'rgba(255, 255, 255, 0.1)'
+                                    }}
+                                  >
+                                    <div
+                                      className="h-full transition-all duration-1000 flex items-center px-4"
+                                      style={{
+                                        width: `${percentage}%`,
+                                        backgroundColor: isTop 
+                                          ? redSystem.primary
+                                          : 'rgba(255, 76, 76, 0.4)'
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )
+                            })}
+                        </div>
+                      </div>
+                      
+                      {/* And then there was one section */}
+                      {selectedPoll.oneVoters && selectedPoll.oneVoters.length > 0 && (
+                        <div className="mt-8 pt-8 border-t" style={{ borderColor: mode === 'chaos' ? 'rgba(255, 255, 255, 0.1)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.1)' }}>
+                          <p className={`text-xl font-black mb-3 ${getTextClass()}`}>
+                            And then there was one
+                          </p>
+                          <p className={`text-base ${getTextClass()} opacity-70`}>
+                            {selectedPoll.oneVoters.join(', ')}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </>
             )}
