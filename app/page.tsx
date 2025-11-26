@@ -1854,7 +1854,7 @@ export default function TeamDashboard() {
       <main className="max-w-[1200px] mx-auto px-6 py-4 flex-1 pb-0 pt-24 relative">
         {/* Hero Section and Quick Links - Side by Side */}
         <section className="mb-12 relative">
-          <div className="flex items-stretch gap-4">
+          <div className="flex items-stretch gap-4 w-full">
             {(() => {
               const style = mode === 'chaos' ? getSpecificCardStyle('hero-large') : getCardStyle('hero')
               const heroStyle = mode === 'chaos' ? getSpecificCardStyle('hero-large') : getCardStyle('hero')
@@ -1884,8 +1884,8 @@ export default function TeamDashboard() {
               
               return (
                 <>
-                  {/* Hero Card - 3/4 width */}
-                  <Card className={`${style.bg} ${style.border} p-0 ${mode === 'chaos' ? getRoundedClass('rounded-[2.5rem]') : getRoundedClass('rounded-[2.5rem]')} relative overflow-hidden group min-h-[300px] flex flex-col justify-between w-3/4`}
+                  {/* Hero Card - 7/8 width */}
+                  <Card className={`${style.bg} ${style.border} p-0 ${mode === 'chaos' ? getRoundedClass('rounded-[2.5rem]') : getRoundedClass('rounded-[2.5rem]')} relative overflow-hidden group min-h-[300px] flex flex-col justify-between flex-[7]`}
                         style={style.glow ? { boxShadow: `0 0 40px ${style.glow}` } : {}}
                   >
                 {/* Black masked section on the right with transform/rotation - contains horoscope image */}
@@ -2004,9 +2004,9 @@ export default function TeamDashboard() {
                   </div>
                   </Card>
                   
-                  {/* Quick Links Card - 1/4 width, matches hero height */}
+                  {/* Quick Links Card - 1/8 width, matches hero height */}
                   <div 
-                    className={`transition-all duration-300 flex items-end justify-end py-3 px-6 w-1/4 min-h-[300px]`}
+                    className={`transition-all duration-300 flex items-end justify-end py-3 px-6 flex-[1] min-h-[300px]`}
                   >
                     <div className="flex flex-col items-end gap-3 h-full w-full">
                       <Button 
