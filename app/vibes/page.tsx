@@ -53,6 +53,54 @@ export default function VibesPage() {
 
   const redSystem = getRedSystemColors()
 
+  // Get emoji for poll items
+  const getPollItemEmoji = (itemName: string): string => {
+    const name = itemName.toLowerCase()
+    
+    // Thanksgiving poll emojis
+    if (name.includes('stuffing')) return '🍞'
+    if (name.includes('mashed potato')) return '🥔'
+    if (name.includes('peking duck')) return '🦆'
+    if (name.includes('pumpkin pie')) return '🎃'
+    if (name.includes('gravy')) return '🥘'
+    if (name.includes('turkey')) return '🦃'
+    if (name.includes('wine')) return '🍷'
+    if (name.includes('cigarette')) return '🚬'
+    if (name.includes('caviar')) return '🐟'
+    if (name.includes('cheese')) return '🧀'
+    if (name.includes('casserole')) return '🍲'
+    if (name.includes('corn')) return '🌽'
+    if (name.includes('sweet potato')) return '🍠'
+    if (name.includes('custard')) return '🍮'
+    if (name.includes('candy')) return '🍬'
+    if (name.includes('monster')) return '🥤'
+    if (name.includes('eggnog')) return '🥛'
+    if (name.includes('whiskey')) return '🥃'
+    if (name.includes('amaro')) return '🍸'
+    if (name.includes('rice')) return '🍚'
+    if (name.includes('biriyani') || name.includes('biriyani')) return '🍛'
+    if (name.includes('arepa') || name.includes('empanada')) return '🥟'
+    if (name.includes('ham')) return '🍖'
+    if (name.includes('bread')) return '🍞'
+    if (name.includes('squash')) return '🎃'
+    if (name.includes('spread')) return '🍽️'
+    
+    // Movie soundtrack emojis
+    if (name.includes('garden state')) return '🌳'
+    if (name.includes('good will hunting')) return '🧠'
+    if (name.includes('purple rain')) return '💜'
+    if (name.includes('interstellar')) return '🌌'
+    if (name.includes('trainspotting')) return '🚂'
+    if (name.includes('scott pilgrim')) return '🎮'
+    if (name.includes('marie antoinette')) return '👑'
+    if (name.includes('royal tenenbaums')) return '🎭'
+    if (name.includes('twilight')) return '🌙'
+    if (name.includes('black panther')) return '🐆'
+    
+    // Default emoji
+    return '✨'
+  }
+
   // Dashboard styling helpers
   const getBgClass = () => {
     switch (mode) {
@@ -174,6 +222,16 @@ export default function VibesPage() {
 
   return (
     <div className={`flex flex-col min-h-screen ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes emojiBounce {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-10px) scale(1.1); }
+        }
+        .animated-emoji {
+          animation: emojiBounce 2s ease-in-out infinite;
+          display: inline-block;
+        }
+      `}} />
       <SiteHeader />
 
       <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
@@ -355,7 +413,7 @@ export default function VibesPage() {
                     { name: 'Hongshaorou', count: 1 },
                   ]
                   
-                  const chartData = allData.filter(item => item.count > 0).sort((a, b) => b.count - a.count)
+                  const chartData = allData.filter(item => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 5)
                   const maxCount = Math.max(...chartData.map(d => d.count))
                   
                   return (
@@ -367,9 +425,9 @@ export default function VibesPage() {
                         return (
                           <div key={item.name} className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                              <span className={`text-base font-semibold ${getTextClass()}`}>{item.name}</span>
+                              <span className={`text-sm font-semibold ${getTextClass()}`}>{item.name}</span>
                               <span 
-                                className={`text-base font-black ${getTextClass()}`}
+                                className={`text-sm font-black ${getTextClass()}`}
                                 style={{ color: isTop ? redSystem.primary : undefined }}
                               >
                                 {item.count}
@@ -628,24 +686,63 @@ export default function VibesPage() {
                     {selectedPoll.question}
                   </h3>
                   
-                  {/* Ranking Poll Display */}
+                  {/* Ranking Poll Display - Movie Soundtracks */}
                   {selectedPoll.isRanking && selectedPoll.ranking && (
                     <div className="my-8">
-                      <ol className={`space-y-3 ${getTextClass()}`}>
-                        {selectedPoll.ranking.map((item: any) => (
-                          <li key={item.rank} className="flex items-center gap-4">
-                            <span 
-                              className={`text-2xl font-black ${getTextClass()}`}
-                              style={{ color: item.rank <= 5 ? redSystem.primary : undefined, minWidth: '2rem' }}
-                            >
-                              {item.rank}.
-                            </span>
-                            <span className={`text-lg font-semibold ${getTextClass()}`}>
-                              {item.name}
-                            </span>
-                          </li>
-                        ))}
-                      </ol>
+                      {/* Horizontal Bar Chart for all non-zero items */}
+                      <div className="space-y-3 mb-6">
+                        {selectedPoll.ranking.map((item: any) => {
+                          const maxRank = Math.min(...selectedPoll.ranking.map((r: any) => r.rank))
+                          const percentage = ((selectedPoll.ranking.length - item.rank + 1) / selectedPoll.ranking.length) * 100
+                          const isTopVoted = item.rank <= 5
+                          
+                          return (
+                            <div key={item.rank} className="space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <span 
+                                    className={`text-lg font-black ${getTextClass()}`}
+                                    style={{ color: isTopVoted ? redSystem.primary : undefined, minWidth: '2rem' }}
+                                  >
+                                    {item.rank}.
+                                  </span>
+                                  <span className={`text-base font-semibold ${getTextClass()}`}>
+                                    {item.name}
+                                  </span>
+                                </div>
+                                {isTopVoted && (
+                                  <span 
+                                    className="animated-emoji text-5xl"
+                                    style={{ animationDelay: `${item.rank * 0.1}s` }}
+                                  >
+                                    {getPollItemEmoji(item.name)}
+                                  </span>
+                                )}
+                              </div>
+                              <div 
+                                className={`${getRoundedClass('rounded-full')} h-4 overflow-hidden`}
+                                style={{
+                                  backgroundColor: mode === 'chaos' 
+                                    ? 'rgba(255, 255, 255, 0.1)' 
+                                    : mode === 'chill'
+                                    ? 'rgba(74, 24, 24, 0.1)'
+                                    : 'rgba(255, 255, 255, 0.1)'
+                                }}
+                              >
+                                <div
+                                  className="h-full transition-all duration-1000"
+                                  style={{
+                                    width: `${percentage}%`,
+                                    backgroundColor: isTopVoted 
+                                      ? redSystem.primary
+                                      : 'rgba(255, 76, 76, 0.4)'
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
                       
                       {/* Venn Diagram */}
                       <div className="mt-8 pt-8 border-t" style={{ borderColor: mode === 'chaos' ? 'rgba(255, 255, 255, 0.1)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.1)' }}>
@@ -668,31 +765,100 @@ export default function VibesPage() {
                     </div>
                   )}
                   
-                  {/* Count-based Poll Display */}
+                  {/* Count-based Poll Display - Thanksgiving */}
                   {!selectedPoll.isRanking && selectedPoll.data && (
                     <div className="my-8">
-                      {/* Full Results List */}
-                      <ul className={`space-y-2 ${getTextClass()}`}>
-                        {selectedPoll.data
-                          .sort((a: any, b: any) => b.count - a.count)
-                          .map((item: any, index: number) => {
-                            const isTop = index === 0
+                      {(() => {
+                        const allData = selectedPoll.data.sort((a: any, b: any) => b.count - a.count)
+                        const nonZeroData = allData.filter((item: any) => item.count > 0)
+                        const zeroData = allData.filter((item: any) => item.count === 0)
+                        const maxCount = Math.max(...nonZeroData.map((d: any) => d.count))
+                        
+                        return (
+                          <>
+                            {/* Horizontal Bar Chart for all non-zero items */}
+                            <div className="space-y-3 mb-6">
+                              {nonZeroData.map((item: any, index: number) => {
+                                const percentage = (item.count / maxCount) * 100
+                                const isTop = index === 0
+                                
+                                return (
+                                  <div key={item.name} className="space-y-1.5">
+                                    <div className="flex items-center justify-between">
+                                      <span className={`text-base font-semibold ${getTextClass()}`}>
+                                        {item.name}
+                                      </span>
+                                      <div className="flex items-center gap-3">
+                                        <span 
+                                          className={`text-base font-black ${getTextClass()}`}
+                                          style={{ color: isTop ? redSystem.primary : undefined }}
+                                        >
+                                          {item.count}
+                                        </span>
+                                        {isTop && (
+                                          <span 
+                                            className="animated-emoji text-5xl"
+                                          >
+                                            {getPollItemEmoji(item.name)}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div 
+                                      className={`${getRoundedClass('rounded-full')} h-4 overflow-hidden`}
+                                      style={{
+                                        backgroundColor: mode === 'chaos' 
+                                          ? 'rgba(255, 255, 255, 0.1)' 
+                                          : mode === 'chill'
+                                          ? 'rgba(74, 24, 24, 0.1)'
+                                          : 'rgba(255, 255, 255, 0.1)'
+                                      }}
+                                    >
+                                      <div
+                                        className="h-full transition-all duration-1000"
+                                        style={{
+                                          width: `${percentage}%`,
+                                          backgroundColor: isTop 
+                                            ? redSystem.primary
+                                            : 'rgba(255, 76, 76, 0.4)'
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
                             
-                            return (
-                              <li key={item.name} className="flex items-center justify-between py-2">
-                                <span className={`text-base font-semibold ${getTextClass()}`}>
-                                  {item.name}
-                                </span>
-                                <span 
-                                  className={`text-lg font-black ${getTextClass()}`}
-                                  style={{ color: isTop ? redSystem.primary : undefined }}
-                                >
-                                  {item.count}
-                                </span>
-                              </li>
-                            )
-                          })}
-                      </ul>
+                            {/* List of zero-vote items */}
+                            {zeroData.length > 0 && (
+                              <div className="mt-6 pt-6 border-t" style={{ borderColor: mode === 'chaos' ? 'rgba(255, 255, 255, 0.1)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.1)' }}>
+                                <p className={`text-base font-black mb-3 ${getTextClass()}`}>
+                                  And then there was one
+                                </p>
+                                <p className={`text-sm ${getTextClass()} opacity-70`}>
+                                  {zeroData.map((item: any) => item.name).join(', ')}
+                                </p>
+                              </div>
+                            )}
+                            
+                            {/* Thanksgiving Image */}
+                            <div className="mt-8 pt-8 border-t" style={{ borderColor: mode === 'chaos' ? 'rgba(255, 255, 255, 0.1)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.1)' }}>
+                              <div className="flex justify-center">
+                                <img 
+                                  src="/thxgiving.png" 
+                                  alt="Thanksgiving visualization"
+                                  className="max-w-full h-auto"
+                                  style={{ maxHeight: '500px' }}
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement
+                                    target.style.display = 'none'
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )
+                      })()}
                     </div>
                   )}
                 </div>
