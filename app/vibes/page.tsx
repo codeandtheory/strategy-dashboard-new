@@ -39,6 +39,20 @@ export default function VibesPage() {
   const [selectedPoll, setSelectedPoll] = useState<any>(null)
   const [isPollDialogOpen, setIsPollDialogOpen] = useState(false)
 
+  // RED SYSTEM colors for vibes page
+  // Primary: Coral Red (#FF4C4C), Secondary: Crimson (#C41E3A), Lightest: Peach (#FFD4C4)
+  // Ocean Blue (#00A3E0) - buttons only
+  const getRedSystemColors = () => {
+    return {
+      primary: '#FF4C4C',    // Coral Red
+      secondary: '#C41E3A',  // Crimson
+      lightest: '#FFD4C4',  // Peach
+      button: '#00A3E0'     // Ocean Blue (buttons only)
+    }
+  }
+
+  const redSystem = getRedSystemColors()
+
   // Dashboard styling helpers
   const getBgClass = () => {
     switch (mode) {
@@ -181,7 +195,7 @@ export default function VibesPage() {
           >
             <div className="flex items-center gap-2 mb-6">
               <Archive className="w-5 h-5" style={{ 
-                color: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF' 
+                color: redSystem.primary
               }} />
               <h3 className={`text-sm uppercase tracking-wider font-black ${getTextClass()}`}>
                 Archive
@@ -230,150 +244,15 @@ export default function VibesPage() {
           </div>
         )}
 
-        {/* Top Row - Most Recent Poll and Playlist (1/2 width each) */}
+        {/* Top Row - Most Recent Playlist and Poll (1/2 width each) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          {/* Most Recent Poll */}
-          <Card 
-            className={`${getRoundedClass('rounded-[2.5rem]')} p-6`}
-            style={{
-              backgroundColor: mode === 'chaos' 
-                ? 'rgba(255, 255, 255, 0.05)' 
-                : mode === 'chill'
-                ? 'rgba(74, 24, 24, 0.05)'
-                : 'rgba(255, 255, 255, 0.05)',
-              border: mode === 'chaos' 
-                ? '1px solid rgba(255, 255, 255, 0.1)' 
-                : mode === 'chill'
-                ? '1px solid rgba(74, 24, 24, 0.1)'
-                : '1px solid rgba(255, 255, 255, 0.1)'
-            }}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <BarChart3 className="w-6 h-6" style={{ color: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF' }} />
-              <h2 className={`text-2xl font-black uppercase ${getTextClass()}`}>Latest Poll</h2>
-                  </div>
-            <h3 className={`text-xl font-black mb-3 ${getTextClass()}`}>Thanksgiving Grub</h3>
-            <p className={`text-sm mb-4 ${getTextClass()} opacity-70`}>
-              What are your top Thanksgiving dishes?
-            </p>
-            
-            {/* Chart and Fun Fact Side by Side */}
-            <div className="grid grid-cols-4 gap-4 mb-4">
-              {/* Horizontal Bar Chart - 1/2 width (2 columns) */}
-              <div className="col-span-2 space-y-3 max-h-[400px] overflow-y-auto">
-                {[
-                  { name: 'Stuffing', count: 7 },
-                  { name: 'Mashed potatoes', count: 3 },
-                  { name: 'Peking duck', count: 2 },
-                  { name: 'Pumpkin pie', count: 2 },
-                  { name: 'Gravy', count: 2 },
-                  { name: 'Fried turkey', count: 1 },
-                  { name: 'Turkey breast', count: 1 },
-                  { name: 'Peppercorn encrusted filet mignon', count: 1 },
-                  { name: 'Outdoor KBBQ', count: 1 },
-                  { name: 'Chicken biriyani', count: 1 },
-                  { name: 'Jollof rice', count: 1 },
-                  { name: 'Arepas', count: 1 },
-                  { name: 'Empanadas', count: 1 },
-                  { name: 'Ham', count: 1 },
-                  { name: 'Funeral potatoes', count: 1 },
-                  { name: 'Cornbread', count: 1 },
-                  { name: 'Corn soufflé', count: 1 },
-                  { name: 'Fire-roasted sweet potatoes', count: 1 },
-                  { name: 'Butternut squash', count: 1 },
-                  { name: 'Sweet potato pie', count: 1 },
-                  { name: 'Caramel custard', count: 1 },
-                  { name: 'Custard pie', count: 1 },
-                  { name: 'Dessert spread', count: 1 },
-                  { name: 'Dots candy', count: 1 },
-                  { name: 'Trolli exploding worms', count: 1 },
-                  { name: 'White Monster', count: 1 },
-                  { name: 'Eggnog', count: 1 },
-                  { name: 'Appetizer red wine', count: 1 },
-                  { name: 'Dinner red wine', count: 1 },
-                  { name: 'Dessert amaro', count: 1 },
-                  { name: 'Peanut butter whiskey "during gravy"', count: 1 },
-                  { name: 'Skinny French cigarette', count: 1 },
-                  { name: 'Capri cigarettes with my mother in law and great aunt', count: 1 },
-                  { name: 'Caviar before dinner', count: 1 },
-                  { name: 'Cheese plate before', count: 1 },
-                  { name: 'All of the above mixed together in one perfect bite', count: 1 },
-                  { name: 'Green bean casserole', count: 1 },
-                  { name: 'Horseradish mashed potatoes', count: 1 },
-                  { name: 'Hongshaorou', count: 1 },
-                ].sort((a, b) => b.count - a.count).map((item, index) => {
-                  const maxCount = 7
-                  const percentage = (item.count / maxCount) * 100
-                  const isTop = index === 0
-                  
-                  return (
-                    <div key={item.name} className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className={`text-sm font-semibold ${getTextClass()}`}>{item.name}</span>
-                        <span 
-                          className={`text-sm font-black ${getTextClass()}`}
-                          style={{ color: isTop ? (mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF') : undefined }}
-                        >
-                          {item.count}
-                        </span>
-                  </div>
-                      <div 
-                        className={`${getRoundedClass('rounded-full')} h-4 overflow-hidden`}
-                        style={{
-                          backgroundColor: mode === 'chaos' 
-                            ? 'rgba(255, 255, 255, 0.1)' 
-                            : mode === 'chill'
-                            ? 'rgba(74, 24, 24, 0.1)'
-                            : 'rgba(255, 255, 255, 0.1)'
-                        }}
-                      >
-                        <div
-                          className="h-full transition-all duration-1000"
-                          style={{
-                            width: `${percentage}%`,
-                            backgroundColor: isTop 
-                              ? (mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF')
-                              : (mode === 'chaos' ? 'rgba(196, 245, 0, 0.4)' : mode === 'chill' ? 'rgba(255, 192, 67, 0.4)' : 'rgba(255, 255, 255, 0.4)')
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-                    </div>
-
-              {/* Spacer - 1/4 width (1 column) */}
-              <div className="col-span-1"></div>
-
-              {/* Fun Fact - 1/4 width (1 column), aligned to top */}
-              <div className="col-span-1">
-                <p className={`text-xs font-black mb-2 ${getTextClass()}`}>
-                  Fun Fact: Statistically speaking, cigarettes appear as often as:
-                </p>
-                <ul className={`space-y-0.5 text-xs ${getTextClass()} opacity-70`}>
-                  <li>• turkey</li>
-                  <li>• custard</li>
-                  <li>• caramel</li>
-                  <li>• mashed potatoes with gravy</li>
-                  <li>• empanadas</li>
-                  <li>• jollof rice</li>
-                </ul>
-                  </div>
-                </div>
-
-            <div className={`flex items-center justify-between text-xs opacity-60 ${getTextClass()}`}>
-              <span>14 responses</span>
-              <span>Nov 2024</span>
-                </div>
-              </Card>
-
           {/* Most Recent Playlist */}
           {(() => {
             const playlistStyle = mode === 'chaos' 
-              ? { text: 'text-white', accent: '#9333EA' }
+              ? { text: 'text-white', accent: redSystem.primary }
               : mode === 'chill'
-              ? { text: getTextClass(), accent: '#FFB5D8' }
-              : { text: getTextClass(), accent: '#FFFFFF' }
+              ? { text: getTextClass(), accent: redSystem.lightest }
+              : { text: getTextClass(), accent: redSystem.primary }
             return (
               <Card className={`bg-transparent border-0 p-6 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}>
                 <div className="flex items-center gap-2 text-sm mb-3" style={{ color: playlistStyle.accent }}>
@@ -403,6 +282,163 @@ export default function VibesPage() {
               </Card>
             )
           })()}
+
+          {/* Most Recent Poll */}
+          <Card 
+            className={`${getRoundedClass('rounded-[2.5rem]')} p-6`}
+            style={{
+              backgroundColor: mode === 'chaos' 
+                ? 'rgba(255, 255, 255, 0.05)' 
+                : mode === 'chill'
+                ? 'rgba(74, 24, 24, 0.05)'
+                : 'rgba(255, 255, 255, 0.05)',
+              border: mode === 'chaos' 
+                ? '1px solid rgba(255, 255, 255, 0.1)' 
+                : mode === 'chill'
+                ? '1px solid rgba(74, 24, 24, 0.1)'
+                : '1px solid rgba(255, 255, 255, 0.1)'
+            }}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <BarChart3 className="w-6 h-6" style={{ color: redSystem.primary }} />
+              <h2 className={`text-2xl font-black uppercase ${getTextClass()}`}>Latest Poll</h2>
+                  </div>
+            <h3 className={`text-xl font-black mb-3 ${getTextClass()}`}>Thanksgiving Grub</h3>
+            <p className={`text-base mb-4 ${getTextClass()} opacity-70`}>
+              What are your top Thanksgiving dishes?
+            </p>
+            
+            {/* Chart and Fun Fact Side by Side */}
+            <div className="grid grid-cols-2 gap-6 mb-4">
+              {/* Horizontal Bar Chart - 1/2 width (left) */}
+              <div className="space-y-3">
+                {(() => {
+                  const allData = [
+                    { name: 'Stuffing', count: 7 },
+                    { name: 'Mashed potatoes', count: 3 },
+                    { name: 'Peking duck', count: 2 },
+                    { name: 'Pumpkin pie', count: 2 },
+                    { name: 'Gravy', count: 2 },
+                    { name: 'Fried turkey', count: 1 },
+                    { name: 'Turkey breast', count: 1 },
+                    { name: 'Peppercorn encrusted filet mignon', count: 1 },
+                    { name: 'Outdoor KBBQ', count: 1 },
+                    { name: 'Chicken biriyani', count: 1 },
+                    { name: 'Jollof rice', count: 1 },
+                    { name: 'Arepas', count: 1 },
+                    { name: 'Empanadas', count: 1 },
+                    { name: 'Ham', count: 1 },
+                    { name: 'Funeral potatoes', count: 1 },
+                    { name: 'Cornbread', count: 1 },
+                    { name: 'Corn soufflé', count: 1 },
+                    { name: 'Fire-roasted sweet potatoes', count: 1 },
+                    { name: 'Butternut squash', count: 1 },
+                    { name: 'Sweet potato pie', count: 1 },
+                    { name: 'Caramel custard', count: 1 },
+                    { name: 'Custard pie', count: 1 },
+                    { name: 'Dessert spread', count: 1 },
+                    { name: 'Dots candy', count: 1 },
+                    { name: 'Trolli exploding worms', count: 1 },
+                    { name: 'White Monster', count: 1 },
+                    { name: 'Eggnog', count: 1 },
+                    { name: 'Appetizer red wine', count: 1 },
+                    { name: 'Dinner red wine', count: 1 },
+                    { name: 'Dessert amaro', count: 1 },
+                    { name: 'Peanut butter whiskey "during gravy"', count: 1 },
+                    { name: 'Skinny French cigarette', count: 1 },
+                    { name: 'Capri cigarettes with my mother in law and great aunt', count: 1 },
+                    { name: 'Caviar before dinner', count: 1 },
+                    { name: 'Cheese plate before', count: 1 },
+                    { name: 'All of the above mixed together in one perfect bite', count: 1 },
+                    { name: 'Green bean casserole', count: 1 },
+                    { name: 'Horseradish mashed potatoes', count: 1 },
+                    { name: 'Hongshaorou', count: 1 },
+                  ]
+                  
+                  const chartData = allData.filter(item => item.count > 1).sort((a, b) => b.count - a.count)
+                  const oneVoters = allData.filter(item => item.count === 1).map(item => item.name)
+                  const maxCount = Math.max(...chartData.map(d => d.count))
+                  
+                  return (
+                    <>
+                      {chartData.map((item, index) => {
+                        const percentage = (item.count / maxCount) * 100
+                        const isTop = index === 0
+                        
+                        return (
+                          <div key={item.name} className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className={`text-base font-semibold ${getTextClass()}`}>{item.name}</span>
+                              <span 
+                                className={`text-base font-black ${getTextClass()}`}
+                                style={{ color: isTop ? redSystem.primary : undefined }}
+                              >
+                                {item.count}
+                              </span>
+                            </div>
+                            <div 
+                              className={`${getRoundedClass('rounded-full')} h-4 overflow-hidden`}
+                              style={{
+                                backgroundColor: mode === 'chaos' 
+                                  ? 'rgba(255, 255, 255, 0.1)' 
+                                  : mode === 'chill'
+                                  ? 'rgba(74, 24, 24, 0.1)'
+                                  : 'rgba(255, 255, 255, 0.1)'
+                              }}
+                            >
+                              <div
+                                className="h-full transition-all duration-1000"
+                                style={{
+                                  width: `${percentage}%`,
+                                  backgroundColor: isTop 
+                                    ? redSystem.primary
+                                    : (mode === 'chaos' ? 'rgba(255, 76, 76, 0.4)' : mode === 'chill' ? 'rgba(255, 76, 76, 0.4)' : 'rgba(255, 76, 76, 0.4)')
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
+                      
+                      {/* And then there was one section */}
+                      {oneVoters.length > 0 && (
+                        <div className="mt-6 pt-6 border-t" style={{ borderColor: mode === 'chaos' ? 'rgba(255, 255, 255, 0.1)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.1)' }}>
+                          <p className={`text-base font-black mb-3 ${getTextClass()}`}>
+                            And then there was one
+                          </p>
+                          <ul className={`space-y-1 text-sm ${getTextClass()} opacity-70`}>
+                            {oneVoters.map((name, idx) => (
+                              <li key={idx}>• {name}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
+              </div>
+
+              {/* Fun Fact - 1/2 width (right) */}
+              <div className="flex flex-col justify-start">
+                <h4 className={`text-xl font-black mb-3 ${getTextClass()}`}>
+                  Fun Fact: Statistically speaking, cigarettes appear as often as:
+                </h4>
+                <ul className={`space-y-1 text-base ${getTextClass()} opacity-70`}>
+                  <li>• turkey</li>
+                  <li>• custard</li>
+                  <li>• caramel</li>
+                  <li>• mashed potatoes with gravy</li>
+                  <li>• empanadas</li>
+                  <li>• jollof rice</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className={`flex items-center justify-between text-xs opacity-60 ${getTextClass()}`}>
+              <span>14 responses</span>
+              <span>Nov 2024</span>
+                </div>
+              </Card>
         </div>
 
         {/* Polls Archive */}
@@ -443,7 +479,7 @@ export default function VibesPage() {
               }}
             >
               <div className="flex items-center gap-3 mb-4">
-                <BarChart3 className="w-6 h-6" style={{ color: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF' }} />
+                <BarChart3 className="w-6 h-6" style={{ color: redSystem.primary }} />
                 <h3 className={`text-xl font-black uppercase ${getTextClass()}`}>Thanksgiving Grub</h3>
               </div>
               <p className={`text-sm mb-4 ${getTextClass()} opacity-70`}>
@@ -494,11 +530,7 @@ export default function VibesPage() {
                 : mode === 'chill'
                 ? '#F5E6D3'
                 : '#000000',
-              border: mode === 'chaos' 
-                ? '2px solid rgba(196, 245, 0, 0.3)' 
-                : mode === 'chill'
-                ? '2px solid rgba(255, 192, 67, 0.3)'
-                : '2px solid rgba(255, 255, 255, 0.3)'
+              border: `2px solid ${redSystem.primary}40`
             }}
           >
             {selectedPoll && (
@@ -535,7 +567,7 @@ export default function VibesPage() {
                                 </span>
                                 <span 
                                   className={`text-lg font-black ${getTextClass()}`}
-                                  style={{ color: isTop ? (mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF') : undefined }}
+                                  style={{ color: isTop ? redSystem.primary : undefined }}
                                 >
                                   {item.count}
                                 </span>
@@ -555,8 +587,8 @@ export default function VibesPage() {
                                   style={{
                                     width: `${percentage}%`,
                                     backgroundColor: isTop 
-                                      ? (mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF')
-                                      : (mode === 'chaos' ? 'rgba(196, 245, 0, 0.4)' : mode === 'chill' ? 'rgba(255, 192, 67, 0.4)' : 'rgba(255, 255, 255, 0.4)')
+                                      ? redSystem.primary
+                                      : 'rgba(255, 76, 76, 0.4)'
                                   }}
                                 />
                               </div>
