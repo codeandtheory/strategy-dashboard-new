@@ -1978,17 +1978,52 @@ export default function TeamDashboard() {
         {/* Quick Actions Bar - same height as This Week stats bar */}
         <section className="mb-6">
           {(() => {
-            const style = mode === 'chaos' ? getSpecificCardStyle('friday-drop') : getCardStyle('work')
-            const isLightBg = style.text === 'text-black'
+            // Get hero style to use its color with 30% opacity
+            const heroStyle = mode === 'chaos' ? getSpecificCardStyle('hero-large') : getCardStyle('hero')
+            const isLightBg = heroStyle.text === 'text-black'
+            
+            // Extract color from gradient or use accent color for dark background
+            // For 30% opacity dark version, we'll use the accent color or a dark variant
+            let heroBgColor = heroStyle.accent
+            if (mode === 'chaos') {
+              const timeGradient = getTimeBasedGradient()
+              // Use the accent color from the gradient
+              heroBgColor = timeGradient.accent
+            } else if (mode === 'chill') {
+              const timeGradientChill = getTimeBasedGradientChill()
+              heroBgColor = timeGradientChill.accent
+            } else {
+              // Code mode - use white accent
+              heroBgColor = '#FFFFFF'
+            }
+            
+            // Convert hex to rgba with 30% opacity
+            const hexToRgba = (hex: string, alpha: number) => {
+              const r = parseInt(hex.slice(1, 3), 16)
+              const g = parseInt(hex.slice(3, 5), 16)
+              const b = parseInt(hex.slice(5, 7), 16)
+              return `rgba(${r}, ${g}, ${b}, ${alpha})`
+            }
+            
+            const darkBgColor = hexToRgba(heroBgColor, 0.3)
             
             return (
               <Card 
-                className={`${style.bg} ${style.border} py-3 px-6 ${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 flex items-center justify-between`}
-                style={{ flex: '0 0 auto', height: 'auto', minHeight: '70px' }}
+                className={`${getRoundedClass('rounded-[2.5rem]')} transition-all duration-300 flex items-center py-3 px-6`}
+                style={{ 
+                  flex: '0 0 auto', 
+                  height: 'auto', 
+                  minHeight: '70px',
+                  backgroundColor: darkBgColor,
+                  border: 'none'
+                }}
               >
-                <div className="flex items-center gap-4 flex-1">
-                  {/* Quick Actions */}
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4 w-full">
+                  {/* Left column - 1/3 width: Quick Actions label + buttons */}
+                  <div className="flex items-center gap-3 flex-[0_0_33.333%]">
+                    <span className={`font-black text-sm uppercase tracking-wider ${heroStyle.text}`}>
+                      Quick Actions
+                    </span>
                     <Button 
                       onClick={() => setShowAddSnapDialog(true)}
                       className={`${mode === 'chaos' ? (isLightBg ? 'hover:bg-[#0F0F0F]' : 'hover:bg-[#2a2a2a]') + ' hover:scale-105' : mode === 'chill' ? 'hover:bg-[#3A1414]' : mode === 'code' ? 'hover:bg-[#1a1a1a] border border-[#FFFFFF]' : 'hover:bg-[#1a1a1a]'} font-semibold ${getRoundedClass('rounded-full')} py-2 px-5 text-sm tracking-normal transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}
@@ -2034,9 +2069,9 @@ export default function TeamDashboard() {
                     </Button>
                   </div>
                   
-                  {/* News Updates */}
-                  <div className="flex-1 flex items-center justify-center">
-                    <p className={`text-sm ${style.text}/60`}>News updates coming soon...</p>
+                  {/* Right column - 2/3 width: News Updates (invisible if no news) */}
+                  <div className="flex-[0_0_66.666%] flex items-center justify-center">
+                    {/* News content will go here - hidden for now */}
                   </div>
                 </div>
               </Card>
