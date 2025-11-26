@@ -1948,13 +1948,26 @@ export default function TeamDashboard() {
                     </h2>
                     <p className={`text-[clamp(1.25rem,3vw+0.5rem,2rem)] font-bold max-w-2xl leading-tight ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
                       {mode === 'code' 
-                        ? `It's ${todayDate || 'Loading...'}${temperature ? ` and ${temperature}` : ''}${weatherCondition ? ` and ${weatherCondition.charAt(0).toUpperCase() + weatherCondition.slice(1)}` : ''}`
-                        : `It's ${todayDate || 'Loading...'}${temperature ? ` and ${temperature}` : ''}${weatherCondition ? ` and ${weatherCondition.charAt(0).toUpperCase() + weatherCondition.slice(1)}` : ''}`
+                        ? `It's ${todayDate || 'Loading...'}`
+                        : `It's ${todayDate || 'Loading...'}`
                       }
                     </p>
-                    <p className={`text-[clamp(1rem,2.5vw+0.5rem,1.5rem)] font-semibold max-w-2xl leading-tight mt-2 ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
-                      ...today, you're giving
-                    </p>
+                    {(temperature || weatherCondition) && (
+                      <p className={`text-[clamp(1.25rem,3vw+0.5rem,2rem)] font-bold max-w-2xl leading-tight mt-2 ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
+                        {mode === 'code' 
+                          ? `${temperature || ''}${temperature && weatherCondition ? ' and ' : ''}${weatherCondition ? weatherCondition.charAt(0).toUpperCase() + weatherCondition.slice(1) : ''}`
+                          : `${temperature || ''}${temperature && weatherCondition ? ' and ' : ''}${weatherCondition ? weatherCondition.charAt(0).toUpperCase() + weatherCondition.slice(1) : ''}`
+                        }
+                      </p>
+                    )}
+                    {characterName && (
+                      <p className={`text-[clamp(1.25rem,3vw+0.5rem,2rem)] font-bold max-w-2xl leading-tight mt-2 ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
+                        {mode === 'code' 
+                          ? `and you're giving ${characterName}`
+                          : `and you're giving ${characterName}`
+                        }
+                      </p>
+                    )}
                   </div>
               </div>
             </Card>
