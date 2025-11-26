@@ -627,6 +627,56 @@ export default function VibesPage() {
                 <span>Nov 21</span>
               </div>
             </Card>
+
+            {/* Shows to Binge Poll Card */}
+            <Card 
+              className={`${getRoundedClass('rounded-[2.5rem]')} p-6 cursor-pointer transition-all hover:scale-105 hover:shadow-2xl`}
+              style={{
+                backgroundColor: mode === 'chaos' 
+                  ? 'rgba(255, 255, 255, 0.05)' 
+                  : mode === 'chill'
+                  ? 'rgba(74, 24, 24, 0.05)'
+                  : 'rgba(255, 255, 255, 0.05)',
+                border: mode === 'chaos' 
+                  ? '1px solid rgba(255, 255, 255, 0.1)' 
+                  : mode === 'chill'
+                  ? '1px solid rgba(74, 24, 24, 0.1)'
+                  : '1px solid rgba(255, 255, 255, 0.1)'
+              }}
+              onClick={() => {
+                const showsData = [
+                  { name: 'Gossip Girl', secretsPerSeason: 14, percentChangeNothing: 72, gaspsPerMinute: 0.42 },
+                  { name: 'Pretty Little Liars', secretsPerSeason: 18, percentChangeNothing: 81, gaspsPerMinute: 0.55 },
+                  { name: 'Laguna Beach', secretsPerSeason: 6, percentChangeNothing: 67, gaspsPerMinute: 0.18 },
+                  { name: 'The OC', secretsPerSeason: 9, percentChangeNothing: 58, gaspsPerMinute: 0.22 },
+                  { name: 'Veronica Mars', secretsPerSeason: 11, percentChangeNothing: 49, gaspsPerMinute: 0.35 },
+                  { name: 'Buffy', secretsPerSeason: 7, percentChangeNothing: 38, gaspsPerMinute: 0.14 }
+                ]
+                
+                setSelectedPoll({
+                  id: 'shows-to-binge',
+                  title: 'Shows to Binge',
+                  question: 'TV Show Statistics Analysis',
+                  date: 'December 2024',
+                  totalResponses: 6,
+                  shows: showsData,
+                  isShowsToBinge: true
+                })
+                setIsPollDialogOpen(true)
+              }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <BarChart3 className="w-6 h-6" style={{ color: redSystem.primary }} />
+                <h3 className={`text-xl font-black uppercase ${getTextClass()}`}>Shows to Binge</h3>
+              </div>
+              <p className={`text-sm mb-4 ${getTextClass()} opacity-70`}>
+                TV Show Statistics Analysis
+              </p>
+              <div className={`flex items-center justify-between text-xs opacity-60 ${getTextClass()}`}>
+                <span>6 shows</span>
+                <span>Dec 2024</span>
+              </div>
+            </Card>
           </div>
         </div>
 
@@ -857,6 +907,243 @@ export default function VibesPage() {
                               </div>
                             </div>
                           </>
+                        )
+                      })()}
+                    </div>
+                  )}
+                  
+                  {/* Shows to Binge Infographic Display */}
+                  {selectedPoll.isShowsToBinge && selectedPoll.shows && (
+                    <div className="my-8">
+                      {(() => {
+                        const shows = selectedPoll.shows
+                        const maxSecrets = Math.max(...shows.map((s: any) => s.secretsPerSeason))
+                        const maxGasps = Math.max(...shows.map((s: any) => s.gaspsPerMinute))
+                        
+                        return (
+                          <div className="space-y-6">
+                            {/* Header Stats */}
+                            <div className="grid grid-cols-3 gap-4 mb-8">
+                              <div className={`${getRoundedClass('rounded-2xl')} p-4 text-center`}
+                                style={{
+                                  backgroundColor: mode === 'chaos' 
+                                    ? 'rgba(255, 76, 76, 0.1)' 
+                                    : mode === 'chill'
+                                    ? 'rgba(255, 76, 76, 0.15)'
+                                    : 'rgba(255, 76, 76, 0.1)',
+                                  border: `1px solid ${redSystem.primary}40`
+                                }}
+                              >
+                                <Lock className="w-6 h-6 mx-auto mb-2" style={{ color: redSystem.primary }} />
+                                <p className={`text-xs uppercase tracking-wider ${getTextClass()} opacity-70 mb-1`}>Secrets</p>
+                                <p className={`text-2xl font-black ${getTextClass()}`} style={{ color: redSystem.primary }}>
+                                  {maxSecrets}
+                                </p>
+                                <p className={`text-xs ${getTextClass()} opacity-60`}>per season (max)</p>
+                              </div>
+                              <div className={`${getRoundedClass('rounded-2xl')} p-4 text-center`}
+                                style={{
+                                  backgroundColor: mode === 'chaos' 
+                                    ? 'rgba(255, 76, 76, 0.1)' 
+                                    : mode === 'chill'
+                                    ? 'rgba(255, 76, 76, 0.15)'
+                                    : 'rgba(255, 76, 76, 0.1)',
+                                  border: `1px solid ${redSystem.primary}40`
+                                }}
+                              >
+                                <span className="text-4xl mb-2 block">😱</span>
+                                <p className={`text-xs uppercase tracking-wider ${getTextClass()} opacity-70 mb-1`}>Gasps</p>
+                                <p className={`text-2xl font-black ${getTextClass()}`} style={{ color: redSystem.primary }}>
+                                  {maxGasps.toFixed(2)}
+                                </p>
+                                <p className={`text-xs ${getTextClass()} opacity-60`}>per minute (max)</p>
+                              </div>
+                              <div className={`${getRoundedClass('rounded-2xl')} p-4 text-center`}
+                                style={{
+                                  backgroundColor: mode === 'chaos' 
+                                    ? 'rgba(255, 76, 76, 0.1)' 
+                                    : mode === 'chill'
+                                    ? 'rgba(255, 76, 76, 0.15)'
+                                    : 'rgba(255, 76, 76, 0.1)',
+                                  border: `1px solid ${redSystem.primary}40`
+                                }}
+                              >
+                                <TrendingUp className="w-6 h-6 mx-auto mb-2" style={{ color: redSystem.primary }} />
+                                <p className={`text-xs uppercase tracking-wider ${getTextClass()} opacity-70 mb-1`}>Change</p>
+                                <p className={`text-2xl font-black ${getTextClass()}`} style={{ color: redSystem.primary }}>
+                                  81%
+                                </p>
+                                <p className={`text-xs ${getTextClass()} opacity-60`}>that change nothing (max)</p>
+                              </div>
+                            </div>
+
+                            {/* Show Cards - Infographic Style */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {shows.map((show: any, index: number) => {
+                                const secretsPercentage = (show.secretsPerSeason / maxSecrets) * 100
+                                const gaspsPercentage = (show.gaspsPerMinute / maxGasps) * 100
+                                const isTopSecrets = show.secretsPerSeason === maxSecrets
+                                const isTopGasps = show.gaspsPerMinute === maxGasps
+                                
+                                return (
+                                  <div 
+                                    key={show.name}
+                                    className={`${getRoundedClass('rounded-2xl')} p-6 relative overflow-hidden`}
+                                    style={{
+                                      backgroundColor: mode === 'chaos' 
+                                        ? 'rgba(255, 255, 255, 0.05)' 
+                                        : mode === 'chill'
+                                        ? 'rgba(74, 24, 24, 0.05)'
+                                        : 'rgba(255, 255, 255, 0.05)',
+                                      border: `2px solid ${isTopSecrets || isTopGasps ? redSystem.primary : 'rgba(255, 76, 76, 0.2)'}`
+                                    }}
+                                  >
+                                    {/* Show Name */}
+                                    <h4 className={`text-xl font-black mb-4 ${getTextClass()}`} style={{ 
+                                      color: (isTopSecrets || isTopGasps) ? redSystem.primary : undefined 
+                                    }}>
+                                      {show.name}
+                                    </h4>
+
+                                    {/* Secrets Per Season */}
+                                    <div className="mb-4">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                          <Lock className="w-4 h-4" style={{ color: redSystem.primary }} />
+                                          <span className={`text-sm font-semibold ${getTextClass()}`}>Secrets per season</span>
+                                        </div>
+                                        <span className={`text-lg font-black ${getTextClass()}`} style={{ 
+                                          color: isTopSecrets ? redSystem.primary : undefined 
+                                        }}>
+                                          {show.secretsPerSeason}
+                                        </span>
+                                      </div>
+                                      <div 
+                                        className={`${getRoundedClass('rounded-full')} h-3 overflow-hidden relative`}
+                                        style={{
+                                          backgroundColor: mode === 'chaos' 
+                                            ? 'rgba(255, 255, 255, 0.1)' 
+                                            : mode === 'chill'
+                                            ? 'rgba(74, 24, 24, 0.1)'
+                                            : 'rgba(255, 255, 255, 0.1)'
+                                        }}
+                                      >
+                                        <div
+                                          className="h-full transition-all duration-1000"
+                                          style={{
+                                            width: `${secretsPercentage}%`,
+                                            backgroundColor: isTopSecrets 
+                                              ? redSystem.primary
+                                              : 'rgba(255, 76, 76, 0.5)'
+                                          }}
+                                        />
+                                        {/* Visual lock icons */}
+                                        <div className="absolute inset-0 flex items-center justify-start px-1">
+                                          {Array.from({ length: show.secretsPerSeason }).map((_, i) => (
+                                            <Lock 
+                                              key={i} 
+                                              className="w-2 h-2" 
+                                              style={{ 
+                                                color: i < secretsPercentage / 10 ? redSystem.primary : 'rgba(255, 76, 76, 0.3)',
+                                                marginLeft: i > 0 ? '2px' : '0'
+                                              }} 
+                                            />
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Gasps Per Minute */}
+                                    <div className="mb-4">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-lg">😱</span>
+                                          <span className={`text-sm font-semibold ${getTextClass()}`}>Gasps per minute</span>
+                                        </div>
+                                        <span className={`text-lg font-black ${getTextClass()}`} style={{ 
+                                          color: isTopGasps ? redSystem.primary : undefined 
+                                        }}>
+                                          {show.gaspsPerMinute.toFixed(2)}
+                                        </span>
+                                      </div>
+                                      <div 
+                                        className={`${getRoundedClass('rounded-full')} h-3 overflow-hidden relative`}
+                                        style={{
+                                          backgroundColor: mode === 'chaos' 
+                                            ? 'rgba(255, 255, 255, 0.1)' 
+                                            : mode === 'chill'
+                                            ? 'rgba(74, 24, 24, 0.1)'
+                                            : 'rgba(255, 255, 255, 0.1)'
+                                        }}
+                                      >
+                                        <div
+                                          className="h-full transition-all duration-1000"
+                                          style={{
+                                            width: `${gaspsPercentage}%`,
+                                            backgroundColor: isTopGasps 
+                                              ? redSystem.primary
+                                              : 'rgba(255, 76, 76, 0.5)'
+                                          }}
+                                        />
+                                        {/* Visual gasp indicators */}
+                                        <div className="absolute inset-0 flex items-center justify-start px-1">
+                                          {Array.from({ length: Math.ceil(show.gaspsPerMinute * 10) }).map((_, i) => (
+                                            <span 
+                                              key={i}
+                                              className="text-xs"
+                                              style={{ 
+                                                marginLeft: i > 0 ? '3px' : '0',
+                                                opacity: i < gaspsPercentage / 5 ? 1 : 0.3
+                                              }}
+                                            >
+                                              😱
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Percent That Change Nothing - Circular Style */}
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <Zap className="w-4 h-4" style={{ color: redSystem.secondary }} />
+                                        <span className={`text-sm font-semibold ${getTextClass()}`}>Change nothing</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <div 
+                                          className="relative w-12 h-12"
+                                          style={{
+                                            background: `conic-gradient(${redSystem.primary} ${show.percentChangeNothing * 3.6}deg, rgba(255, 76, 76, 0.2) ${show.percentChangeNothing * 3.6}deg)`,
+                                            borderRadius: '50%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                          }}
+                                        >
+                                          <div 
+                                            className="absolute inset-1 rounded-full"
+                                            style={{
+                                              backgroundColor: mode === 'chaos' 
+                                                ? '#1A1A1A' 
+                                                : mode === 'chill'
+                                                ? '#F5E6D3'
+                                                : '#000000'
+                                            }}
+                                          >
+                                            <div className="h-full flex items-center justify-center">
+                                              <span className={`text-xs font-black ${getTextClass()}`} style={{ color: redSystem.primary }}>
+                                                {show.percentChangeNothing}%
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
                         )
                       })()}
                     </div>
