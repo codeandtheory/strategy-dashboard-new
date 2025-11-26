@@ -24,7 +24,8 @@ import {
   Newspaper,
   ChevronDown,
   ChevronUp,
-  BarChart3
+  BarChart3,
+  MessageSquare
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -150,6 +151,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       sectionAccess: 'curation' as const,
       items: [
         { href: '/admin/playlists', label: 'Playlist', icon: Music, permission: 'canManagePlaylists' as const, sectionAccess: 'curation' as const },
+        { href: '/admin/channel-polls', label: 'Channel Polls', icon: MessageSquare, permission: 'canManagePlaylists' as const, sectionAccess: 'curation' as const },
         { href: '/admin/beast-babe', label: 'Beast Babe', icon: Crown, permission: 'canPassBeastBabe' as const, sectionAccess: 'curation' as const },
       ]
     },
