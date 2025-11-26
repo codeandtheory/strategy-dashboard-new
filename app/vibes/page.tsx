@@ -162,11 +162,10 @@ export default function VibesPage() {
     <div className={`flex flex-col min-h-screen ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       <SiteHeader />
 
-      <div className="flex flex-1 pt-24 w-full">
-        {/* Sidebar with curved edges */}
-        <aside className="sticky top-24 h-fit self-start ml-6 mr-8 hidden lg:block flex-shrink-0" style={{ width: '240px' }}>
-          <nav 
-            className={`${getRoundedClass('rounded-[2.5rem]')} p-6`}
+      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
+        <div className="flex gap-6">
+          {/* Sidebar */}
+          <Card className={`w-80 hidden lg:block ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`}
             style={{
               backgroundColor: mode === 'chaos' 
                 ? 'rgba(255, 255, 255, 0.05)' 
@@ -218,11 +217,10 @@ export default function VibesPage() {
                 <span className="text-sm font-semibold">Polls Archive</span>
               </Link>
             </div>
-          </nav>
-        </aside>
+          </Card>
 
-        <main className="flex-1 min-w-0">
-          <div className="max-w-[1200px] mx-auto px-6 py-10">
+          {/* Main Content Area */}
+          <div className="flex-1">
         {/* Header */}
         <h1 className={`text-4xl font-black uppercase mb-8 ${getTextClass()}`}>VIBES</h1>
         
@@ -236,7 +234,7 @@ export default function VibesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           {/* Most Recent Poll */}
           <Card 
-            className={`${getRoundedClass('rounded-[2.5rem]')} p-6 cursor-pointer transition-all hover:scale-105 hover:shadow-2xl`}
+            className={`${getRoundedClass('rounded-[2.5rem]')} p-6`}
             style={{
               backgroundColor: mode === 'chaos' 
                 ? 'rgba(255, 255, 255, 0.05)' 
@@ -249,61 +247,78 @@ export default function VibesPage() {
                 ? '1px solid rgba(74, 24, 24, 0.1)'
                 : '1px solid rgba(255, 255, 255, 0.1)'
             }}
-            onClick={() => {
-              setSelectedPoll({
-                id: 'thanksgiving-grub',
-                title: 'Thanksgiving Grub',
-                question: 'What are your top Thanksgiving dishes?',
-                date: 'November 2024',
-                totalResponses: 14,
-                data: [
-                  { name: 'Stuffing', count: 7 },
-                  { name: 'Mashed potatoes', count: 3 },
-                  { name: 'Peking duck', count: 2 },
-                  { name: 'Pumpkin pie', count: 2 },
-                  { name: 'Gravy', count: 2 },
-                ]
-              })
-              setIsPollDialogOpen(true)
-            }}
           >
             <div className="flex items-center gap-3 mb-4">
               <BarChart3 className="w-6 h-6" style={{ color: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF' }} />
               <h2 className={`text-2xl font-black uppercase ${getTextClass()}`}>Latest Poll</h2>
-            </div>
+                  </div>
             <h3 className={`text-xl font-black mb-3 ${getTextClass()}`}>Thanksgiving Grub</h3>
             <p className={`text-sm mb-4 ${getTextClass()} opacity-70`}>
               What are your top Thanksgiving dishes?
             </p>
             
             {/* Chart and Fun Fact Side by Side */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-              {/* Horizontal Bar Chart */}
-              <div className="space-y-3">
+            <div className="grid grid-cols-4 gap-4 mb-4">
+              {/* Horizontal Bar Chart - 1/2 width (2 columns) */}
+              <div className="col-span-2 space-y-3 max-h-[400px] overflow-y-auto">
                 {[
                   { name: 'Stuffing', count: 7 },
                   { name: 'Mashed potatoes', count: 3 },
                   { name: 'Peking duck', count: 2 },
                   { name: 'Pumpkin pie', count: 2 },
                   { name: 'Gravy', count: 2 },
-                ].map((item, index) => {
+                  { name: 'Fried turkey', count: 1 },
+                  { name: 'Turkey breast', count: 1 },
+                  { name: 'Peppercorn encrusted filet mignon', count: 1 },
+                  { name: 'Outdoor KBBQ', count: 1 },
+                  { name: 'Chicken biriyani', count: 1 },
+                  { name: 'Jollof rice', count: 1 },
+                  { name: 'Arepas', count: 1 },
+                  { name: 'Empanadas', count: 1 },
+                  { name: 'Ham', count: 1 },
+                  { name: 'Funeral potatoes', count: 1 },
+                  { name: 'Cornbread', count: 1 },
+                  { name: 'Corn soufflé', count: 1 },
+                  { name: 'Fire-roasted sweet potatoes', count: 1 },
+                  { name: 'Butternut squash', count: 1 },
+                  { name: 'Sweet potato pie', count: 1 },
+                  { name: 'Caramel custard', count: 1 },
+                  { name: 'Custard pie', count: 1 },
+                  { name: 'Dessert spread', count: 1 },
+                  { name: 'Dots candy', count: 1 },
+                  { name: 'Trolli exploding worms', count: 1 },
+                  { name: 'White Monster', count: 1 },
+                  { name: 'Eggnog', count: 1 },
+                  { name: 'Appetizer red wine', count: 1 },
+                  { name: 'Dinner red wine', count: 1 },
+                  { name: 'Dessert amaro', count: 1 },
+                  { name: 'Peanut butter whiskey "during gravy"', count: 1 },
+                  { name: 'Skinny French cigarette', count: 1 },
+                  { name: 'Capri cigarettes with my mother in law and great aunt', count: 1 },
+                  { name: 'Caviar before dinner', count: 1 },
+                  { name: 'Cheese plate before', count: 1 },
+                  { name: 'All of the above mixed together in one perfect bite', count: 1 },
+                  { name: 'Green bean casserole', count: 1 },
+                  { name: 'Horseradish mashed potatoes', count: 1 },
+                  { name: 'Hongshaorou', count: 1 },
+                ].sort((a, b) => b.count - a.count).map((item, index) => {
                   const maxCount = 7
                   const percentage = (item.count / maxCount) * 100
                   const isTop = index === 0
                   
                   return (
-                    <div key={item.name} className="space-y-1">
+                    <div key={item.name} className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className={`text-xs font-semibold ${getTextClass()}`}>{item.name}</span>
+                        <span className={`text-sm font-semibold ${getTextClass()}`}>{item.name}</span>
                         <span 
-                          className={`text-xs font-black ${getTextClass()}`}
+                          className={`text-sm font-black ${getTextClass()}`}
                           style={{ color: isTop ? (mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF') : undefined }}
                         >
                           {item.count}
                         </span>
-                      </div>
+                  </div>
                       <div 
-                        className={`${getRoundedClass('rounded-full')} h-2 overflow-hidden`}
+                        className={`${getRoundedClass('rounded-full')} h-4 overflow-hidden`}
                         style={{
                           backgroundColor: mode === 'chaos' 
                             ? 'rgba(255, 255, 255, 0.1)' 
@@ -325,10 +340,13 @@ export default function VibesPage() {
                     </div>
                   )
                 })}
-              </div>
+                    </div>
 
-              {/* Fun Fact */}
-              <div>
+              {/* Spacer - 1/4 width (1 column) */}
+              <div className="col-span-1"></div>
+
+              {/* Fun Fact - 1/4 width (1 column), aligned to top */}
+              <div className="col-span-1">
                 <p className={`text-xs font-black mb-2 ${getTextClass()}`}>
                   Fun Fact: Statistically speaking, cigarettes appear as often as:
                 </p>
@@ -340,14 +358,14 @@ export default function VibesPage() {
                   <li>• empanadas</li>
                   <li>• jollof rice</li>
                 </ul>
-              </div>
-            </div>
+                  </div>
+                </div>
 
             <div className={`flex items-center justify-between text-xs opacity-60 ${getTextClass()}`}>
               <span>14 responses</span>
               <span>Nov 2024</span>
-            </div>
-          </Card>
+                </div>
+              </Card>
 
           {/* Most Recent Playlist */}
           {(() => {
@@ -555,8 +573,8 @@ export default function VibesPage() {
         
         <Footer />
           </div>
+        </div>
       </main>
-      </div>
     </div>
   )
 }
