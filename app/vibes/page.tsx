@@ -276,55 +276,71 @@ export default function VibesPage() {
               What are your top Thanksgiving dishes?
             </p>
             
-            {/* Top Results - Mini Chart */}
-            <div className="mb-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className={`text-xs font-semibold ${getTextClass()}`}>Stuffing</span>
-                <span className={`text-sm font-black ${getTextClass()}`} style={{ color: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF' }}>7</span>
+            {/* Chart and Fun Fact Side by Side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              {/* Horizontal Bar Chart */}
+              <div className="space-y-3">
+                {[
+                  { name: 'Stuffing', count: 7 },
+                  { name: 'Mashed potatoes', count: 3 },
+                  { name: 'Peking duck', count: 2 },
+                  { name: 'Pumpkin pie', count: 2 },
+                  { name: 'Gravy', count: 2 },
+                ].map((item, index) => {
+                  const maxCount = 7
+                  const percentage = (item.count / maxCount) * 100
+                  const isTop = index === 0
+                  
+                  return (
+                    <div key={item.name} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs font-semibold ${getTextClass()}`}>{item.name}</span>
+                        <span 
+                          className={`text-xs font-black ${getTextClass()}`}
+                          style={{ color: isTop ? (mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF') : undefined }}
+                        >
+                          {item.count}
+                        </span>
+                      </div>
+                      <div 
+                        className={`${getRoundedClass('rounded-full')} h-2 overflow-hidden`}
+                        style={{
+                          backgroundColor: mode === 'chaos' 
+                            ? 'rgba(255, 255, 255, 0.1)' 
+                            : mode === 'chill'
+                            ? 'rgba(74, 24, 24, 0.1)'
+                            : 'rgba(255, 255, 255, 0.1)'
+                        }}
+                      >
+                        <div
+                          className="h-full transition-all duration-1000"
+                          style={{
+                            width: `${percentage}%`,
+                            backgroundColor: isTop 
+                              ? (mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF')
+                              : (mode === 'chaos' ? 'rgba(196, 245, 0, 0.4)' : mode === 'chill' ? 'rgba(255, 192, 67, 0.4)' : 'rgba(255, 255, 255, 0.4)')
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-              <div 
-                className={`${getRoundedClass('rounded-full')} h-2 overflow-hidden`}
-                style={{
-                  backgroundColor: mode === 'chaos' 
-                    ? 'rgba(255, 255, 255, 0.1)' 
-                    : mode === 'chill'
-                    ? 'rgba(74, 24, 24, 0.1)'
-                    : 'rgba(255, 255, 255, 0.1)'
-                }}
-              >
-                <div
-                  className="h-full"
-                  style={{
-                    width: '100%',
-                    backgroundColor: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF'
-                  }}
-                />
-              </div>
-              <div className="flex items-center justify-between text-xs opacity-60">
-                <span>Mashed potatoes: 3</span>
-                <span>Peking duck: 2</span>
-              </div>
-            </div>
 
-            {/* Fun Fact */}
-            <div className="mb-4 pt-4 border-t" style={{ 
-              borderColor: mode === 'chaos' 
-                ? 'rgba(255, 255, 255, 0.1)' 
-                : mode === 'chill'
-                ? 'rgba(74, 24, 24, 0.1)'
-                : 'rgba(255, 255, 255, 0.1)'
-            }}>
-              <p className={`text-xs font-black mb-2 ${getTextClass()}`}>
-                Fun Fact: Statistically speaking, cigarettes appear as often as:
-              </p>
-              <ul className={`space-y-0.5 text-xs ${getTextClass()} opacity-70`}>
-                <li>• turkey</li>
-                <li>• custard</li>
-                <li>• caramel</li>
-                <li>• mashed potatoes with gravy</li>
-                <li>• empanadas</li>
-                <li>• jollof rice</li>
-              </ul>
+              {/* Fun Fact */}
+              <div>
+                <p className={`text-xs font-black mb-2 ${getTextClass()}`}>
+                  Fun Fact: Statistically speaking, cigarettes appear as often as:
+                </p>
+                <ul className={`space-y-0.5 text-xs ${getTextClass()} opacity-70`}>
+                  <li>• turkey</li>
+                  <li>• custard</li>
+                  <li>• caramel</li>
+                  <li>• mashed potatoes with gravy</li>
+                  <li>• empanadas</li>
+                  <li>• jollof rice</li>
+                </ul>
+              </div>
             </div>
 
             <div className={`flex items-center justify-between text-xs opacity-60 ${getTextClass()}`}>
