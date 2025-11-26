@@ -86,7 +86,7 @@ export default function PollsArchivePage() {
     }
   }, [user, authLoading, router])
 
-  if (loading || !user) {
+  if (authLoading || !user) {
     return (
       <div className={`flex flex-col min-h-screen ${getBgClass()} ${getTextClass()}`}>
         <SiteHeader />
