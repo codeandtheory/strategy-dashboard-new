@@ -8,7 +8,7 @@ import { useMode } from '@/contexts/mode-context'
 import { SiteHeader } from '@/components/site-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Trophy, Music, MessageCircle, Play, Star } from 'lucide-react'
+import { Trophy, Music, MessageCircle, Play, Star, Archive } from 'lucide-react'
 import Link from 'next/link'
 import { PlaylistCard } from '@/components/playlist-card'
 import { Footer } from '@/components/footer'
@@ -234,7 +234,66 @@ export default function VibesPage() {
     <div className={`flex flex-col min-h-screen ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       <SiteHeader />
 
-      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
+      <div className="flex flex-1 pt-24">
+        {/* Sidebar with curved edges */}
+        <aside className="sticky top-24 h-fit self-start ml-6 mr-8 hidden lg:block">
+          <nav 
+            className={`${getRoundedClass('rounded-[2.5rem]')} p-6`}
+            style={{
+              backgroundColor: mode === 'chaos' 
+                ? 'rgba(255, 255, 255, 0.05)' 
+                : mode === 'chill'
+                ? 'rgba(74, 24, 24, 0.05)'
+                : 'rgba(255, 255, 255, 0.05)',
+              border: mode === 'chaos' 
+                ? '1px solid rgba(255, 255, 255, 0.1)' 
+                : mode === 'chill'
+                ? '1px solid rgba(74, 24, 24, 0.1)'
+                : '1px solid rgba(255, 255, 255, 0.1)'
+            }}
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <Archive className="w-5 h-5" style={{ 
+                color: mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF' 
+              }} />
+              <h3 className={`text-sm uppercase tracking-wider font-black ${getTextClass()}`}>
+                Archive
+              </h3>
+            </div>
+            <div className="space-y-3">
+              <Link
+                href="/vibes/playlist-archive"
+                className={`flex items-center gap-3 ${getRoundedClass('rounded-xl')} px-4 py-3 transition-all hover:opacity-70`}
+                style={{
+                  backgroundColor: mode === 'chaos' 
+                    ? 'rgba(255, 255, 255, 0.05)' 
+                    : mode === 'chill'
+                    ? 'rgba(74, 24, 24, 0.05)'
+                    : 'rgba(255, 255, 255, 0.05)'
+                }}
+              >
+                <Music className="w-4 h-4" />
+                <span className="text-sm font-semibold">Playlist Archive</span>
+              </Link>
+              <Link
+                href="/vibes/polls-archive"
+                className={`flex items-center gap-3 ${getRoundedClass('rounded-xl')} px-4 py-3 transition-all hover:opacity-70`}
+                style={{
+                  backgroundColor: mode === 'chaos' 
+                    ? 'rgba(255, 255, 255, 0.05)' 
+                    : mode === 'chill'
+                    ? 'rgba(74, 24, 24, 0.05)'
+                    : 'rgba(255, 255, 255, 0.05)'
+                }}
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="text-sm font-semibold">Polls Archive</span>
+              </Link>
+            </div>
+          </nav>
+        </aside>
+
+        <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1">
         {/* Header */}
         <h1 className={`text-4xl font-black uppercase mb-8 ${getTextClass()}`}>VIBES</h1>
         
@@ -510,7 +569,8 @@ export default function VibesPage() {
         </div>
         
         <Footer />
-      </main>
+        </main>
+      </div>
     </div>
   )
 }
