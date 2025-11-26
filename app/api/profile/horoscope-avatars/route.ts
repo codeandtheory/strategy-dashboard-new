@@ -30,10 +30,10 @@ export async function GET(request: NextRequest) {
 
     console.log(`Found ${storageFiles?.length || 0} files in storage for user ${user.id}`)
 
-    // Also fetch horoscopes from database to get metadata (date, star_sign, etc.)
+    // Also fetch horoscopes from database to get metadata (date, star_sign, character_name, etc.)
     const { data: horoscopes, error: fetchError } = await supabase
       .from('horoscopes')
-      .select('id, image_url, date, star_sign, generated_at')
+      .select('id, image_url, date, star_sign, generated_at, character_name')
       .eq('user_id', user.id)
       .not('image_url', 'is', null)
       .order('generated_at', { ascending: false })
@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
           url: publicUrl,
           date: horoscopeData?.date || extractedDate || file.created_at?.split('T')[0] || null,
           star_sign: horoscopeData?.star_sign || null,
+          character_name: horoscopeData?.character_name || null,
           generated_at: horoscopeData?.generated_at || file.created_at || null,
           created_at: file.created_at,
           filename: file.name

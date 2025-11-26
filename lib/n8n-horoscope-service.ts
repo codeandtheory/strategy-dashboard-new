@@ -20,6 +20,7 @@ interface HoroscopeGenerationResponse {
   dos: string[]
   donts: string[]
   imageUrl: string
+  character_name?: string | null
   prompt: string
   slots: any
   reasoning: any
@@ -138,6 +139,7 @@ export async function generateHoroscopeViaN8n(
         dos: result.dos,
         donts: result.donts,
         imageUrl: result.imageUrl,
+        character_name: result.character_name || null,
         prompt: result.prompt || request.imagePrompt,
         slots: result.slots || request.slots,
         reasoning: result.reasoning || request.reasoning,

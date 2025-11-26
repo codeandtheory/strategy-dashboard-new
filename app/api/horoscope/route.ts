@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateHoroscopeViaN8n } from '@/lib/n8n-horoscope-service'
 import { fetchCafeAstrologyHoroscope } from '@/lib/cafe-astrology'
-import { generateSillyCharacterName } from '@/lib/silly-names'
 import {
   buildUserProfile,
   fetchSegmentsForProfile,
@@ -208,36 +207,49 @@ export async function GET(request: NextRequest) {
       .eq('date', todayDate)
       .maybeSingle()
     
-    // CRITICAL: Also check if the horoscope was actually generated today in the user's timezone
-    // This handles the case where old records have UTC dates that match today's EST date
+    // CRITICAL: Check if the horoscope date matches today's date
+    // Primary check: date field must match todayDate
+    // Secondary check: if generated_at exists, verify it's from today (within 24 hours)
     let isFromToday = false
-    if (cachedHoroscope?.generated_at) {
-      const generatedAt = new Date(cachedHoroscope.generated_at)
-      const generatedAtInUserTz = getTodayDateInTimezone(userTimezone, generatedAt)
-      isFromToday = generatedAtInUserTz === todayDate
+    if (cachedHoroscope) {
+      // Primary check: date field matches today
+      const dateMatches = cachedHoroscope.date === todayDate
       
-      const hoursAgo = (now.getTime() - generatedAt.getTime()) / (1000 * 60 * 60)
-      
-      console.log('🔍 DEBUG: Generated_at validation:', {
-        generatedAt: cachedHoroscope.generated_at,
-        generatedAtISO: generatedAt.toISOString(),
-        generatedAtInUserTz,
-        todayDate,
-        isFromToday,
-        hoursAgo: hoursAgo.toFixed(2),
-        generatedAtLocal: generatedAt.toLocaleString('en-US', { timeZone: userTimezone }),
-        nowLocal: now.toLocaleString('en-US', { timeZone: userTimezone })
-      })
-      
-      // If it was generated more than 24 hours ago, definitely regenerate
-      if (hoursAgo > 24) {
-        console.log('⚠️ Horoscope was generated more than 24 hours ago - will regenerate')
+      if (dateMatches) {
+        // If date matches, check generated_at as secondary validation
+        if (cachedHoroscope.generated_at) {
+          const generatedAt = new Date(cachedHoroscope.generated_at)
+          const hoursAgo = (now.getTime() - generatedAt.getTime()) / (1000 * 60 * 60)
+          
+          // If generated within last 24 hours, it's valid
+          if (hoursAgo <= 24) {
+            isFromToday = true
+            console.log('✅ Cached horoscope is valid:', {
+              dateMatches,
+              hoursAgo: hoursAgo.toFixed(2),
+              generatedAt: cachedHoroscope.generated_at
+            })
+          } else {
+            console.log('⚠️ Horoscope date matches but was generated more than 24 hours ago:', {
+              hoursAgo: hoursAgo.toFixed(2),
+              generatedAt: cachedHoroscope.generated_at
+            })
+            isFromToday = false
+          }
+        } else {
+          // Date matches but no generated_at - assume it's valid (might be old record)
+          // This handles legacy records that don't have generated_at
+          isFromToday = true
+          console.log('✅ Cached horoscope date matches (no generated_at timestamp)')
+        }
+      } else {
+        console.log('⚠️ Cached horoscope date does not match today:', {
+          cachedDate: cachedHoroscope.date,
+          todayDate,
+          datesMatch: dateMatches
+        })
         isFromToday = false
       }
-    } else if (cachedHoroscope) {
-      // If there's no generated_at timestamp, assume it's old and regenerate
-      console.log('⚠️ Cached horoscope found but no generated_at timestamp - will regenerate')
-      isFromToday = false
     }
     
     console.log('🔍 DEBUG: Query result:', {
@@ -560,9 +572,8 @@ export async function GET(request: NextRequest) {
     const { userProfile, resolvedChoices, starSign } = config
     console.log('Resolved choices:', resolvedChoices)
     
-    // Generate character name once per day (same time as horoscope text)
-    const characterName = generateSillyCharacterName(starSign)
-    console.log('Generated character name:', characterName)
+    // Character name will come from n8n (generated from image analysis)
+    let characterName: string | null = null
     
     // Fetch from Cafe Astrology and generate via n8n
     console.log('Generating horoscope for:', { starSign, profile: userProfile })
@@ -663,7 +674,9 @@ export async function GET(request: NextRequest) {
         hasImageUrl: !!n8nResult.imageUrl,
         imageUrl: n8nResult.imageUrl || 'MISSING',
         imageUrlLength: n8nResult.imageUrl?.length || 0,
-        imageUrlPreview: n8nResult.imageUrl?.substring(0, 100) || 'MISSING'
+        imageUrlPreview: n8nResult.imageUrl?.substring(0, 100) || 'MISSING',
+        hasCharacterName: !!n8nResult.character_name,
+        characterName: n8nResult.character_name || 'MISSING'
       })
       console.log('🔍 DEBUG: n8n result validation:', {
         allFieldsPresent: !!(n8nResult.horoscope && n8nResult.dos && n8nResult.donts && n8nResult.imageUrl),
@@ -687,6 +700,14 @@ export async function GET(request: NextRequest) {
       horoscopeDos = n8nResult.dos
       horoscopeDonts = n8nResult.donts
       imageUrl = n8nResult.imageUrl
+      
+      // Get character_name from n8n (generated from image analysis)
+      if (!n8nResult.character_name) {
+        throw new Error('Invalid n8n result: missing character_name. The image analysis should generate a character name.')
+      }
+      
+      characterName = n8nResult.character_name
+      console.log('✅ Using character name from n8n (image analysis):', characterName)
 
       console.log('✅ Using n8n result:', {
         horoscopeText: horoscopeText.substring(0, 100) + '...',
@@ -1012,7 +1033,9 @@ export async function GET(request: NextRequest) {
       has_image_url: !!upsertData.image_url,
       image_url_length: upsertData.image_url?.length || 0,
       image_url_preview: upsertData.image_url?.substring(0, 100) || 'MISSING',
-      is_supabase_url: upsertData.image_url?.includes('supabase.co') || false
+      is_supabase_url: upsertData.image_url?.includes('supabase.co') || false,
+      character_name: upsertData.character_name || 'MISSING',
+      has_character_name: !!upsertData.character_name
     })
     console.log('🔍 DEBUG: Date being saved to database:', {
       value: upsertData.date,
