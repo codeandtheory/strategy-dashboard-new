@@ -95,7 +95,7 @@ export function SiteHeader({ rightContent }: SiteHeaderProps = {}) {
             <Link href="/work-samples" className={getNavLinkClass(isActive('/work-samples'))}>WORK</Link>
             <Link href="/resources" className={getNavLinkClass(isActive('/resources'))}>RESOURCES</Link>
             <Link href="/media" className={getNavLinkClass(isActive('/media'))}>MEDIA</Link>
-            <a href="#" className={getNavLinkClass(false)}>TEAM</a>
+            <Link href="/team" className={getNavLinkClass(isActive('/team'))}>TEAM</Link>
             <Link href="/snaps" className={getNavLinkClass(isActive('/snaps'))}>SNAPS</Link>
             <Link href="/vibes" className={getNavLinkClass(isActive('/vibes'))}>VIBES</Link>
             <Link href="/playground" className={getNavLinkClass(isActive('/playground'))}>PLAYGROUND</Link>
