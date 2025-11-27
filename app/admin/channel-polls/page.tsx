@@ -67,7 +67,10 @@ export default function ChannelPollsAdmin() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isOptionsDialogOpen, setIsOptionsDialogOpen] = useState(false)
+  const [isResultsDialogOpen, setIsResultsDialogOpen] = useState(false)
   const [currentPollForOptions, setCurrentPollForOptions] = useState<Poll | null>(null)
+  const [currentPollForResults, setCurrentPollForResults] = useState<Poll | null>(null)
+  const [resultsCsvText, setResultsCsvText] = useState('')
   
   // Form state
   const getTodayDate = () => {
@@ -117,6 +120,119 @@ export default function ChannelPollsAdmin() {
   
   // CSV paste state
   const [csvPasteText, setCsvPasteText] = useState('')
+  
+  // Handle results CSV paste
+  const handleResultsCsvPaste = async () => {
+    if (!currentPollForResults || !resultsCsvText.trim()) return
+    
+    try {
+      setSaving(true)
+      setError(null)
+      
+      const lines = resultsCsvText.trim().split('\n')
+      const results: Array<{ name: string; rank: number }> = []
+      
+      lines.forEach((line, idx) => {
+        const trimmed = line.trim()
+        if (!trimmed) return
+        
+        // Parse CSV format: "Rank,Option Name" or "Option Name,Rank" or just "Option Name" (assume sequential)
+        const parts = trimmed.split(',').map(p => p.trim())
+        
+        let rank: number
+        let name: string
+        
+        // Try to detect format
+        if (parts.length === 2) {
+          // Check if first part is a number (rank first)
+          if (!isNaN(Number(parts[0]))) {
+            rank = parseInt(parts[0])
+            name = parts[1]
+          } else {
+            // Name first, rank second
+            name = parts[0]
+            rank = parseInt(parts[1]) || idx + 1
+          }
+        } else {
+          // Single value - assume it's the name, rank is position
+          name = parts[0]
+          rank = idx + 1
+        }
+        
+        if (name) {
+          results.push({ name, rank })
+        }
+      })
+      
+      if (results.length === 0) {
+        setError('No valid results found in CSV. Format: "Rank,Option Name" or "Option Name,Rank"')
+        return
+      }
+      
+      const supabase = createClient()
+      
+      // Get existing options to match by name
+      const { data: existingOptions, error: fetchError } = await supabase
+        .from('poll_options')
+        .select('*')
+        .eq('poll_id', currentPollForResults.id)
+      
+      if (fetchError) throw fetchError
+      
+      // Update existing options with new ranks
+      const updates = results.map(result => {
+        const existing = existingOptions?.find(opt => 
+          opt.name.toLowerCase() === result.name.toLowerCase()
+        )
+        
+        if (existing) {
+          return supabase
+            .from('poll_options')
+            .update({ rank: result.rank })
+            .eq('id', existing.id)
+        } else {
+          // Create new option if it doesn't exist
+          return supabase
+            .from('poll_options')
+            .insert({
+              poll_id: currentPollForResults.id,
+              name: result.name,
+              rank: result.rank,
+              display_order: result.rank,
+            })
+        }
+      })
+      
+      await Promise.all(updates)
+      
+      setIsResultsDialogOpen(false)
+      setResultsCsvText('')
+      setCurrentPollForResults(null)
+      fetchPolls()
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err: any) {
+      console.error('Error saving results:', err)
+      setError(err.message || 'Failed to save results')
+    } finally {
+      setSaving(false)
+    }
+  }
+  
+  const handleOpenResultsDialog = (poll: Poll) => {
+    setCurrentPollForResults(poll)
+    // Pre-populate with existing options if available
+    if (poll.options && poll.options.length > 0) {
+      const csv = poll.options
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .map(opt => `${opt.rank || ''},${opt.name}`)
+        .join('\n')
+      setResultsCsvText(csv)
+    } else {
+      setResultsCsvText('')
+    }
+    setIsResultsDialogOpen(true)
+  }
 
   // Theme-aware styling helpers
   const getBgClass = () => {
@@ -846,7 +962,20 @@ export default function ChannelPollsAdmin() {
                     )}
                   </div>
                   <div>
-                    <Label className={cardStyle.text}>Total Responses</Label>
+                    <div className="flex items-center justify-between mb-1">
+                      <Label className={cardStyle.text}>Total Responses</Label>
+                      {editingItem && (
+                        <Button
+                          type="button"
+                          onClick={() => handleOpenResultsDialog(editingItem)}
+                          className={`${cardStyle.border} border ${cardStyle.text} h-7 px-2 text-xs`}
+                          size="sm"
+                        >
+                          <BarChart3 className="w-3 h-3 mr-1" />
+                          Results
+                        </Button>
+                      )}
+                    </div>
                     <Input
                       type="number"
                       value={formData.total_responses}
@@ -953,7 +1082,7 @@ export default function ChannelPollsAdmin() {
                           onChange={() => setFunFactType('chart')}
                           className="w-4 h-4"
                         />
-                        <span className={cardStyle.text}>Chart</span>
+                        <span className={cardStyle.text}>Chart(s)</span>
                         <BarChart className="w-4 h-4" />
                       </label>
                     </div>
@@ -967,20 +1096,75 @@ export default function ChannelPollsAdmin() {
                       rows={3}
                     />
                   ) : (
-                    <Textarea
-                      value={formData.fun_fact_content}
-                      onChange={(e) => setFormData({ ...formData, fun_fact_content: e.target.value })}
-                      className={`mt-1 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} font-mono text-sm`}
-                      placeholder='{"type": "bar", "data": [{"label": "Option 1", "value": 10}, {"label": "Option 2", "value": 20}]}'
-                      rows={6}
-                    />
+                  <Textarea
+                    value={formData.fun_fact_content}
+                    onChange={(e) => setFormData({ ...formData, fun_fact_content: e.target.value })}
+                    className={`mt-1 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} font-mono text-sm`}
+                    placeholder={`{
+  "charts": [
+    {
+      "type": "text",
+      "title": "Fun Fact Title",
+      "text": ["Item 1", "Item 2", "Item 3"]
+    },
+    {
+      "type": "image",
+      "title": "Visualization",
+      "imageUrl": "/chart.png"
+    },
+    {
+      "type": "binge-shows",
+      "data": [
+        {"name": "Item 1", "metric1": 14, "metric2": 0.42}
+      ],
+      "metrics": [
+        {"key": "metric1", "label": "Metric 1", "icon": "lock", "format": "number"}
+      ]
+    }
+  ]
+}`}
+                    rows={16}
+                  />
                   )}
-                  <p className={`text-xs mt-1 ${cardStyle.text}/60`}>
-                    {funFactType === 'text' 
-                      ? 'Enter as JSON array or comma-separated values'
-                      : 'Enter as JSON object with chart configuration (type, data, etc.)'}
-                  </p>
-                </div>
+                <p className={`text-xs mt-1 ${cardStyle.text}/60`}>
+                  {funFactType === 'text' 
+                    ? 'Enter as JSON array or comma-separated values'
+                    : 'Enter JSON with "charts" array for multiple charts, or single chart object. Types: "text", "image", "binge-shows", "horizontal-bar", "bar". Can combine text + image + charts.'}
+                </p>
+                {funFactType === 'chart' && (
+                  <details className={`mt-2 ${cardStyle.text}/60 text-xs`}>
+                    <summary className="cursor-pointer hover:opacity-80">Examples</summary>
+                    <div className="mt-2 space-y-3">
+                      <div>
+                        <p className="font-semibold mb-1">Multiple Charts:</p>
+                        <pre className={`p-2 ${cardStyle.bg} ${cardStyle.border} border rounded text-xs overflow-x-auto`}>
+{`{
+  "charts": [
+    {"type": "text", "title": "Fun Fact", "text": ["Item 1", "Item 2"]},
+    {"type": "image", "imageUrl": "/chart.png"},
+    {"type": "binge-shows", "data": [...], "metrics": [...]}
+  ]
+}`}
+                        </pre>
+                      </div>
+                      <div>
+                        <p className="font-semibold mb-1">Single Chart:</p>
+                        <pre className={`p-2 ${cardStyle.bg} ${cardStyle.border} border rounded text-xs overflow-x-auto`}>
+{`{
+  "type": "binge-shows",
+  "data": [
+    {"name": "Gossip Girl", "secretsPerSeason": 14, "gaspsPerMinute": 0.42}
+  ],
+  "metrics": [
+    {"key": "secretsPerSeason", "label": "Secrets", "icon": "lock", "format": "number"}
+  ]
+}`}
+                        </pre>
+                      </div>
+                    </div>
+                  </details>
+                )}
+              </div>
 
                 <div className="flex items-center gap-6">
                   <label className="flex items-center gap-2 cursor-pointer opacity-60">
@@ -1104,6 +1288,16 @@ export default function ChannelPollsAdmin() {
                       <span>•</span>
                       <span>{poll.options?.length || 0} options</span>
                     </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Button
+                        onClick={() => handleOpenResultsDialog(poll)}
+                        className={`${cardStyle.border} border ${cardStyle.text} h-7 px-2 text-xs`}
+                        size="sm"
+                      >
+                        <BarChart3 className="w-3 h-3 mr-1" />
+                        Results
+                      </Button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -1226,16 +1420,65 @@ export default function ChannelPollsAdmin() {
                     </div>
                   )}
                 </div>
-                <div>
-                  <Label className={cardStyle.text}>Total Responses</Label>
-                  <Input
-                    type="number"
-                    value={formData.total_responses}
-                    onChange={(e) => setFormData({ ...formData, total_responses: parseInt(e.target.value) || 0 })}
-                    className={`mt-1 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
-                  />
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <Label className={cardStyle.text}>Total Responses</Label>
+                      {editingItem && (
+                        <Button
+                          type="button"
+                          onClick={() => handleOpenResultsDialog(editingItem)}
+                          className={`${cardStyle.border} border ${cardStyle.text} h-7 px-2 text-xs`}
+                          size="sm"
+                        >
+                          <BarChart3 className="w-3 h-3 mr-1" />
+                          Results
+                        </Button>
+                      )}
+                    </div>
+                    <Input
+                      type="number"
+                      value={formData.total_responses}
+                      onChange={(e) => setFormData({ ...formData, total_responses: parseInt(e.target.value) || 0 })}
+                      className={`mt-1 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
+                    />
+                  </div>
                 </div>
-              </div>
+                
+                {/* Results Button for Add Dialog */}
+                {formData.title && (
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        // Create a temporary poll object for the results dialog
+                        const tempPoll: Poll = {
+                          id: 'temp',
+                          title: formData.title,
+                          question: formData.question,
+                          asked_by: formData.asked_by || null,
+                          date: formData.date,
+                          total_responses: formData.total_responses,
+                          is_ranking: formData.is_ranking,
+                          is_active: formData.is_active,
+                          is_featured: formData.is_featured,
+                          image_url: formData.image_url || null,
+                          fun_fact_title: formData.fun_fact_title || null,
+                          fun_fact_content: null,
+                          display_order: formData.display_order,
+                          created_at: new Date().toISOString(),
+                          updated_at: new Date().toISOString(),
+                          options: pollOptions,
+                        }
+                        handleOpenResultsDialog(tempPoll)
+                      }}
+                      className={`${cardStyle.border} border ${cardStyle.text} h-8 px-3 text-xs`}
+                      disabled={!formData.title}
+                    >
+                      <BarChart3 className="w-3 h-3 mr-1" />
+                      Set Results (CSV)
+                    </Button>
+                  </div>
+                )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1333,7 +1576,7 @@ export default function ChannelPollsAdmin() {
                         onChange={() => setFunFactType('chart')}
                         className="w-4 h-4"
                       />
-                      <span className={cardStyle.text}>Chart</span>
+                      <span className={cardStyle.text}>Chart(s)</span>
                       <BarChart className="w-4 h-4" />
                     </label>
                   </div>
@@ -1350,15 +1593,70 @@ export default function ChannelPollsAdmin() {
                     value={formData.fun_fact_content}
                     onChange={(e) => setFormData({ ...formData, fun_fact_content: e.target.value })}
                     className={`mt-1 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} font-mono text-sm`}
-                    placeholder='{"type": "bar", "data": [{"label": "Option 1", "value": 10}, {"label": "Option 2", "value": 20}]}'
-                    rows={6}
+                    placeholder={`{
+  "charts": [
+    {
+      "type": "text",
+      "title": "Fun Fact Title",
+      "text": ["Item 1", "Item 2", "Item 3"]
+    },
+    {
+      "type": "image",
+      "title": "Visualization",
+      "imageUrl": "/chart.png"
+    },
+    {
+      "type": "binge-shows",
+      "data": [
+        {"name": "Item 1", "metric1": 14, "metric2": 0.42}
+      ],
+      "metrics": [
+        {"key": "metric1", "label": "Metric 1", "icon": "lock", "format": "number"}
+      ]
+    }
+  ]
+}`}
+                    rows={16}
                   />
                 )}
                 <p className={`text-xs mt-1 ${cardStyle.text}/60`}>
                   {funFactType === 'text' 
                     ? 'Enter as JSON array or comma-separated values'
-                    : 'Enter as JSON object with chart configuration (type, data, etc.)'}
+                    : 'Enter JSON with "charts" array for multiple charts, or single chart object. Types: "text", "image", "binge-shows", "horizontal-bar", "bar". Can combine text + image + charts.'}
                 </p>
+                {funFactType === 'chart' && (
+                  <details className={`mt-2 ${cardStyle.text}/60 text-xs`}>
+                    <summary className="cursor-pointer hover:opacity-80">Examples</summary>
+                    <div className="mt-2 space-y-3">
+                      <div>
+                        <p className="font-semibold mb-1">Multiple Charts:</p>
+                        <pre className={`p-2 ${cardStyle.bg} ${cardStyle.border} border rounded text-xs overflow-x-auto`}>
+{`{
+  "charts": [
+    {"type": "text", "title": "Fun Fact", "text": ["Item 1", "Item 2"]},
+    {"type": "image", "imageUrl": "/chart.png"},
+    {"type": "binge-shows", "data": [...], "metrics": [...]}
+  ]
+}`}
+                        </pre>
+                      </div>
+                      <div>
+                        <p className="font-semibold mb-1">Single Chart:</p>
+                        <pre className={`p-2 ${cardStyle.bg} ${cardStyle.border} border rounded text-xs overflow-x-auto`}>
+{`{
+  "type": "binge-shows",
+  "data": [
+    {"name": "Gossip Girl", "secretsPerSeason": 14, "gaspsPerMinute": 0.42}
+  ],
+  "metrics": [
+    {"key": "secretsPerSeason", "label": "Secrets", "icon": "lock", "format": "number"}
+  ]
+}`}
+                        </pre>
+                      </div>
+                    </div>
+                  </details>
+                )}
               </div>
 
               <div className="flex items-center gap-6">
@@ -1419,6 +1717,70 @@ export default function ChannelPollsAdmin() {
                     <>
                       <Save className="w-4 h-4 mr-2" />
                       Save
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Results Dialog */}
+        <Dialog open={isResultsDialogOpen} onOpenChange={setIsResultsDialogOpen}>
+          <DialogContent className={`${cardStyle.bg} ${cardStyle.border} border max-w-2xl max-h-[90vh] overflow-y-auto`}>
+            <DialogHeader>
+              <DialogTitle className={cardStyle.text}>
+                Set Results: {currentPollForResults?.title}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label className={cardStyle.text}>Paste CSV Results (Rank, Option Name)</Label>
+                <Textarea
+                  value={resultsCsvText}
+                  onChange={(e) => setResultsCsvText(e.target.value)}
+                  className={`mt-1 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} font-mono text-sm`}
+                  placeholder="1,Option Name 1&#10;2,Option Name 2&#10;3,Option Name 3"
+                  rows={10}
+                />
+                <p className={`text-xs mt-1 ${cardStyle.text}/60`}>
+                  Format: "Rank,Option Name" or "Option Name,Rank" (one per line). 
+                  This will update the poll options with their rankings to generate the main ranking chart.
+                </p>
+              </div>
+              
+              {error && (
+                <div className={`p-4 ${cardStyle.bg} ${cardStyle.border} border rounded-lg`} style={{ borderColor: '#ef444440' }}>
+                  <p className="text-sm" style={{ color: '#ef4444' }}>{error}</p>
+                </div>
+              )}
+              
+              <div className="flex justify-end gap-2">
+                <Button
+                  onClick={() => {
+                    setIsResultsDialogOpen(false)
+                    setResultsCsvText('')
+                    setCurrentPollForResults(null)
+                  }}
+                  className={`${cardStyle.border} border ${cardStyle.text}`}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleResultsCsvPaste}
+                  disabled={saving || !resultsCsvText.trim()}
+                  className={`${cardStyle.accent} text-black font-black`}
+                  style={{ backgroundColor: cardStyle.accent }}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Results
                     </>
                   )}
                 </Button>
