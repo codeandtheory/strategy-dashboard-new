@@ -199,7 +199,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Use admin client to create user
-    const supabaseAdmin = await getSupabaseAdminClient()
+    let supabaseAdmin
+    try {
+      supabaseAdmin = await getSupabaseAdminClient()
+    } catch (adminError: any) {
+      console.error('Error creating admin client:', adminError)
+      return NextResponse.json({ 
+        error: 'Failed to initialize admin client', 
+        details: adminError.message || 'Check SUPABASE_SERVICE_ROLE_KEY environment variable' 
+      }, { status: 500 })
+    }
 
     // Create auth user first
     let authUserId: string

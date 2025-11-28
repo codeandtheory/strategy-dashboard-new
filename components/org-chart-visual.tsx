@@ -2,7 +2,7 @@
 
 import { buildOrgChartTree, type OrgChartNode, getHierarchyLevelFromTitle } from '@/lib/org-chart'
 import { Users, ChevronDown, ChevronRight } from 'lucide-react'
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 
 interface OrgChartVisualProps {
   profiles: any[]
@@ -39,6 +39,7 @@ export function OrgChartVisual({
 }: OrgChartVisualProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
   const [selectedDiscipline, setSelectedDiscipline] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'macro' | 'detailed'>('macro')
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
@@ -70,10 +71,33 @@ export function OrgChartVisual({
   // Handle zoom with scroll wheel
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     const delta = e.deltaY > 0 ? 0.9 : 1.1
     const newZoom = Math.max(0.1, Math.min(3, zoom * delta))
     setZoom(newZoom)
   }, [zoom])
+
+  // Use useEffect to add wheel event listener with passive: false
+  useEffect(() => {
+    const container = svgContainerRef.current
+    if (!container) return
+
+    const handleWheelNative = (e: WheelEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const delta = e.deltaY > 0 ? 0.9 : 1.1
+      setZoom(prevZoom => {
+        const newZoom = Math.max(0.1, Math.min(3, prevZoom * delta))
+        return newZoom
+      })
+    }
+
+    container.addEventListener('wheel', handleWheelNative, { passive: false })
+
+    return () => {
+      container.removeEventListener('wheel', handleWheelNative)
+    }
+  }, [])
 
   // Handle pan with mouse drag
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -385,6 +409,341 @@ export function OrgChartVisual({
     )
   }
 
+  // Build discipline-level org chart for macro view
+  interface DisciplineNode {
+    id: string
+    name: string
+    profiles: any[]
+    reportsTo: string | null // discipline name that this discipline reports to
+    children: DisciplineNode[]
+  }
+
+  const buildDisciplineChart = (): DisciplineNode[] => {
+    const disciplineMap = new Map<string, DisciplineNode>()
+    
+    // Initialize all disciplines
+    Object.keys(byDiscipline).forEach(discipline => {
+      disciplineMap.set(discipline, {
+        id: discipline,
+        name: discipline,
+        profiles: byDiscipline[discipline],
+        reportsTo: null,
+        children: []
+      })
+    })
+    
+    // Determine reporting relationships between disciplines
+    // A discipline reports to another if any person in it reports to someone in the other discipline
+    profiles.forEach(profile => {
+      if (profile.manager_id) {
+        const manager = profiles.find(p => p.id === profile.manager_id)
+        if (manager) {
+          const profileDiscipline = profile.discipline || 'Other'
+          const managerDiscipline = manager.discipline || 'Other'
+          
+          if (profileDiscipline !== managerDiscipline) {
+            const disciplineNode = disciplineMap.get(profileDiscipline)
+            const managerDisciplineNode = disciplineMap.get(managerDiscipline)
+            
+            if (disciplineNode && managerDisciplineNode && !disciplineNode.reportsTo) {
+              disciplineNode.reportsTo = managerDiscipline
+            }
+          }
+        }
+      }
+    })
+    
+    // Build tree structure
+    const rootDisciplines: DisciplineNode[] = []
+    disciplineMap.forEach(disciplineNode => {
+      if (disciplineNode.reportsTo) {
+        const parent = disciplineMap.get(disciplineNode.reportsTo)
+        if (parent) {
+          parent.children.push(disciplineNode)
+        } else {
+          rootDisciplines.push(disciplineNode)
+        }
+      } else {
+        rootDisciplines.push(disciplineNode)
+      }
+    })
+    
+    return rootDisciplines
+  }
+
+  // Calculate positions for discipline nodes
+  const calculateDisciplinePositions = (disciplineNodes: DisciplineNode[], startX: number = 0, startY: number = 0): Array<{ discipline: DisciplineNode; x: number; y: number }> => {
+    const positions: Array<{ discipline: DisciplineNode; x: number; y: number }> = []
+    const DISCIPLINE_NODE_WIDTH = 250
+    const DISCIPLINE_NODE_HEIGHT = 150
+    const DISCIPLINE_HORIZONTAL_SPACING = 300
+    const DISCIPLINE_VERTICAL_SPACING = 200
+    
+    function positionDisciplineNode(node: DisciplineNode, x: number, y: number): number {
+      const hasChildren = node.children.length > 0
+      
+      if (!hasChildren) {
+        positions.push({ discipline: node, x, y })
+        return DISCIPLINE_NODE_WIDTH
+      }
+      
+      // Position children first
+      let childX = x
+      const childWidths: number[] = []
+      
+      node.children.forEach(child => {
+        const childWidth = positionDisciplineNode(child, childX, y + DISCIPLINE_VERTICAL_SPACING)
+        childWidths.push(childWidth)
+        childX += childWidth + DISCIPLINE_HORIZONTAL_SPACING
+      })
+      
+      const childrenWidth = childWidths.reduce((sum, w) => sum + w, 0) + (childWidths.length - 1) * DISCIPLINE_HORIZONTAL_SPACING
+      const subtreeWidth = Math.max(DISCIPLINE_NODE_WIDTH, childrenWidth)
+      const nodeX = x + (subtreeWidth - DISCIPLINE_NODE_WIDTH) / 2
+      
+      positions.push({ discipline: node, x: nodeX, y })
+      return subtreeWidth
+    }
+    
+    let currentX = startX
+    disciplineNodes.forEach(node => {
+      const subtreeWidth = positionDisciplineNode(node, currentX, startY)
+      currentX += subtreeWidth + DISCIPLINE_HORIZONTAL_SPACING
+    })
+    
+    return positions
+  }
+
+  // Macro view: Show discipline-level org chart
+  if (viewMode === 'macro' && !selectedDiscipline) {
+    const disciplineChart = buildDisciplineChart()
+    const disciplinePositions = calculateDisciplinePositions(disciplineChart)
+    
+    // Calculate canvas size
+    const maxX = disciplinePositions.length > 0 ? Math.max(...disciplinePositions.map(p => p.x + 250), 0) : 0
+    const maxY = disciplinePositions.length > 0 ? Math.max(...disciplinePositions.map(p => p.y + 150), 0) : 0
+    const canvasWidth = Math.max(maxX + 100, 800)
+    const canvasHeight = Math.max(maxY + 100, 600)
+    
+    // Build connectors between disciplines
+    const connectors: Array<{ parent: { x: number; y: number }; child: { x: number; y: number } }> = []
+    disciplinePositions.forEach(parentPos => {
+      parentPos.discipline.children.forEach(child => {
+        const childPos = disciplinePositions.find(p => p.discipline.id === child.id)
+        if (childPos) {
+          connectors.push({
+            parent: { x: parentPos.x + 125, y: parentPos.y + 150 },
+            child: { x: childPos.x + 125, y: childPos.y }
+          })
+        }
+      })
+    })
+    
+    return (
+      <div className="space-y-4">
+        {/* View toggle */}
+        <div className="flex items-center gap-4 mb-4">
+          <button
+            onClick={() => setViewMode('macro')}
+            className={`px-4 py-2 ${getRoundedClass('rounded-lg')} text-sm font-semibold transition-colors ${
+              viewMode === 'macro'
+                ? mode === 'chaos'
+                  ? 'bg-[#00C896] text-black'
+                  : mode === 'chill'
+                  ? 'bg-[#00C896] text-white'
+                  : 'bg-white text-black'
+                : mode === 'chaos'
+                ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50'
+                : mode === 'chill'
+                ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50'
+                : 'bg-black/40 text-white/60 hover:bg-black/60'
+            }`}
+          >
+            Macro View
+          </button>
+          <button
+            onClick={() => setViewMode('detailed')}
+            className={`px-4 py-2 ${getRoundedClass('rounded-lg')} text-sm font-semibold transition-colors ${
+              viewMode === 'detailed'
+                ? mode === 'chaos'
+                  ? 'bg-[#00C896] text-black'
+                  : mode === 'chill'
+                  ? 'bg-[#00C896] text-white'
+                  : 'bg-white text-black'
+                : mode === 'chaos'
+                ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50'
+                : mode === 'chill'
+                ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50'
+                : 'bg-black/40 text-white/60 hover:bg-black/60'
+            }`}
+          >
+            Detailed View
+          </button>
+        </div>
+
+        <div 
+          ref={svgContainerRef}
+          className={`${getRoundedClass('rounded-xl')} p-4 overflow-hidden relative`}
+          style={{
+            backgroundColor: mode === 'chaos' ? '#1a1a1a' : mode === 'chill' ? '#F5E6D3' : '#000000',
+            width: '100%',
+            height: '600px',
+            cursor: isDragging ? 'grabbing' : 'grab'
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          {disciplinePositions.length > 0 ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg 
+                width="100%"
+                height="100%"
+                viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+                preserveAspectRatio="xMidYMid meet"
+                style={{ 
+                  overflow: 'visible',
+                  cursor: isDragging ? 'grabbing' : 'grab'
+                }}
+              >
+                <g
+                  transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}
+                  style={{ transformOrigin: 'center center' }}
+                >
+                  {/* Render connectors first */}
+                  {connectors.map((connector, idx) => (
+                    <g key={idx}>
+                      <line
+                        x1={connector.parent.x}
+                        y1={connector.parent.y}
+                        x2={connector.parent.x}
+                        y2={connector.parent.y + (connector.child.y - connector.parent.y) / 2}
+                        stroke={mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF'}
+                        strokeWidth="3"
+                        opacity="0.6"
+                      />
+                      <line
+                        x1={connector.parent.x}
+                        y1={connector.parent.y + (connector.child.y - connector.parent.y) / 2}
+                        x2={connector.child.x}
+                        y2={connector.parent.y + (connector.child.y - connector.parent.y) / 2}
+                        stroke={mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF'}
+                        strokeWidth="3"
+                        opacity="0.6"
+                      />
+                      <line
+                        x1={connector.child.x}
+                        y1={connector.parent.y + (connector.child.y - connector.parent.y) / 2}
+                        x2={connector.child.x}
+                        y2={connector.child.y}
+                        stroke={mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF'}
+                        strokeWidth="3"
+                        opacity="0.6"
+                      />
+                    </g>
+                  ))}
+                  
+                  {/* Render discipline nodes */}
+                  {disciplinePositions.map(pos => (
+                    <g key={pos.discipline.id}>
+                      <foreignObject x={pos.x} y={pos.y} width={250} height={150}>
+                        <div
+                          className={`${getRoundedClass('rounded-xl')} border-2 p-4 cursor-pointer hover:scale-105 transition-transform shadow-lg`}
+                          style={{
+                            backgroundColor: mode === 'chaos' 
+                              ? '#1a1a1a' 
+                              : mode === 'chill' 
+                              ? '#FFFFFF' 
+                              : '#000000',
+                            borderColor: mode === 'chaos' 
+                              ? greenColors.primary 
+                              : mode === 'chill' 
+                              ? greenColors.complementary 
+                              : '#FFFFFF',
+                            width: '250px',
+                            height: '150px'
+                          }}
+                          onClick={() => {
+                            setSelectedDiscipline(pos.discipline.name)
+                            setViewMode('detailed')
+                          }}
+                        >
+                          <div className="flex flex-col items-center justify-center h-full text-center">
+                            <h3 
+                              className={`font-black text-lg mb-2 ${mode === 'code' ? 'font-mono' : ''}`}
+                              style={{ color: getTextColor() }}
+                            >
+                              {pos.discipline.name}
+                            </h3>
+                            <p 
+                              className="text-sm"
+                              style={{ 
+                                color: mode === 'chill' ? '#4A1818' : '#FFFFFF',
+                                opacity: 0.8 
+                              }}
+                            >
+                              {pos.discipline.profiles.length} {pos.discipline.profiles.length === 1 ? 'person' : 'people'}
+                            </p>
+                            {pos.discipline.reportsTo && (
+                              <p 
+                                className="text-xs mt-2"
+                                style={{ 
+                                  color: mode === 'chill' ? '#4A1818' : '#FFFFFF',
+                                  opacity: 0.6 
+                                }}
+                              >
+                                Reports to: {pos.discipline.reportsTo}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </foreignObject>
+                    </g>
+                  ))}
+                </g>
+              </svg>
+            </div>
+          ) : (
+            <p 
+              className="text-sm text-center py-8"
+              style={{ 
+                color: mode === 'chill' ? '#4A1818' : '#FFFFFF',
+                opacity: 0.6 
+              }}
+            >
+              No discipline relationships found
+            </p>
+          )}
+          {/* Zoom controls */}
+          {disciplinePositions.length > 0 && (
+            <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
+              <button
+                onClick={handleReset}
+                className={`${getRoundedClass('rounded-lg')} px-3 py-2 text-xs font-semibold transition-colors`}
+                style={{
+                  backgroundColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+                  color: mode === 'chill' ? '#4A1818' : '#000000'
+                }}
+              >
+                Reset View
+              </button>
+              <div 
+                className={`${getRoundedClass('rounded-lg')} px-3 py-2 text-xs`}
+                style={{
+                  backgroundColor: mode === 'chaos' ? 'rgba(0,0,0,0.5)' : mode === 'chill' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.5)',
+                  color: getTextColor()
+                }}
+              >
+                Zoom: {Math.round(zoom * 100)}%
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   // If discipline selected, show detailed view
   if (selectedDiscipline) {
     const disciplineProfiles = byDiscipline[selectedDiscipline] || []
@@ -415,14 +774,59 @@ export function OrgChartVisual({
 
     return (
       <div className="space-y-4">
-        <button
-          onClick={() => setSelectedDiscipline(null)}
-          className="flex items-center gap-2 mb-4 text-sm hover:opacity-70 transition-opacity"
-          style={{ color: getTextColor() }}
-        >
-          <ChevronRight className="w-4 h-4 rotate-180" />
-          <span>Back to All Disciplines</span>
-        </button>
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => {
+              setSelectedDiscipline(null)
+              setViewMode('macro')
+            }}
+            className="flex items-center gap-2 text-sm hover:opacity-70 transition-opacity"
+            style={{ color: getTextColor() }}
+          >
+            <ChevronRight className="w-4 h-4 rotate-180" />
+            <span>Back to Macro View</span>
+          </button>
+          
+          {/* View toggle */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setViewMode('macro')}
+              className={`px-3 py-1.5 ${getRoundedClass('rounded-lg')} text-xs font-semibold transition-colors ${
+                viewMode === 'macro'
+                  ? mode === 'chaos'
+                    ? 'bg-[#00C896] text-black'
+                    : mode === 'chill'
+                    ? 'bg-[#00C896] text-white'
+                    : 'bg-white text-black'
+                  : mode === 'chaos'
+                  ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50'
+                  : mode === 'chill'
+                  ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50'
+                  : 'bg-black/40 text-white/60 hover:bg-black/60'
+              }`}
+            >
+              Macro
+            </button>
+            <button
+              onClick={() => setViewMode('detailed')}
+              className={`px-3 py-1.5 ${getRoundedClass('rounded-lg')} text-xs font-semibold transition-colors ${
+                viewMode === 'detailed'
+                  ? mode === 'chaos'
+                    ? 'bg-[#00C896] text-black'
+                    : mode === 'chill'
+                    ? 'bg-[#00C896] text-white'
+                    : 'bg-white text-black'
+                  : mode === 'chaos'
+                  ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50'
+                  : mode === 'chill'
+                  ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50'
+                  : 'bg-black/40 text-white/60 hover:bg-black/60'
+              }`}
+            >
+              Detailed
+            </button>
+          </div>
+        </div>
 
         <div 
           ref={svgContainerRef}
@@ -433,7 +837,6 @@ export function OrgChartVisual({
             height: '600px',
             cursor: isDragging ? 'grabbing' : 'grab'
           }}
-          onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -502,9 +905,195 @@ export function OrgChartVisual({
     )
   }
 
+  // Default view: Show discipline cards or detailed view based on mode
+  if (viewMode === 'detailed') {
+    // Show all people in a detailed org chart
+    const positions = calculatePositions(orgTree)
+    
+    // Calculate canvas size
+    const maxX = positions.length > 0 ? Math.max(...positions.map(p => p.x + p.width), 0) : 0
+    const maxY = positions.length > 0 ? Math.max(...positions.map(p => p.y + p.height), 0) : 0
+    const canvasWidth = Math.max(maxX + 100, 800)
+    const canvasHeight = Math.max(maxY + 100, 600)
+    
+    // Build parent-child relationships for connectors
+    const connectors: Array<{ parent: NodePosition; child: NodePosition }> = []
+    if (positions.length > 0) {
+      positions.forEach(parentPos => {
+        const isExpanded = expandedNodes.has(parentPos.node.id) || expandedNodes.size === 0
+        if (isExpanded && parentPos.node.children.length > 0) {
+          parentPos.node.children.forEach(child => {
+            const childPos = positions.find(p => p.node.id === child.id)
+            if (childPos) {
+              connectors.push({ parent: parentPos, child: childPos })
+            }
+          })
+        }
+      })
+    }
+    
+    return (
+      <div className="space-y-4">
+        {/* View toggle */}
+        <div className="flex items-center gap-4 mb-4">
+          <button
+            onClick={() => setViewMode('macro')}
+            className={`px-4 py-2 ${getRoundedClass('rounded-lg')} text-sm font-semibold transition-colors ${
+              viewMode === 'macro'
+                ? mode === 'chaos'
+                  ? 'bg-[#00C896] text-black'
+                  : mode === 'chill'
+                  ? 'bg-[#00C896] text-white'
+                  : 'bg-white text-black'
+                : mode === 'chaos'
+                ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50'
+                : mode === 'chill'
+                ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50'
+                : 'bg-black/40 text-white/60 hover:bg-black/60'
+            }`}
+          >
+            Macro View
+          </button>
+          <button
+            onClick={() => setViewMode('detailed')}
+            className={`px-4 py-2 ${getRoundedClass('rounded-lg')} text-sm font-semibold transition-colors ${
+              viewMode === 'detailed'
+                ? mode === 'chaos'
+                  ? 'bg-[#00C896] text-black'
+                  : mode === 'chill'
+                  ? 'bg-[#00C896] text-white'
+                  : 'bg-white text-black'
+                : mode === 'chaos'
+                ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50'
+                : mode === 'chill'
+                ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50'
+                : 'bg-black/40 text-white/60 hover:bg-black/60'
+            }`}
+          >
+            Detailed View
+          </button>
+        </div>
+
+        <div 
+          ref={svgContainerRef}
+          className={`${getRoundedClass('rounded-xl')} p-4 overflow-hidden relative`}
+          style={{
+            backgroundColor: mode === 'chaos' ? '#1a1a1a' : mode === 'chill' ? '#F5E6D3' : '#000000',
+            width: '100%',
+            height: '600px',
+            cursor: isDragging ? 'grabbing' : 'grab'
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          {positions.length > 0 ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg 
+                width="100%"
+                height="100%"
+                viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+                preserveAspectRatio="xMidYMid meet"
+                style={{ 
+                  overflow: 'visible',
+                  cursor: isDragging ? 'grabbing' : 'grab'
+                }}
+              >
+                <g
+                  transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}
+                  style={{ transformOrigin: 'center center' }}
+                >
+                  {/* Render connectors first (behind nodes) */}
+                  <g>{connectors.map(({ parent, child }) => renderConnector(parent, child))}</g>
+                  {/* Render nodes on top */}
+                  {positions.map(position => renderNode(position))}
+                </g>
+              </svg>
+            </div>
+          ) : (
+            <p 
+              className="text-sm text-center py-8"
+              style={{ 
+                color: mode === 'chill' ? '#4A1818' : '#FFFFFF',
+                opacity: 0.6 
+              }}
+            >
+              No org chart data available. Set manager relationships in profiles to build the org chart.
+            </p>
+          )}
+          {/* Zoom controls */}
+          {positions.length > 0 && (
+            <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
+              <button
+                onClick={handleReset}
+                className={`${getRoundedClass('rounded-lg')} px-3 py-2 text-xs font-semibold transition-colors`}
+                style={{
+                  backgroundColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+                  color: mode === 'chill' ? '#4A1818' : '#000000'
+                }}
+              >
+                Reset View
+              </button>
+              <div 
+                className={`${getRoundedClass('rounded-lg')} px-3 py-2 text-xs`}
+                style={{
+                  backgroundColor: mode === 'chaos' ? 'rgba(0,0,0,0.5)' : mode === 'chill' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.5)',
+                  color: getTextColor()
+                }}
+              >
+                Zoom: {Math.round(zoom * 100)}%
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+  
   // Macro view: Show discipline cards
   return (
     <div className="space-y-6">
+      {/* View toggle */}
+      <div className="flex items-center gap-4 mb-4">
+        <button
+          onClick={() => setViewMode('macro')}
+          className={`px-4 py-2 ${getRoundedClass('rounded-lg')} text-sm font-semibold transition-colors ${
+            viewMode === 'macro'
+              ? mode === 'chaos'
+                ? 'bg-[#00C896] text-black'
+                : mode === 'chill'
+                ? 'bg-[#00C896] text-white'
+                : 'bg-white text-black'
+              : mode === 'chaos'
+              ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50'
+              : mode === 'chill'
+              ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50'
+              : 'bg-black/40 text-white/60 hover:bg-black/60'
+          }`}
+        >
+          Macro View
+        </button>
+        <button
+          onClick={() => setViewMode('detailed')}
+          className={`px-4 py-2 ${getRoundedClass('rounded-lg')} text-sm font-semibold transition-colors ${
+            viewMode === 'detailed'
+              ? mode === 'chaos'
+                ? 'bg-[#00C896] text-black'
+                : mode === 'chill'
+                ? 'bg-[#00C896] text-white'
+                : 'bg-white text-black'
+              : mode === 'chaos'
+              ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50'
+              : mode === 'chill'
+              ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50'
+              : 'bg-black/40 text-white/60 hover:bg-black/60'
+          }`}
+        >
+          Detailed View
+        </button>
+      </div>
+      
       <p 
         className="text-sm mb-4"
         style={{ 
@@ -523,7 +1112,10 @@ export function OrgChartVisual({
           return (
             <button
               key={discipline}
-              onClick={() => setSelectedDiscipline(discipline)}
+              onClick={() => {
+                setSelectedDiscipline(discipline)
+                setViewMode('detailed')
+              }}
               className={`p-4 ${getRoundedClass('rounded-xl')} border hover:opacity-80 transition-all text-left`}
               style={{
                 backgroundColor: mode === 'chaos' 
