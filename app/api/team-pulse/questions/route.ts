@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Cache configuration: 1 hour for questions (rarely change)
+export const revalidate = 3600
+
 export async function GET() {
   try {
     const supabase = await createClient()
@@ -35,7 +38,10 @@ export async function GET() {
     const shuffled = [...questions].sort(() => Math.random() - 0.5)
     const selectedQuestions = shuffled.slice(0, 2)
 
-    return NextResponse.json({ questions: selectedQuestions })
+    const response = NextResponse.json({ questions: selectedQuestions })
+    // Add cache headers for client-side caching
+    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=7200')
+    return response
   } catch (error) {
     console.error('Error in team-pulse questions:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

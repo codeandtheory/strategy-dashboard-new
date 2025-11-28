@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { fetchThumbnail, parseVideoUrl } from '@/lib/video-thumbnails'
 
+// Cache configuration: 5 minutes for user-specific data
+export const revalidate = 300
+
 // GET - Fetch all videos with optional search and filter
 export async function GET(request: NextRequest) {
   try {
@@ -21,6 +24,8 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category')
     const sortBy = searchParams.get('sortBy') || 'created_at'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 50
+    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0
 
     // Build query
     let query = supabase
@@ -40,7 +45,7 @@ export async function GET(request: NextRequest) {
         created_at,
         updated_at,
         submitted_by_profile:profiles!submitted_by(id, email, full_name)
-      `)
+      `, { count: 'exact' })
 
     // Apply filters
     if (pinned === 'true') {
@@ -64,7 +69,10 @@ export async function GET(request: NextRequest) {
       query = query.order('created_at', { ascending: sortOrder === 'asc' })
     }
 
-    const { data, error } = await query
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
 
     if (error) {
       console.error('Error fetching videos:', error)
@@ -92,7 +100,18 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({ data: filteredData })
+    const response = NextResponse.json({ 
+      data: filteredData,
+      pagination: {
+        total: count || filteredData.length,
+        limit,
+        offset,
+        hasMore: count ? offset + limit < count : false
+      }
+    })
+    // Add cache headers for client-side caching
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
+    return response
   } catch (error: any) {
     console.error('Error in videos API:', error)
     return NextResponse.json(

@@ -28,6 +28,7 @@ import { TeamPulseCard } from '@/components/team-pulse-card'
 import { Footer } from '@/components/footer'
 import { BeastBabeCard } from '@/components/beast-babe-card'
 import { VideoEmbed } from '@/components/video-embed'
+import Image from 'next/image'
 
 // Force dynamic rendering to avoid SSR issues with context
 export const dynamic = 'force-dynamic'
@@ -4099,32 +4100,25 @@ export default function TeamDashboard() {
                         <div key={sample.id} className="flex flex-col">
                           <div className="relative mb-3">
                           {sample.thumbnail_url ? (
-                            <img 
-                              src={
-                                // Use proxy immediately for Airtable URLs (they're expired)
-                                sample.thumbnail_url.includes('airtable.com') || sample.thumbnail_url.includes('airtableusercontent.com')
-                                  ? `/api/work-samples/thumbnail?url=${encodeURIComponent(sample.thumbnail_url)}`
-                                  // For Supabase URLs, try direct first, fallback to proxy on error
-                                  : sample.thumbnail_url
-                              }
-                              alt={sample.project_name}
-                                className={`w-full aspect-video object-cover ${getRoundedClass('rounded-xl')} border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'}`}
-                              onError={(e) => {
-                                // Try proxy if direct URL fails (for Supabase URLs)
-                                const target = e.target as HTMLImageElement
-                                const originalSrc = target.src
-                                if (originalSrc.includes('supabase') && !originalSrc.includes('/api/work-samples/thumbnail')) {
-                                  target.src = `/api/work-samples/thumbnail?url=${encodeURIComponent(originalSrc)}`
-                                } else {
-                                  // Hide broken image and show placeholder
-                                  target.style.display = 'none'
-                                  const placeholder = target.nextElementSibling as HTMLElement
-                                  if (placeholder) {
-                                    placeholder.style.display = 'flex'
-                                  }
+                            <div className={`relative w-full aspect-video ${getRoundedClass('rounded-xl')} overflow-hidden border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'}`}>
+                              <Image 
+                                src={
+                                  // Use proxy immediately for Airtable URLs (they're expired)
+                                  sample.thumbnail_url.includes('airtable.com') || sample.thumbnail_url.includes('airtableusercontent.com')
+                                    ? `/api/work-samples/thumbnail?url=${encodeURIComponent(sample.thumbnail_url)}`
+                                    // For Supabase URLs, try direct first, fallback to proxy on error
+                                    : sample.thumbnail_url
                                 }
-                              }}
-                            />
+                                alt={sample.project_name}
+                                fill
+                                className="object-cover"
+                                unoptimized={sample.thumbnail_url.includes('airtable.com') || sample.thumbnail_url.includes('airtableusercontent.com')}
+                                onError={() => {
+                                  // For Supabase URLs that fail, the proxy will handle it
+                                  // Placeholder will show via conditional rendering
+                                }}
+                              />
+                            </div>
                           ) : null}
                             <div className={`w-full aspect-video ${getRoundedClass('rounded-xl')} bg-gray-200 flex items-center justify-center border ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'} ${sample.thumbnail_url ? 'hidden' : ''}`}>
                             <span className="text-gray-400 text-xs">No Image</span>

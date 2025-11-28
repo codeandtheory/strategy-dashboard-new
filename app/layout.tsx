@@ -11,7 +11,8 @@ import './globals.css'
 const raleway = Raleway({ 
   subsets: ["latin"],
   variable: '--font-raleway',
-  weight: ['300', '400', '500', '600', '700', '800', '900']
+  weight: ['400', '500', '600', '700'], // Reduced from 9 weights to 4 most common
+  display: 'swap', // Improve font loading performance
 });
 
 export const metadata: Metadata = {

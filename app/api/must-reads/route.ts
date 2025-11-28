@@ -24,6 +24,9 @@ async function getSupabaseAdminClient() {
   )
 }
 
+// Cache configuration: 5 minutes for user-specific data
+export const revalidate = 300
+
 // GET - Fetch all must reads with optional search and filter
 export async function GET(request: NextRequest) {
   try {
@@ -69,7 +72,7 @@ export async function GET(request: NextRequest) {
         updated_at,
         submitted_by_profile:profiles!submitted_by(id, email, full_name),
         assigned_to_profile:profiles!assigned_to(id, email, full_name)
-      `)
+      `, { count: 'exact' })
 
     // Apply filters
     if (pinned === 'true') {
@@ -101,7 +104,10 @@ export async function GET(request: NextRequest) {
       query = query.order('created_at', { ascending: sortOrder === 'asc' })
     }
 
-    const { data, error } = await query
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
 
     if (error) {
       console.error('Error fetching must reads:', error)
@@ -155,7 +161,10 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({ data: filteredData })
+    const response = NextResponse.json({ data: filteredData })
+    // Add cache headers for client-side caching
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
+    return response
   } catch (error: any) {
     console.error('Error in must-reads API:', error)
     return NextResponse.json(

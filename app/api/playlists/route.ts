@@ -96,6 +96,9 @@ async function fetchSpotifyPlaylistData(spotifyUrl: string) {
   }
 }
 
+// Cache configuration: 15 minutes for playlists (less frequently updated)
+export const revalidate = 900
+
 // GET - Fetch all playlists, with optional Spotify data refresh
 export async function GET(request: NextRequest) {
   try {
@@ -193,7 +196,10 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`[API] Returning ${playlistsArray.length} playlist(s)`)
-    return NextResponse.json(playlistsArray)
+    const response = NextResponse.json(playlistsArray)
+    // Add cache headers for client-side caching
+    response.headers.set('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=1800')
+    return response
   } catch (error: any) {
     console.error('[API] Error in GET /api/playlists:', error)
     console.error('[API] Error stack:', error.stack)

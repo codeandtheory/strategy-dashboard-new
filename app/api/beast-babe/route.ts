@@ -28,19 +28,16 @@ export async function GET(request: NextRequest) {
     const supabaseAdmin = await getSupabaseAdminClient()
 
     // Find current beast babe (user with 'beast_babe' in special_access)
-    // Fetch all profiles and filter in JavaScript (more reliable than array contains query)
-    const { data: allProfiles, error: profilesError } = await supabaseAdmin
+    // Use database filter instead of fetching all profiles
+    const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('profiles')
       .select('id, email, full_name, avatar_url, role, discipline, special_access')
+      .contains('special_access', ['beast_babe'])
     
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)
       return NextResponse.json({ error: 'Failed to fetch profiles', details: profilesError.message }, { status: 500 })
     }
-    
-    const profiles = (allProfiles || []).filter((p: any) => 
-      Array.isArray(p.special_access) && p.special_access.includes('beast_babe')
-    )
 
     let currentBeastBabe = profiles && profiles.length > 0 ? profiles[0] : null
 
@@ -148,12 +145,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current beast babe (if any)
-    // Fetch all profiles and filter in JavaScript
-    const { data: allCurrentProfiles } = await supabaseAdmin
+    // Use database filter instead of fetching all profiles
+    const { data: currentBeastBabeProfiles } = await supabaseAdmin
       .from('profiles')
       .select('id, special_access')
-    
-    const currentBeastBabeProfiles = (allCurrentProfiles || []).filter((p: any) => 
+      .contains('special_access', ['beast_babe'])((p: any) => 
       Array.isArray(p.special_access) && p.special_access.includes('beast_babe')
     )
 

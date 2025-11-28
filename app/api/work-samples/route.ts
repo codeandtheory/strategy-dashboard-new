@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Cache configuration: 10 minutes for work samples
+export const revalidate = 600
+
 // GET - Fetch all work samples with optional search and filter
 export async function GET(request: NextRequest) {
   try {
@@ -41,7 +44,7 @@ export async function GET(request: NextRequest) {
         file_link,
         file_name,
         pitch_won
-      `)
+      `, { count: 'exact' })
 
     // Apply sorting
     const isAscending = sortOrder?.toLowerCase() === 'asc'
@@ -75,7 +78,10 @@ export async function GET(request: NextRequest) {
       query = query.eq('client', client)
     }
 
-    const { data: workSamplesData, error } = await query
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1)
+
+    const { data: workSamplesData, error, count } = await query
 
     if (error) {
       console.error('Error fetching work samples:', error)
@@ -157,7 +163,18 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({ data: filteredData })
+    const response = NextResponse.json({ 
+      data: filteredData,
+      pagination: {
+        total: count || filteredData.length,
+        limit,
+        offset,
+        hasMore: count ? offset + limit < count : false
+      }
+    })
+    // Add cache headers for client-side caching
+    response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1200')
+    return response
   } catch (error: any) {
     console.error('Error in work-samples API:', error)
     return NextResponse.json(

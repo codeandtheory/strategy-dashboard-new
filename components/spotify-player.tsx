@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Music, ExternalLink } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { PlaylistData, Track, SpotifyPlayerProps as SpotifyPlayerPropsType } from '@/lib/spotify-player-types';
+import Image from 'next/image';
 import '../styles/playlist-card.css';
 
 export function SpotifyPlayer({
@@ -91,31 +92,33 @@ export function SpotifyPlayer({
       <div className="media mb-2">
         <div className="mediaGroup">
           {/* Cover - positioned on top */}
-          <img
-            src={albumArtwork}
-            alt={playlist.title || "Playlist cover"}
-            className="object-cover w-[var(--cover)] h-[var(--cover)] rounded-none ring-2 ring-emerald-300/30 relative z-10"
-          />
+          <div className="relative w-[var(--cover)] h-[var(--cover)] rounded-none ring-2 ring-emerald-300/30 z-10">
+            <Image
+              src={albumArtwork}
+              alt={playlist.title || "Playlist cover"}
+              fill
+              className="object-cover rounded-none"
+              unoptimized={albumArtwork.includes('unsplash.com')}
+            />
+          </div>
           {/* Vinyl - positioned behind cover */}
           <div className="vinylWrap">
             <div className="vinyl rounded-full bg-black/90 ring-1 ring-black/40 pointer-events-none">
               {/* center label avatar - curator's photo */}
               {curatorAvatar ? (
-                <img
-                  src={curatorAvatar}
-                  alt={playlist.curator || 'Curator'}
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full ring-2 ring-emerald-400 object-cover"
-                  aria-hidden="true"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement
-                    target.style.display = 'none'
-                    const parent = target.parentElement
-                    if (parent) {
-                      const fallback = parent.querySelector('.spotify-curator-avatar-fallback') as HTMLElement
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full ring-2 ring-emerald-400 overflow-hidden">
+                  <Image
+                    src={curatorAvatar}
+                    alt={playlist.curator || 'Curator'}
+                    fill
+                    className="object-cover"
+                    aria-hidden="true"
+                    onError={() => {
+                      const fallback = document.querySelector('.spotify-curator-avatar-fallback') as HTMLElement
                       if (fallback) fallback.style.display = 'flex'
-                    }
-                  }}
-                />
+                    }}
+                  />
+                </div>
               ) : null}
               {/* Fallback if no avatar or image fails to load */}
               <div 

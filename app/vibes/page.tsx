@@ -12,6 +12,7 @@ import { Music, MessageCircle, Archive, BarChart3, Lock, TrendingUp, Zap } from 
 import Link from 'next/link'
 import { PlaylistCard } from '@/components/playlist-card'
 import { Footer } from '@/components/footer'
+import Image from 'next/image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 interface Playlist {
@@ -695,16 +696,14 @@ export default function VibesPage() {
                             
                             {/* Thanksgiving Image */}
                             <div className="mt-8 pt-8 border-t" style={{ borderColor: mode === 'chaos' ? 'rgba(255, 255, 255, 0.1)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.1)' }}>
-                              <div className="flex justify-center">
-                                <img 
+                              <div className="flex justify-center relative" style={{ maxHeight: '500px' }}>
+                                <Image 
                                   src="/thxgiving.png" 
                                   alt="Thanksgiving visualization"
+                                  width={800}
+                                  height={500}
                                   className="max-w-full h-auto"
-                                  style={{ maxHeight: '500px' }}
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement
-                                    target.style.display = 'none'
-                                  }}
+                                  style={{ maxHeight: '500px', objectFit: 'contain' }}
                                 />
                               </div>
                             </div>

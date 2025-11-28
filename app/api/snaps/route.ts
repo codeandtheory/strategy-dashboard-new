@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Cache configuration: 5 minutes for snaps
+export const revalidate = 300
+
 // GET - Fetch snaps with optional filters
 export async function GET(request: NextRequest) {
   try {
@@ -64,7 +67,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ data: data || [] })
+    const response = NextResponse.json({ data: data || [] })
+    // Add cache headers for client-side caching
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
+    return response
   } catch (error: any) {
     console.error('Error in snaps API:', error)
     return NextResponse.json(

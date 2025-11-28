@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Cache configuration: 10 minutes for resources
+export const revalidate = 600
+
 export async function GET(request: Request) {
   try {
     const supabase = await createClient()
@@ -10,11 +13,13 @@ export async function GET(request: Request) {
     const userId = searchParams.get('userId')
     const sortBy = searchParams.get('sortBy') || 'created_at'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 50
+    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0
 
     // Build query
     let query = supabase
       .from('resources')
-      .select('*')
+      .select('*', { count: 'exact' })
 
     // Apply search filter
     if (search) {
@@ -84,11 +89,20 @@ export async function GET(request: Request) {
       .sort((a, b) => b.click_count - a.click_count)
       .slice(0, 5)
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       data: resources || [],
       recentlyViewed: recentlyViewed || [],
-      mostUsed: mostUsed || []
+      mostUsed: mostUsed || [],
+      pagination: {
+        total: count || 0,
+        limit,
+        offset,
+        hasMore: count ? offset + limit < count : false
+      }
     })
+    // Add cache headers for client-side caching
+    response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1200')
+    return response
   } catch (error: any) {
     console.error('Error in resources API:', error)
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })

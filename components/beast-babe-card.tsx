@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Trophy, Star, HelpCircle } from 'lucide-react'
 import { Card } from '@/components/ui/card'
+import Image from 'next/image'
 
 interface BeastBabeData {
   currentBeastBabe: {
@@ -117,20 +118,18 @@ export function BeastBabeCard() {
           {/* Avatar Image */}
           {currentBeastBabe?.avatar_url ? (
             <>
-              <img
-                src={currentBeastBabe.avatar_url}
-                alt={currentBeastBabe.full_name || 'Beast Babe'}
-                className="w-full h-full object-cover relative z-10 rounded-full"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement
-                  target.style.display = 'none'
-                  const parent = target.parentElement
-                  if (parent) {
-                    const fallback = parent.querySelector('.beast-babe-avatar-fallback') as HTMLElement
+              <div className="relative w-full h-full z-10 rounded-full overflow-hidden">
+                <Image
+                  src={currentBeastBabe.avatar_url}
+                  alt={currentBeastBabe.full_name || 'Beast Babe'}
+                  fill
+                  className="object-cover"
+                  onError={() => {
+                    const fallback = document.querySelector('.beast-babe-avatar-fallback') as HTMLElement
                     if (fallback) fallback.style.display = 'flex'
-                  }
-                }}
-              />
+                  }}
+                />
+              </div>
               <div className="beast-babe-avatar-fallback w-full h-full bg-gradient-to-br from-[#10B981] to-[#047857] flex items-center justify-center relative z-10 rounded-full hidden">
                 <Trophy className="w-32 h-32 text-white" />
               </div>

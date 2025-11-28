@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { SiteHeader } from '@/components/site-header'
 import { Footer } from '@/components/footer'
+import Image from 'next/image'
 
 interface WorkSample {
   id: string
@@ -472,32 +473,21 @@ export default function WorkSamplesPage() {
                     {/* Thumbnail */}
                     <div className="relative">
                       {sample.thumbnail_url ? (
-                        <img 
-                          src={
-                            // Use proxy immediately for Airtable URLs (they're expired)
-                            sample.thumbnail_url.includes('airtable.com') || sample.thumbnail_url.includes('airtableusercontent.com')
-                              ? `/api/work-samples/thumbnail?url=${encodeURIComponent(sample.thumbnail_url)}`
-                              // For Supabase URLs, try direct first, fallback to proxy on error
-                              : sample.thumbnail_url
-                          }
-                          alt={sample.project_name}
-                          className={`w-full aspect-video object-cover ${getRoundedClass('rounded-xl')}`}
-                          onError={(e) => {
-                            // Try proxy if direct URL fails (for Supabase URLs)
-                            const target = e.target as HTMLImageElement
-                            const originalSrc = target.src
-                            if (originalSrc.includes('supabase') && !originalSrc.includes('/api/work-samples/thumbnail')) {
-                              target.src = `/api/work-samples/thumbnail?url=${encodeURIComponent(originalSrc)}`
-                            } else {
-                              // Hide broken image and show placeholder
-                              target.style.display = 'none'
-                              const placeholder = target.nextElementSibling as HTMLElement
-                              if (placeholder) {
-                                placeholder.style.display = 'flex'
-                              }
+                        <div className={`relative w-full aspect-video ${getRoundedClass('rounded-xl')} overflow-hidden`}>
+                          <Image 
+                            src={
+                              // Use proxy immediately for Airtable URLs (they're expired)
+                              sample.thumbnail_url.includes('airtable.com') || sample.thumbnail_url.includes('airtableusercontent.com')
+                                ? `/api/work-samples/thumbnail?url=${encodeURIComponent(sample.thumbnail_url)}`
+                                // For Supabase URLs, try direct first, fallback to proxy on error
+                                : sample.thumbnail_url
                             }
-                          }}
-                        />
+                            alt={sample.project_name}
+                            fill
+                            className="object-cover"
+                            unoptimized={sample.thumbnail_url.includes('airtable.com') || sample.thumbnail_url.includes('airtableusercontent.com')}
+                          />
+                        </div>
                       ) : null}
                       <div className={`w-full aspect-video ${getRoundedClass('rounded-xl')} bg-gray-200 flex items-center justify-center ${sample.thumbnail_url ? 'hidden' : ''} border-b ${mode === 'chaos' ? 'border-gray-800' : mode === 'chill' ? 'border-gray-300' : 'border-gray-700'}`}>
                         <span className="text-gray-400 text-xs">No Image</span>
