@@ -356,45 +356,102 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Use upsert to handle both create and update in one operation
-    // This avoids the "UPDATE requires WHERE clause" error
-    console.log('Upserting profile for user:', authUserId)
-    console.log('Profile data:', JSON.stringify(profileInsertData, null, 2))
+    // Wait a moment for the trigger to create the profile
+    // The trigger creates a basic profile automatically when auth user is created
+    await new Promise(resolve => setTimeout(resolve, 500))
     
-    const { data: newProfile, error: profileUpsertError } = await supabaseAdmin
-      .from('profiles')
-      .upsert(profileInsertData, {
-        onConflict: 'id',
-        ignoreDuplicates: false
-      })
-      .select('*')
-      .single()
-
-    if (profileUpsertError) {
-      console.error('Error upserting profile:', JSON.stringify(profileUpsertError, null, 2))
-      console.error('Profile upsert data:', JSON.stringify(profileInsertData, null, 2))
-      console.error('Auth user ID:', authUserId)
+    // Check if profile exists (created by trigger)
+    let existingProfile
+    let attempts = 0
+    const maxAttempts = 5
+    
+    while (attempts < maxAttempts) {
+      const { data: profile, error: checkError } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('id', authUserId)
+        .maybeSingle()
       
-      // Clean up auth user if profile upsert fails
-      try {
-        await supabaseAdmin.auth.admin.deleteUser(authUserId)
-        console.log('Cleaned up auth user:', authUserId)
-      } catch (cleanupError) {
-        console.error('Error cleaning up auth user:', cleanupError)
+      if (profile) {
+        existingProfile = profile
+        break
       }
       
-      // Return detailed error information
-      const errorDetails = profileUpsertError.message || 'Unknown database error'
-      const errorCode = profileUpsertError.code || 'UNKNOWN'
-      const errorHint = profileUpsertError.hint || ''
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking for profile:', checkError)
+        break
+      }
       
-      return NextResponse.json({ 
-        error: 'Failed to create profile', 
-        details: `Database error: ${errorDetails}`,
-        code: errorCode,
-        hint: errorHint,
-        fullError: JSON.stringify(profileUpsertError)
-      }, { status: 500 })
+      // Wait a bit longer and try again
+      await new Promise(resolve => setTimeout(resolve, 300))
+      attempts++
+    }
+
+    let newProfile
+    if (existingProfile) {
+      // Profile exists (created by trigger), update it
+      console.log('Profile exists, updating:', authUserId)
+      
+      // Remove id and created_at from update data (these shouldn't be updated)
+      const { id, created_at, ...updateData } = profileInsertData
+      
+      const { data: updatedProfile, error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update(updateData)
+        .eq('id', authUserId)
+        .select('*')
+        .single()
+
+      if (updateError) {
+        console.error('Error updating profile:', JSON.stringify(updateError, null, 2))
+        console.error('Update data:', JSON.stringify(updateData, null, 2))
+        
+        // Clean up auth user if profile update fails
+        try {
+          await supabaseAdmin.auth.admin.deleteUser(authUserId)
+        } catch (cleanupError) {
+          console.error('Error cleaning up auth user:', cleanupError)
+        }
+        
+        return NextResponse.json({ 
+          error: 'Failed to update profile', 
+          details: `Database error: ${updateError.message || 'Unknown error'}. Code: ${updateError.code || 'UNKNOWN'}`,
+          code: updateError.code,
+          hint: updateError.hint
+        }, { status: 500 })
+      }
+      
+      newProfile = updatedProfile
+    } else {
+      // Profile doesn't exist (trigger didn't fire or failed), create it
+      console.log('Profile does not exist, creating:', authUserId)
+      
+      const { data: createdProfile, error: profileInsertError } = await supabaseAdmin
+        .from('profiles')
+        .insert(profileInsertData)
+        .select('*')
+        .single()
+
+      if (profileInsertError) {
+        console.error('Error inserting profile:', JSON.stringify(profileInsertError, null, 2))
+        console.error('Profile insert data:', JSON.stringify(profileInsertData, null, 2))
+        
+        // Clean up auth user if profile insert fails
+        try {
+          await supabaseAdmin.auth.admin.deleteUser(authUserId)
+        } catch (cleanupError) {
+          console.error('Error cleaning up auth user:', cleanupError)
+        }
+        
+        return NextResponse.json({ 
+          error: 'Failed to create profile', 
+          details: `Database error: ${profileInsertError.message || 'Unknown error'}. Code: ${profileInsertError.code || 'UNKNOWN'}`,
+          code: profileInsertError.code,
+          hint: profileInsertError.hint
+        }, { status: 500 })
+      }
+      
+      newProfile = createdProfile
     }
 
     return NextResponse.json({ data: newProfile }, { status: 201 })
