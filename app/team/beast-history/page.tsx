@@ -403,23 +403,30 @@ export default function BeastHistoryPage() {
                         )}
                       </div>
                       
-                      {/* Compact tooltip on hover */}
-                      <div className={`absolute ${isRight ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30 max-w-xs`}>
+                      {/* Wide tooltip on hover */}
+                      <div 
+                        className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30`}
+                        style={{
+                          [isRight ? 'right' : 'left']: 'calc(100% + 1rem)',
+                          width: 'calc(50% - 2rem)',
+                          maxWidth: '400px'
+                        }}
+                      >
                         <div 
-                          className={`px-3 py-2 ${getRoundedClass('rounded-md')} shadow-lg backdrop-blur-sm`}
+                          className={`px-4 py-3 ${getRoundedClass('rounded-lg')} shadow-xl backdrop-blur-sm`}
                           style={{ 
                             backgroundColor: mode === 'chaos' ? 'rgba(42, 42, 42, 0.95)' : mode === 'chill' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(26, 26, 26, 0.95)',
                             border: `1px solid ${greenColors.primary}40`
                           }}
                         >
-                          <p className={`text-xs font-semibold mb-1 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
+                          <p className={`text-sm font-semibold mb-1.5 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
                             {entry.user?.full_name || entry.user?.email || 'Unknown'}
                           </p>
-                          <p className={`text-[10px] mb-1 ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
+                          <p className={`text-xs mb-2 ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
                             {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </p>
                           {entry.achievement && (
-                            <p className={`text-[10px] italic ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-white/80'} leading-tight`}>
+                            <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/90' : 'text-white/90'} leading-relaxed`}>
                               {entry.achievement}
                             </p>
                           )}
