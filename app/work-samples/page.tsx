@@ -285,48 +285,38 @@ export default function WorkSamplesPage() {
             </div>
 
             {/* Divider */}
-            <div className={`h-px mb-6 ${mode === 'chaos' ? 'bg-[#4A90E2]/40' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`}></div>
+            <div className={`h-px mb-6 ${mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-black/20'}`}></div>
 
             {/* View Toggle Section */}
             <div className="mb-6">
-              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#4A90E2]' : 'text-white'}`}>
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                 ▼ VIEW
               </h3>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setViewMode('thumbnails')}
-                  className={`flex-1 h-10 px-4 ${getRoundedClass('rounded-xl')} border flex items-center justify-center transition-colors ${
+                  className={`flex-1 h-10 px-4 ${getRoundedClass('rounded-xl')} transition-all flex items-center justify-center ${
                     viewMode === 'thumbnails'
-                      ? mode === 'chaos'
-                        ? 'bg-[#4A90E2] text-black border-[#4A90E2]'
-                        : mode === 'chill'
-                        ? 'bg-[#4A90E2] text-white border-[#4A90E2]'
-                        : 'bg-white text-black border-white'
-                      : mode === 'chaos'
-                      ? 'bg-black/30 border-gray-600 text-white hover:bg-black/50'
+                      ? 'text-white'
                       : mode === 'chill'
-                      ? 'bg-white/30 border-gray-300 text-[#4A1818] hover:bg-white/50'
-                      : 'bg-black/30 border-gray-600 text-white hover:bg-black/50'
+                      ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
+                      : 'bg-black/20 text-black/80 hover:bg-black/30'
                   }`}
+                  style={viewMode === 'thumbnails' ? { backgroundColor: blueColors.contrast } : {}}
                   title="Grid View"
                 >
                   <Grid3x3 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`flex-1 h-10 px-4 ${getRoundedClass('rounded-xl')} border flex items-center justify-center transition-colors ${
+                  className={`flex-1 h-10 px-4 ${getRoundedClass('rounded-xl')} transition-all flex items-center justify-center ${
                     viewMode === 'list'
-                      ? mode === 'chaos'
-                        ? 'bg-[#4A90E2] text-black border-[#4A90E2]'
-                        : mode === 'chill'
-                        ? 'bg-[#4A90E2] text-white border-[#4A90E2]'
-                        : 'bg-white text-black border-white'
-                      : mode === 'chaos'
-                      ? 'bg-black/30 border-gray-600 text-white hover:bg-black/50'
+                      ? 'text-white'
                       : mode === 'chill'
-                      ? 'bg-white/30 border-gray-300 text-[#4A1818] hover:bg-white/50'
-                      : 'bg-black/30 border-gray-600 text-white hover:bg-black/50'
+                      ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
+                      : 'bg-black/20 text-black/80 hover:bg-black/30'
                   }`}
+                  style={viewMode === 'list' ? { backgroundColor: blueColors.contrast } : {}}
                   title="List View"
                 >
                   <List className="w-4 h-4" />
@@ -335,16 +325,16 @@ export default function WorkSamplesPage() {
             </div>
 
             {/* Divider */}
-            <div className={`h-px mb-6 ${mode === 'chaos' ? 'bg-[#4A90E2]/40' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`}></div>
+            <div className={`h-px mb-6 ${mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-black/20'}`}></div>
 
             {/* Sort Section */}
             <div className="mb-6">
-              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#4A90E2]' : 'text-white'}`}>
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                 ▼ SORT
               </h3>
               <div className="space-y-3">
                 <div>
-                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
+                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-black/80'}`}>
                     Sort By
                   </label>
                   <select
@@ -353,9 +343,7 @@ export default function WorkSamplesPage() {
                     className={`w-full h-10 px-3 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
                       mode === 'chill' 
                         ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-gray-400' 
-                        : mode === 'chaos'
-                        ? 'bg-black/30 border-gray-600 text-white focus:ring-gray-500'
-                        : 'bg-black/30 border-gray-600 text-white focus:ring-gray-500'
+                        : 'bg-white/90 border-white/50 text-black focus:ring-white'
                     }`}
                   >
                     <option value="date">Date</option>
@@ -368,9 +356,7 @@ export default function WorkSamplesPage() {
                   className={`w-full h-10 px-4 ${getRoundedClass('rounded-xl')} border flex items-center justify-center gap-2 transition-colors ${
                     mode === 'chill' 
                       ? 'bg-white border-gray-300 text-[#4A1818] hover:bg-gray-50' 
-                      : mode === 'chaos'
-                      ? 'bg-black/30 border-gray-600 text-white hover:bg-black/50'
-                      : 'bg-black/30 border-gray-600 text-white hover:bg-black/50'
+                      : 'bg-white/90 border-white/50 text-black hover:bg-white'
                   }`}
                   title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
                 >
@@ -383,7 +369,7 @@ export default function WorkSamplesPage() {
             </div>
 
             {/* Divider */}
-            <div className={`h-px mb-6 ${mode === 'chaos' ? 'bg-[#4A90E2]/40' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`}></div>
+            <div className={`h-px mb-6 ${mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-black/20'}`}></div>
 
             {/* Back to Dashboard */}
             <div className="mt-auto">
@@ -392,9 +378,8 @@ export default function WorkSamplesPage() {
                 className={`flex items-center gap-2 px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all ${
                   mode === 'chill'
                     ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
-                    : 'bg-black/20 text-black/80 hover:bg-black/30'
+                    : 'bg-white/30 text-black/80 hover:bg-white/50'
                 }`}
-                style={mode === 'chaos' ? { backgroundColor: blueColors.primary + '30', color: '#FFFFFF' } : {}}
               >
                 <Home className="w-4 h-4" />
                 <span className="font-black uppercase text-sm">← Back to Dashboard</span>
