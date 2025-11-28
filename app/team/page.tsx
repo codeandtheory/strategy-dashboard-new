@@ -32,6 +32,7 @@ import {
 import Link from 'next/link'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { BeastBabeCard } from '@/components/beast-babe-card'
+import { OrgChartView } from '@/components/org-chart-view'
 
 export default function TeamPage() {
   const { user, loading: authLoading } = useAuth()
@@ -343,7 +344,7 @@ export default function TeamPage() {
     try {
       const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, avatar_url, role, discipline, birthday, start_date, location')
+        .select('id, full_name, email, avatar_url, role, discipline, birthday, start_date, location, manager_id, hierarchy_level')
         .eq('is_active', true)
         .order('full_name', { ascending: true })
       
@@ -1199,54 +1200,14 @@ export default function TeamPage() {
                     <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Org Chart</h2>
                   </div>
                   {allProfiles.length > 0 ? (
-                    <div className="space-y-4">
-                      {(() => {
-                        // Group by discipline
-                        const byDiscipline: Record<string, any[]> = {}
-                        allProfiles.forEach(profile => {
-                          const discipline = profile.discipline || 'Other'
-                          if (!byDiscipline[discipline]) {
-                            byDiscipline[discipline] = []
-                          }
-                          byDiscipline[discipline].push(profile)
-                        })
-                        
-                        return Object.entries(byDiscipline).map(([discipline, profiles]) => (
-                          <div key={discipline}>
-                            <h3 className={`font-black text-sm mb-2 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{discipline}</h3>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                              {profiles.map((profile) => (
-                                <button
-                                  key={profile.id}
-                                  onClick={() => handleProfileClick(profile.id)}
-                                  className={`p-2 ${getRoundedClass('rounded-xl')} border hover:opacity-80 transition-opacity ${mode === 'chaos' ? 'bg-[#00C896]/10 border-[#00C896]/30' : mode === 'chill' ? 'bg-white/50 border-[#C8D961]/30' : 'bg-black/40 border-white/20'}`}
-                                >
-                                  <div className="flex flex-col items-center text-center">
-                                    {profile.avatar_url ? (
-                                      <img
-                                        src={profile.avatar_url}
-                                        alt={profile.full_name || 'User'}
-                                        className="w-12 h-12 rounded-full object-cover mb-1"
-                                      />
-                                    ) : (
-                                      <div className="w-12 h-12 rounded-full flex items-center justify-center mb-1" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
-                                        <Users className="w-6 h-6" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-                                      </div>
-                                    )}
-                                    <p className={`font-semibold text-xs ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate w-full`}>
-                                      {profile.full_name || profile.email || 'Unknown'}
-                                    </p>
-                                    {profile.role && (
-                                      <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} truncate w-full`}>{profile.role}</p>
-                                    )}
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        ))
-                      })()}
-                    </div>
+                    <OrgChartView
+                      profiles={allProfiles}
+                      mode={mode}
+                      onProfileClick={handleProfileClick}
+                      getRoundedClass={getRoundedClass}
+                      getTextColor={() => mode === 'chill' ? '#4A1818' : '#FFFFFF'}
+                      greenColors={greenColors}
+                    />
                   ) : (
                     <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No team members found</p>
                   )}
