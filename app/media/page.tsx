@@ -324,7 +324,10 @@ export default function MediaPage() {
         )}
         <div className="flex gap-6 w-full">
           {/* Left Sidebar Card - RED SYSTEM background */}
-          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#FF4C4C]' : mode === 'chill' ? 'bg-[#FFD4C4]' : 'bg-[#C41E3A]'} ${getRoundedClass('rounded-2xl')} p-6 flex flex-col h-fit border-0 sticky top-24 self-start`}>
+          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#C41E3A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-2xl')} p-6 flex flex-col h-fit sticky top-24 self-start`} style={{ 
+            borderColor: mode === 'chaos' ? redSystem.primary : mode === 'chill' ? redSystem.secondary : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
+          }}>
             {/* Navigation Section */}
             <div className="mb-6">
               <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
@@ -335,12 +338,17 @@ export default function MediaPage() {
                   onClick={() => setActiveTab('all')}
                   className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
                     activeTab === 'all'
-                      ? 'text-white'
+                      ? mode === 'chaos'
+                        ? 'bg-[#FF4C4C] text-black'
+                        : mode === 'chill'
+                        ? 'bg-[#FF4C4C] text-white'
+                        : 'bg-white text-black'
+                      : mode === 'chaos'
+                      ? 'bg-[#FF4C4C]/30 text-white/80 hover:bg-[#FF4C4C]/50 text-white'
                       : mode === 'chill'
-                      ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
-                      : 'bg-black/20 text-black/80 hover:bg-black/30'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                   }`}
-                  style={activeTab === 'all' ? { backgroundColor: redSystem.button } : {}}
                 >
                   <span className="font-black uppercase text-sm">All Media</span>
                   <span className="ml-auto text-xs opacity-60">{mustReads.length + videos.length + news.length}</span>
@@ -349,12 +357,17 @@ export default function MediaPage() {
                   onClick={() => setActiveTab('must-reads')}
                   className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
                     activeTab === 'must-reads'
-                      ? 'text-white'
+                      ? mode === 'chaos'
+                        ? 'bg-[#FF4C4C] text-black'
+                        : mode === 'chill'
+                        ? 'bg-[#FF4C4C] text-white'
+                        : 'bg-white text-black'
+                      : mode === 'chaos'
+                      ? 'bg-[#FF4C4C]/30 text-white/80 hover:bg-[#FF4C4C]/50 text-white'
                       : mode === 'chill'
-                      ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
-                      : 'bg-black/20 text-black/80 hover:bg-black/30'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                   }`}
-                  style={activeTab === 'must-reads' ? { backgroundColor: redSystem.button } : {}}
                 >
                   <BookOpen className="w-4 h-4" />
                   <span className="font-black uppercase text-sm">Must Reads</span>
@@ -364,12 +377,17 @@ export default function MediaPage() {
                   onClick={() => setActiveTab('videos')}
                   className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
                     activeTab === 'videos'
-                      ? 'text-white'
+                      ? mode === 'chaos'
+                        ? 'bg-[#FF4C4C] text-black'
+                        : mode === 'chill'
+                        ? 'bg-[#FF4C4C] text-white'
+                        : 'bg-white text-black'
+                      : mode === 'chaos'
+                      ? 'bg-[#FF4C4C]/30 text-white/80 hover:bg-[#FF4C4C]/50 text-white'
                       : mode === 'chill'
-                      ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
-                      : 'bg-black/20 text-black/80 hover:bg-black/30'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                   }`}
-                  style={activeTab === 'videos' ? { backgroundColor: redSystem.button } : {}}
                 >
                   <Video className="w-4 h-4" />
                   <span className="font-black uppercase text-sm">Videos</span>
@@ -379,12 +397,17 @@ export default function MediaPage() {
                   onClick={() => setActiveTab('news')}
                   className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
                     activeTab === 'news'
-                      ? 'text-white'
+                      ? mode === 'chaos'
+                        ? 'bg-[#FF4C4C] text-black'
+                        : mode === 'chill'
+                        ? 'bg-[#FF4C4C] text-white'
+                        : 'bg-white text-black'
+                      : mode === 'chaos'
+                      ? 'bg-[#FF4C4C]/30 text-white/80 hover:bg-[#FF4C4C]/50 text-white'
                       : mode === 'chill'
-                      ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
-                      : 'bg-black/20 text-black/80 hover:bg-black/30'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                   }`}
-                  style={activeTab === 'news' ? { backgroundColor: redSystem.button } : {}}
                 >
                   <Newspaper className="w-4 h-4" />
                   <span className="font-black uppercase text-sm">News</span>

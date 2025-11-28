@@ -406,7 +406,9 @@ export default function WorkSamplesPage() {
                 className={`flex items-center gap-2 px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all ${
                   mode === 'chill'
                     ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
-                    : 'bg-white/30 text-black/80 hover:bg-white/50'
+                    : mode === 'chaos'
+                    ? 'bg-[#4A90E2]/30 text-white/80 hover:bg-[#4A90E2]/50 text-white'
+                    : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                 }`}
               >
                 <Home className="w-4 h-4" />

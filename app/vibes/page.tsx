@@ -39,19 +39,43 @@ export default function VibesPage() {
   const [selectedPoll, setSelectedPoll] = useState<any>(null)
   const [isPollDialogOpen, setIsPollDialogOpen] = useState(false)
 
-  // RED SYSTEM colors for vibes page
-  // Primary: Coral Red (#FF4C4C), Secondary: Crimson (#C41E3A), Lightest: Peach (#FFD4C4)
-  // Ocean Blue (#00A3E0) - buttons only
-  const getRedSystemColors = () => {
-    return {
-      primary: '#FF4C4C',    // Coral Red
-      secondary: '#C41E3A',  // Crimson
-      lightest: '#FFD4C4',  // Peach
-      button: '#00A3E0'     // Ocean Blue (buttons only)
+  // PURPLE SYSTEM colors for vibes page
+  // Primary: Bright Purple (#9D4EFF), Secondary: Deep Purple (#6B21A8), Complementary: Lavender (#C4B5FD), Contrast: Yellow (#FBBF24)
+  const getPurpleSystemColors = () => {
+    if (mode === 'chaos') {
+      return {
+        primary: '#9D4EFF',      // Bright Purple
+        secondary: '#6B21A8',   // Deep Purple
+        complementary: '#C4B5FD', // Lavender
+        contrast: '#FBBF24',    // Yellow
+        bg: '#1A1A1A',
+        text: '#FFFFFF',
+        cardBg: '#2A2A2A'
+      }
+    } else if (mode === 'chill') {
+      return {
+        primary: '#9D4EFF',      // Bright Purple
+        secondary: '#6B21A8',   // Deep Purple
+        complementary: '#C4B5FD', // Lavender
+        contrast: '#FBBF24',    // Yellow
+        bg: '#F5E6D3',
+        text: '#4A1818',
+        cardBg: '#FFFFFF'
+      }
+    } else {
+      return {
+        primary: '#FFFFFF',
+        secondary: '#808080',
+        complementary: '#666666',
+        contrast: '#FFFFFF',
+        bg: '#000000',
+        text: '#FFFFFF',
+        cardBg: '#1a1a1a'
+      }
     }
   }
 
-  const redSystem = getRedSystemColors()
+  const purpleColors = getPurpleSystemColors()
 
   // Get emoji for poll items
   const getPollItemEmoji = (itemName: string): string => {
@@ -240,20 +264,21 @@ export default function VibesPage() {
           <Card className={`w-80 flex-shrink-0 min-w-80 hidden lg:block ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit sticky top-24 self-start`}
             style={{
               backgroundColor: mode === 'chaos' 
-                ? 'rgba(255, 255, 255, 0.05)' 
+                ? purpleColors.secondary 
                 : mode === 'chill'
-                ? 'rgba(74, 24, 24, 0.05)'
-                : 'rgba(255, 255, 255, 0.05)',
-              border: mode === 'chaos' 
-                ? '1px solid rgba(255, 255, 255, 0.1)' 
+                ? 'white'
+                : '#1a1a1a',
+              borderColor: mode === 'chaos' 
+                ? purpleColors.primary 
                 : mode === 'chill'
-                ? '1px solid rgba(74, 24, 24, 0.1)'
-                : '1px solid rgba(255, 255, 255, 0.1)'
+                ? purpleColors.secondary
+                : '#FFFFFF',
+              borderWidth: mode === 'chaos' ? '2px' : '0px'
             }}
           >
             <div className="flex items-center gap-2 mb-6">
               <Archive className="w-5 h-5" style={{ 
-                color: redSystem.primary
+                color: mode === 'chaos' ? purpleColors.primary : mode === 'chill' ? purpleColors.secondary : '#FFFFFF'
               }} />
               <h3 className={`text-sm uppercase tracking-wider font-black ${getTextClass()}`}>
                 Archive
@@ -262,28 +287,26 @@ export default function VibesPage() {
             <div className="space-y-3">
               <Link
                 href="/vibes/playlist-archive"
-                className={`flex items-center gap-3 ${getRoundedClass('rounded-xl')} px-4 py-3 transition-all hover:opacity-70`}
-                style={{
-                  backgroundColor: mode === 'chaos' 
-                    ? 'rgba(255, 255, 255, 0.05)' 
+                className={`flex items-center gap-3 ${getRoundedClass('rounded-xl')} px-4 py-3 transition-all ${
+                  mode === 'chaos'
+                    ? 'bg-[#9D4EFF]/30 text-white/80 hover:bg-[#9D4EFF]/50 text-white'
                     : mode === 'chill'
-                    ? 'rgba(74, 24, 24, 0.05)'
-                    : 'rgba(255, 255, 255, 0.05)'
-                }}
+                    ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                    : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
+                }`}
               >
                 <Music className="w-4 h-4" />
                 <span className="text-sm font-semibold">Playlist Archive</span>
               </Link>
               <Link
                 href="/vibes/polls-archive"
-                className={`flex items-center gap-3 ${getRoundedClass('rounded-xl')} px-4 py-3 transition-all hover:opacity-70`}
-                style={{
-                  backgroundColor: mode === 'chaos' 
-                    ? 'rgba(255, 255, 255, 0.05)' 
+                className={`flex items-center gap-3 ${getRoundedClass('rounded-xl')} px-4 py-3 transition-all ${
+                  mode === 'chaos'
+                    ? 'bg-[#9D4EFF]/30 text-white/80 hover:bg-[#9D4EFF]/50 text-white'
                     : mode === 'chill'
-                    ? 'rgba(74, 24, 24, 0.05)'
-                    : 'rgba(255, 255, 255, 0.05)'
-                }}
+                    ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                    : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
+                }`}
               >
                 <MessageCircle className="w-4 h-4" />
                 <span className="text-sm font-semibold">Polls Archive</span>
@@ -307,10 +330,10 @@ export default function VibesPage() {
           {/* Most Recent Playlist */}
           {(() => {
             const playlistStyle = mode === 'chaos' 
-              ? { text: 'text-white', accent: redSystem.primary }
+              ? { text: 'text-white', accent: purpleColors.primary }
               : mode === 'chill'
-              ? { text: getTextClass(), accent: redSystem.lightest }
-              : { text: getTextClass(), accent: redSystem.primary }
+              ? { text: getTextClass(), accent: purpleColors.complementary }
+              : { text: getTextClass(), accent: purpleColors.primary }
             return (
               <Card className={`bg-transparent border-0 p-6 ${getRoundedClass('rounded-[2.5rem]')} h-full flex flex-col`}>
                 <div className="flex items-center gap-2 text-sm mb-3" style={{ color: playlistStyle.accent }}>
@@ -358,7 +381,7 @@ export default function VibesPage() {
             }}
           >
             <div className="flex items-center gap-3 mb-4">
-              <BarChart3 className="w-6 h-6" style={{ color: redSystem.primary }} />
+              <BarChart3 className="w-6 h-6" style={{ color: purpleColors.primary }} />
               <h2 className={`text-2xl font-black uppercase ${getTextClass()}`}>Latest Poll</h2>
                   </div>
             <h3 className={`text-xl font-black mb-3 ${getTextClass()}`}>Thanksgiving Grub</h3>
@@ -428,7 +451,7 @@ export default function VibesPage() {
                               <span className={`text-sm font-semibold ${getTextClass()}`}>{item.name}</span>
                               <span 
                                 className={`text-sm font-black ${getTextClass()}`}
-                                style={{ color: isTop ? redSystem.primary : undefined }}
+                                style={{ color: isTop ? purpleColors.primary : undefined }}
                               >
                                 {item.count}
                               </span>
@@ -448,8 +471,8 @@ export default function VibesPage() {
                                 style={{
                                   width: `${percentage}%`,
                                   backgroundColor: isTop 
-                                    ? redSystem.primary
-                                    : (mode === 'chaos' ? 'rgba(255, 76, 76, 0.4)' : mode === 'chill' ? 'rgba(255, 76, 76, 0.4)' : 'rgba(255, 76, 76, 0.4)')
+                                    ? purpleColors.primary
+                                    : (mode === 'chaos' ? 'rgba(157, 78, 255, 0.4)' : mode === 'chill' ? 'rgba(157, 78, 255, 0.4)' : 'rgba(157, 78, 255, 0.4)')
                                 }}
                               />
                             </div>
@@ -496,7 +519,7 @@ export default function VibesPage() {
                 : mode === 'chill'
                 ? '#F5E6D3'
                 : '#000000',
-              border: `2px solid ${redSystem.primary}40`
+              border: `2px solid ${purpleColors.primary}40`
             }}
           >
             {selectedPoll && (
@@ -531,7 +554,7 @@ export default function VibesPage() {
                                 <div className="flex items-center gap-3">
                                   <span 
                                     className={`text-lg font-black ${getTextClass()}`}
-                                    style={{ color: isTopVoted ? redSystem.primary : undefined, minWidth: '2rem' }}
+                                    style={{ color: isTopVoted ? purpleColors.primary : undefined, minWidth: '2rem' }}
                                   >
                                     {item.rank}.
                                   </span>
@@ -563,8 +586,8 @@ export default function VibesPage() {
                                   style={{
                                     width: `${percentage}%`,
                                     backgroundColor: isTopVoted 
-                                      ? redSystem.primary
-                                      : 'rgba(255, 76, 76, 0.4)'
+                                      ? purpleColors.primary
+                                      : 'rgba(157, 78, 255, 0.4)'
                                   }}
                                 />
                               </div>
@@ -620,7 +643,7 @@ export default function VibesPage() {
                                       <div className="flex items-center gap-3">
                                         <span 
                                           className={`text-base font-black ${getTextClass()}`}
-                                          style={{ color: isTop ? redSystem.primary : undefined }}
+                                          style={{ color: isTop ? purpleColors.primary : undefined }}
                                         >
                                           {item.count}
                                         </span>
@@ -648,8 +671,8 @@ export default function VibesPage() {
                                         style={{
                                           width: `${percentage}%`,
                                           backgroundColor: isTop 
-                                            ? redSystem.primary
-                                            : 'rgba(255, 76, 76, 0.4)'
+                                            ? purpleColors.primary
+                                            : 'rgba(157, 78, 255, 0.4)'
                                         }}
                                       />
                                     </div>
@@ -706,16 +729,16 @@ export default function VibesPage() {
                               <div className={`${getRoundedClass('rounded-2xl')} p-4 text-center`}
                                 style={{
                                   backgroundColor: mode === 'chaos' 
-                                    ? 'rgba(255, 76, 76, 0.1)' 
+                                    ? 'rgba(157, 78, 255, 0.1)' 
                                     : mode === 'chill'
-                                    ? 'rgba(255, 76, 76, 0.15)'
-                                    : 'rgba(255, 76, 76, 0.1)',
-                                  border: `1px solid ${redSystem.primary}40`
+                                    ? 'rgba(157, 78, 255, 0.15)'
+                                    : 'rgba(157, 78, 255, 0.1)',
+                                  border: `1px solid ${purpleColors.primary}40`
                                 }}
                               >
-                                <Lock className="w-6 h-6 mx-auto mb-2" style={{ color: redSystem.primary }} />
+                                <Lock className="w-6 h-6 mx-auto mb-2" style={{ color: purpleColors.primary }} />
                                 <p className={`text-xs uppercase tracking-wider ${getTextClass()} opacity-70 mb-1`}>Secrets</p>
-                                <p className={`text-2xl font-black ${getTextClass()}`} style={{ color: redSystem.primary }}>
+                                <p className={`text-2xl font-black ${getTextClass()}`} style={{ color: purpleColors.primary }}>
                                   {maxSecrets}
                                 </p>
                                 <p className={`text-xs ${getTextClass()} opacity-60`}>per season (max)</p>
@@ -723,16 +746,16 @@ export default function VibesPage() {
                               <div className={`${getRoundedClass('rounded-2xl')} p-4 text-center`}
                                 style={{
                                   backgroundColor: mode === 'chaos' 
-                                    ? 'rgba(255, 76, 76, 0.1)' 
+                                    ? 'rgba(157, 78, 255, 0.1)' 
                                     : mode === 'chill'
-                                    ? 'rgba(255, 76, 76, 0.15)'
-                                    : 'rgba(255, 76, 76, 0.1)',
-                                  border: `1px solid ${redSystem.primary}40`
+                                    ? 'rgba(157, 78, 255, 0.15)'
+                                    : 'rgba(157, 78, 255, 0.1)',
+                                  border: `1px solid ${purpleColors.primary}40`
                                 }}
                               >
                                 <span className="text-4xl mb-2 block">😱</span>
                                 <p className={`text-xs uppercase tracking-wider ${getTextClass()} opacity-70 mb-1`}>Gasps</p>
-                                <p className={`text-2xl font-black ${getTextClass()}`} style={{ color: redSystem.primary }}>
+                                <p className={`text-2xl font-black ${getTextClass()}`} style={{ color: purpleColors.primary }}>
                                   {maxGasps.toFixed(2)}
                                 </p>
                                 <p className={`text-xs ${getTextClass()} opacity-60`}>per minute (max)</p>
@@ -740,16 +763,16 @@ export default function VibesPage() {
                               <div className={`${getRoundedClass('rounded-2xl')} p-4 text-center`}
                                 style={{
                                   backgroundColor: mode === 'chaos' 
-                                    ? 'rgba(255, 76, 76, 0.1)' 
+                                    ? 'rgba(157, 78, 255, 0.1)' 
                                     : mode === 'chill'
-                                    ? 'rgba(255, 76, 76, 0.15)'
-                                    : 'rgba(255, 76, 76, 0.1)',
-                                  border: `1px solid ${redSystem.primary}40`
+                                    ? 'rgba(157, 78, 255, 0.15)'
+                                    : 'rgba(157, 78, 255, 0.1)',
+                                  border: `1px solid ${purpleColors.primary}40`
                                 }}
                               >
-                                <TrendingUp className="w-6 h-6 mx-auto mb-2" style={{ color: redSystem.primary }} />
+                                <TrendingUp className="w-6 h-6 mx-auto mb-2" style={{ color: purpleColors.primary }} />
                                 <p className={`text-xs uppercase tracking-wider ${getTextClass()} opacity-70 mb-1`}>Change</p>
-                                <p className={`text-2xl font-black ${getTextClass()}`} style={{ color: redSystem.primary }}>
+                                <p className={`text-2xl font-black ${getTextClass()}`} style={{ color: purpleColors.primary }}>
                                   81%
                                 </p>
                                 <p className={`text-xs ${getTextClass()} opacity-60`}>that change nothing (max)</p>
@@ -774,12 +797,12 @@ export default function VibesPage() {
                                         : mode === 'chill'
                                         ? 'rgba(74, 24, 24, 0.05)'
                                         : 'rgba(255, 255, 255, 0.05)',
-                                      border: `2px solid ${isTopSecrets || isTopGasps ? redSystem.primary : 'rgba(255, 76, 76, 0.2)'}`
+                                      border: `2px solid ${isTopSecrets || isTopGasps ? purpleColors.primary : 'rgba(157, 78, 255, 0.2)'}`
                                     }}
                                   >
                                     {/* Show Name */}
                                     <h4 className={`text-xl font-black mb-4 ${getTextClass()}`} style={{ 
-                                      color: (isTopSecrets || isTopGasps) ? redSystem.primary : undefined 
+                                      color: (isTopSecrets || isTopGasps) ? purpleColors.primary : undefined 
                                     }}>
                                       {show.name}
                                     </h4>
@@ -788,11 +811,11 @@ export default function VibesPage() {
                                     <div className="mb-4">
                                       <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2">
-                                          <Lock className="w-4 h-4" style={{ color: redSystem.primary }} />
+                                          <Lock className="w-4 h-4" style={{ color: purpleColors.primary }} />
                                           <span className={`text-sm font-semibold ${getTextClass()}`}>Secrets per season</span>
                                         </div>
                                         <span className={`text-lg font-black ${getTextClass()}`} style={{ 
-                                          color: isTopSecrets ? redSystem.primary : undefined 
+                                          color: isTopSecrets ? purpleColors.primary : undefined 
                                         }}>
                                           {show.secretsPerSeason}
                                         </span>
@@ -812,8 +835,8 @@ export default function VibesPage() {
                                           style={{
                                             width: `${secretsPercentage}%`,
                                             backgroundColor: isTopSecrets 
-                                              ? redSystem.primary
-                                              : 'rgba(255, 76, 76, 0.5)'
+                                              ? purpleColors.primary
+                                              : 'rgba(157, 78, 255, 0.5)'
                                           }}
                                         />
                                         {/* Visual lock icons */}
@@ -823,7 +846,7 @@ export default function VibesPage() {
                                               key={i} 
                                               className="w-2 h-2" 
                                               style={{ 
-                                                color: i < secretsPercentage / 10 ? redSystem.primary : 'rgba(255, 76, 76, 0.3)',
+                                                color: i < secretsPercentage / 10 ? purpleColors.primary : 'rgba(157, 78, 255, 0.3)',
                                                 marginLeft: i > 0 ? '2px' : '0'
                                               }} 
                                             />
@@ -840,7 +863,7 @@ export default function VibesPage() {
                                           <span className={`text-sm font-semibold ${getTextClass()}`}>Gasps per minute</span>
                                         </div>
                                         <span className={`text-lg font-black ${getTextClass()}`} style={{ 
-                                          color: isTopGasps ? redSystem.primary : undefined 
+                                          color: isTopGasps ? purpleColors.primary : undefined 
                                         }}>
                                           {show.gaspsPerMinute.toFixed(2)}
                                         </span>
@@ -860,8 +883,8 @@ export default function VibesPage() {
                                           style={{
                                             width: `${gaspsPercentage}%`,
                                             backgroundColor: isTopGasps 
-                                              ? redSystem.primary
-                                              : 'rgba(255, 76, 76, 0.5)'
+                                              ? purpleColors.primary
+                                              : 'rgba(157, 78, 255, 0.5)'
                                           }}
                                         />
                                         {/* Visual gasp indicators */}
@@ -885,14 +908,14 @@ export default function VibesPage() {
                                     {/* Percent That Change Nothing - Circular Style */}
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-2">
-                                        <Zap className="w-4 h-4" style={{ color: redSystem.secondary }} />
+                                        <Zap className="w-4 h-4" style={{ color: purpleColors.secondary }} />
                                         <span className={`text-sm font-semibold ${getTextClass()}`}>Change nothing</span>
                                       </div>
                                       <div className="flex items-center gap-2">
                                         <div 
                                           className="relative w-12 h-12"
                                           style={{
-                                            background: `conic-gradient(${redSystem.primary} ${show.percentChangeNothing * 3.6}deg, rgba(255, 76, 76, 0.2) ${show.percentChangeNothing * 3.6}deg)`,
+                                            background: `conic-gradient(${purpleColors.primary} ${show.percentChangeNothing * 3.6}deg, rgba(157, 78, 255, 0.2) ${show.percentChangeNothing * 3.6}deg)`,
                                             borderRadius: '50%',
                                             display: 'flex',
                                             alignItems: 'center',
@@ -910,7 +933,7 @@ export default function VibesPage() {
                                             }}
                                           >
                                             <div className="h-full flex items-center justify-center">
-                                              <span className={`text-xs font-black ${getTextClass()}`} style={{ color: redSystem.primary }}>
+                                              <span className={`text-xs font-black ${getTextClass()}`} style={{ color: purpleColors.primary }}>
                                                 {show.percentChangeNothing}%
                                               </span>
                                             </div>
@@ -955,7 +978,7 @@ export default function VibesPage() {
                                   </div>
                                   <span 
                                     className={`text-base font-black ${getTextClass()}`}
-                                    style={{ color: isTop ? redSystem.primary : undefined }}
+                                    style={{ color: isTop ? purpleColors.primary : undefined }}
                                   >
                                     ({song.count})
                                   </span>
@@ -975,8 +998,8 @@ export default function VibesPage() {
                                     style={{
                                       width: `${percentage}%`,
                                       backgroundColor: isTop 
-                                        ? redSystem.primary
-                                        : 'rgba(255, 76, 76, 0.4)'
+                                        ? purpleColors.primary
+                                        : 'rgba(157, 78, 255, 0.4)'
                                     }}
                                   />
                                 </div>
@@ -1023,7 +1046,7 @@ export default function VibesPage() {
 
                       {/* Butt Rock Perfect Storm Index */}
                       <div className="pt-8 border-t" style={{ borderColor: mode === 'chaos' ? 'rgba(255, 255, 255, 0.1)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.1)' }}>
-                        <h4 className={`text-3xl font-black mb-6 ${getTextClass()}`} style={{ color: redSystem.primary }}>
+                        <h4 className={`text-3xl font-black mb-6 ${getTextClass()}`} style={{ color: purpleColors.primary }}>
                           Butt Rock Perfect Storm Index
                         </h4>
                         
@@ -1036,11 +1059,11 @@ export default function VibesPage() {
                           <div className={`${getRoundedClass('rounded-2xl')} p-6 text-center`}
                             style={{
                               backgroundColor: mode === 'chaos' 
-                                ? 'rgba(255, 76, 76, 0.1)' 
+                                ? 'rgba(157, 78, 255, 0.1)' 
                                 : mode === 'chill'
-                                ? 'rgba(255, 76, 76, 0.15)'
-                                : 'rgba(255, 76, 76, 0.1)',
-                              border: `2px solid ${redSystem.primary}40`
+                                ? 'rgba(157, 78, 255, 0.15)'
+                                : 'rgba(157, 78, 255, 0.1)',
+                              border: `2px solid ${purpleColors.primary}40`
                             }}
                           >
                             <span className="text-4xl mb-3 block">🎤</span>
@@ -1051,11 +1074,11 @@ export default function VibesPage() {
                           <div className={`${getRoundedClass('rounded-2xl')} p-6 text-center`}
                             style={{
                               backgroundColor: mode === 'chaos' 
-                                ? 'rgba(255, 76, 76, 0.1)' 
+                                ? 'rgba(157, 78, 255, 0.1)' 
                                 : mode === 'chill'
-                                ? 'rgba(255, 76, 76, 0.15)'
-                                : 'rgba(255, 76, 76, 0.1)',
-                              border: `2px solid ${redSystem.primary}40`
+                                ? 'rgba(157, 78, 255, 0.15)'
+                                : 'rgba(157, 78, 255, 0.1)',
+                              border: `2px solid ${purpleColors.primary}40`
                             }}
                           >
                             <span className="text-4xl mb-3 block">💭</span>
@@ -1066,11 +1089,11 @@ export default function VibesPage() {
                           <div className={`${getRoundedClass('rounded-2xl')} p-6 text-center`}
                             style={{
                               backgroundColor: mode === 'chaos' 
-                                ? 'rgba(255, 76, 76, 0.1)' 
+                                ? 'rgba(157, 78, 255, 0.1)' 
                                 : mode === 'chill'
-                                ? 'rgba(255, 76, 76, 0.15)'
-                                : 'rgba(255, 76, 76, 0.1)',
-                              border: `2px solid ${redSystem.primary}40`
+                                ? 'rgba(157, 78, 255, 0.15)'
+                                : 'rgba(157, 78, 255, 0.1)',
+                              border: `2px solid ${purpleColors.primary}40`
                             }}
                           >
                             <span className="text-4xl mb-3 block">🏭</span>
@@ -1089,18 +1112,18 @@ export default function VibesPage() {
                           <div className={`${getRoundedClass('rounded-2xl')} p-6`}
                             style={{
                               backgroundColor: mode === 'chaos' 
-                                ? 'rgba(255, 76, 76, 0.15)' 
+                                ? 'rgba(157, 78, 255, 0.15)' 
                                 : mode === 'chill'
-                                ? 'rgba(255, 76, 76, 0.2)'
-                                : 'rgba(255, 76, 76, 0.15)',
-                              border: `2px solid ${redSystem.primary}`
+                                ? 'rgba(157, 78, 255, 0.2)'
+                                : 'rgba(157, 78, 255, 0.15)',
+                              border: `2px solid ${purpleColors.primary}`
                             }}
                           >
                             <div className="flex items-center justify-center mb-4">
                               <div 
                                 className="relative w-24 h-24"
                                 style={{
-                                  background: `conic-gradient(${redSystem.primary} 360deg, rgba(255, 76, 76, 0.2) 360deg)`,
+                                  background: `conic-gradient(${purpleColors.primary} 360deg, rgba(157, 78, 255, 0.2) 360deg)`,
                                   borderRadius: '50%',
                                   display: 'flex',
                                   alignItems: 'center',
@@ -1118,7 +1141,7 @@ export default function VibesPage() {
                                   }}
                                 >
                                   <div className="h-full flex items-center justify-center">
-                                    <span className={`text-3xl font-black ${getTextClass()}`} style={{ color: redSystem.primary }}>
+                                    <span className={`text-3xl font-black ${getTextClass()}`} style={{ color: purpleColors.primary }}>
                                       100%
                                     </span>
                                   </div>
@@ -1133,18 +1156,18 @@ export default function VibesPage() {
                           <div className={`${getRoundedClass('rounded-2xl')} p-6`}
                             style={{
                               backgroundColor: mode === 'chaos' 
-                                ? 'rgba(255, 76, 76, 0.15)' 
+                                ? 'rgba(157, 78, 255, 0.15)' 
                                 : mode === 'chill'
-                                ? 'rgba(255, 76, 76, 0.2)'
-                                : 'rgba(255, 76, 76, 0.15)',
-                              border: `2px solid ${redSystem.primary}`
+                                ? 'rgba(157, 78, 255, 0.2)'
+                                : 'rgba(157, 78, 255, 0.15)',
+                              border: `2px solid ${purpleColors.primary}`
                             }}
                           >
                             <div className="flex items-center justify-center mb-4">
                               <div 
                                 className="relative w-24 h-24"
                                 style={{
-                                  background: `conic-gradient(${redSystem.primary} ${71 * 3.6}deg, rgba(255, 76, 76, 0.2) ${71 * 3.6}deg)`,
+                                  background: `conic-gradient(${purpleColors.primary} ${71 * 3.6}deg, rgba(157, 78, 255, 0.2) ${71 * 3.6}deg)`,
                                   borderRadius: '50%',
                                   display: 'flex',
                                   alignItems: 'center',
@@ -1162,7 +1185,7 @@ export default function VibesPage() {
                                   }}
                                 >
                                   <div className="h-full flex items-center justify-center">
-                                    <span className={`text-3xl font-black ${getTextClass()}`} style={{ color: redSystem.primary }}>
+                                    <span className={`text-3xl font-black ${getTextClass()}`} style={{ color: purpleColors.primary }}>
                                       71%
                                     </span>
                                   </div>
@@ -1183,14 +1206,14 @@ export default function VibesPage() {
                               : mode === 'chill'
                               ? 'rgba(74, 24, 24, 0.05)'
                               : 'rgba(255, 255, 255, 0.05)',
-                            border: `2px solid ${redSystem.secondary}60`
+                            border: `2px solid ${purpleColors.secondary}60`
                           }}
                         >
                           <div className="flex items-start gap-4">
                             <span className="text-4xl">✨</span>
                             <div className="flex-1">
                               <p className={`text-base font-black ${getTextClass()} mb-2`}>
-                                The only outlier is <span style={{ color: redSystem.secondary }}>Butterfly by Crazy Town</span>
+                                The only outlier is <span style={{ color: purpleColors.secondary }}>Butterfly by Crazy Town</span>
                               </p>
                               <p className={`text-sm ${getTextClass()} opacity-70 italic`}>
                                 which swaps "warehouse angst" for "shirtless fairy energy."

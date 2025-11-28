@@ -274,7 +274,7 @@ export default function ResourcesPage() {
         )}
         <div className="flex gap-6 w-full">
           {/* Left Sidebar Card */}
-          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit sticky top-24 self-start`} style={{ 
+          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#8B4513]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit sticky top-24 self-start`} style={{ 
             borderColor: mode === 'chaos' ? orangeColors.primary : mode === 'chill' ? orangeColors.primaryPair : '#FFFFFF',
             borderWidth: mode === 'chaos' ? '2px' : '0px'
           }}>
