@@ -123,7 +123,19 @@ export function OrgChartVisual({
     const nodesByLevel = new Map<number, OrgChartNode[]>()
     nodeMap.forEach(node => {
       // Use role-based hierarchy level for positioning, not database hierarchy_level
-      const hierarchyLevel = getHierarchyLevelFromTitle(node.profile.role) || 0
+      const role = node.profile.role || ''
+      let hierarchyLevel = getHierarchyLevelFromTitle(role)
+      
+      // If we couldn't determine from title, try to infer from the node's position in tree
+      // But prioritize role-based levels
+      if (hierarchyLevel === 0 && role) {
+        // Couldn't parse from title, but we have a role - default to a middle level
+        hierarchyLevel = 4 // Default to mid-level if we can't determine
+      } else if (hierarchyLevel === 0) {
+        // No role at all - use tree level as fallback
+        hierarchyLevel = node.level || 0
+      }
+      
       if (!nodesByLevel.has(hierarchyLevel)) {
         nodesByLevel.set(hierarchyLevel, [])
       }
@@ -132,6 +144,13 @@ export function OrgChartVisual({
     
     // Get sorted hierarchy levels (highest first, so most senior at top)
     const sortedLevels = Array.from(nodesByLevel.keys()).sort((a, b) => b - a)
+    
+    // Debug: Log hierarchy levels being used
+    console.log('Hierarchy levels found:', sortedLevels)
+    sortedLevels.forEach(level => {
+      const nodesAtLevel = nodesByLevel.get(level) || []
+      console.log(`Level ${level}: ${nodesAtLevel.length} nodes - ${nodesAtLevel.map(n => `${n.profile.full_name} (${n.profile.role})`).join(', ')}`)
+    })
     
     // Calculate Y positions based on hierarchy level
     const levelYPositions = new Map<number, number>()
@@ -200,8 +219,9 @@ export function OrgChartVisual({
     // Create positions array with Y based on role-based hierarchy level and X from tree structure
     nodeMap.forEach(node => {
       // Use role-based hierarchy level for positioning, not database hierarchy_level
-      const hierarchyLevel = getHierarchyLevelFromTitle(node.profile.role) || 0
-      const yPos = levelYPositions.get(hierarchyLevel) || startY
+      const role = node.profile.role || ''
+      const hierarchyLevel = getHierarchyLevelFromTitle(role) || 0
+      const yPos = levelYPositions.get(hierarchyLevel) ?? startY
       const xPos = nodeXPositions.get(node.id) || startX
       
       positions.push({

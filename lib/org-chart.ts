@@ -33,6 +33,10 @@ export function getHierarchyLevelFromTitle(role: string | null | undefined): num
   
   // Check most specific titles first to avoid false matches
   
+  // Co-Head (highest) - handle various formats
+  if (roleLower.includes('co-head') || roleLower.includes('cohead') || 
+      roleLower.includes('co head') || roleLower === 'co-head' || roleLower === 'co head') return 10
+  
   // Head of Department (highest)
   if (roleLower.includes('head of department') || roleLower.includes('head of dept')) return 10
   if (roleLower.includes('department head') || roleLower.includes('dept head')) return 10
