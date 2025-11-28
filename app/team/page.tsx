@@ -376,11 +376,44 @@ export default function TeamPage() {
         .select(`
           *,
           user:profiles!beast_babe_history_user_id_fkey(id, full_name, email, avatar_url),
-          passed_by:profiles!beast_babe_history_passed_by_id_fkey(id, full_name, email, avatar_url)
+          passed_by:profiles!beast_babe_history_passed_by_user_id_fkey(id, full_name, email, avatar_url)
         `)
         .order('date', { ascending: false })
       
-      if (!error && history) {
+      if (error) {
+        console.error('Error fetching beast babe history:', error)
+        // Try fallback query without foreign key names
+        const { data: historyAlt, error: errorAlt } = await supabase
+          .from('beast_babe_history')
+          .select('*')
+          .order('date', { ascending: false })
+        
+        if (!errorAlt && historyAlt) {
+          // Manually fetch user profiles
+          const userIds = [...new Set(historyAlt.map((h: any) => h.user_id).filter(Boolean))]
+          const passedByIds = [...new Set(historyAlt.map((h: any) => h.passed_by_user_id).filter(Boolean))]
+          const allIds = [...new Set([...userIds, ...passedByIds])]
+          
+          if (allIds.length > 0) {
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('id, full_name, email, avatar_url')
+              .in('id', allIds)
+            
+            const profileMap = new Map(profiles?.map((p: any) => [p.id, p]) || [])
+            
+            const enrichedHistory = historyAlt.map((entry: any) => ({
+              ...entry,
+              user: profileMap.get(entry.user_id) || null,
+              passed_by: entry.passed_by_user_id ? profileMap.get(entry.passed_by_user_id) || null : null
+            }))
+            
+            setBeastBabeHistory(enrichedHistory)
+          } else {
+            setBeastBabeHistory(historyAlt)
+          }
+        }
+      } else if (history) {
         setBeastBabeHistory(history)
       }
     } catch (error) {
