@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info, ExternalLink, User, ChevronDown, ChevronUp, Plus, Check, RefreshCw, PartyPopper, Briefcase, Hand } from 'lucide-react'
+import { Search, Calendar, Music, FileText, MessageSquare, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info, ExternalLink, User, ChevronDown, ChevronUp, Plus, Check, RefreshCw, PartyPopper, Briefcase, Hand } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -223,8 +223,8 @@ export default function TeamDashboard() {
     created_at: string
   }>>([])
   
-  // Get Google Calendar access token using the user's existing Google session
-  const { accessToken: googleCalendarToken, loading: tokenLoading, error: tokenError, refreshToken: refreshCalendarToken } = useGoogleCalendarToken()
+  // Get Google Calendar access token using refresh tokens
+  const { accessToken: googleCalendarToken, loading: tokenLoading, error: tokenError, refreshToken: refreshCalendarToken, needsAuth, initiateAuth } = useGoogleCalendarToken()
 
   // Rotate loading messages while loading
   useEffect(() => {
@@ -262,10 +262,38 @@ export default function TeamDashboard() {
   // We're not using dynamic calendars to avoid personal calendars
   const [useDynamicCalendars, setUseDynamicCalendars] = useState(false)
 
-  // Check if we just authenticated to avoid double Google popup
+  // Handle OAuth callback redirects
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
+      const calendarAuth = params.get('calendar_auth')
+      
+      if (calendarAuth === 'success') {
+        // Successfully authenticated, clear URL params and trigger token refresh
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete('calendar_auth')
+        newUrl.searchParams.delete('error')
+        window.history.replaceState({}, '', newUrl.toString())
+        
+        // Trigger token refresh to get the new access token
+        if (refreshCalendarToken) {
+          setTimeout(() => {
+            refreshCalendarToken()
+          }, 1000)
+        }
+      } else if (calendarAuth === 'error') {
+        // Authentication failed, show error message
+        const error = params.get('error') || 'Failed to authenticate with Google Calendar'
+        console.error('Calendar authentication error:', error)
+        
+        // Clear URL params
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete('calendar_auth')
+        newUrl.searchParams.delete('error')
+        window.history.replaceState({}, '', newUrl.toString())
+      }
+      
+      // Legacy: Check if we just authenticated to avoid double Google popup
       if (params.get('just_authenticated') === 'true') {
         // Set flag in sessionStorage so useGoogleCalendarToken can detect it
         sessionStorage.setItem('just_authenticated', 'true')
@@ -276,7 +304,7 @@ export default function TeamDashboard() {
         window.history.replaceState({}, '', newUrl.toString())
       }
     }
-  }, [])
+  }, [refreshCalendarToken])
 
   // Format today's date in user's timezone
   useEffect(() => {
@@ -861,9 +889,11 @@ export default function TeamDashboard() {
           
           if (response.status === 401 || response.status === 403) {
             console.error('🔐 Authentication issue - token may be invalid or missing calendar scopes')
-            // Don't automatically refresh on calendars list 401 - let the calendar events endpoint handle it
-            // This prevents duplicate refresh triggers
-            if (response.status === 401) {
+            // Check if token expired and needs refresh
+            if (response.status === 401 && errorData.tokenExpired) {
+              console.log('ℹ️  401 error in calendars list - token expired, will refresh')
+              // Token refresh will be handled by the hook or calendar events endpoint
+            } else if (response.status === 401) {
               console.log('ℹ️  401 error in calendars list - calendar events endpoint will handle token refresh if needed')
             } else {
               console.error('💡 Try re-authenticating with Google and granting calendar permissions')
@@ -2123,7 +2153,7 @@ export default function TeamDashboard() {
                             : '#FFFFFF'
                         }}
                       >
-                        {mode === 'code' ? '[DECKTALK]' : 'DeckTalk'} {mode !== 'code' && <MessageCircle className="w-3 h-3" />}
+                        {mode === 'code' ? '[DECKTALK]' : 'DeckTalk'} {mode !== 'code' && <MessageSquare className="w-3 h-3 ml-2" />}
                       </button>
                     </div>
                   </div>
@@ -3123,22 +3153,12 @@ export default function TeamDashboard() {
                             )}
                           </div>
                         )}
-                        {!googleCalendarToken && !tokenLoading && (
+                        {(!googleCalendarToken && !tokenLoading) || needsAuth ? (
                           <div className={`${getRoundedClass('rounded-lg')} p-2 mt-2`} style={{ backgroundColor: `${mintColor}22` }}>
-                            <p className="font-semibold mb-1">No Google Calendar Access</p>
+                            <p className="font-semibold mb-1">Google Calendar Access Required</p>
                             {tokenError ? (
                               <>
                                 <p className="text-[10px] mb-2 text-red-400">{tokenError}</p>
-                                {tokenError.includes('popup') && (
-                                  <div className="text-[10px] space-y-1">
-                                    <p className="font-semibold">To fix popup blocking:</p>
-                                    <ol className="list-decimal list-inside ml-2 space-y-1">
-                                      <li>Check your browser's popup blocker settings</li>
-                                      <li>Allow popups for this site</li>
-                                      <li>Refresh the page</li>
-                                    </ol>
-                                  </div>
-                                )}
                                 {tokenError.includes('NEXT_PUBLIC_GOOGLE_CLIENT_ID') && (
                                   <p className="text-[10px] mt-2 font-semibold text-yellow-400">
                                     ⚠️ Add NEXT_PUBLIC_GOOGLE_CLIENT_ID to your .env.local file and restart the dev server.
@@ -3146,13 +3166,22 @@ export default function TeamDashboard() {
                                 )}
                               </>
                             ) : (
-                              <p className="text-[10px]">The app needs permission to access your Google Calendar. A consent dialog should appear, or refresh the page.</p>
+                              <p className="text-[10px] mb-2">The app needs permission to access your Google Calendar to show your events.</p>
+                            )}
+                            {initiateAuth && (
+                              <Button
+                                onClick={initiateAuth}
+                                className="mt-2 text-xs h-7 px-3"
+                                size="sm"
+                              >
+                                Connect Google Calendar
+                              </Button>
                             )}
                           </div>
                         )}
-                        {tokenLoading && (
+                        {tokenLoading && !needsAuth && (
                           <div className={`${getRoundedClass('rounded-lg')} p-2 mt-2`} style={{ backgroundColor: `${mintColor}22` }}>
-                            <p className="text-[10px]">⏳ Requesting Google Calendar access... Check for a popup window.</p>
+                            <p className="text-[10px]">⏳ Loading Google Calendar access...</p>
                           </div>
                         )}
                         {/* Debug info */}
