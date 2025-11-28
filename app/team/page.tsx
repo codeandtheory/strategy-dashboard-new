@@ -24,7 +24,10 @@ import {
   Calendar as CalendarIcon,
   Crown,
   Music,
-  ExternalLink
+  ExternalLink,
+  Search,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import Link from 'next/link'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -51,6 +54,8 @@ export default function TeamPage() {
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [currentCurator, setCurrentCurator] = useState<{ curator: string; curator_photo_url: string | null; spotify_url: string | null; id: string } | null>(null)
+  const [directorySearch, setDirectorySearch] = useState('')
+  const [isDirectoryCollapsed, setIsDirectoryCollapsed] = useState(true)
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -641,16 +646,16 @@ export default function TeamPage() {
               </Card>
             </div>
 
-            {/* Beast Babe and Snap Leaderboard - Side by Side (1/2 each) */}
+            {/* Beast Babe and Snap Leaderboard - Side by Side (1/3 and 2/3) */}
             {(activeFilter === 'all' || activeFilter === 'anniversaries' || activeFilter === 'birthdays' || activeFilter === 'leaderboard') && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                {/* Beast Babe - 1/2 width */}
-                <div className="w-full">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                {/* Beast Babe - 1/3 width */}
+                <div className="w-full md:col-span-1">
                   <BeastBabeCard />
                 </div>
                 
-                {/* Snap Leaderboard - 1/2 width, same height as Beast Babe */}
-                <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-6 min-h-[600px] flex flex-col`} style={{
+                {/* Snap Leaderboard - 2/3 width, same height as Beast Babe */}
+                <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-6 min-h-[600px] flex flex-col md:col-span-2`} style={{
                   borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
                   borderWidth: '1px'
                 }}>
@@ -859,46 +864,108 @@ export default function TeamPage() {
                   borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
                   borderWidth: '1px'
                 }}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.contrast }}>
-                      <Users className="w-5 h-5 text-white" />
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.contrast }}>
+                        <Users className="w-5 h-5 text-white" />
+                      </div>
+                      <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Team Directory</h2>
                     </div>
-                    <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Team Directory</h2>
+                    <button
+                      onClick={() => setIsDirectoryCollapsed(!isDirectoryCollapsed)}
+                      className={`p-2 ${getRoundedClass('rounded-lg')} transition-colors ${
+                        mode === 'chaos'
+                          ? 'hover:bg-[#00C896]/20'
+                          : mode === 'chill'
+                          ? 'hover:bg-[#1A5D52]/10'
+                          : 'hover:bg-white/10'
+                      }`}
+                    >
+                      {isDirectoryCollapsed ? (
+                        <ChevronDown className={`w-5 h-5 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`} />
+                      ) : (
+                        <ChevronUp className={`w-5 h-5 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`} />
+                      )}
+                    </button>
                   </div>
-                  {allProfiles.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {allProfiles.map((profile) => (
-                        <button
-                          key={profile.id}
-                          onClick={() => handleProfileClick(profile.id)}
-                          className={`p-3 ${getRoundedClass('rounded-xl')} border hover:opacity-80 transition-opacity text-left w-full ${mode === 'chaos' ? 'bg-[#00C896]/10 border-[#00C896]/30' : mode === 'chill' ? 'bg-white/50 border-[#C8D961]/30' : 'bg-black/40 border-white/20'}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            {profile.avatar_url ? (
-                              <img
-                                src={profile.avatar_url}
-                                alt={profile.full_name || 'User'}
-                                className="w-10 h-10 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
-                                <Users className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className={`font-semibold text-sm ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
-                                {profile.full_name || profile.email || 'Unknown'}
-                              </p>
-                              {profile.role && (
-                                <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} truncate`}>{profile.role}</p>
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      ))}
+                  
+                  {/* Search Bar */}
+                  <div className="mb-4">
+                    <div className="relative">
+                      <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'}`} />
+                      <input
+                        type="text"
+                        placeholder="Search team members..."
+                        value={directorySearch}
+                        onChange={(e) => setDirectorySearch(e.target.value)}
+                        className={`w-full pl-10 pr-4 py-2 ${getRoundedClass('rounded-lg')} ${
+                          mode === 'chaos'
+                            ? 'bg-[#1A1A1A] border border-[#00C896]/30 text-white placeholder-white/50'
+                            : mode === 'chill'
+                            ? 'bg-white/80 border border-[#1A5D52]/30 text-[#4A1818] placeholder-[#4A1818]/50'
+                            : 'bg-black/40 border border-white/20 text-white placeholder-white/50'
+                        } focus:outline-none focus:ring-2`}
+                        style={{
+                          '--tw-ring-color': mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : '#FFFFFF'
+                        } as React.CSSProperties}
+                      />
                     </div>
-                  ) : (
-                    <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No team members found</p>
+                  </div>
+                  
+                  {/* Directory Content - Collapsible */}
+                  {!isDirectoryCollapsed && (
+                    <>
+                      {allProfiles.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {allProfiles
+                            .filter(profile => {
+                              if (!directorySearch) return true
+                              const searchLower = directorySearch.toLowerCase()
+                              const fullName = (profile.full_name || '').toLowerCase()
+                              const email = (profile.email || '').toLowerCase()
+                              const role = (profile.role || '').toLowerCase()
+                              const discipline = (profile.discipline || '').toLowerCase()
+                              return fullName.includes(searchLower) || 
+                                     email.includes(searchLower) || 
+                                     role.includes(searchLower) || 
+                                     discipline.includes(searchLower)
+                            })
+                            .map((profile) => (
+                              <button
+                                key={profile.id}
+                                onClick={() => handleProfileClick(profile.id)}
+                                className={`p-3 ${getRoundedClass('rounded-xl')} border hover:opacity-80 transition-opacity text-left w-full ${mode === 'chaos' ? 'bg-[#00C896]/10 border-[#00C896]/30' : mode === 'chill' ? 'bg-white/50 border-[#C8D961]/30' : 'bg-black/40 border-white/20'}`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  {profile.avatar_url ? (
+                                    <img
+                                      src={profile.avatar_url}
+                                      alt={profile.full_name || 'User'}
+                                      className="w-10 h-10 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
+                                      <Users className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`font-semibold text-sm ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
+                                      {profile.full_name || profile.email || 'Unknown'}
+                                    </p>
+                                    {profile.role && (
+                                      <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} truncate`}>{profile.role}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                        </div>
+                      ) : (
+                        <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>
+                          {directorySearch ? 'No team members found matching your search' : 'No team members found'}
+                        </p>
+                      )}
+                    </>
                   )}
                 </Card>
               )}
