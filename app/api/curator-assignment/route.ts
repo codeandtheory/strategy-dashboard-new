@@ -300,16 +300,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Calculate start_date (assignment_date + 3 days) and end_date (start_date + 7 days)
-    const assignmentDateObj = new Date(assignment_date)
-    const startDateObj = new Date(assignmentDateObj)
-    startDateObj.setDate(startDateObj.getDate() + 3)
-    const endDateObj = new Date(startDateObj)
-    endDateObj.setDate(endDateObj.getDate() + 7)
-
-    const start_date = startDateObj.toISOString().split('T')[0]
-    const end_date = endDateObj.toISOString().split('T')[0]
-
     // Create assignment (no playlist_id - curator is independent)
     const { data: assignment, error } = await supabase
       .from('curator_assignments')
