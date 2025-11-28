@@ -8,7 +8,7 @@ import { SiteHeader } from '@/components/site-header'
 import { Card } from '@/components/ui/card'
 import { Footer } from '@/components/footer'
 import { createClient } from '@/lib/supabase/client'
-import { Crown, Loader2, ArrowLeft, Users } from 'lucide-react'
+import { Crown, Loader2, ArrowLeft, Users, PartyPopper, Cake, Trophy } from 'lucide-react'
 import Link from 'next/link'
 
 export default function BeastHistoryPage() {
@@ -18,6 +18,11 @@ export default function BeastHistoryPage() {
   const supabase = createClient()
   const [beastBabeHistory, setBeastBabeHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [teamStats, setTeamStats] = useState({
+    totalTeamMembers: 0,
+    totalSnaps: 0,
+    activePitches: 0,
+  })
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -27,6 +32,7 @@ export default function BeastHistoryPage() {
 
   useEffect(() => {
     fetchBeastBabeHistory()
+    fetchTeamStats()
   }, [])
 
   const fetchBeastBabeHistory = async () => {
@@ -47,6 +53,41 @@ export default function BeastHistoryPage() {
       console.error('Error fetching beast babe history:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchTeamStats = async () => {
+    try {
+      // Total team members
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('is_active', true)
+      
+      // Total snaps
+      const { data: snaps } = await supabase
+        .from('snaps')
+        .select('id')
+      
+      // Active pitches (work samples with type "Pitch" from last 6 months)
+      const sixMonthsAgo = new Date()
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+      const { data: pitches } = await supabase
+        .from('work_samples')
+        .select(`
+          id,
+          work_sample_types!inner(name)
+        `)
+        .eq('work_sample_types.name', 'Pitch')
+        .gte('date', sixMonthsAgo.toISOString().split('T')[0])
+      
+      setTeamStats({
+        totalTeamMembers: profiles?.length || 0,
+        totalSnaps: snaps?.length || 0,
+        activePitches: pitches?.length || 0,
+      })
+    } catch (error) {
+      console.error('Error fetching team stats:', error)
     }
   }
 
@@ -121,7 +162,31 @@ export default function BeastHistoryPage() {
             {/* Quick Stats Section */}
             <div className="mb-6">
               <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#00C896]' : 'text-white'}`}>
-                ▼ NAVIGATION
+                ▼ QUICK STATS
+              </h3>
+              <div className="space-y-3">
+                <div className={`p-3 ${getRoundedClass('rounded-xl')}`} style={{ backgroundColor: mode === 'chaos' ? greenColors.primaryPair + '40' : mode === 'chill' ? greenColors.complementary + '20' : 'rgba(255,255,255,0.1)' }}>
+                  <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Team Members</p>
+                  <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.totalTeamMembers}</p>
+                </div>
+                <div className={`p-3 ${getRoundedClass('rounded-xl')}`} style={{ backgroundColor: mode === 'chaos' ? greenColors.primaryPair + '40' : mode === 'chill' ? greenColors.complementary + '20' : 'rgba(255,255,255,0.1)' }}>
+                  <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Total Snaps</p>
+                  <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.totalSnaps}</p>
+                </div>
+                <div className={`p-3 ${getRoundedClass('rounded-xl')}`} style={{ backgroundColor: mode === 'chaos' ? greenColors.primaryPair + '40' : mode === 'chill' ? greenColors.complementary + '20' : 'rgba(255,255,255,0.1)' }}>
+                  <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Active Pitches</p>
+                  <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.activePitches}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className={`h-px mb-6 ${mode === 'chaos' ? 'bg-[#00C896]/40' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`}></div>
+
+            {/* Navigation Section */}
+            <div className="mb-6">
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#00C896]' : 'text-white'}`}>
+                ▼ SECTIONS
               </h3>
               <div className="space-y-2">
                 <Link
@@ -138,6 +203,49 @@ export default function BeastHistoryPage() {
                   <span className="font-black uppercase text-sm">All</span>
                 </Link>
                 
+                <Link
+                  href="/team"
+                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                    mode === 'chaos'
+                      ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50 text-white'
+                      : mode === 'chill'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
+                  }`}
+                >
+                  <PartyPopper className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">Anniversaries</span>
+                </Link>
+                
+                <Link
+                  href="/team"
+                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                    mode === 'chaos'
+                      ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50 text-white'
+                      : mode === 'chill'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
+                  }`}
+                >
+                  <Cake className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">Birthdays</span>
+                </Link>
+                
+                <Link
+                  href="/team"
+                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                    mode === 'chaos'
+                      ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50 text-white'
+                      : mode === 'chill'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
+                  }`}
+                >
+                  <Trophy className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">Leaderboard</span>
+                </Link>
+                
+                {/* Links to separate pages */}
                 <Link
                   href="/team/directory"
                   className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
@@ -344,9 +452,9 @@ export default function BeastHistoryPage() {
         </Card>
           </div>
         </div>
-
-        <Footer />
       </main>
+
+      <Footer />
     </div>
   )
 }
