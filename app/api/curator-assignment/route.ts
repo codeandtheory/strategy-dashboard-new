@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
         start_date,
         end_date,
         is_manual_override,
+        skipped,
         assigned_by,
         created_at,
         playlists(id, date, title, spotify_url)
@@ -37,11 +38,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get all active team members for rotation tracking
+    // Get all active team members for rotation tracking (excluding those who opted out)
     const { data: teamMembers, error: teamError } = await supabase
       .from('profiles')
-      .select('id, full_name, email, discipline, role, hierarchy_level, avatar_url, is_active')
+      .select('id, full_name, email, discipline, role, hierarchy_level, avatar_url, is_active, exclude_from_curator_rotation')
       .eq('is_active', true)
+      .eq('exclude_from_curator_rotation', false)
       .not('full_name', 'is', null)
 
     if (teamError) {
@@ -58,11 +60,14 @@ export async function GET(request: NextRequest) {
       recentAssignments.map(a => a.curator_name.toLowerCase().trim())
     )
 
-    // Get curator counts per person from curator_assignments
+    // Get curator counts per person from curator_assignments (excluding skipped)
     const curatorCounts: Record<string, number> = {}
     assignments?.forEach(assignment => {
-      const name = assignment.curator_name.toLowerCase().trim()
-      curatorCounts[name] = (curatorCounts[name] || 0) + 1
+      // Only count non-skipped assignments
+      if (!assignment.skipped) {
+        const name = assignment.curator_name.toLowerCase().trim()
+        curatorCounts[name] = (curatorCounts[name] || 0) + 1
+      }
     })
 
     // Also count curators from playlists table (historical data)
@@ -394,11 +399,12 @@ async function selectRandomCurator(
   supabase: any,
   assignmentDate: string
 ): Promise<{ id: string; full_name: string; avatar_url: string | null; discipline: string | null; role: string | null } | null> {
-  // Get all active team members
+  // Get all active team members (excluding those who opted out)
   const { data: teamMembers, error } = await supabase
     .from('profiles')
-    .select('id, full_name, email, discipline, role, hierarchy_level, avatar_url, is_active')
+    .select('id, full_name, email, discipline, role, hierarchy_level, avatar_url, is_active, exclude_from_curator_rotation')
     .eq('is_active', true)
+    .eq('exclude_from_curator_rotation', false)
     .not('full_name', 'is', null)
 
   if (error || !teamMembers || teamMembers.length === 0) {
@@ -450,6 +456,132 @@ async function selectRandomCurator(
     avatar_url: selected.avatar_url || null,
     discipline: selected.discipline || null,
     role: selected.role || null
+  }
+}
+
+/**
+ * PATCH - Skip an assignment (doesn't count toward curator count)
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const body = await request.json()
+    const { assignment_id, skip } = body
+
+    if (assignment_id === undefined || skip === undefined) {
+      return NextResponse.json(
+        { error: 'Missing required fields: assignment_id and skip' },
+        { status: 400 }
+      )
+    }
+
+    // Check if user is admin or leader
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('base_role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['admin', 'leader'].includes(profile.base_role)) {
+      return NextResponse.json(
+        { error: 'Forbidden: Only admins and leaders can skip assignments' },
+        { status: 403 }
+      )
+    }
+
+    const { data: assignment, error } = await supabase
+      .from('curator_assignments')
+      .update({ skipped: skip })
+      .eq('id', assignment_id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating assignment:', error)
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ assignment })
+  } catch (error: any) {
+    console.error('Error in PATCH /api/curator-assignment:', error)
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * DELETE - Remove someone from curator rotation pool
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { searchParams } = new URL(request.url)
+    const profile_id = searchParams.get('profile_id')
+
+    if (!profile_id) {
+      return NextResponse.json(
+        { error: 'Missing required parameter: profile_id' },
+        { status: 400 }
+      )
+    }
+
+    // Check if user is admin or leader
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('base_role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['admin', 'leader'].includes(profile.base_role)) {
+      return NextResponse.json(
+        { error: 'Forbidden: Only admins and leaders can exclude from rotation' },
+        { status: 403 }
+      )
+    }
+
+    const { data: updatedProfile, error } = await supabase
+      .from('profiles')
+      .update({ exclude_from_curator_rotation: true })
+      .eq('id', profile_id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating profile:', error)
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ profile: updatedProfile })
+  } catch (error: any) {
+    console.error('Error in DELETE /api/curator-assignment:', error)
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
 

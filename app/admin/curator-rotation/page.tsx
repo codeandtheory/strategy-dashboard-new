@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useMode } from '@/contexts/mode-context'
 import { useAuth } from '@/contexts/auth-context'
-import { RotateCw, Plus, Loader2, Shuffle, UserCheck, Calendar, Music, ExternalLink } from 'lucide-react'
+import { RotateCw, Plus, Loader2, Shuffle, UserCheck, Calendar, Music, ExternalLink, SkipForward, X } from 'lucide-react'
 
 interface CuratorAssignment {
   id: string
@@ -19,6 +19,7 @@ interface CuratorAssignment {
   start_date: string
   end_date: string
   is_manual_override: boolean
+  skipped: boolean | null
   assigned_by: string | null
   created_at: string
   playlists: {
@@ -281,7 +282,7 @@ export default function CuratorRotationPage() {
           {errorMessage && (
             <div className={`mb-4 p-4 ${getRoundedClass('rounded-xl')}`} style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)', borderWidth: '1px' }}>
               <p className={getCardStyle().text} style={{ color: '#ef4444' }}>{errorMessage}</p>
-        </div>
+            </div>
           )}
           
           <div className={`${cardStyle.bg} ${cardStyle.border} border ${getRoundedClass('rounded-xl')} p-3 ${cardStyle.text}/80 text-sm mb-2`}>
@@ -477,6 +478,11 @@ export default function CuratorRotationPage() {
                               Manual
                             </span>
                           )}
+                          {assignment.skipped && (
+                            <span className={`text-xs ${cardStyle.text}/60 px-2 py-0.5 ${cardStyle.border} border ${getRoundedClass('rounded-xl')}`}>
+                              Skipped
+                            </span>
+                          )}
                         </div>
                         <div className={`text-sm ${cardStyle.text}/70 mb-2`}>
                           {new Date(assignment.assignment_date).toLocaleDateString('en-US', {
@@ -511,6 +517,78 @@ export default function CuratorRotationPage() {
                           </div>
                         )}
                       </div>
+                      <div className="flex flex-col gap-2 ml-4">
+                        <Button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch('/api/curator-assignment', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  assignment_id: assignment.id,
+                                  skip: !assignment.skipped
+                                })
+                              })
+                              if (response.ok) {
+                                await fetchData()
+                                setSuccessMessage(`Assignment ${assignment.skipped ? 'unskipped' : 'skipped'} successfully`)
+                                setTimeout(() => setSuccessMessage(null), 3000)
+                              } else {
+                                const errorData = await response.json()
+                                setErrorMessage(errorData.error || 'Failed to skip assignment')
+                                setTimeout(() => setErrorMessage(null), 5000)
+                              }
+                            } catch (error: any) {
+                              setErrorMessage(error.message || 'Failed to skip assignment')
+                              setTimeout(() => setErrorMessage(null), 5000)
+                            }
+                          }}
+                          className={`${getRoundedClass('rounded-lg')} ${
+                            mode === 'chaos' ? 'bg-[#C4F500]/20 text-[#C4F500] hover:bg-[#C4F500]/30 border border-[#C4F500]' :
+                            mode === 'chill' ? 'bg-[#FFC043]/20 text-[#FFC043] hover:bg-[#FFC043]/30 border border-[#FFC043]' :
+                            'bg-white/20 text-white hover:bg-white/30 border border-white'
+                          } font-semibold text-xs px-3 py-1.5`}
+                          title={assignment.skipped ? 'Unskip this assignment' : 'Skip this assignment (won\'t count toward curator count)'}
+                        >
+                          <SkipForward className="w-3 h-3 mr-1" />
+                          {assignment.skipped ? 'Unskip' : 'Skip'}
+                        </Button>
+                        {assignment.curator_profile_id && (
+                          <Button
+                            onClick={async () => {
+                              if (!confirm(`Remove ${assignment.curator_name} from curator rotation pool? This will prevent them from being selected in the future.`)) {
+                                return
+                              }
+                              try {
+                                const response = await fetch(`/api/curator-assignment?profile_id=${assignment.curator_profile_id}`, {
+                                  method: 'DELETE'
+                                })
+                                if (response.ok) {
+                                  await fetchData()
+                                  setSuccessMessage(`${assignment.curator_name} removed from rotation pool`)
+                                  setTimeout(() => setSuccessMessage(null), 3000)
+                                } else {
+                                  const errorData = await response.json()
+                                  setErrorMessage(errorData.error || 'Failed to remove from rotation')
+                                  setTimeout(() => setErrorMessage(null), 5000)
+                                }
+                              } catch (error: any) {
+                                setErrorMessage(error.message || 'Failed to remove from rotation')
+                                setTimeout(() => setErrorMessage(null), 5000)
+                              }
+                            }}
+                            className={`${getRoundedClass('rounded-lg')} ${
+                              mode === 'chaos' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500' :
+                              mode === 'chill' ? 'bg-red-500/20 text-red-600 hover:bg-red-500/30 border border-red-500' :
+                              'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500'
+                            } font-semibold text-xs px-3 py-1.5`}
+                            title="Remove from curator rotation pool"
+                          >
+                            <X className="w-3 h-3 mr-1" />
+                            Remove
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))
@@ -525,55 +603,84 @@ export default function CuratorRotationPage() {
               <h2 className={`text-xl font-black uppercase ${getTextClass()}`}>Team Rotation Status</h2>
             </div>
 
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+            <div className="space-y-4 max-h-[600px] overflow-y-auto">
               {teamMembers.length === 0 ? (
                 <p className={`${cardStyle.text}/70 text-center py-8`}>No team members found</p>
-              ) : (
-                teamMembers
-                  .sort((a, b) => {
+              ) : (() => {
+                // Group team members by discipline
+                const groupedByDiscipline: Record<string, TeamMember[]> = {}
+                teamMembers.forEach(member => {
+                  const discipline = member.discipline || 'No discipline'
+                  if (!groupedByDiscipline[discipline]) {
+                    groupedByDiscipline[discipline] = []
+                  }
+                  groupedByDiscipline[discipline].push(member)
+                })
+
+                // Sort each discipline group by count (descending)
+                Object.keys(groupedByDiscipline).forEach(discipline => {
+                  groupedByDiscipline[discipline].sort((a, b) => {
                     const countA = getCuratorCount(a.full_name || '')
                     const countB = getCuratorCount(b.full_name || '')
                     if (countA !== countB) return countB - countA
                     return (a.full_name || '').localeCompare(b.full_name || '')
                   })
-                  .map(member => {
-                    const count = getCuratorCount(member.full_name || '')
-                    return (
-                      <div
-                        key={member.id}
-                        className={`${cardStyle.border} border ${getRoundedClass('rounded-xl')} p-4`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            {member.avatar_url ? (
-                              <img
-                                src={member.avatar_url}
-                                alt={member.full_name || ''}
-                                className={`w-10 h-10 ${getRoundedClass('rounded-full')} object-cover`}
-                              />
-                            ) : (
-                              <div className={`w-10 h-10 ${getRoundedClass('rounded-full')} ${cardStyle.border} border flex items-center justify-center ${cardStyle.text}/60`}>
-                                {(member.full_name || member.email || '?').charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            <div>
-                              <div className={`font-semibold ${cardStyle.text}`}>
-                                {member.full_name || member.email || 'Unknown'}
-                              </div>
-                              <div className={`text-xs ${cardStyle.text}/60`}>
-                                {member.discipline || 'No discipline'} {member.role ? `• ${member.role}` : ''}
+                })
+
+                // Sort disciplines by highest count in that discipline (descending)
+                const sortedDisciplines = Object.keys(groupedByDiscipline).sort((a, b) => {
+                  const maxCountA = Math.max(...groupedByDiscipline[a].map(m => getCuratorCount(m.full_name || '')))
+                  const maxCountB = Math.max(...groupedByDiscipline[b].map(m => getCuratorCount(m.full_name || '')))
+                  return maxCountB - maxCountA
+                })
+
+                return sortedDisciplines.map(discipline => (
+                  <div key={discipline} className="space-y-2">
+                    <h3 className={`text-sm font-bold uppercase tracking-wider ${cardStyle.text}/80 mb-2`}>
+                      {discipline}
+                    </h3>
+                    {groupedByDiscipline[discipline].map(member => {
+                      const count = getCuratorCount(member.full_name || '')
+                      return (
+                        <div
+                          key={member.id}
+                          className={`${cardStyle.border} border ${getRoundedClass('rounded-xl')} p-4`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {member.avatar_url ? (
+                                <img
+                                  src={member.avatar_url}
+                                  alt={member.full_name || ''}
+                                  className={`w-10 h-10 ${getRoundedClass('rounded-full')} object-cover`}
+                                />
+                              ) : (
+                                <div className={`w-10 h-10 ${getRoundedClass('rounded-full')} ${cardStyle.border} border flex items-center justify-center ${cardStyle.text}/60`}>
+                                  {(member.full_name || member.email || '?').charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                              <div>
+                                <div className={`font-semibold ${cardStyle.text}`}>
+                                  {member.full_name || member.email || 'Unknown'}
+                                </div>
+                                {member.role && (
+                                  <div className={`text-xs ${cardStyle.text}/60`}>
+                                    {member.role}
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          </div>
-                          <div className={`text-right`}>
-                            <div className={`text-lg font-bold ${cardStyle.text}`}>{count}</div>
-                            <div className={`text-xs ${cardStyle.text}/60`}>assignments</div>
+                            <div className={`text-right`}>
+                              <div className={`text-lg font-bold ${cardStyle.text}`}>{count}</div>
+                              <div className={`text-xs ${cardStyle.text}/60`}>assignments</div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )
-                  })
-              )}
+                      )
+                    })}
+                  </div>
+                ))
+              })()}
             </div>
           </Card>
         </div>
