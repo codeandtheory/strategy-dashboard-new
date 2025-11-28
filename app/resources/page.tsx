@@ -274,7 +274,7 @@ export default function ResourcesPage() {
         )}
         <div className="flex gap-6">
           {/* Left Sidebar Card */}
-          <Card className={`w-80 ${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
+          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
             borderColor: mode === 'chaos' ? orangeColors.primary : mode === 'chill' ? orangeColors.primaryPair : '#FFFFFF',
             borderWidth: mode === 'chaos' ? '2px' : '0px'
           }}>
@@ -402,7 +402,7 @@ export default function ResourcesPage() {
           </Card>
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 min-w-0 flex flex-col">
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
               <h1 className={`text-4xl font-black uppercase ${getTextClass()}`}>RESOURCES</h1>

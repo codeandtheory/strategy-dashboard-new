@@ -237,7 +237,7 @@ export default function VibesPage() {
       <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
         <div className="flex gap-6">
           {/* Sidebar */}
-          <Card className={`w-80 hidden lg:block ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`}
+          <Card className={`w-80 flex-shrink-0 min-w-80 hidden lg:block ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`}
             style={{
               backgroundColor: mode === 'chaos' 
                 ? 'rgba(255, 255, 255, 0.05)' 
@@ -292,7 +292,7 @@ export default function VibesPage() {
           </Card>
 
           {/* Main Content Area */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
         {/* Header */}
         <h1 className={`text-4xl font-black uppercase mb-8 ${getTextClass()}`}>VIBES</h1>
         
@@ -1153,11 +1153,11 @@ export default function VibesPage() {
             )}
           </DialogContent>
         </Dialog>
-        
-        <Footer />
           </div>
         </div>
       </main>
+      
+      <Footer />
     </div>
   )
 }

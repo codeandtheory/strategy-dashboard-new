@@ -314,7 +314,7 @@ export default function SnapsPage() {
         )}
         <div className="flex gap-6">
           {/* Left Sidebar Card */}
-          <Card className={`w-80 ${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
+          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
             borderColor: mode === 'chaos' ? '#00C896' : mode === 'chill' ? '#C8D961' : '#FFFFFF',
             borderWidth: mode === 'chaos' ? '2px' : '0px'
           }}>
@@ -484,7 +484,7 @@ export default function SnapsPage() {
           </Card>
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 min-w-0 flex flex-col">
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
               <h1 className={`text-4xl font-black uppercase ${getTextClass()}`}>SNAPS</h1>
@@ -599,9 +599,9 @@ export default function SnapsPage() {
             </div>
           </div>
         </div>
-        
-        <Footer />
       </main>
+
+      <Footer />
 
       <AddSnapDialog
         open={showAddDialog}

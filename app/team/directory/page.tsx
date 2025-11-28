@@ -8,7 +8,7 @@ import { SiteHeader } from '@/components/site-header'
 import { Card } from '@/components/ui/card'
 import { Footer } from '@/components/footer'
 import { createClient } from '@/lib/supabase/client'
-import { Users, Search, Loader2, ArrowLeft } from 'lucide-react'
+import { Users, Search, Loader2, ArrowLeft, Crown } from 'lucide-react'
 import Link from 'next/link'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
@@ -134,17 +134,68 @@ export default function TeamDirectoryPage() {
       <SiteHeader />
 
       <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
-        <div className="mb-6">
-          <Link
-            href="/team"
-            className="inline-flex items-center gap-2 mb-4 hover:opacity-70 transition-opacity"
-            style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Team</span>
-          </Link>
-        </div>
+        <div className="flex gap-6">
+          {/* Left Sidebar Card */}
+          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
+            borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
+          }}> 
+            borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
+          }}>
+            {/* Quick Stats Section */}
+            <div className="mb-6">
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#00C896]' : 'text-white'}`}>
+                ▼ NAVIGATION
+              </h3>
+              <div className="space-y-2">
+                <Link
+                  href="/team"
+                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                    mode === 'chaos'
+                      ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50 text-white'
+                      : mode === 'chill'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">All</span>
+                </Link>
+                
+                <Link
+                  href="/team/directory"
+                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                    mode === 'chaos'
+                      ? 'bg-[#00C896] text-black'
+                      : mode === 'chill'
+                      ? 'bg-[#00C896] text-white'
+                      : 'bg-white text-black'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">Directory</span>
+                </Link>
+                
+                <Link
+                  href="/team/beast-history"
+                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                    mode === 'chaos'
+                      ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50 text-white'
+                      : mode === 'chill'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
+                  }`}
+                >
+                  <Crown className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">History of the Beast</span>
+                </Link>
+              </div>
+            </div>
+          </Card>
 
+          {/* Main Content Area */}
+          <div className="flex-1 min-w-0">
         <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-6`} style={{
           borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
           borderWidth: '1px'
@@ -234,6 +285,8 @@ export default function TeamDirectoryPage() {
             </p>
           )}
         </Card>
+          </div>
+        </div>
       </main>
 
       <Footer />

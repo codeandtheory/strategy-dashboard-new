@@ -481,7 +481,7 @@ export default function TeamPage() {
         )}
         <div className="flex gap-6">
           {/* Left Sidebar Card */}
-          <Card className={`w-80 ${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
+          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
             borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : '#FFFFFF',
             borderWidth: mode === 'chaos' ? '2px' : '0px'
           }}>
@@ -577,7 +577,7 @@ export default function TeamPage() {
           </Card>
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 min-w-0 flex flex-col">
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
               <h1 className={`text-4xl font-black uppercase ${getTextClass()}`}>TEAM</h1>
@@ -654,16 +654,18 @@ export default function TeamPage() {
               </Card>
             </div>
 
-            {/* Beast Babe and Snap Leaderboard - Side by Side (1/2 each) */}
-            {(activeFilter === 'all' || activeFilter === 'anniversaries' || activeFilter === 'birthdays' || activeFilter === 'leaderboard') && (
+            {/* Beast Babe and Snap Leaderboard - Side by Side (1/2 each) - Show for 'all' and 'leaderboard' */}
+            {(activeFilter === 'all' || activeFilter === 'leaderboard') && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                {/* Beast Babe - 1/2 width */}
-                <div className="w-full">
-                  <BeastBabeCard />
-                </div>
+                {/* Beast Babe - 1/2 width - Only show for 'all' */}
+                {activeFilter === 'all' && (
+                  <div className="w-full">
+                    <BeastBabeCard />
+                  </div>
+                )}
                 
-                {/* Snap Leaderboard - 1/2 width, same height as Beast Babe */}
-                <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-6 min-h-[600px] flex flex-col`} style={{
+                {/* Snap Leaderboard - 1/2 width, full width if only leaderboard */}
+                <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-6 min-h-[600px] flex flex-col ${activeFilter === 'leaderboard' ? 'md:col-span-2' : ''}`} style={{
                   borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
                   borderWidth: '1px'
                 }}>
@@ -711,163 +713,167 @@ export default function TeamPage() {
               </div>
             )}
 
-            {/* Curator, Anniversaries, and Birthdays - 3 equal columns (1/3 each) */}
+            {/* Curator, Anniversaries, and Birthdays - Show based on filter */}
             {(activeFilter === 'all' || activeFilter === 'anniversaries' || activeFilter === 'birthdays') && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                {/* Current Curator Card - 1/3 */}
-                <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-[#E8F5E9]' : 'bg-[#1A5D52]'} ${getRoundedClass('rounded-xl')} p-6 flex flex-col`} style={{
-                  borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : greenColors.primary,
-                  borderWidth: '2px'
-                }}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : greenColors.primary }}>
-                      <Music className="w-5 h-5 text-white" />
-                    </div>
-                    <h2 className={`text-lg font-black uppercase ${mode === 'chill' ? 'text-[#1A5D52]' : 'text-white'}`}>Curator</h2>
-                  </div>
-                  
-                  {currentCurator ? (
-                    <div className="flex-1 flex flex-col">
-                      {/* Curator Avatar */}
-                      <div className="flex justify-center mb-4">
-                        <div className="relative w-32 h-32 overflow-hidden rounded-full" style={{ borderWidth: '3px', borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : greenColors.primary }}>
-                          {currentCurator.curator_photo_url ? (
-                            <img
-                              src={currentCurator.curator_photo_url}
-                              alt={currentCurator.curator}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: mode === 'chaos' ? greenColors.primaryPair : mode === 'chill' ? greenColors.primary : greenColors.primaryPair }}>
-                              <Music className="w-10 h-10 text-white" />
-                            </div>
-                          )}
-                        </div>
+              <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 mb-6`}>
+                {/* Current Curator Card - Only show for 'all' */}
+                {activeFilter === 'all' && (
+                  <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-[#E8F5E9]' : 'bg-[#1A5D52]'} ${getRoundedClass('rounded-xl')} p-6 flex flex-col`} style={{
+                    borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : greenColors.primary,
+                    borderWidth: '2px'
+                  }}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : greenColors.primary }}>
+                        <Music className="w-5 h-5 text-white" />
                       </div>
-                      
-                      {/* Curator Name */}
-                      <h3 className={`text-xl font-black text-center mb-4 ${mode === 'chill' ? 'text-[#1A5D52]' : 'text-white'}`}>
-                        {currentCurator.curator}
-                      </h3>
-                      
-                      {/* Playlist Link */}
-                      {currentCurator.spotify_url && (
-                        <div className="mt-auto">
-                          <a
-                            href={currentCurator.spotify_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`flex items-center justify-center gap-2 ${getRoundedClass('rounded-lg')} px-4 py-3 text-sm font-semibold transition-colors ${
-                              mode === 'chaos'
-                                ? 'bg-[#00C896] text-black hover:bg-[#00B886]'
-                                : mode === 'chill'
-                                ? 'bg-[#1A5D52] text-white hover:bg-[#154A42]'
-                                : 'bg-[#00C896] text-black hover:bg-[#00B886]'
-                            }`}
-                          >
-                            <span>View Playlist</span>
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                        </div>
-                      )}
+                      <h2 className={`text-lg font-black uppercase ${mode === 'chill' ? 'text-[#1A5D52]' : 'text-white'}`}>Curator</h2>
                     </div>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center">
-                      <p className={`text-sm ${mode === 'chill' ? 'text-[#1A5D52]/60' : 'text-white/60'}`}>No curator selected</p>
-                    </div>
-                  )}
-                </Card>
-
-                {/* Anniversaries - 1/3 */}
-                <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4`} style={{
-                  borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
-                  borderWidth: '1px'
-                }}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.primaryPair }}>
-                      <PartyPopper className="w-5 h-5 text-white" />
-                    </div>
-                    <h2 className={`text-lg font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Anniversaries</h2>
-                  </div>
-                  {anniversaries.length > 0 ? (
-                    <div className="space-y-3">
-                      {anniversaries.map((anniversary) => (
-                        <div key={anniversary.id} className="flex items-center gap-3">
-                          {anniversary.avatar_url ? (
-                            <img
-                              src={anniversary.avatar_url}
-                              alt={anniversary.full_name || 'User'}
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
-                              <Users className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-semibold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
-                              {anniversary.full_name || 'Unknown'}
-                            </p>
-                            <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
-                              {anniversary.years} {anniversary.years === 1 ? 'year' : 'years'} on {anniversary.start_date ? new Date(anniversary.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }) : ''}
-                            </p>
+                    
+                    {currentCurator ? (
+                      <div className="flex-1 flex flex-col">
+                        {/* Curator Avatar */}
+                        <div className="flex justify-center mb-4">
+                          <div className="relative w-32 h-32 overflow-hidden rounded-full" style={{ borderWidth: '3px', borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : greenColors.primary }}>
+                            {currentCurator.curator_photo_url ? (
+                              <img
+                                src={currentCurator.curator_photo_url}
+                                alt={currentCurator.curator}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: mode === 'chaos' ? greenColors.primaryPair : mode === 'chill' ? greenColors.primary : greenColors.primaryPair }}>
+                                <Music className="w-10 h-10 text-white" />
+                              </div>
+                            )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No anniversaries in the next 7 days</p>
-                  )}
-                </Card>
-
-                {/* Birthdays - 1/3 */}
-                <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4`} style={{
-                  borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
-                  borderWidth: '1px'
-                }}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.complementary }}>
-                      <Cake className="w-5 h-5" style={{ color: mode === 'chill' ? '#4A1818' : '#000' }} />
-                    </div>
-                    <h2 className={`text-lg font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Birthdays</h2>
-                  </div>
-                  {birthdays.length > 0 ? (
-                    <div className="space-y-3">
-                      {birthdays.map((birthday) => (
-                        <div key={birthday.id} className="flex items-center gap-3">
-                          {birthday.avatar_url ? (
-                            <img
-                              src={birthday.avatar_url}
-                              alt={birthday.full_name || 'User'}
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
-                              <Users className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-semibold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
-                              {birthday.full_name || 'Unknown'}
-                            </p>
-                            <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
-                              {birthday.birthday}
-                            </p>
+                        
+                        {/* Curator Name */}
+                        <h3 className={`text-xl font-black text-center mb-4 ${mode === 'chill' ? 'text-[#1A5D52]' : 'text-white'}`}>
+                          {currentCurator.curator}
+                        </h3>
+                        
+                        {/* Playlist Link */}
+                        {currentCurator.spotify_url && (
+                          <div className="mt-auto">
+                            <a
+                              href={currentCurator.spotify_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`flex items-center justify-center gap-2 ${getRoundedClass('rounded-lg')} px-4 py-3 text-sm font-semibold transition-colors ${
+                                mode === 'chaos'
+                                  ? 'bg-[#00C896] text-black hover:bg-[#00B886]'
+                                  : mode === 'chill'
+                                  ? 'bg-[#1A5D52] text-white hover:bg-[#154A42]'
+                                  : 'bg-[#00C896] text-black hover:bg-[#00B886]'
+                              }`}
+                            >
+                              <span>View Playlist</span>
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
                           </div>
-                        </div>
-                      ))}
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center">
+                        <p className={`text-sm ${mode === 'chill' ? 'text-[#1A5D52]/60' : 'text-white/60'}`}>No curator selected</p>
+                      </div>
+                    )}
+                  </Card>
+                )}
+
+                {/* Anniversaries - Show for 'all' and 'anniversaries' */}
+                {(activeFilter === 'all' || activeFilter === 'anniversaries') && (
+                  <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4 ${activeFilter === 'anniversaries' ? 'md:col-span-3' : ''}`} style={{
+                    borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                    borderWidth: '1px'
+                  }}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.primaryPair }}>
+                        <PartyPopper className="w-5 h-5 text-white" />
+                      </div>
+                      <h2 className={`text-lg font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Anniversaries</h2>
                     </div>
-                  ) : (
-                    <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No birthdays in the next 7 days</p>
-                  )}
-                </Card>
+                    {anniversaries.length > 0 ? (
+                      <div className="space-y-3">
+                        {anniversaries.map((anniversary) => (
+                          <div key={anniversary.id} className="flex items-center gap-3">
+                            {anniversary.avatar_url ? (
+                              <img
+                                src={anniversary.avatar_url}
+                                alt={anniversary.full_name || 'User'}
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
+                                <Users className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-semibold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
+                                {anniversary.full_name || 'Unknown'}
+                              </p>
+                              <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
+                                {anniversary.years} {anniversary.years === 1 ? 'year' : 'years'} on {anniversary.start_date ? new Date(anniversary.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }) : ''}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No anniversaries in the next 7 days</p>
+                    )}
+                  </Card>
+                )}
+
+                {/* Birthdays - Show for 'all' and 'birthdays' */}
+                {(activeFilter === 'all' || activeFilter === 'birthdays') && (
+                  <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4 ${activeFilter === 'birthdays' ? 'md:col-span-3' : ''}`} style={{
+                    borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                    borderWidth: '1px'
+                  }}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.complementary }}>
+                        <Cake className="w-5 h-5" style={{ color: mode === 'chill' ? '#4A1818' : '#000' }} />
+                      </div>
+                      <h2 className={`text-lg font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Birthdays</h2>
+                    </div>
+                    {birthdays.length > 0 ? (
+                      <div className="space-y-3">
+                        {birthdays.map((birthday) => (
+                          <div key={birthday.id} className="flex items-center gap-3">
+                            {birthday.avatar_url ? (
+                              <img
+                                src={birthday.avatar_url}
+                                alt={birthday.full_name || 'User'}
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
+                                <Users className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-semibold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
+                                {birthday.full_name || 'Unknown'}
+                              </p>
+                              <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
+                                {birthday.birthday}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No birthdays in the next 7 days</p>
+                    )}
+                  </Card>
+                )}
               </div>
             )}
 
           </div>
         </div>
-        
-        <Footer />
       </main>
       
       {/* Profile View Dialog */}

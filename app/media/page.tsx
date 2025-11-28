@@ -292,7 +292,7 @@ export default function MediaPage() {
         )}
         <div className="flex gap-6">
           {/* Left Sidebar Card - RED SYSTEM background */}
-          <Card className={`w-80 ${mode === 'chaos' ? 'bg-[#FF4C4C]' : mode === 'chill' ? 'bg-[#FFD4C4]' : 'bg-[#C41E3A]'} ${getRoundedClass('rounded-2xl')} p-6 flex flex-col h-fit border-0`}>
+          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#FF4C4C]' : mode === 'chill' ? 'bg-[#FFD4C4]' : 'bg-[#C41E3A]'} ${getRoundedClass('rounded-2xl')} p-6 flex flex-col h-fit border-0`}>
             {/* Navigation Section */}
             <div className="mb-6">
               <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
@@ -381,12 +381,12 @@ export default function MediaPage() {
           </Card>
 
           {/* Main Content Area */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Header */}
             <div className="mb-8">
               <h1 className={`text-4xl font-black uppercase ${getTextClass()}`}>MEDIA ARCHIVE</h1>
               <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'} mt-2`}>
-                {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'}
+                {loading ? 'Loading...' : `${filteredItems.length} ${filteredItems.length === 1 ? 'item' : 'items'}`}
               </p>
             </div>
 
