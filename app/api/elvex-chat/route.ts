@@ -142,10 +142,12 @@ export async function POST(request: NextRequest) {
     const result = await response.json()
     
     // Extract the response text from Elvex response
-    // The exact structure may vary, so we'll handle different possible formats
+    // Elvex returns: { data: { response: "..." } }
     let responseText = ''
     
-    if (result.text) {
+    if (result.data && result.data.response) {
+      responseText = result.data.response
+    } else if (result.text) {
       responseText = result.text
     } else if (result.response) {
       responseText = result.response
@@ -154,8 +156,9 @@ export async function POST(request: NextRequest) {
     } else if (typeof result === 'string') {
       responseText = result
     } else {
-      // If we can't find the text, return the whole result as JSON string
-      responseText = JSON.stringify(result)
+      // If we can't find the text, log the structure and return error
+      console.error('Unexpected Elvex response structure:', JSON.stringify(result, null, 2))
+      responseText = 'Received an unexpected response format from Elvex'
     }
 
     return NextResponse.json({
