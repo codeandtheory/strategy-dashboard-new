@@ -7,7 +7,7 @@ import { SiteHeader } from '@/components/site-header'
 import { Card } from '@/components/ui/card'
 import { Footer } from '@/components/footer'
 import { createClient } from '@/lib/supabase/client'
-import { Crown, Loader2, ArrowLeft, Users, PartyPopper, Cake, Trophy, Calendar as CalendarIcon } from 'lucide-react'
+import { Crown, Loader2, Users, Calendar as CalendarIcon } from 'lucide-react'
 import Link from 'next/link'
 
 export default function BeastHistoryPage() {

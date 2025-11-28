@@ -6,9 +6,8 @@ import { Button } from '@/components/ui/button'
 import { usePermissions } from '@/contexts/permissions-context'
 import { useAuth } from '@/contexts/auth-context'
 import { useMode } from '@/contexts/mode-context'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getPermissions, type BaseRole, type UserPermissions } from '@/lib/permissions'
+import { getPermissions, type BaseRole } from '@/lib/permissions'
 import { 
   FileText, 
   Newspaper, 
@@ -17,11 +16,8 @@ import {
   GitBranch, 
   Video, 
   Crown, 
-  HelpCircle, 
-  Music, 
   Bell, 
   Users, 
-  RotateCw,
   Shield,
   AlertCircle,
   MessageSquare,
@@ -34,7 +30,6 @@ export default function AdminDashboard() {
   const { permissions: realPermissions, user: permissionsUser } = usePermissions()
   const { user } = useAuth()
   const { mode } = useMode()
-  const router = useRouter()
   const supabase = createClient()
   const [testingSlack, setTestingSlack] = useState(false)
   const [simulatedRole, setSimulatedRole] = useState<BaseRole | 'visitor' | null>(null)
