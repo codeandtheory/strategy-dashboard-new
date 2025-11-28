@@ -254,7 +254,10 @@ export default function CuratorRotationPage() {
       <div className="max-w-[1400px] mx-auto">
         <div className="mb-4">
           <h1 className={`text-2xl font-black uppercase tracking-wider ${getTextClass()} mb-1`}>Curator Rotation</h1>
-          <p className={`${getTextClass()}/70 text-sm font-normal`}>Manage weekly curator responsibilities with fair random rotation across disciplines and levels.</p>
+          <p className={`${getTextClass()}/70 text-sm font-normal mb-2`}>Assign curators for upcoming weeks. They'll be notified via Slack and can create playlists during their curation period.</p>
+          <div className={`${cardStyle.bg} ${cardStyle.border} border ${getRoundedClass('rounded-lg')} p-3 ${cardStyle.text}/80 text-sm`}>
+            <strong>How it works:</strong> Click "Assign Curator" → Select a date → Click "Random Assign" to automatically select a curator. They'll receive a Slack notification with a link to their curator dashboard. Their curation period starts 3 days after assignment and lasts 1 week.
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -290,10 +293,18 @@ export default function CuratorRotationPage() {
                         value={formData.assignment_date}
                         onChange={(e) => setFormData({ ...formData, assignment_date: e.target.value })}
                         className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} mt-1`}
+                        min={new Date().toISOString().split('T')[0]}
                       />
                       <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
-                        Assign a curator for this date. They will receive curator permissions to create playlists.
+                        Select the date when the curator will be notified. Their curation period will start 3 days later and last 1 week.
                       </p>
+                      {formData.assignment_date && (
+                        <div className={`mt-2 p-2 ${cardStyle.bg} ${cardStyle.border} border ${getRoundedClass('rounded')} text-xs ${cardStyle.text}/80`}>
+                          <strong>Curation Period:</strong><br />
+                          Starts: {new Date(new Date(formData.assignment_date).getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}<br />
+                          Ends: {new Date(new Date(formData.assignment_date).getTime() + 10 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <Button

@@ -186,6 +186,9 @@ export default function TeamPage() {
       const endMonth = sevenDaysFromNow.getMonth() + 1
       const endDay = sevenDaysFromNow.getDate()
       
+      const todayDate = new Date(currentYear, currentMonth - 1, currentDay)
+      const endDate = new Date(currentYear, endMonth - 1, endDay)
+      
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select('id, full_name, birthday, avatar_url')
@@ -193,43 +196,37 @@ export default function TeamPage() {
         .not('birthday', 'is', null)
       
       if (!error && profiles) {
+        // Optimize: process in one pass
         const upcomingBirthdays = profiles
           .map(profile => {
             if (!profile.birthday) return null
-            const [month, day] = profile.birthday.split('/').map(Number)
-            return { profile, month, day }
-          })
-          .filter((item): item is { profile: any; month: number; day: number } => item !== null)
-          .filter(item => {
-            // Show birthdays in next 7 days
-            const itemDate = new Date(currentYear, item.month - 1, item.day)
-            const todayDate = new Date(currentYear, currentMonth - 1, currentDay)
-            const endDate = new Date(currentYear, endMonth - 1, endDay)
+            const parts = profile.birthday.split('/')
+            if (parts.length !== 2) return null
+            const [month, day] = parts.map(Number)
+            if (isNaN(month) || isNaN(day)) return null
             
+            const itemDate = new Date(currentYear, month - 1, day)
             // Handle year wrap-around
             if (itemDate < todayDate) {
               itemDate.setFullYear(currentYear + 1)
             }
             
-            return itemDate >= todayDate && itemDate <= endDate
-          })
-          .sort((a, b) => {
-            const aDate = new Date(currentYear, a.month - 1, a.day)
-            const bDate = new Date(currentYear, b.month - 1, b.day)
-            if (aDate < new Date(currentYear, currentMonth - 1, currentDay)) {
-              aDate.setFullYear(currentYear + 1)
+            if (itemDate >= todayDate && itemDate <= endDate) {
+              return { profile, sortDate: itemDate.getTime() }
             }
-            if (bDate < new Date(currentYear, currentMonth - 1, currentDay)) {
-              bDate.setFullYear(currentYear + 1)
-            }
-            return aDate.getTime() - bDate.getTime()
+            return null
           })
+          .filter((item): item is { profile: any; sortDate: number } => item !== null)
+          .sort((a, b) => a.sortDate - b.sortDate)
           .map(item => item.profile)
         
         setBirthdays(upcomingBirthdays)
+      } else {
+        setBirthdays([])
       }
     } catch (error) {
       console.error('Error fetching birthdays:', error)
+      setBirthdays([])
     }
   }
 
@@ -246,6 +243,9 @@ export default function TeamPage() {
       const endMonth = sevenDaysFromNow.getMonth() + 1
       const endDay = sevenDaysFromNow.getDate()
       
+      const todayDate = new Date(currentYear, currentMonth - 1, currentDay)
+      const endDate = new Date(currentYear, endMonth - 1, endDay)
+      
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select('id, full_name, start_date, avatar_url')
@@ -253,47 +253,43 @@ export default function TeamPage() {
         .not('start_date', 'is', null)
       
       if (!error && profiles) {
+        // Optimize: process in one pass
         const upcomingAnniversaries = profiles
           .map(profile => {
             if (!profile.start_date) return null
-            const [year, month, day] = profile.start_date.split('-').map(Number)
+            const parts = profile.start_date.split('-')
+            if (parts.length !== 3) return null
+            const [year, month, day] = parts.map(Number)
+            if (isNaN(year) || isNaN(month) || isNaN(day)) return null
+            
             const years = currentYear - year
-            return { profile, month, day, years }
-          })
-          .filter((item): item is { profile: any; month: number; day: number; years: number } => item !== null)
-          .filter(item => {
-            // Show anniversaries in next 7 days
-            const itemDate = new Date(currentYear, item.month - 1, item.day)
-            const todayDate = new Date(currentYear, currentMonth - 1, currentDay)
-            const endDate = new Date(currentYear, endMonth - 1, endDay)
+            const itemDate = new Date(currentYear, month - 1, day)
             
             // Handle year wrap-around
             if (itemDate < todayDate) {
               itemDate.setFullYear(currentYear + 1)
             }
             
-            return itemDate >= todayDate && itemDate <= endDate
-          })
-          .sort((a, b) => {
-            const aDate = new Date(currentYear, a.month - 1, a.day)
-            const bDate = new Date(currentYear, b.month - 1, b.day)
-            if (aDate < new Date(currentYear, currentMonth - 1, currentDay)) {
-              aDate.setFullYear(currentYear + 1)
+            if (itemDate >= todayDate && itemDate <= endDate) {
+              return {
+                ...profile,
+                years,
+                sortDate: itemDate.getTime()
+              }
             }
-            if (bDate < new Date(currentYear, currentMonth - 1, currentDay)) {
-              bDate.setFullYear(currentYear + 1)
-            }
-            return aDate.getTime() - bDate.getTime()
+            return null
           })
-          .map(item => ({
-            ...item.profile,
-            years: item.years
-          }))
+          .filter((item): item is any => item !== null)
+          .sort((a, b) => a.sortDate - b.sortDate)
+          .map(({ sortDate, ...rest }) => rest)
         
         setAnniversaries(upcomingAnniversaries)
+      } else {
+        setAnniversaries([])
       }
     } catch (error) {
       console.error('Error fetching anniversaries:', error)
+      setAnniversaries([])
     }
   }
 

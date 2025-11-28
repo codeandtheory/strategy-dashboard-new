@@ -205,20 +205,17 @@ export default function WorkSamplesPage() {
 
       <main className="w-full max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
         <div className="flex gap-6 w-full">
-          {/* Left Sidebar Card - Curved, Non-scrolling */}
-          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit sticky top-24 self-start`} style={{ 
-            borderColor: mode === 'chaos' ? blueColors.primary : mode === 'chill' ? blueColors.primaryPair : '#FFFFFF',
-            borderWidth: mode === 'chaos' ? '2px' : '0px'
-          }}>
+          {/* Left Sidebar Card - Curved, Non-scrolling - BLUE SYSTEM background */}
+          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#4A90E2]' : mode === 'chill' ? 'bg-[#2DD4BF]' : 'bg-[#1E3A5F]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit border-0 sticky top-24 self-start`}>
             {/* Filters Section */}
             <div className="mb-6">
-              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#4A90E2]' : 'text-white'}`}>
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
                 ▼ FILTERS
               </h3>
               <div className="space-y-3">
                 {/* Author Filter */}
                 <div>
-                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
+                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-black/80'}`}>
                     Author
                   </label>
                   <select
@@ -227,9 +224,7 @@ export default function WorkSamplesPage() {
                     className={`w-full h-10 px-3 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
                       mode === 'chill' 
                         ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-gray-400' 
-                        : mode === 'chaos'
-                        ? 'bg-black/30 border-gray-600 text-white focus:ring-gray-500'
-                        : 'bg-black/30 border-gray-600 text-white focus:ring-gray-500'
+                        : 'bg-white/90 border-white/50 text-black focus:ring-white'
                     }`}
                   >
                     <option value="all">All Authors</option>
@@ -243,7 +238,7 @@ export default function WorkSamplesPage() {
                 
                 {/* Type Filter */}
                 <div>
-                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
+                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-black/80'}`}>
                     Type
                   </label>
                   <select
@@ -252,9 +247,7 @@ export default function WorkSamplesPage() {
                     className={`w-full h-10 px-3 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
                       mode === 'chill' 
                         ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-gray-400' 
-                        : mode === 'chaos'
-                        ? 'bg-black/30 border-gray-600 text-white focus:ring-gray-500'
-                        : 'bg-black/30 border-gray-600 text-white focus:ring-gray-500'
+                        : 'bg-white/90 border-white/50 text-black focus:ring-white'
                     }`}
                   >
                     <option value="all">All Types</option>
@@ -268,7 +261,7 @@ export default function WorkSamplesPage() {
                 
                 {/* Client Filter */}
                 <div>
-                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
+                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-black/80'}`}>
                     Client
                   </label>
                   <select
@@ -277,9 +270,7 @@ export default function WorkSamplesPage() {
                     className={`w-full h-10 px-3 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
                       mode === 'chill' 
                         ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-gray-400' 
-                        : mode === 'chaos'
-                        ? 'bg-black/30 border-gray-600 text-white focus:ring-gray-500'
-                        : 'bg-black/30 border-gray-600 text-white focus:ring-gray-500'
+                        : 'bg-white/90 border-white/50 text-black focus:ring-white'
                     }`}
                   >
                     <option value="all">All Clients</option>

@@ -244,6 +244,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Calculate start_date (assignment_date + 3 days) and end_date (start_date + 7 days)
+    const assignmentDateObj = new Date(assignment_date)
+    const startDateObj = new Date(assignmentDateObj)
+    startDateObj.setDate(startDateObj.getDate() + 3)
+    const endDateObj = new Date(startDateObj)
+    endDateObj.setDate(endDateObj.getDate() + 7)
+
+    const start_date = startDateObj.toISOString().split('T')[0]
+    const end_date = endDateObj.toISOString().split('T')[0]
+
     // Grant curator permissions
     const { data: selectedCuratorProfile } = await supabase
       .from('profiles')

@@ -37,16 +37,50 @@ export default function BeastHistoryPage() {
 
   const fetchBeastBabeHistory = async () => {
     try {
+      setLoading(true)
       const { data: history, error } = await supabase
         .from('beast_babe_history')
         .select(`
           *,
           user:profiles!beast_babe_history_user_id_fkey(id, full_name, email, avatar_url),
-          passed_by:profiles!beast_babe_history_passed_by_id_fkey(id, full_name, email, avatar_url)
+          passed_by:profiles!beast_babe_history_passed_by_user_id_fkey(id, full_name, email, avatar_url)
         `)
         .order('date', { ascending: false })
       
-      if (!error && history) {
+      if (error) {
+        console.error('Error fetching beast babe history:', error)
+        // Try without foreign key names in case they don't match
+        const { data: historyAlt, error: errorAlt } = await supabase
+          .from('beast_babe_history')
+          .select('*')
+          .order('date', { ascending: false })
+        
+        if (!errorAlt && historyAlt) {
+          // Manually fetch user profiles
+          const userIds = [...new Set(historyAlt.map(h => h.user_id).filter(Boolean))]
+          const passedByIds = [...new Set(historyAlt.map(h => h.passed_by_user_id).filter(Boolean))]
+          const allIds = [...new Set([...userIds, ...passedByIds])]
+          
+          if (allIds.length > 0) {
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('id, full_name, email, avatar_url')
+              .in('id', allIds)
+            
+            const profileMap = new Map(profiles?.map(p => [p.id, p]) || [])
+            
+            const enrichedHistory = historyAlt.map(entry => ({
+              ...entry,
+              user: profileMap.get(entry.user_id) || null,
+              passed_by: entry.passed_by_user_id ? profileMap.get(entry.passed_by_user_id) || null : null
+            }))
+            
+            setBeastBabeHistory(enrichedHistory)
+          } else {
+            setBeastBabeHistory(historyAlt)
+          }
+        }
+      } else if (history) {
         setBeastBabeHistory(history)
       }
     } catch (error) {
