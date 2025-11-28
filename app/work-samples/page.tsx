@@ -206,16 +206,19 @@ export default function WorkSamplesPage() {
       <main className="w-full max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
         <div className="flex gap-6 w-full">
           {/* Left Sidebar Card - Curved, Non-scrolling - BLUE SYSTEM background */}
-          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#4A90E2]' : mode === 'chill' ? 'bg-[#2DD4BF]' : 'bg-[#1E3A5F]'} ${getRoundedClass('rounded-2xl')} p-6 flex flex-col h-fit border-0 sticky top-24 self-start`}>
+          <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#1E3A5F]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-2xl')} p-6 flex flex-col h-fit sticky top-24 self-start`} style={{ 
+            borderColor: mode === 'chaos' ? blueColors.primary : mode === 'chill' ? blueColors.primaryPair : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
+          }}>
             {/* Filters Section */}
             <div className="mb-6">
-              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#4A90E2]' : 'text-white'}`}>
                 ▼ FILTERS
               </h3>
               <div className="space-y-3">
                 {/* Author Filter */}
                 <div>
-                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-black/80'}`}>
+                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-white/80'}`}>
                     Author
                   </label>
                   <select
@@ -224,8 +227,11 @@ export default function WorkSamplesPage() {
                     className={`w-full h-10 px-3 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
                       mode === 'chill' 
                         ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-gray-400' 
-                        : 'bg-white/90 border-white/50 text-black focus:ring-white'
+                        : mode === 'chaos'
+                        ? 'bg-[#4A90E2]/40 text-white focus:ring-[#4A90E2]'
+                        : 'bg-black/40 text-white focus:ring-white'
                     }`}
+                    style={mode === 'chaos' ? { borderColor: 'rgba(74,144,226,0.3)' } : {}}
                   >
                     <option value="all">All Authors</option>
                     {uniqueAuthors.map(author => (
@@ -238,7 +244,7 @@ export default function WorkSamplesPage() {
                 
                 {/* Type Filter */}
                 <div>
-                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-black/80'}`}>
+                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-white/80'}`}>
                     Type
                   </label>
                   <select
@@ -247,8 +253,11 @@ export default function WorkSamplesPage() {
                     className={`w-full h-10 px-3 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
                       mode === 'chill' 
                         ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-gray-400' 
-                        : 'bg-white/90 border-white/50 text-black focus:ring-white'
+                        : mode === 'chaos'
+                        ? 'bg-[#4A90E2]/40 text-white focus:ring-[#4A90E2]'
+                        : 'bg-black/40 text-white focus:ring-white'
                     }`}
+                    style={mode === 'chaos' ? { borderColor: 'rgba(74,144,226,0.3)' } : {}}
                   >
                     <option value="all">All Types</option>
                     {uniqueTypes.map(type => (
@@ -261,7 +270,7 @@ export default function WorkSamplesPage() {
                 
                 {/* Client Filter */}
                 <div>
-                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-black/80'}`}>
+                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-white/80'}`}>
                     Client
                   </label>
                   <select
@@ -270,8 +279,11 @@ export default function WorkSamplesPage() {
                     className={`w-full h-10 px-3 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
                       mode === 'chill' 
                         ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-gray-400' 
-                        : 'bg-white/90 border-white/50 text-black focus:ring-white'
+                        : mode === 'chaos'
+                        ? 'bg-[#4A90E2]/40 text-white focus:ring-[#4A90E2]'
+                        : 'bg-black/40 text-white focus:ring-white'
                     }`}
+                    style={mode === 'chaos' ? { borderColor: 'rgba(74,144,226,0.3)' } : {}}
                   >
                     <option value="all">All Clients</option>
                     {uniqueClients.map(client => (
@@ -285,11 +297,11 @@ export default function WorkSamplesPage() {
             </div>
 
             {/* Divider */}
-            <div className={`h-px mb-6 ${mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-black/20'}`}></div>
+            <div className={`h-px mb-6 ${mode === 'chaos' ? 'bg-[#4A90E2]/40' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`}></div>
 
             {/* View Toggle Section */}
             <div className="mb-6">
-              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#4A90E2]' : 'text-white'}`}>
                 ▼ VIEW
               </h3>
               <div className="flex items-center gap-2">
@@ -297,12 +309,17 @@ export default function WorkSamplesPage() {
                   onClick={() => setViewMode('thumbnails')}
                   className={`flex-1 h-10 px-4 ${getRoundedClass('rounded-xl')} transition-all flex items-center justify-center ${
                     viewMode === 'thumbnails'
-                      ? 'text-white'
+                      ? mode === 'chaos'
+                        ? 'bg-[#4A90E2] text-black'
+                        : mode === 'chill'
+                        ? 'bg-[#1E3A5F] text-white'
+                        : 'bg-white text-black'
+                      : mode === 'chaos'
+                      ? 'bg-[#4A90E2]/30 text-white/80 hover:bg-[#4A90E2]/50 text-white'
                       : mode === 'chill'
-                      ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
-                      : 'bg-black/20 text-black/80 hover:bg-black/30'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                   }`}
-                  style={viewMode === 'thumbnails' ? { backgroundColor: blueColors.contrast } : {}}
                   title="Grid View"
                 >
                   <Grid3x3 className="w-4 h-4" />
@@ -311,12 +328,17 @@ export default function WorkSamplesPage() {
                   onClick={() => setViewMode('list')}
                   className={`flex-1 h-10 px-4 ${getRoundedClass('rounded-xl')} transition-all flex items-center justify-center ${
                     viewMode === 'list'
-                      ? 'text-white'
+                      ? mode === 'chaos'
+                        ? 'bg-[#4A90E2] text-black'
+                        : mode === 'chill'
+                        ? 'bg-[#1E3A5F] text-white'
+                        : 'bg-white text-black'
+                      : mode === 'chaos'
+                      ? 'bg-[#4A90E2]/30 text-white/80 hover:bg-[#4A90E2]/50 text-white'
                       : mode === 'chill'
-                      ? 'bg-white/50 text-[#4A1818]/80 hover:bg-white/70'
-                      : 'bg-black/20 text-black/80 hover:bg-black/30'
+                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                   }`}
-                  style={viewMode === 'list' ? { backgroundColor: blueColors.contrast } : {}}
                   title="List View"
                 >
                   <List className="w-4 h-4" />
@@ -325,16 +347,16 @@ export default function WorkSamplesPage() {
             </div>
 
             {/* Divider */}
-            <div className={`h-px mb-6 ${mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-black/20'}`}></div>
+            <div className={`h-px mb-6 ${mode === 'chaos' ? 'bg-[#4A90E2]/40' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`}></div>
 
             {/* Sort Section */}
             <div className="mb-6">
-              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-black'}`}>
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#4A90E2]' : 'text-white'}`}>
                 ▼ SORT
               </h3>
               <div className="space-y-3">
                 <div>
-                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-black/80'}`}>
+                  <label className={`text-xs font-medium mb-2 block ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-white/80'}`}>
                     Sort By
                   </label>
                   <select
@@ -343,8 +365,11 @@ export default function WorkSamplesPage() {
                     className={`w-full h-10 px-3 ${getRoundedClass('rounded-xl')} text-sm font-medium border focus:outline-none focus:ring-2 ${
                       mode === 'chill' 
                         ? 'bg-white border-gray-300 text-[#4A1818] focus:ring-gray-400' 
-                        : 'bg-white/90 border-white/50 text-black focus:ring-white'
+                        : mode === 'chaos'
+                        ? 'bg-[#4A90E2]/40 text-white focus:ring-[#4A90E2]'
+                        : 'bg-black/40 text-white focus:ring-white'
                     }`}
+                    style={mode === 'chaos' ? { borderColor: 'rgba(74,144,226,0.3)' } : {}}
                   >
                     <option value="date">Date</option>
                     <option value="name">Name</option>
@@ -356,8 +381,11 @@ export default function WorkSamplesPage() {
                   className={`w-full h-10 px-4 ${getRoundedClass('rounded-xl')} border flex items-center justify-center gap-2 transition-colors ${
                     mode === 'chill' 
                       ? 'bg-white border-gray-300 text-[#4A1818] hover:bg-gray-50' 
-                      : 'bg-white/90 border-white/50 text-black hover:bg-white'
+                      : mode === 'chaos'
+                      ? 'bg-[#4A90E2]/40 text-white hover:bg-[#4A90E2]/50 border-[#4A90E2]/30'
+                      : 'bg-black/40 text-white hover:bg-black/60 border-white/20'
                   }`}
+                  style={mode === 'chaos' ? { borderColor: 'rgba(74,144,226,0.3)' } : {}}
                   title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
                 >
                   <ArrowUpDown className="w-4 h-4" />
@@ -369,7 +397,7 @@ export default function WorkSamplesPage() {
             </div>
 
             {/* Divider */}
-            <div className={`h-px mb-6 ${mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-black/20'}`}></div>
+            <div className={`h-px mb-6 ${mode === 'chaos' ? 'bg-[#4A90E2]/40' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`}></div>
 
             {/* Back to Dashboard */}
             <div className="mt-auto">

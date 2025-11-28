@@ -482,7 +482,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Link playlist to current curator assignment if curator matches
-    // Find the active curator assignment for this date
+    // This allows the curator to see their playlist in the admin sidebar
     if (playlist && finalCurator) {
       const { data: activeAssignment } = await supabase
         .from('curator_assignments')
@@ -494,7 +494,7 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (activeAssignment) {
-        // Link playlist to the curator assignment
+        // Link playlist to the curator assignment so curator can see it in admin
         await supabase
           .from('curator_assignments')
           .update({ playlist_id: playlist.id })

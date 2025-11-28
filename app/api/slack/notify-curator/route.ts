@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
- * POST - Send Slack notification to curator
+ * POST - Send Slack DM to curator
+ * Uses Slack Web API to send a direct message
  */
 export async function POST(request: NextRequest) {
   try {
@@ -15,12 +16,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL
-    if (!slackWebhookUrl) {
-      console.warn('SLACK_WEBHOOK_URL not configured, skipping Slack notification')
+    const slackBotToken = process.env.SLACK_BOT_TOKEN
+    if (!slackBotToken) {
+      console.warn('SLACK_BOT_TOKEN not configured, skipping Slack notification')
       return NextResponse.json({ 
         success: false, 
-        message: 'Slack webhook not configured' 
+        message: 'Slack bot token not configured' 
       })
     }
 
@@ -38,7 +39,32 @@ export async function POST(request: NextRequest) {
       day: 'numeric'
     })
 
+    // First, open a DM conversation with the user
+    const openDmResponse = await fetch('https://slack.com/api/conversations.open', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${slackBotToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        users: slack_id
+      }),
+    })
+
+    const dmData = await openDmResponse.json()
+    if (!dmData.ok || !dmData.channel?.id) {
+      console.error('Failed to open DM:', dmData.error)
+      return NextResponse.json(
+        { error: 'Failed to open Slack DM', details: dmData.error },
+        { status: 500 }
+      )
+    }
+
+    const channelId = dmData.channel.id
+
+    // Send the message to the DM
     const message = {
+      channel: channelId,
       text: `🎵 Curator Assignment: ${curator_name}`,
       blocks: [
         {
@@ -53,7 +79,7 @@ export async function POST(request: NextRequest) {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `Hey <@${slack_id}>! You've been randomly selected to curate the weekly playlist.\n\n*Curation Period:*\n• Starts: ${startDateFormatted}\n• Ends: ${endDateFormatted}\n\nYou'll have curator permissions starting now, and your curation period begins in 3 days.`
+            text: `Hey! You've been randomly selected to curate the weekly playlist.\n\n*Curation Period:*\n• Starts: ${startDateFormatted}\n• Ends: ${endDateFormatted}\n\nYou'll have curator permissions starting now, and your curation period begins in 3 days.`
           }
         },
         {
@@ -88,24 +114,25 @@ export async function POST(request: NextRequest) {
       ]
     }
 
-    const response = await fetch(slackWebhookUrl, {
+    const sendMessageResponse = await fetch('https://slack.com/api/chat.postMessage', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${slackBotToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(message),
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Slack API error:', errorText)
+    const messageData = await sendMessageResponse.json()
+    if (!messageData.ok) {
+      console.error('Failed to send Slack message:', messageData.error)
       return NextResponse.json(
-        { error: 'Failed to send Slack notification', details: errorText },
+        { error: 'Failed to send Slack DM', details: messageData.error },
         { status: 500 }
       )
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, channel: channelId })
   } catch (error: any) {
     console.error('Error sending Slack notification:', error)
     return NextResponse.json(
