@@ -51,6 +51,7 @@ export default function TeamPage() {
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [currentCurator, setCurrentCurator] = useState<{ curator: string; curator_photo_url: string | null; spotify_url: string | null; id: string } | null>(null)
+  const [beastBabeHistory, setBeastBabeHistory] = useState<any[]>([])
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -73,7 +74,8 @@ export default function TeamPage() {
         fetchAnniversaries(),
         fetchSnapLeaderboard(),
         fetchAllProfiles(),
-        fetchCurrentCurator()
+        fetchCurrentCurator(),
+        fetchBeastBabeHistory()
       ])
     } catch (error) {
       console.error('Error fetching team data:', error)
@@ -371,6 +373,25 @@ export default function TeamPage() {
     }
   }
 
+  const fetchBeastBabeHistory = async () => {
+    try {
+      const { data: history, error } = await supabase
+        .from('beast_babe_history')
+        .select(`
+          *,
+          user:profiles!beast_babe_history_user_id_fkey(id, full_name, email, avatar_url),
+          passed_by:profiles!beast_babe_history_passed_by_id_fkey(id, full_name, email, avatar_url)
+        `)
+        .order('date', { ascending: false })
+      
+      if (!error && history) {
+        setBeastBabeHistory(history)
+      }
+    } catch (error) {
+      console.error('Error fetching beast babe history:', error)
+    }
+  }
+
   const getBgClass = () => {
     switch (mode) {
       case 'chaos': return 'bg-[#1A1A1A]'
@@ -458,7 +479,7 @@ export default function TeamPage() {
     return mode === 'code' ? 'rounded-none' : defaultClass
   }
   
-  const [activeFilter, setActiveFilter] = useState<'all' | 'anniversaries' | 'birthdays'>('all')
+  const [activeFilter, setActiveFilter] = useState<'all' | 'anniversaries' | 'birthdays' | 'beast-history'>('all')
 
   if (authLoading || loading) {
     return (
@@ -515,7 +536,7 @@ export default function TeamPage() {
                 ▼ SECTIONS
               </h3>
               <div className="space-y-2">
-                {(['all', 'anniversaries', 'birthdays'] as const).map((filter) => (
+                {(['all', 'anniversaries', 'birthdays', 'beast-history'] as const).map((filter) => (
                   <button
                     key={filter}
                     onClick={() => setActiveFilter(filter)}
@@ -536,27 +557,14 @@ export default function TeamPage() {
                     {filter === 'all' && <Users className="w-4 h-4" />}
                     {filter === 'anniversaries' && <PartyPopper className="w-4 h-4" />}
                     {filter === 'birthdays' && <Cake className="w-4 h-4" />}
+                    {filter === 'beast-history' && <Crown className="w-4 h-4" />}
                     <span className="font-black uppercase text-sm">
-                      {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                      {filter === 'all' ? 'All' : filter === 'beast-history' ? 'History of the Beast' : filter.charAt(0).toUpperCase() + filter.slice(1)}
                     </span>
                   </button>
                 ))}
                 
                 {/* Links to separate pages */}
-                <Link
-                  href="/team/beast-history"
-                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
-                    mode === 'chaos'
-                      ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50 text-white'
-                      : mode === 'chill'
-                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
-                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
-                  }`}
-                >
-                  <Crown className="w-4 h-4" />
-                  <span className="font-black uppercase text-sm">History of the Beast</span>
-                </Link>
-                
                 <Link
                   href="/team/directory"
                   className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
@@ -653,10 +661,60 @@ export default function TeamPage() {
               </Card>
             </div>
 
-            {/* Beast Babe - Show for 'all' */}
+            {/* Beast Babe and Snap Leaderboard - Side by Side (1/2 each) - Show for 'all' */}
             {activeFilter === 'all' && (
-              <div className="mb-6">
-                <BeastBabeCard />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Beast Babe - 1/2 width */}
+                <div className="w-full">
+                  <BeastBabeCard />
+                </div>
+                
+                {/* Snap Leaderboard - 1/2 width */}
+                <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-6 min-h-[600px] flex flex-col`} style={{
+                  borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                  borderWidth: '1px'
+                }}>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className={`w-12 h-12 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.primary }}>
+                      <Trophy className="w-6 h-6 text-white" />
+                    </div>
+                    <h2 className={`text-2xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Snap Leaderboard</h2>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto">
+                    {snapLeaderboard.length > 0 ? (
+                      <div className="space-y-3">
+                        {snapLeaderboard.map((user, index) => (
+                          <div key={user.id} className="flex items-center gap-3">
+                            <div className={`w-10 h-10 ${getRoundedClass('rounded-full')} flex items-center justify-center text-sm font-bold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`} style={{ backgroundColor: greenColors.primary + '20' }}>
+                              {index + 1}
+                            </div>
+                            {user.full_name || user.email ? (
+                              <>
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm font-semibold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
+                                    {user.full_name || user.email || 'Unknown'}
+                                  </p>
+                                  <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'}`}>
+                                    {user.count} {user.count === 1 ? 'snap' : 'snaps'}
+                                  </p>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex-1">
+                                <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'}`}>Unknown user</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No snaps yet</p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
               </div>
             )}
 
@@ -817,6 +875,171 @@ export default function TeamPage() {
                   </Card>
                 )}
               </div>
+            )}
+
+            {/* History of the Beast - Show when 'beast-history' filter is active */}
+            {activeFilter === 'beast-history' && (
+              <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-6`} style={{
+                borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                borderWidth: '1px'
+              }}>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className={`w-12 h-12 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.primary }}>
+                    <Crown className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className={`text-2xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>History of the Beast</h2>
+                </div>
+                
+                {beastBabeHistory.length > 0 ? (
+                  <div className="relative" style={{ minHeight: `${Math.max(600, beastBabeHistory.length * 100)}px`, padding: '2rem 0' }}>
+                    {/* Curving Path SVG */}
+                    <svg 
+                      className="absolute inset-0 w-full h-full" 
+                      style={{ overflow: 'visible', pointerEvents: 'none' }}
+                      viewBox="0 0 1000 1000"
+                      preserveAspectRatio="xMidYMid meet"
+                    >
+                      <defs>
+                        <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor={greenColors.primary} stopOpacity="0.8" />
+                          <stop offset="50%" stopColor={greenColors.complementary} stopOpacity="0.6" />
+                          <stop offset="100%" stopColor={greenColors.primaryPair} stopOpacity="0.4" />
+                        </linearGradient>
+                      </defs>
+                      {/* Curving path - candyland style */}
+                      <path
+                        d={(() => {
+                          const total = beastBabeHistory.length
+                          let path = `M 100 50`
+                          
+                          for (let i = 1; i < total; i++) {
+                            const progress = i / (total - 1)
+                            // Create a curving path that snakes across
+                            const baseX = 100 + progress * 700
+                            const baseY = 50 + progress * 900
+                            const curveX = baseX + Math.sin(progress * Math.PI * 6) * 80
+                            const curveY = baseY + Math.cos(progress * Math.PI * 4) * 60
+                            
+                            if (i === 1) {
+                              path += ` Q ${baseX - 50} ${baseY - 30}, ${curveX} ${curveY}`
+                            } else {
+                              const prevProgress = (i - 1) / (total - 1)
+                              const prevX = 100 + prevProgress * 700 + Math.sin(prevProgress * Math.PI * 6) * 80
+                              const prevY = 50 + prevProgress * 900 + Math.cos(prevProgress * Math.PI * 4) * 60
+                              const cp1x = prevX + (curveX - prevX) * 0.3
+                              const cp1y = prevY + (curveY - prevY) * 0.3
+                              const cp2x = prevX + (curveX - prevX) * 0.7
+                              const cp2y = prevY + (curveY - prevY) * 0.7
+                              path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${curveX} ${curveY}`
+                            }
+                          }
+                          return path
+                        })()}
+                        fill="none"
+                        stroke="url(#pathGradient)"
+                        strokeWidth="8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        style={{ filter: 'drop-shadow(0 0 6px rgba(0, 200, 150, 0.4))' }}
+                      />
+                    </svg>
+                    
+                    {/* Avatars positioned along the path */}
+                    {beastBabeHistory.map((entry, index) => {
+                      const progress = index / (beastBabeHistory.length - 1)
+                      // Calculate position along the curving path
+                      const baseX = 100 + progress * 700
+                      const baseY = 50 + progress * 900
+                      const pathX = baseX + Math.sin(progress * Math.PI * 6) * 80
+                      const pathY = baseY + Math.cos(progress * Math.PI * 4) * 60
+                      
+                      // Position avatar offset to the side of the path
+                      const angle = Math.atan2(
+                        Math.cos(progress * Math.PI * 4) * -60,
+                        Math.sin(progress * Math.PI * 6) * 80
+                      )
+                      const offsetX = Math.cos(angle + Math.PI / 2) * 100
+                      const offsetY = Math.sin(angle + Math.PI / 2) * 100
+                      
+                      return (
+                        <div
+                          key={entry.id}
+                          className="absolute z-10"
+                          style={{
+                            left: `${((pathX + offsetX) / 1000) * 100}%`,
+                            top: `${((pathY + offsetY) / 1000) * 100}%`,
+                            transform: 'translate(-50%, -50%)'
+                          }}
+                        >
+                          <div className="relative group">
+                            {/* Avatar */}
+                            <div className="relative">
+                              {entry.user?.avatar_url ? (
+                                <img
+                                  src={entry.user.avatar_url}
+                                  alt={entry.user.full_name || 'User'}
+                                  className="w-12 h-12 rounded-full object-cover border-2 cursor-pointer transition-transform hover:scale-125"
+                                  style={{ 
+                                    borderColor: index === 0 ? greenColors.primary : greenColors.complementary,
+                                    borderWidth: index === 0 ? '3px' : '2px',
+                                    boxShadow: index === 0 ? `0 0 16px ${greenColors.primary}90` : `0 0 8px ${greenColors.complementary}50`
+                                  }}
+                                />
+                              ) : (
+                                <div 
+                                  className="w-12 h-12 rounded-full flex items-center justify-center border-2 cursor-pointer transition-transform hover:scale-125"
+                                  style={{ 
+                                    backgroundColor: greenColors.primaryPair + '60',
+                                    borderColor: index === 0 ? greenColors.primary : greenColors.complementary,
+                                    borderWidth: index === 0 ? '3px' : '2px',
+                                    boxShadow: index === 0 ? `0 0 16px ${greenColors.primary}90` : `0 0 8px ${greenColors.complementary}50`
+                                  }}
+                                >
+                                  <Crown className="w-6 h-6" style={{ color: index === 0 ? greenColors.primary : greenColors.complementary }} />
+                                </div>
+                              )}
+                              {/* Crown badge for current */}
+                              {index === 0 && (
+                                <div 
+                                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center animate-bounce z-20"
+                                  style={{ backgroundColor: greenColors.primary }}
+                                >
+                                  <Crown className="w-3 h-3 text-white" />
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Tooltip on hover */}
+                            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30 whitespace-nowrap">
+                              <div 
+                                className={`px-3 py-2 ${getRoundedClass('rounded-lg')} shadow-lg`}
+                                style={{ 
+                                  backgroundColor: mode === 'chaos' ? '#2A2A2A' : mode === 'chill' ? '#FFFFFF' : '#1a1a1a',
+                                  border: `1px solid ${greenColors.primary}`
+                                }}
+                              >
+                                <p className={`text-sm font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
+                                  {entry.user?.full_name || entry.user?.email || 'Unknown'}
+                                </p>
+                                <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
+                                  {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </p>
+                                {entry.achievement && (
+                                  <p className={`text-xs italic mt-1 ${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-white/80'}`}>
+                                    "{entry.achievement}"
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className={`text-center py-8 ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No beast babe history found</p>
+                )}
+              </Card>
             )}
 
           </div>
