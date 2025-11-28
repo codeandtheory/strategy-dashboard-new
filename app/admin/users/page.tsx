@@ -231,8 +231,17 @@ export default function UsersAdminPage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create user')
+        let errorData
+        try {
+          errorData = await response.json()
+        } catch {
+          // If response is not JSON, use status text
+          throw new Error(`Failed to create user: ${response.status} ${response.statusText}`)
+        }
+        const errorMessage = errorData.details 
+          ? `${errorData.error || 'Failed to create user'}\n\nDetails: ${errorData.details}${errorData.code ? `\nCode: ${errorData.code}` : ''}${errorData.hint ? `\nHint: ${errorData.hint}` : ''}`
+          : errorData.error || 'Failed to create user'
+        throw new Error(errorMessage)
       }
 
       const result = await response.json()
@@ -342,6 +351,15 @@ export default function UsersAdminPage() {
             <DialogHeader>
               <DialogTitle className={getTextClass()}>Create New User</DialogTitle>
             </DialogHeader>
+            
+            {error && (
+              <div className="mt-4 p-4 border-2 rounded-md" style={{ 
+                borderColor: '#ef4444', 
+                backgroundColor: mode === 'chill' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.1)' 
+              }}>
+                <p className="text-sm whitespace-pre-wrap" style={{ color: '#ef4444' }}>{error}</p>
+              </div>
+            )}
             
             <div className="space-y-6 mt-4">
               {/* Email (required) */}
