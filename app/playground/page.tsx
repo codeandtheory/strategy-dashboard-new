@@ -666,7 +666,8 @@ export default function PlaygroundPage() {
                 id="file"
                 type="file"
                 onChange={(e) => {
-                  // TODO: Implement file upload to Supabase Storage
+                  // TODO: Implement file upload to Supabase Storage for playground tools
+                  // This will allow users to upload tool files directly from the UI
                   console.log('File upload not yet implemented')
                 }}
               />

@@ -6,12 +6,9 @@ export const maxDuration = 300 // 5 minutes for processing large PDFs
 
 export async function POST(request: NextRequest) {
   try {
-    const config = getEnv()
-
     // Parse JSON body (expecting Google Drive file ID)
     const body = await request.json()
     const gdriveFileId = body.gdrive_file_id as string | null
-    const titleOverride = body.title as string | null
 
     if (!gdriveFileId) {
       return NextResponse.json(
@@ -28,8 +25,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File must be a PDF' }, { status: 400 })
     }
 
-    // Processing disabled for now - just return file info
-    // TODO: Add processing later when ready
+    // Note: Deck processing is handled via n8n workflow
+    // This endpoint currently just validates and returns file metadata
     return NextResponse.json({
       fileId: gdriveFileId,
       fileName: fileMetadata.name,

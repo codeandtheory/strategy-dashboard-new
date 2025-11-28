@@ -338,7 +338,7 @@ export async function GET(request: NextRequest) {
     
     // CRITICAL SAFETY CHECK: DISABLED for debugging
     // This prevents race conditions if multiple requests come in simultaneously
-    // TODO: Re-enable once n8n is working properly
+    // TODO: Re-enable safety check once n8n workflow is stable and race conditions are resolved
     // if (doubleCheckHoroscope && doubleCheckHoroscope.image_url && doubleCheckHoroscope.image_url.trim() !== '') {
     //   ... (safety check code commented out)
     // }
