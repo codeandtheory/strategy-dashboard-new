@@ -231,6 +231,20 @@ export default function BeastHistoryPage() {
                   <span className="font-black uppercase text-sm">Birthdays</span>
                 </Link>
                 
+                <Link
+                  href="/team"
+                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                    mode === 'chaos'
+                      ? 'bg-[#00C896] text-black'
+                      : mode === 'chill'
+                      ? 'bg-[#00C896] text-white'
+                      : 'bg-white text-black'
+                  }`}
+                >
+                  <Crown className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">History of the Beast</span>
+                </Link>
+                
                 {/* Links to separate pages */}
                 <Link
                   href="/team/directory"
@@ -244,20 +258,6 @@ export default function BeastHistoryPage() {
                 >
                   <Users className="w-4 h-4" />
                   <span className="font-black uppercase text-sm">Directory</span>
-                </Link>
-                
-                <Link
-                  href="/team/beast-history"
-                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
-                    mode === 'chaos'
-                      ? 'bg-[#00C896] text-black'
-                      : mode === 'chill'
-                      ? 'bg-[#00C896] text-white'
-                      : 'bg-white text-black'
-                  }`}
-                >
-                  <Crown className="w-4 h-4" />
-                  <span className="font-black uppercase text-sm">History of the Beast</span>
                 </Link>
               </div>
             </div>
