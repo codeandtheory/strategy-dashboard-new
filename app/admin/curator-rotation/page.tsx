@@ -167,25 +167,34 @@ export default function CuratorRotationPage() {
         })
       })
 
-      const data = await response.json()
-      if (response.ok) {
-        await fetchData()
-        const startDate = new Date(data.assignment.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-        const endDate = new Date(data.assignment.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-        alert(`Curator assigned: ${data.selectedCurator?.full_name || 'Unknown'}\n\nThey've been notified via Slack.\nCuration period: ${startDate} - ${endDate}`)
-        setIsAssignDialogOpen(false)
-        setFormData({
-          assignment_date: new Date().toISOString().split('T')[0],
-          curator_name: '',
-          curator_profile_id: '',
-          is_manual_override: false
-        })
-      } else {
-        alert(`Error: ${data.error}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        let errorMessage = 'Failed to assign curator'
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`
+        }
+        alert(`Error: ${errorMessage}`)
+        return
       }
+
+      const data = await response.json()
+      await fetchData()
+      const startDate = new Date(data.assignment.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      const endDate = new Date(data.assignment.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      alert(`Curator assigned: ${data.selectedCurator?.full_name || 'Unknown'}\n\nThey've been notified via Slack.\nCuration period: ${startDate} - ${endDate}`)
+      setIsAssignDialogOpen(false)
+      setFormData({
+        assignment_date: new Date().toISOString().split('T')[0],
+        curator_name: '',
+        curator_profile_id: '',
+        is_manual_override: false
+      })
     } catch (error: any) {
       console.error('Error assigning curator:', error)
-      alert(`Error: ${error.message}`)
+      alert(`Error: ${error.message || 'Failed to assign curator. Please check the console for details.'}`)
     } finally {
       setAssigning(false)
     }
@@ -261,15 +270,26 @@ export default function CuratorRotationPage() {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' }
                 })
-                const data = await response.json()
-                if (response.ok) {
-                  await fetchData()
-                  alert(`Next curator automatically assigned: ${data.selectedCurator?.full_name || 'Unknown'}`)
-                } else {
-                  alert(`Error: ${data.error}`)
+                
+                if (!response.ok) {
+                  const errorText = await response.text()
+                  let errorMessage = 'Failed to assign curator'
+                  try {
+                    const errorData = JSON.parse(errorText)
+                    errorMessage = errorData.error || errorMessage
+                  } catch {
+                    errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`
+                  }
+                  alert(`Error: ${errorMessage}`)
+                  return
                 }
+
+                const data = await response.json()
+                await fetchData()
+                alert(`Next curator automatically assigned: ${data.selectedCurator?.full_name || 'Unknown'}`)
               } catch (error: any) {
-                alert(`Error: ${error.message}`)
+                console.error('Error auto-assigning curator:', error)
+                alert(`Error: ${error.message || 'Failed to assign curator. Please check the console for details.'}`)
               } finally {
                 setAssigning(false)
               }
@@ -329,7 +349,7 @@ export default function CuratorRotationPage() {
                         Select the date when the curator will be notified. Their curation period will start 3 days later and last 1 week.
                       </p>
                       {formData.assignment_date && (
-                        <div className={`mt-2 p-2 ${cardStyle.bg} ${cardStyle.border} border ${getRoundedClass('rounded')} text-xs ${cardStyle.text}/80`}>
+                        <div className={`mt-2 p-2 ${cardStyle.bg} ${cardStyle.border} border ${getRoundedClass('rounded-xl')} text-xs ${cardStyle.text}/80`}>
                           <strong>Curation Period:</strong><br />
                           Starts: {new Date(new Date(formData.assignment_date).getTime() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}<br />
                           Ends: {new Date(new Date(formData.assignment_date).getTime() + 10 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
@@ -493,7 +513,7 @@ export default function CuratorRotationPage() {
                     return (
                       <div
                         key={member.id}
-                        className={`${cardStyle.border} border ${getRoundedClass('rounded-lg')} p-4`}
+                        className={`${cardStyle.border} border ${getRoundedClass('rounded-xl')} p-4`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
