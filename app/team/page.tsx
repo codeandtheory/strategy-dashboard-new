@@ -398,11 +398,11 @@ export default function TeamPage() {
     }
   }
 
-  const getRoundedClass = (base: string) => {
-    if (mode === 'chaos') return base.replace('rounded', 'rounded-[1.5rem]')
-    if (mode === 'chill') return base.replace('rounded', 'rounded-2xl')
-    return base
+  const getRoundedClass = (defaultClass: string) => {
+    return mode === 'code' ? 'rounded-none' : defaultClass
   }
+  
+  const [activeFilter, setActiveFilter] = useState<'all' | 'anniversaries' | 'birthdays' | 'leaderboard' | 'directory' | 'org-chart'>('all')
 
   if (authLoading || loading) {
     return (
@@ -413,89 +413,206 @@ export default function TeamPage() {
   }
 
   return (
-    <div className={`flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'} min-h-screen`}>
+    <div className={`flex flex-col min-h-screen ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       <SiteHeader />
-      
+
       <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className={`text-3xl font-black uppercase tracking-wider ${getTextClass()} mb-2`}>Team</h1>
-          <p className={`${getTextClass()}/70 text-sm`}>Get to know your team</p>
-        </div>
+        {loading && (
+          <div className="text-center py-8 mb-8">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: greenColors.primary }} />
+            <p className={getTextClass()}>Loading team data...</p>
+          </div>
+        )}
+        <div className="flex gap-6">
+          {/* Left Sidebar Card */}
+          <Card className={`w-80 ${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
+            borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
+          }}>
+            {/* Quick Stats Section */}
+            <div className="mb-6">
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#00C896]' : 'text-white'}`}>
+                ▼ QUICK STATS
+              </h3>
+              <div className="space-y-3">
+                <div className={`p-3 ${getRoundedClass('rounded-xl')}`} style={{ backgroundColor: mode === 'chaos' ? greenColors.primaryPair + '40' : mode === 'chill' ? greenColors.complementary + '20' : 'rgba(255,255,255,0.1)' }}>
+                  <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Team Members</p>
+                  <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.totalTeamMembers}</p>
+                </div>
+                <div className={`p-3 ${getRoundedClass('rounded-xl')}`} style={{ backgroundColor: mode === 'chaos' ? greenColors.primaryPair + '40' : mode === 'chill' ? greenColors.complementary + '20' : 'rgba(255,255,255,0.1)' }}>
+                  <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Total Snaps</p>
+                  <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.totalSnaps}</p>
+                </div>
+                <div className={`p-3 ${getRoundedClass('rounded-xl')}`} style={{ backgroundColor: mode === 'chaos' ? greenColors.primaryPair + '40' : mode === 'chill' ? greenColors.complementary + '20' : 'rgba(255,255,255,0.1)' }}>
+                  <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Active Pitches</p>
+                  <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.activePitches}</p>
+                </div>
+              </div>
+            </div>
 
-        {/* Team by Numbers Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
-            borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
-            borderWidth: mode === 'chaos' ? '2px' : '0px'
-          }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Team Members</p>
-                <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.totalTeamMembers}</p>
-              </div>
-              <Users className="w-6 h-6" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-            </div>
-          </Card>
-          
-          <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
-            borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
-            borderWidth: mode === 'chaos' ? '2px' : '0px'
-          }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Total Snaps</p>
-                <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.totalSnaps}</p>
-              </div>
-              <MessageSquare className="w-6 h-6" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-            </div>
-          </Card>
-          
-          <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
-            borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
-            borderWidth: mode === 'chaos' ? '2px' : '0px'
-          }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Active Pitches</p>
-                <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.activePitches}</p>
-              </div>
-              <Briefcase className="w-6 h-6" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-            </div>
-          </Card>
-          
-          <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
-            borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
-            borderWidth: mode === 'chaos' ? '2px' : '0px'
-          }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Snap Leader</p>
-                <p className={`text-lg font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
-                  {teamStats.snapLeader?.full_name || teamStats.snapLeader?.email || 'N/A'}
-                </p>
-                {teamStats.snapLeader && (
-                  <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'}`}>{teamStats.snapLeader.count} snaps</p>
-                )}
-              </div>
-              <Trophy className="w-6 h-6" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-            </div>
-          </Card>
-        </div>
+            {/* Divider */}
+            <div className={`h-px mb-6 ${mode === 'chaos' ? 'bg-[#00C896]/40' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`}></div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Anniversaries */}
-            <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
-              borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
-              borderWidth: mode === 'chaos' ? '2px' : '0px'
-            }}>
-              <div className="flex items-center gap-2 mb-4">
-                <PartyPopper className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-                <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Anniversaries</h2>
+            {/* Navigation Section */}
+            <div className="mb-6">
+              <h3 className={`text-xs uppercase tracking-wider font-black mb-4 ${mode === 'chill' ? 'text-[#4A1818]' : mode === 'chaos' ? 'text-[#00C896]' : 'text-white'}`}>
+                ▼ SECTIONS
+              </h3>
+              <div className="space-y-2">
+                {(['all', 'anniversaries', 'birthdays', 'leaderboard', 'directory', 'org-chart'] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setActiveFilter(filter)}
+                    className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                      activeFilter === filter
+                        ? mode === 'chaos'
+                          ? 'bg-[#00C896] text-black'
+                          : mode === 'chill'
+                          ? 'bg-[#00C896] text-white'
+                          : 'bg-white text-black'
+                        : mode === 'chaos'
+                        ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50 text-white'
+                        : mode === 'chill'
+                        ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
+                        : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
+                    }`}
+                  >
+                    {filter === 'all' && <Users className="w-4 h-4" />}
+                    {filter === 'anniversaries' && <PartyPopper className="w-4 h-4" />}
+                    {filter === 'birthdays' && <Cake className="w-4 h-4" />}
+                    {filter === 'leaderboard' && <Trophy className="w-4 h-4" />}
+                    {filter === 'directory' && <Users className="w-4 h-4" />}
+                    {filter === 'org-chart' && <Briefcase className="w-4 h-4" />}
+                    <span className="font-black uppercase text-sm">
+                      {filter === 'all' ? 'All' : filter === 'org-chart' ? 'Org Chart' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                    </span>
+                  </button>
+                ))}
               </div>
+            </div>
+
+            {/* Beast Babe Section */}
+            {beastBabeData?.currentBeastBabe && (
+              <>
+                <div className={`h-px mb-6 ${mode === 'chaos' ? 'bg-[#00C896]/40' : mode === 'chill' ? 'bg-[#4A1818]/20' : 'bg-white/20'}`}></div>
+                <div className={`${getRoundedClass('rounded-xl')} p-4`} style={{ 
+                  backgroundColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primary : greenColors.primary
+                }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Crown className="w-4 h-4 text-white" />
+                    <h3 className="text-xs uppercase tracking-wider font-black text-white">BEAST BABE</h3>
+                  </div>
+                  {beastBabeData.currentBeastBabe.avatar_url ? (
+                    <img
+                      src={beastBabeData.currentBeastBabe.avatar_url}
+                      alt={beastBabeData.currentBeastBabe.full_name || 'Beast Babe'}
+                      className="w-16 h-16 rounded-full object-cover mx-auto mb-2"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 bg-white/20">
+                      <Crown className="w-8 h-8 text-white" />
+                    </div>
+                  )}
+                  <p className="text-sm font-black text-white text-center line-clamp-1">
+                    {beastBabeData.currentBeastBabe.full_name || beastBabeData.currentBeastBabe.email || 'Unknown'}
+                  </p>
+                </div>
+              </>
+            )}
+          </Card>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col">
+            {/* Header */}
+            <div className="mb-6 flex items-center justify-between">
+              <h1 className={`text-4xl font-black uppercase ${getTextClass()}`}>TEAM</h1>
+              <div className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>
+                {teamStats.totalTeamMembers} {teamStats.totalTeamMembers === 1 ? 'member' : 'members'}
+              </div>
+            </div>
+
+            {/* Team by Numbers Bar */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4`} style={{
+                borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                borderWidth: '1px'
+              }}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Team Members</p>
+                    <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.totalTeamMembers}</p>
+                  </div>
+                  <div className={`w-12 h-12 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.contrast }}>
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+              </Card>
+              
+              <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4`} style={{
+                borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                borderWidth: '1px'
+              }}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Total Snaps</p>
+                    <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.totalSnaps}</p>
+                  </div>
+                  <div className={`w-12 h-12 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.primaryPair }}>
+                    <MessageSquare className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+              </Card>
+              
+              <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4`} style={{
+                borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                borderWidth: '1px'
+              }}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Active Pitches</p>
+                    <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.activePitches}</p>
+                  </div>
+                  <div className={`w-12 h-12 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.complementary }}>
+                    <Briefcase className="w-6 h-6" style={{ color: mode === 'chill' ? '#4A1818' : '#000' }} />
+                  </div>
+                </div>
+              </Card>
+              
+              <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4`} style={{
+                borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                borderWidth: '1px'
+              }}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Snap Leader</p>
+                    <p className={`text-lg font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
+                      {teamStats.snapLeader?.full_name || teamStats.snapLeader?.email || 'N/A'}
+                    </p>
+                    {teamStats.snapLeader && (
+                      <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'}`}>{teamStats.snapLeader.count} snaps</p>
+                    )}
+                  </div>
+                  <div className={`w-12 h-12 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.primary }}>
+                    <Trophy className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Content Sections */}
+            <div className="space-y-4">
+              {/* Show content based on active filter */}
+              {(activeFilter === 'all' || activeFilter === 'anniversaries') && anniversaries.length > 0 && (
+                <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4`} style={{
+                  borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                  borderWidth: '1px'
+                }}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.primaryPair }}>
+                      <PartyPopper className="w-5 h-5 text-white" />
+                    </div>
+                    <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Anniversaries</h2>
+                  </div>
               {anniversaries.length > 0 ? (
                 <div className="space-y-3">
                   {anniversaries.map((anniversary) => (
@@ -525,17 +642,21 @@ export default function TeamPage() {
               ) : (
                 <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No upcoming anniversaries</p>
               )}
-            </Card>
+                </Card>
+              )}
 
-            {/* Birthdays */}
-            <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
-              borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
-              borderWidth: mode === 'chaos' ? '2px' : '0px'
-            }}>
-              <div className="flex items-center gap-2 mb-4">
-                <Cake className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-                <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Birthdays</h2>
-              </div>
+              {/* Birthdays */}
+              {(activeFilter === 'all' || activeFilter === 'birthdays') && birthdays.length > 0 && (
+                <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4`} style={{
+                  borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                  borderWidth: '1px'
+                }}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.complementary }}>
+                      <Cake className="w-5 h-5" style={{ color: mode === 'chill' ? '#4A1818' : '#000' }} />
+                    </div>
+                    <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Birthdays</h2>
+                  </div>
               {birthdays.length > 0 ? (
                 <div className="space-y-3">
                   {birthdays.map((birthday) => (
@@ -565,22 +686,26 @@ export default function TeamPage() {
               ) : (
                 <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No upcoming birthdays</p>
               )}
-            </Card>
+                </Card>
+              )}
 
-            {/* Snap Leaderboard */}
-            <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
-              borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
-              borderWidth: mode === 'chaos' ? '2px' : '0px'
-            }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-                  <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Snap Leaderboard</h2>
-                </div>
-                <Link href="/snaps" className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70 hover:text-[#4A1818]' : 'text-white/70 hover:text-white'} flex items-center gap-1`}>
-                  View All <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
+              {/* Snap Leaderboard */}
+              {(activeFilter === 'all' || activeFilter === 'leaderboard') && (
+                <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4`} style={{
+                  borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                  borderWidth: '1px'
+                }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.primary }}>
+                        <Trophy className="w-5 h-5 text-white" />
+                      </div>
+                      <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Snap Leaderboard</h2>
+                    </div>
+                    <Link href="/snaps" className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70 hover:text-[#4A1818]' : 'text-white/70 hover:text-white'} flex items-center gap-1`}>
+                      View All <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
               {snapLeaderboard.length > 0 ? (
                 <div className="space-y-3">
                   {snapLeaderboard.map((person, index) => (
@@ -607,184 +732,130 @@ export default function TeamPage() {
               ) : (
                 <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No snaps yet</p>
               )}
-            </Card>
-          </div>
+                </Card>
+              )}
 
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Beast Babe */}
-            {beastBabeData?.currentBeastBabe && (
-              <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
-                borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
-                borderWidth: mode === 'chaos' ? '2px' : '0px'
-              }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <Crown className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-                  <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Beast Babe</h2>
-                </div>
-                <div className="text-center mb-4">
-                  {beastBabeData.currentBeastBabe.avatar_url ? (
-                    <img
-                      src={beastBabeData.currentBeastBabe.avatar_url}
-                      alt={beastBabeData.currentBeastBabe.full_name || 'Beast Babe'}
-                      className="w-24 h-24 rounded-full object-cover mx-auto mb-3"
-                    />
-                  ) : (
-                    <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
-                      <Crown className="w-12 h-12" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+              {/* Team Directory */}
+              {(activeFilter === 'all' || activeFilter === 'directory') && (
+                <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4`} style={{
+                  borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                  borderWidth: '1px'
+                }}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.contrast }}>
+                      <Users className="w-5 h-5 text-white" />
                     </div>
-                  )}
-                  <p className={`font-black text-lg ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} mb-1`}>
-                    {beastBabeData.currentBeastBabe.full_name || beastBabeData.currentBeastBabe.email || 'Unknown'}
-                  </p>
-                  {beastBabeData.currentBeastBabeHistory?.achievement && (
-                    <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} italic mb-3`}>
-                      "{beastBabeData.currentBeastBabeHistory.achievement}"
-                    </p>
-                  )}
-                </div>
-                
-                {/* Infographic: Who gave it to whom */}
-                {beastBabeData.history && beastBabeData.history.length > 0 && (
-                  <div className="mt-4 pt-4 border-t" style={{ borderColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '40' }}>
-                    <p className={`text-xs font-semibold ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-3 uppercase tracking-wider`}>
-                      Recent History
-                    </p>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {beastBabeData.history.slice(0, 5).map((entry: any, index: number) => (
-                        <div key={entry.id} className="flex items-center gap-2 text-xs">
-                          {entry.passed_by ? (
-                            <>
-                              <div className="flex items-center gap-1 min-w-0 flex-1">
-                                <span className={`truncate ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
-                                  {entry.passed_by.full_name || entry.passed_by.email || 'Unknown'}
-                                </span>
-                                <ArrowRight className="w-3 h-3 flex-shrink-0" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-                                <span className={`truncate font-semibold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
-                                  {entry.user.full_name || entry.user.email || 'Unknown'}
-                                </span>
-                              </div>
-                            </>
-                          ) : (
-                            <span className={`${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
-                              {entry.user.full_name || entry.user.email || 'Unknown'} (Started)
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Team Directory</h2>
                   </div>
-                )}
-              </Card>
-            )}
-          </div>
-        </div>
-
-        {/* Team Directory */}
-        <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 mb-6`} style={{ 
-          borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
-          borderWidth: mode === 'chaos' ? '2px' : '0px'
-        }}>
-          <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} mb-4`}>Team Directory</h2>
-          {allProfiles.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {allProfiles.map((profile) => (
-                <button
-                  key={profile.id}
-                  onClick={() => handleProfileClick(profile.id)}
-                  className={`p-4 ${getRoundedClass('rounded-xl')} border hover:opacity-80 transition-opacity text-left w-full ${mode === 'chaos' ? 'bg-[#00C896]/10 border-[#00C896]/30' : mode === 'chill' ? 'bg-white/50 border-[#C8D961]/30' : 'bg-black/40 border-white/20'}`}
-                >
-                  <div className="flex items-center gap-3">
-                    {profile.avatar_url ? (
-                      <img
-                        src={profile.avatar_url}
-                        alt={profile.full_name || 'User'}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
-                        <Users className="w-6 h-6" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-semibold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
-                        {profile.full_name || profile.email || 'Unknown'}
-                      </p>
-                      {profile.role && (
-                        <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} truncate`}>{profile.role}</p>
-                      )}
-                      {profile.discipline && (
-                        <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'} truncate`}>{profile.discipline}</p>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No team members found</p>
-          )}
-        </Card>
-
-        {/* Org Chart */}
-        <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 mb-6`} style={{ 
-          borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
-          borderWidth: mode === 'chaos' ? '2px' : '0px'
-        }}>
-          <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} mb-4`}>Org Chart</h2>
-          {allProfiles.length > 0 ? (
-            <div className="space-y-4">
-              {(() => {
-                // Group by discipline
-                const byDiscipline: Record<string, any[]> = {}
-                allProfiles.forEach(profile => {
-                  const discipline = profile.discipline || 'Other'
-                  if (!byDiscipline[discipline]) {
-                    byDiscipline[discipline] = []
-                  }
-                  byDiscipline[discipline].push(profile)
-                })
-                
-                return Object.entries(byDiscipline).map(([discipline, profiles]) => (
-                  <div key={discipline}>
-                    <h3 className={`font-black text-lg ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} mb-2`}>{discipline}</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {profiles.map((profile) => (
+                  {allProfiles.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {allProfiles.map((profile) => (
                         <button
                           key={profile.id}
                           onClick={() => handleProfileClick(profile.id)}
-                          className={`p-3 ${getRoundedClass('rounded-xl')} border hover:opacity-80 transition-opacity w-full ${mode === 'chaos' ? 'bg-[#00C896]/10 border-[#00C896]/30' : mode === 'chill' ? 'bg-white/50 border-[#C8D961]/30' : 'bg-black/40 border-white/20'}`}
+                          className={`p-3 ${getRoundedClass('rounded-xl')} border hover:opacity-80 transition-opacity text-left w-full ${mode === 'chaos' ? 'bg-[#00C896]/10 border-[#00C896]/30' : mode === 'chill' ? 'bg-white/50 border-[#C8D961]/30' : 'bg-black/40 border-white/20'}`}
                         >
-                          <div className="flex flex-col items-center text-center">
+                          <div className="flex items-center gap-3">
                             {profile.avatar_url ? (
                               <img
                                 src={profile.avatar_url}
                                 alt={profile.full_name || 'User'}
-                                className="w-16 h-16 rounded-full object-cover mb-2"
+                                className="w-10 h-10 rounded-full object-cover"
                               />
                             ) : (
-                              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
-                                <Users className="w-8 h-8" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
+                                <Users className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
                               </div>
                             )}
-                            <p className={`font-semibold text-sm ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate w-full`}>
-                              {profile.full_name || profile.email || 'Unknown'}
-                            </p>
-                            {profile.role && (
-                              <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} truncate w-full`}>{profile.role}</p>
-                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className={`font-semibold text-sm ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
+                                {profile.full_name || profile.email || 'Unknown'}
+                              </p>
+                              {profile.role && (
+                                <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} truncate`}>{profile.role}</p>
+                              )}
+                            </div>
                           </div>
                         </button>
                       ))}
                     </div>
+                  ) : (
+                    <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No team members found</p>
+                  )}
+                </Card>
+              )}
+
+              {/* Org Chart */}
+              {(activeFilter === 'all' || activeFilter === 'org-chart') && (
+                <Card className={`${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-xl')} p-4`} style={{
+                  borderColor: mode === 'chaos' ? '#333333' : mode === 'chill' ? '#E5E5E5' : '#333333',
+                  borderWidth: '1px'
+                }}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-10 h-10 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.primaryPair }}>
+                      <Briefcase className="w-5 h-5 text-white" />
+                    </div>
+                    <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Org Chart</h2>
                   </div>
-                ))
-              })()}
+                  {allProfiles.length > 0 ? (
+                    <div className="space-y-4">
+                      {(() => {
+                        // Group by discipline
+                        const byDiscipline: Record<string, any[]> = {}
+                        allProfiles.forEach(profile => {
+                          const discipline = profile.discipline || 'Other'
+                          if (!byDiscipline[discipline]) {
+                            byDiscipline[discipline] = []
+                          }
+                          byDiscipline[discipline].push(profile)
+                        })
+                        
+                        return Object.entries(byDiscipline).map(([discipline, profiles]) => (
+                          <div key={discipline}>
+                            <h3 className={`font-black text-sm mb-2 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{discipline}</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {profiles.map((profile) => (
+                                <button
+                                  key={profile.id}
+                                  onClick={() => handleProfileClick(profile.id)}
+                                  className={`p-2 ${getRoundedClass('rounded-xl')} border hover:opacity-80 transition-opacity ${mode === 'chaos' ? 'bg-[#00C896]/10 border-[#00C896]/30' : mode === 'chill' ? 'bg-white/50 border-[#C8D961]/30' : 'bg-black/40 border-white/20'}`}
+                                >
+                                  <div className="flex flex-col items-center text-center">
+                                    {profile.avatar_url ? (
+                                      <img
+                                        src={profile.avatar_url}
+                                        alt={profile.full_name || 'User'}
+                                        className="w-12 h-12 rounded-full object-cover mb-1"
+                                      />
+                                    ) : (
+                                      <div className="w-12 h-12 rounded-full flex items-center justify-center mb-1" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
+                                        <Users className="w-6 h-6" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                                      </div>
+                                    )}
+                                    <p className={`font-semibold text-xs ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate w-full`}>
+                                      {profile.full_name || profile.email || 'Unknown'}
+                                    </p>
+                                    {profile.role && (
+                                      <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} truncate w-full`}>{profile.role}</p>
+                                    )}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      })()}
+                    </div>
+                  ) : (
+                    <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No team members found</p>
+                  )}
+                </Card>
+              )}
             </div>
-          ) : (
-            <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No team members found</p>
-          )}
-        </Card>
+          </div>
+        </div>
+        
+        <Footer />
       </main>
       
       {/* Profile View Dialog */}
