@@ -164,10 +164,21 @@ export default function BeastHistoryPage() {
     return mode === 'code' ? 'rounded-none' : defaultClass
   }
 
-  if (authLoading || loading) {
+  // Wait for auth to load before rendering to prevent redirect issues
+  if (authLoading) {
     return (
       <div className={`${getBgClass()} ${getTextClass()} min-h-screen flex items-center justify-center`}>
         <Loader2 className="w-8 h-8 animate-spin" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className={`${getBgClass()} ${getTextClass()} min-h-screen flex items-center justify-center`}>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+        </div>
       </div>
     )
   }
@@ -295,15 +306,23 @@ export default function BeastHistoryPage() {
               <Loader2 className="w-8 h-8 animate-spin" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
             </div>
           ) : beastBabeHistory.length > 0 ? (
-            <div className="space-y-6">
+            <div className="relative" style={{ minHeight: `${beastBabeHistory.length * 140}px`, padding: '1rem 0' }}>
               {beastBabeHistory.map((entry, index) => {
-                const isCurrent = index === 0
+                const isLeft = index % 2 === 0
+                const isLatest = index === 0
+                const avatarSize = isLatest ? 20 : 16 // Latest is slightly bigger (20 = 80px, 16 = 64px)
+                const topOffset = index * 120 // Each entry is 120px lower than the previous
+                
                 return (
                   <div
                     key={entry.id}
-                    className={`flex gap-4 items-start ${isCurrent ? 'pb-6 border-b-2' : ''}`}
-                    style={{ 
-                      borderColor: isCurrent ? greenColors.primary + '40' : 'transparent'
+                    className="absolute flex items-start gap-3"
+                    style={{
+                      left: isLeft ? '0' : 'auto',
+                      right: isLeft ? 'auto' : '0',
+                      top: `${topOffset}px`,
+                      width: '48%',
+                      flexDirection: isLeft ? 'row' : 'row-reverse'
                     }}
                   >
                     {/* Avatar */}
@@ -312,28 +331,32 @@ export default function BeastHistoryPage() {
                         <img
                           src={entry.user.avatar_url}
                           alt={entry.user.full_name || 'User'}
-                          className="w-16 h-16 rounded-full object-cover border-2"
+                          className={`rounded-full object-cover border-2`}
                           style={{ 
-                            borderColor: isCurrent ? greenColors.primary : greenColors.complementary,
-                            borderWidth: isCurrent ? '3px' : '2px',
-                            boxShadow: isCurrent ? `0 0 12px ${greenColors.primary}80` : `0 0 6px ${greenColors.complementary}40`
+                            width: `${avatarSize * 4}px`,
+                            height: `${avatarSize * 4}px`,
+                            borderColor: isLatest ? greenColors.primary : greenColors.complementary,
+                            borderWidth: isLatest ? '3px' : '2px',
+                            boxShadow: isLatest ? `0 0 12px ${greenColors.primary}80` : `0 0 6px ${greenColors.complementary}40`
                           }}
                         />
                       ) : (
                         <div 
-                          className="w-16 h-16 rounded-full flex items-center justify-center border-2"
+                          className={`rounded-full flex items-center justify-center border-2`}
                           style={{ 
+                            width: `${avatarSize * 4}px`,
+                            height: `${avatarSize * 4}px`,
                             backgroundColor: greenColors.primaryPair + '60',
-                            borderColor: isCurrent ? greenColors.primary : greenColors.complementary,
-                            borderWidth: isCurrent ? '3px' : '2px',
-                            boxShadow: isCurrent ? `0 0 12px ${greenColors.primary}80` : `0 0 6px ${greenColors.complementary}40`
+                            borderColor: isLatest ? greenColors.primary : greenColors.complementary,
+                            borderWidth: isLatest ? '3px' : '2px',
+                            boxShadow: isLatest ? `0 0 12px ${greenColors.primary}80` : `0 0 6px ${greenColors.complementary}40`
                           }}
                         >
-                          <Crown className="w-8 h-8" style={{ color: isCurrent ? greenColors.primary : greenColors.complementary }} />
+                          <Crown className={`${isLatest ? 'w-8 h-8' : 'w-6 h-6'}`} style={{ color: isLatest ? greenColors.primary : greenColors.complementary }} />
                         </div>
                       )}
                       {/* Crown badge for current */}
-                      {isCurrent && (
+                      {isLatest && (
                         <div 
                           className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center animate-bounce z-20"
                           style={{ backgroundColor: greenColors.primary }}
@@ -343,41 +366,44 @@ export default function BeastHistoryPage() {
                       )}
                     </div>
                     
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <p className={`text-lg font-bold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
-                          {entry.user?.full_name || entry.user?.email || 'Unknown'}
-                        </p>
-                        {isCurrent && (
-                          <span 
-                            className={`text-xs font-bold px-2 py-0.5 ${getRoundedClass('rounded')}`}
-                            style={{ 
-                              backgroundColor: greenColors.primary + '20',
-                              color: greenColors.primary
-                            }}
-                          >
-                            CURRENT
-                          </span>
-                        )}
-                      </div>
-                      <p className={`text-sm mb-3 ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
-                        {new Date(entry.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    {/* Name and date box - max 40px high */}
+                    <div 
+                      className={`flex-shrink-0 ${getRoundedClass('rounded-lg')} px-3 py-2`}
+                      style={{ 
+                        backgroundColor: mode === 'chaos' ? 'rgba(42, 42, 42, 0.95)' : mode === 'chill' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(26, 26, 26, 0.95)',
+                        border: `1px solid ${greenColors.primary}40`,
+                        maxHeight: '40px',
+                        minHeight: '40px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        textAlign: isLeft ? 'left' : 'right',
+                        width: '180px'
+                      }}
+                    >
+                      <p className={`text-sm font-semibold truncate ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
+                        {entry.user?.full_name || entry.user?.email || 'Unknown'}
                       </p>
-                      {entry.achievement && (
-                        <div 
-                          className={`${getRoundedClass('rounded-lg')} p-4`}
-                          style={{ 
-                            backgroundColor: mode === 'chaos' ? 'rgba(42, 42, 42, 0.5)' : mode === 'chill' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(26, 26, 26, 0.5)',
-                            border: `1px solid ${greenColors.primary}30`
-                          }}
-                        >
-                          <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/90' : 'text-white/90'} leading-relaxed`}>
-                            {entry.achievement}
-                          </p>
-                        </div>
-                      )}
+                      <p className={`text-xs truncate ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
+                        {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
                     </div>
+                    
+                    {/* Achievement text - to the left of name/date box for right-aligned items */}
+                    {entry.achievement && (
+                      <div 
+                        className={`flex-1 ${getRoundedClass('rounded-lg')} px-3 py-2`}
+                        style={{ 
+                          backgroundColor: mode === 'chaos' ? 'rgba(42, 42, 42, 0.5)' : mode === 'chill' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(26, 26, 26, 0.5)',
+                          border: `1px solid ${greenColors.primary}30`,
+                          textAlign: isLeft ? 'left' : 'right'
+                        }}
+                      >
+                        <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/90' : 'text-white/90'} leading-tight`}>
+                          {entry.achievement}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -399,4 +425,5 @@ export default function BeastHistoryPage() {
     </div>
   )
 }
+
 
