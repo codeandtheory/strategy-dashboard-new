@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info, ExternalLink, User, ChevronDown, ChevronUp, Plus, Check, RefreshCw } from 'lucide-react'
+import { Search, Calendar, Music, FileText, MessageCircle, Trophy, TrendingUp, Users, Zap, Star, Heart, Coffee, Lightbulb, ChevronRight, ChevronLeft, Play, Pause, CheckCircle, Clock, ArrowRight, Video, Sparkles, Loader2, Download, Bot, Info, ExternalLink, User, ChevronDown, ChevronUp, Plus, Check, RefreshCw, PartyPopper, Briefcase, Hand } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -2028,7 +2028,7 @@ export default function TeamDashboard() {
                           color: '#FFFFFF'
                         }}
                       >
-                        {mode === 'code' ? '[GIVE SNAP]' : 'Give Snap'} {mode !== 'code' && <ArrowRight className="w-3 h-3 ml-2" />}
+                        {mode === 'code' ? '[GIVE SNAP]' : 'Give Snap'} {mode !== 'code' && <Sparkles className="w-3 h-3 ml-2" />}
                       </Button>
                       <Button 
                         onClick={() => router.push('/work-samples')}
@@ -2047,7 +2047,7 @@ export default function TeamDashboard() {
                           color: '#FFFFFF'
                         }}
                       >
-                        {mode === 'code' ? '[BROWSE WORK]' : 'Browse Work'} {mode !== 'code' && <ArrowRight className="w-3 h-3 ml-2" />}
+                        {mode === 'code' ? '[BROWSE WORK]' : 'Browse Work'} {mode !== 'code' && <Briefcase className="w-3 h-3 ml-2" />}
                       </Button>
                       <Button 
                         onClick={() => {
@@ -2090,7 +2090,7 @@ export default function TeamDashboard() {
                           color: '#FFFFFF'
                         }}
                       >
-                        {mode === 'code' ? '[GRAIL]' : 'Grail'} {mode !== 'code' && <ArrowRight className="w-3 h-3 ml-2" />}
+                        {mode === 'code' ? '[GRAIL]' : 'Grail'} {mode !== 'code' && <Clock className="w-3 h-3 ml-2" />}
                       </Button>
                       <Button 
                         onClick={() => router.push('/brief')}
@@ -2109,7 +2109,7 @@ export default function TeamDashboard() {
                           color: '#FFFFFF'
                         }}
                       >
-                        {mode === 'code' ? '[BRIEF]' : 'Brief'} {mode !== 'code' && <ArrowRight className="w-3 h-3 ml-2" />}
+                        {mode === 'code' ? '[BRIEF]' : 'Brief'} {mode !== 'code' && <FileText className="w-3 h-3 ml-2" />}
                       </Button>
                       {/* Chatbot text link */}
                       <button
