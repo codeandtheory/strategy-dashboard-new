@@ -8,28 +8,30 @@ import { SiteHeader } from '@/components/site-header'
 import { Card } from '@/components/ui/card'
 import { Footer } from '@/components/footer'
 import { createClient } from '@/lib/supabase/client'
-import { useGoogleCalendarToken } from '@/hooks/useGoogleCalendarToken'
 import { 
   Users, 
-  Calendar, 
   Trophy, 
   MessageSquare, 
   Briefcase,
   Cake,
   PartyPopper,
-  TrendingUp,
   Crown,
   ArrowRight,
-  Loader2
+  Loader2,
+  Mail,
+  MapPin,
+  Globe,
+  Briefcase as BriefcaseIcon,
+  Calendar as CalendarIcon
 } from 'lucide-react'
 import Link from 'next/link'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 export default function TeamPage() {
   const { user, loading: authLoading } = useAuth()
   const { mode } = useMode()
   const router = useRouter()
   const supabase = createClient()
-  const { accessToken } = useGoogleCalendarToken()
   
   const [loading, setLoading] = useState(true)
   const [teamStats, setTeamStats] = useState({
@@ -41,9 +43,11 @@ export default function TeamPage() {
   const [birthdays, setBirthdays] = useState<Array<{ id: string; full_name: string | null; birthday: string; avatar_url: string | null }>>([])
   const [anniversaries, setAnniversaries] = useState<Array<{ id: string; full_name: string | null; start_date: string; avatar_url: string | null; years: number }>>([])
   const [snapLeaderboard, setSnapLeaderboard] = useState<Array<{ id: string; full_name: string | null; email: string | null; count: number }>>([])
-  const [calendarEvents, setCalendarEvents] = useState<any[]>([])
   const [beastBabeData, setBeastBabeData] = useState<any>(null)
   const [allProfiles, setAllProfiles] = useState<any[]>([])
+  const [selectedProfile, setSelectedProfile] = useState<any>(null)
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
+  const [loadingProfile, setLoadingProfile] = useState(false)
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -55,7 +59,7 @@ export default function TeamPage() {
     if (user) {
       fetchAllData()
     }
-  }, [user, accessToken])
+  }, [user])
 
   const fetchAllData = async () => {
     setLoading(true)
@@ -65,7 +69,6 @@ export default function TeamPage() {
         fetchBirthdays(),
         fetchAnniversaries(),
         fetchSnapLeaderboard(),
-        fetchCalendarEvents(),
         fetchBeastBabe(),
         fetchAllProfiles()
       ])
@@ -73,6 +76,27 @@ export default function TeamPage() {
       console.error('Error fetching team data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+  
+  const handleProfileClick = async (profileId: string) => {
+    setLoadingProfile(true)
+    setIsProfileDialogOpen(true)
+    
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url, role, discipline, birthday, start_date, bio, location, website, pronouns')
+        .eq('id', profileId)
+        .maybeSingle()
+      
+      if (!error && profile) {
+        setSelectedProfile(profile)
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+    } finally {
+      setLoadingProfile(false)
     }
   }
 
@@ -262,27 +286,6 @@ export default function TeamPage() {
     }
   }
 
-  const fetchCalendarEvents = async () => {
-    if (!accessToken) return
-    
-    try {
-      const now = new Date()
-      const timeMin = now.toISOString()
-      // Expanded: 60 days instead of 30, more results
-      const timeMax = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString()
-      
-      const response = await fetch(
-        `/api/calendar?timeMin=${timeMin}&timeMax=${timeMax}&maxResults=100&accessToken=${encodeURIComponent(accessToken)}`
-      )
-      
-      if (response.ok) {
-        const data = await response.json()
-        setCalendarEvents(data.events || [])
-      }
-    } catch (error) {
-      console.error('Error fetching calendar events:', error)
-    }
-  }
 
   const fetchBeastBabe = async () => {
     try {
@@ -330,25 +333,65 @@ export default function TeamPage() {
     }
   }
 
+  // GREEN SYSTEM: Emerald (#00C896), Forest (#1A5D52), Lime (#C5F547), Orange (#FF8C42)
+  const getGreenSystemColors = () => {
+    if (mode === 'chaos') {
+      return {
+        primary: '#00C896',      // Emerald
+        primaryPair: '#1A5D52',   // Forest Green
+        complementary: '#C5F547',  // Lime Green
+        contrast: '#FF8C42',      // Orange
+        bg: '#1A1A1A',
+        text: '#FFFFFF',
+        cardBg: '#2A2A2A'
+      }
+    } else if (mode === 'chill') {
+      return {
+        primary: '#00C896',      // Emerald
+        primaryPair: '#1A5D52',   // Forest Green
+        complementary: '#C8D961', // Lime Green (adjusted for chill)
+        contrast: '#FF8C42',      // Orange
+        bg: '#F5E6D3',
+        text: '#4A1818',
+        cardBg: '#FFFFFF'
+      }
+    } else {
+      return {
+        primary: '#FFFFFF',
+        primaryPair: '#808080',
+        complementary: '#666666',
+        contrast: '#FFFFFF',
+        bg: '#000000',
+        text: '#FFFFFF',
+        cardBg: '#1a1a1a'
+      }
+    }
+  }
+
+  const greenColors = getGreenSystemColors()
+
   const getCardStyle = () => {
     if (mode === 'chaos') {
       return { 
-        bg: 'bg-[#000000]', 
-        border: 'border border-[#C4F500]', 
+        bg: 'bg-[#1A5D52]',  // Forest Green background
+        border: 'border-2', 
+        borderColor: greenColors.primary, // Emerald border
         text: 'text-white', 
-        accent: '#C4F500' 
+        accent: greenColors.primary // Emerald accent
       }
     } else if (mode === 'chill') {
       return { 
         bg: 'bg-white', 
-        border: 'border border-[#FFC043]/30', 
+        border: 'border', 
+        borderColor: greenColors.complementary + '30', // Lime border
         text: 'text-[#4A1818]', 
-        accent: '#FFC043' 
+        accent: greenColors.complementary // Lime accent
       }
     } else {
       return { 
-        bg: 'bg-[#000000]', 
-        border: 'border border-[#FFFFFF]', 
+        bg: 'bg-[#1a1a1a]', 
+        border: 'border', 
+        borderColor: '#FFFFFF',
         text: 'text-[#FFFFFF]', 
         accent: '#FFFFFF' 
       }
@@ -364,18 +407,16 @@ export default function TeamPage() {
   if (authLoading || loading) {
     return (
       <div className={`${getBgClass()} ${getTextClass()} min-h-screen flex items-center justify-center`}>
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: getCardStyle().accent }} />
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
       </div>
     )
   }
 
-  const cardStyle = getCardStyle()
-
   return (
-    <div className={`${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'} min-h-screen`}>
+    <div className={`flex flex-col ${getBgClass()} ${getTextClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'} min-h-screen`}>
       <SiteHeader />
       
-      <main className="max-w-[1400px] mx-auto px-6 py-8">
+      <main className="max-w-[1200px] mx-auto px-6 py-10 flex-1 pt-24">
         {/* Header */}
         <div className="mb-8">
           <h1 className={`text-3xl font-black uppercase tracking-wider ${getTextClass()} mb-2`}>Team</h1>
@@ -384,48 +425,60 @@ export default function TeamPage() {
 
         {/* Team by Numbers Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className={`${cardStyle.bg} ${cardStyle.border} border p-4 ${getRoundedClass('rounded-xl')}`}>
+          <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
+            borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
+          }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-xs ${cardStyle.text}/70 mb-1`}>Team Members</p>
-                <p className={`text-2xl font-black ${cardStyle.text}`}>{teamStats.totalTeamMembers}</p>
+                <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Team Members</p>
+                <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.totalTeamMembers}</p>
               </div>
-              <Users className="w-6 h-6" style={{ color: cardStyle.accent }} />
+              <Users className="w-6 h-6" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
             </div>
           </Card>
           
-          <Card className={`${cardStyle.bg} ${cardStyle.border} border p-4 ${getRoundedClass('rounded-xl')}`}>
+          <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
+            borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
+          }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-xs ${cardStyle.text}/70 mb-1`}>Total Snaps</p>
-                <p className={`text-2xl font-black ${cardStyle.text}`}>{teamStats.totalSnaps}</p>
+                <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Total Snaps</p>
+                <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.totalSnaps}</p>
               </div>
-              <MessageSquare className="w-6 h-6" style={{ color: cardStyle.accent }} />
+              <MessageSquare className="w-6 h-6" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
             </div>
           </Card>
           
-          <Card className={`${cardStyle.bg} ${cardStyle.border} border p-4 ${getRoundedClass('rounded-xl')}`}>
+          <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
+            borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
+          }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-xs ${cardStyle.text}/70 mb-1`}>Active Pitches</p>
-                <p className={`text-2xl font-black ${cardStyle.text}`}>{teamStats.activePitches}</p>
+                <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Active Pitches</p>
+                <p className={`text-2xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{teamStats.activePitches}</p>
               </div>
-              <Briefcase className="w-6 h-6" style={{ color: cardStyle.accent }} />
+              <Briefcase className="w-6 h-6" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
             </div>
           </Card>
           
-          <Card className={`${cardStyle.bg} ${cardStyle.border} border p-4 ${getRoundedClass('rounded-xl')}`}>
+          <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
+            borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+            borderWidth: mode === 'chaos' ? '2px' : '0px'
+          }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-xs ${cardStyle.text}/70 mb-1`}>Snap Leader</p>
-                <p className={`text-lg font-black ${cardStyle.text} truncate`}>
+                <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>Snap Leader</p>
+                <p className={`text-lg font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
                   {teamStats.snapLeader?.full_name || teamStats.snapLeader?.email || 'N/A'}
                 </p>
                 {teamStats.snapLeader && (
-                  <p className={`text-xs ${cardStyle.text}/50`}>{teamStats.snapLeader.count} snaps</p>
+                  <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'}`}>{teamStats.snapLeader.count} snaps</p>
                 )}
               </div>
-              <Trophy className="w-6 h-6" style={{ color: cardStyle.accent }} />
+              <Trophy className="w-6 h-6" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
             </div>
           </Card>
         </div>
@@ -435,10 +488,13 @@ export default function TeamPage() {
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Anniversaries */}
-            <Card className={`${cardStyle.bg} ${cardStyle.border} border p-6 ${getRoundedClass('rounded-xl')}`}>
+            <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
+              borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+              borderWidth: mode === 'chaos' ? '2px' : '0px'
+            }}>
               <div className="flex items-center gap-2 mb-4">
-                <PartyPopper className="w-5 h-5" style={{ color: cardStyle.accent }} />
-                <h2 className={`text-xl font-black uppercase ${cardStyle.text}`}>Anniversaries</h2>
+                <PartyPopper className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Anniversaries</h2>
               </div>
               {anniversaries.length > 0 ? (
                 <div className="space-y-3">
@@ -451,15 +507,15 @@ export default function TeamPage() {
                           className="w-10 h-10 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: cardStyle.accent + '33' }}>
-                          <Users className="w-5 h-5" style={{ color: cardStyle.accent }} />
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
+                          <Users className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
                         </div>
                       )}
                       <div className="flex-1">
-                        <p className={`font-semibold ${cardStyle.text}`}>
+                        <p className={`font-semibold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
                           {anniversary.full_name || 'Unknown'}
                         </p>
-                        <p className={`text-sm ${cardStyle.text}/70`}>
+                        <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
                           {anniversary.years} year{anniversary.years !== 1 ? 's' : ''} at Strategy
                         </p>
                       </div>
@@ -467,15 +523,18 @@ export default function TeamPage() {
                   ))}
                 </div>
               ) : (
-                <p className={`${cardStyle.text}/60`}>No upcoming anniversaries</p>
+                <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No upcoming anniversaries</p>
               )}
             </Card>
 
             {/* Birthdays */}
-            <Card className={`${cardStyle.bg} ${cardStyle.border} border p-6 ${getRoundedClass('rounded-xl')}`}>
+            <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
+              borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+              borderWidth: mode === 'chaos' ? '2px' : '0px'
+            }}>
               <div className="flex items-center gap-2 mb-4">
-                <Cake className="w-5 h-5" style={{ color: cardStyle.accent }} />
-                <h2 className={`text-xl font-black uppercase ${cardStyle.text}`}>Birthdays</h2>
+                <Cake className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Birthdays</h2>
               </div>
               {birthdays.length > 0 ? (
                 <div className="space-y-3">
@@ -488,15 +547,15 @@ export default function TeamPage() {
                           className="w-10 h-10 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: cardStyle.accent + '33' }}>
-                          <Cake className="w-5 h-5" style={{ color: cardStyle.accent }} />
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
+                          <Cake className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
                         </div>
                       )}
                       <div className="flex-1">
-                        <p className={`font-semibold ${cardStyle.text}`}>
+                        <p className={`font-semibold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
                           {birthday.full_name || 'Unknown'}
                         </p>
-                        <p className={`text-sm ${cardStyle.text}/70`}>
+                        <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
                           Birthday: {birthday.birthday}
                         </p>
                       </div>
@@ -504,18 +563,21 @@ export default function TeamPage() {
                   ))}
                 </div>
               ) : (
-                <p className={`${cardStyle.text}/60`}>No upcoming birthdays</p>
+                <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No upcoming birthdays</p>
               )}
             </Card>
 
             {/* Snap Leaderboard */}
-            <Card className={`${cardStyle.bg} ${cardStyle.border} border p-6 ${getRoundedClass('rounded-xl')}`}>
+            <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
+              borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+              borderWidth: mode === 'chaos' ? '2px' : '0px'
+            }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5" style={{ color: cardStyle.accent }} />
-                  <h2 className={`text-xl font-black uppercase ${cardStyle.text}`}>Snap Leaderboard</h2>
+                  <Trophy className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                  <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Snap Leaderboard</h2>
                 </div>
-                <Link href="/snaps" className={`text-sm ${cardStyle.text}/70 hover:${cardStyle.text} flex items-center gap-1`}>
+                <Link href="/snaps" className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70 hover:text-[#4A1818]' : 'text-white/70 hover:text-white'} flex items-center gap-1`}>
                   View All <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -523,69 +585,42 @@ export default function TeamPage() {
                 <div className="space-y-3">
                   {snapLeaderboard.map((person, index) => (
                     <div key={person.id} className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black ${cardStyle.text}`} style={{ 
-                        backgroundColor: index === 0 ? cardStyle.accent : cardStyle.accent + '33',
-                        color: index === 0 ? '#000' : cardStyle.text
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`} style={{ 
+                        backgroundColor: index === 0 
+                          ? (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF')
+                          : (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33',
+                        color: index === 0 && mode === 'chaos' ? '#000' : (mode === 'chill' ? '#4A1818' : '#FFFFFF')
                       }}>
                         {index + 1}
                       </div>
                       <div className="flex-1">
-                        <p className={`font-semibold ${cardStyle.text}`}>
+                        <p className={`font-semibold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
                           {person.full_name || person.email || 'Unknown'}
                         </p>
                       </div>
-                      <p className={`font-black ${cardStyle.text}`} style={{ color: cardStyle.accent }}>
+                      <p className={`font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`} style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }}>
                         {person.count}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className={`${cardStyle.text}/60`}>No snaps yet</p>
+                <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No snaps yet</p>
               )}
             </Card>
           </div>
 
           {/* Right Column */}
           <div className="space-y-6">
-            {/* Calendar */}
-            <Card className={`${cardStyle.bg} ${cardStyle.border} border p-6 ${getRoundedClass('rounded-xl')}`}>
-              <div className="flex items-center gap-2 mb-4">
-                <Calendar className="w-5 h-5" style={{ color: cardStyle.accent }} />
-                <h2 className={`text-xl font-black uppercase ${cardStyle.text}`}>Upcoming Events</h2>
-              </div>
-              {calendarEvents.length > 0 ? (
-                <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                  {calendarEvents.map((event) => {
-                    const eventDate = event.start.dateTime 
-                      ? new Date(event.start.dateTime)
-                      : event.start.date 
-                        ? new Date(event.start.date)
-                        : null
-                    
-                    return (
-                      <div key={event.id} className="p-2 rounded" style={{ backgroundColor: cardStyle.accent + '10' }}>
-                        <p className={`text-sm font-semibold ${cardStyle.text}`}>{event.summary}</p>
-                        {eventDate && (
-                          <p className={`text-xs ${cardStyle.text}/70`}>
-                            {eventDate.toLocaleDateString()} {event.start.dateTime && eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <p className={`${cardStyle.text}/60`}>No upcoming events</p>
-              )}
-            </Card>
-
             {/* Beast Babe */}
             {beastBabeData?.currentBeastBabe && (
-              <Card className={`${cardStyle.bg} ${cardStyle.border} border p-6 ${getRoundedClass('rounded-xl')}`}>
+              <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6`} style={{ 
+                borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+                borderWidth: mode === 'chaos' ? '2px' : '0px'
+              }}>
                 <div className="flex items-center gap-2 mb-4">
-                  <Crown className="w-5 h-5" style={{ color: cardStyle.accent }} />
-                  <h2 className={`text-xl font-black uppercase ${cardStyle.text}`}>Beast Babe</h2>
+                  <Crown className="w-5 h-5" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                  <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Beast Babe</h2>
                 </div>
                 <div className="text-center mb-4">
                   {beastBabeData.currentBeastBabe.avatar_url ? (
@@ -595,15 +630,15 @@ export default function TeamPage() {
                       className="w-24 h-24 rounded-full object-cover mx-auto mb-3"
                     />
                   ) : (
-                    <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: cardStyle.accent + '33' }}>
-                      <Crown className="w-12 h-12" style={{ color: cardStyle.accent }} />
+                    <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
+                      <Crown className="w-12 h-12" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
                     </div>
                   )}
-                  <p className={`font-black text-lg ${cardStyle.text} mb-1`}>
+                  <p className={`font-black text-lg ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} mb-1`}>
                     {beastBabeData.currentBeastBabe.full_name || beastBabeData.currentBeastBabe.email || 'Unknown'}
                   </p>
                   {beastBabeData.currentBeastBabeHistory?.achievement && (
-                    <p className={`text-sm ${cardStyle.text}/70 italic mb-3`}>
+                    <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} italic mb-3`}>
                       "{beastBabeData.currentBeastBabeHistory.achievement}"
                     </p>
                   )}
@@ -611,8 +646,8 @@ export default function TeamPage() {
                 
                 {/* Infographic: Who gave it to whom */}
                 {beastBabeData.history && beastBabeData.history.length > 0 && (
-                  <div className="mt-4 pt-4 border-t" style={{ borderColor: cardStyle.accent + '40' }}>
-                    <p className={`text-xs font-semibold ${cardStyle.text}/70 mb-3 uppercase tracking-wider`}>
+                  <div className="mt-4 pt-4 border-t" style={{ borderColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '40' }}>
+                    <p className={`text-xs font-semibold ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-3 uppercase tracking-wider`}>
                       Recent History
                     </p>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -621,17 +656,17 @@ export default function TeamPage() {
                           {entry.passed_by ? (
                             <>
                               <div className="flex items-center gap-1 min-w-0 flex-1">
-                                <span className={`truncate ${cardStyle.text}/70`}>
+                                <span className={`truncate ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
                                   {entry.passed_by.full_name || entry.passed_by.email || 'Unknown'}
                                 </span>
-                                <ArrowRight className="w-3 h-3 flex-shrink-0" style={{ color: cardStyle.accent }} />
-                                <span className={`truncate font-semibold ${cardStyle.text}`}>
+                                <ArrowRight className="w-3 h-3 flex-shrink-0" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                                <span className={`truncate font-semibold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
                                   {entry.user.full_name || entry.user.email || 'Unknown'}
                                 </span>
                               </div>
                             </>
                           ) : (
-                            <span className={`${cardStyle.text}/70`}>
+                            <span className={`${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
                               {entry.user.full_name || entry.user.email || 'Unknown'} (Started)
                             </span>
                           )}
@@ -646,15 +681,18 @@ export default function TeamPage() {
         </div>
 
         {/* Team Directory */}
-        <Card className={`${cardStyle.bg} ${cardStyle.border} border p-6 ${getRoundedClass('rounded-xl')} mb-6`}>
-          <h2 className={`text-xl font-black uppercase ${cardStyle.text} mb-4`}>Team Directory</h2>
+        <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 mb-6`} style={{ 
+          borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+          borderWidth: mode === 'chaos' ? '2px' : '0px'
+        }}>
+          <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} mb-4`}>Team Directory</h2>
           {allProfiles.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {allProfiles.map((profile) => (
-                <Link
+                <button
                   key={profile.id}
-                  href={`/profile?id=${profile.id}`}
-                  className={`p-4 rounded-lg border ${cardStyle.border} ${cardStyle.bg} hover:opacity-80 transition-opacity`}
+                  onClick={() => handleProfileClick(profile.id)}
+                  className={`p-4 ${getRoundedClass('rounded-xl')} border hover:opacity-80 transition-opacity text-left w-full ${mode === 'chaos' ? 'bg-[#00C896]/10 border-[#00C896]/30' : mode === 'chill' ? 'bg-white/50 border-[#C8D961]/30' : 'bg-black/40 border-white/20'}`}
                 >
                   <div className="flex items-center gap-3">
                     {profile.avatar_url ? (
@@ -664,33 +702,36 @@ export default function TeamPage() {
                         className="w-12 h-12 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: cardStyle.accent + '33' }}>
-                        <Users className="w-6 h-6" style={{ color: cardStyle.accent }} />
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
+                        <Users className="w-6 h-6" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className={`font-semibold ${cardStyle.text} truncate`}>
+                      <p className={`font-semibold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate`}>
                         {profile.full_name || profile.email || 'Unknown'}
                       </p>
                       {profile.role && (
-                        <p className={`text-sm ${cardStyle.text}/70 truncate`}>{profile.role}</p>
+                        <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} truncate`}>{profile.role}</p>
                       )}
                       {profile.discipline && (
-                        <p className={`text-xs ${cardStyle.text}/50 truncate`}>{profile.discipline}</p>
+                        <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-white/50'} truncate`}>{profile.discipline}</p>
                       )}
                     </div>
                   </div>
-                </Link>
+                </button>
               ))}
             </div>
           ) : (
-            <p className={`${cardStyle.text}/60`}>No team members found</p>
+            <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No team members found</p>
           )}
         </Card>
 
         {/* Org Chart */}
-        <Card className={`${cardStyle.bg} ${cardStyle.border} border p-6 ${getRoundedClass('rounded-xl')} mb-6`}>
-          <h2 className={`text-xl font-black uppercase ${cardStyle.text} mb-4`}>Org Chart</h2>
+        <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 mb-6`} style={{ 
+          borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+          borderWidth: mode === 'chaos' ? '2px' : '0px'
+        }}>
+          <h2 className={`text-xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} mb-4`}>Org Chart</h2>
           {allProfiles.length > 0 ? (
             <div className="space-y-4">
               {(() => {
@@ -706,13 +747,13 @@ export default function TeamPage() {
                 
                 return Object.entries(byDiscipline).map(([discipline, profiles]) => (
                   <div key={discipline}>
-                    <h3 className={`font-black text-lg ${cardStyle.text} mb-2`}>{discipline}</h3>
+                    <h3 className={`font-black text-lg ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} mb-2`}>{discipline}</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                       {profiles.map((profile) => (
-                        <Link
+                        <button
                           key={profile.id}
-                          href={`/profile?id=${profile.id}`}
-                          className={`p-3 rounded-lg border ${cardStyle.border} ${cardStyle.bg} hover:opacity-80 transition-opacity`}
+                          onClick={() => handleProfileClick(profile.id)}
+                          className={`p-3 ${getRoundedClass('rounded-xl')} border hover:opacity-80 transition-opacity w-full ${mode === 'chaos' ? 'bg-[#00C896]/10 border-[#00C896]/30' : mode === 'chill' ? 'bg-white/50 border-[#C8D961]/30' : 'bg-black/40 border-white/20'}`}
                         >
                           <div className="flex flex-col items-center text-center">
                             {profile.avatar_url ? (
@@ -722,18 +763,18 @@ export default function TeamPage() {
                                 className="w-16 h-16 rounded-full object-cover mb-2"
                               />
                             ) : (
-                              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: cardStyle.accent + '33' }}>
-                                <Users className="w-8 h-8" style={{ color: cardStyle.accent }} />
+                              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
+                                <Users className="w-8 h-8" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
                               </div>
                             )}
-                            <p className={`font-semibold text-sm ${cardStyle.text} truncate w-full`}>
+                            <p className={`font-semibold text-sm ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} truncate w-full`}>
                               {profile.full_name || profile.email || 'Unknown'}
                             </p>
                             {profile.role && (
-                              <p className={`text-xs ${cardStyle.text}/70 truncate w-full`}>{profile.role}</p>
+                              <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} truncate w-full`}>{profile.role}</p>
                             )}
                           </div>
-                        </Link>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -741,10 +782,147 @@ export default function TeamPage() {
               })()}
             </div>
           ) : (
-            <p className={`${cardStyle.text}/60`}>No team members found</p>
+            <p className={`${mode === 'chill' ? 'text-[#4A1818]/60' : 'text-white/60'}`}>No team members found</p>
           )}
         </Card>
       </main>
+      
+      {/* Profile View Dialog */}
+      <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
+        <DialogContent className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} max-w-2xl max-h-[90vh] overflow-y-auto`} style={{ 
+          borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF',
+          borderWidth: mode === 'chaos' ? '2px' : '0px'
+        }}>
+          {loadingProfile ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+            </div>
+          ) : selectedProfile ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className={`text-2xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
+                  {selectedProfile.full_name || selectedProfile.email || 'Profile'}
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-6 mt-6">
+                {/* Avatar and Basic Info */}
+                <div className="flex items-start gap-6">
+                  {selectedProfile.avatar_url ? (
+                    <img
+                      src={selectedProfile.avatar_url}
+                      alt={selectedProfile.full_name || 'User'}
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ backgroundColor: (mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF') + '33' }}>
+                      <Users className="w-12 h-12" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h3 className={`text-xl font-black ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'} mb-2`}>
+                      {selectedProfile.full_name || selectedProfile.email || 'Unknown'}
+                    </h3>
+                    {selectedProfile.pronouns && (
+                      <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'} mb-1`}>
+                        {selectedProfile.pronouns}
+                      </p>
+                    )}
+                    {selectedProfile.email && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Mail className="w-4 h-4" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                        <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
+                          {selectedProfile.email}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Bio */}
+                {selectedProfile.bio && (
+                  <div>
+                    <h4 className={`text-sm font-black uppercase mb-2 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>Bio</h4>
+                    <p className={`${mode === 'chill' ? 'text-[#4A1818]/80' : 'text-white/80'}`}>{selectedProfile.bio}</p>
+                  </div>
+                )}
+                
+                {/* Details Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedProfile.role && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <BriefcaseIcon className="w-4 h-4" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                        <h4 className={`text-xs font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>Role</h4>
+                      </div>
+                      <p className={`${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{selectedProfile.role}</p>
+                    </div>
+                  )}
+                  
+                  {selectedProfile.discipline && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Users className="w-4 h-4" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                        <h4 className={`text-xs font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>Discipline</h4>
+                      </div>
+                      <p className={`${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{selectedProfile.discipline}</p>
+                    </div>
+                  )}
+                  
+                  {selectedProfile.birthday && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Cake className="w-4 h-4" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                        <h4 className={`text-xs font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>Birthday</h4>
+                      </div>
+                      <p className={`${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{selectedProfile.birthday}</p>
+                    </div>
+                  )}
+                  
+                  {selectedProfile.start_date && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <CalendarIcon className="w-4 h-4" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                        <h4 className={`text-xs font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>Start Date</h4>
+                      </div>
+                      <p className={`${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
+                        {new Date(selectedProfile.start_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {selectedProfile.location && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <MapPin className="w-4 h-4" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                        <h4 className={`text-xs font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>Location</h4>
+                      </div>
+                      <p className={`${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>{selectedProfile.location}</p>
+                    </div>
+                  )}
+                  
+                  {selectedProfile.website && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Globe className="w-4 h-4" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
+                        <h4 className={`text-xs font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>Website</h4>
+                      </div>
+                      <a 
+                        href={selectedProfile.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className={`text-sm ${mode === 'chill' ? 'text-[#4A1818] hover:text-[#4A1818]/80' : 'text-white hover:text-white/80'} underline`}
+                      >
+                        {selectedProfile.website}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>
