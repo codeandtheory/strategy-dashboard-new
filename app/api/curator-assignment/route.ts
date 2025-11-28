@@ -176,15 +176,6 @@ export async function POST(request: NextRequest) {
 
       const start_date = startDateObj.toISOString().split('T')[0]
       const end_date = endDateObj.toISOString().split('T')[0]
-      // Calculate start_date (assignment_date + 3 days) and end_date (start_date + 7 days)
-      const assignmentDateObj = new Date(assignment_date)
-      const startDateObj = new Date(assignmentDateObj)
-      startDateObj.setDate(startDateObj.getDate() + 3)
-      const endDateObj = new Date(startDateObj)
-      endDateObj.setDate(endDateObj.getDate() + 7)
-
-      const start_date = startDateObj.toISOString().split('T')[0]
-      const end_date = endDateObj.toISOString().split('T')[0]
 
       // Check for overlapping assignments
       const { data: existing } = await supabase
@@ -266,16 +257,16 @@ export async function POST(request: NextRequest) {
     const start_date = startDateObj.toISOString().split('T')[0]
     const end_date = endDateObj.toISOString().split('T')[0]
 
-    // Check for overlapping assignments
+    // Check for overlapping assignments (periods that overlap)
     const { data: existing } = await supabase
       .from('curator_assignments')
-      .select('id')
-      .or(`start_date.lte.${end_date},end_date.gte.${start_date}`)
-      .limit(1)
+      .select('id, curator_name, start_date, end_date')
+      .gte('end_date', start_date)
+      .lte('start_date', end_date)
 
     if (existing && existing.length > 0) {
       return NextResponse.json(
-        { error: 'A curator is already assigned for this period' },
+        { error: `A curator (${existing[0].curator_name}) is already assigned for this period (${existing[0].start_date} - ${existing[0].end_date})` },
         { status: 400 }
       )
     }
