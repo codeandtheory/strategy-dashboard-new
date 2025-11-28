@@ -8,7 +8,7 @@ import { SiteHeader } from '@/components/site-header'
 import { Card } from '@/components/ui/card'
 import { Footer } from '@/components/footer'
 import { createClient } from '@/lib/supabase/client'
-import { Crown, Loader2, ArrowLeft, Users, PartyPopper, Cake, Trophy } from 'lucide-react'
+import { Crown, Loader2, ArrowLeft, Users, PartyPopper, Cake, Trophy, Calendar as CalendarIcon } from 'lucide-react'
 import Link from 'next/link'
 
 export default function BeastHistoryPage() {
@@ -213,26 +213,12 @@ export default function BeastHistoryPage() {
                       : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                   }`}
                 >
-                  <PartyPopper className="w-4 h-4" />
-                  <span className="font-black uppercase text-sm">Anniversaries</span>
+                  <CalendarIcon className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">Team Dates</span>
                 </Link>
                 
                 <Link
-                  href="/team"
-                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
-                    mode === 'chaos'
-                      ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50 text-white'
-                      : mode === 'chill'
-                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
-                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
-                  }`}
-                >
-                  <Cake className="w-4 h-4" />
-                  <span className="font-black uppercase text-sm">Birthdays</span>
-                </Link>
-                
-                <Link
-                  href="/team"
+                  href="/team/beast-history"
                   className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
                     mode === 'chaos'
                       ? 'bg-[#00C896] text-black'
@@ -242,10 +228,9 @@ export default function BeastHistoryPage() {
                   }`}
                 >
                   <Crown className="w-4 h-4" />
-                  <span className="font-black uppercase text-sm">History of the Beast</span>
+                  <span className="font-black uppercase text-sm">History of the Best</span>
                 </Link>
                 
-                {/* Links to separate pages */}
                 <Link
                   href="/team/directory"
                   className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
@@ -273,7 +258,7 @@ export default function BeastHistoryPage() {
             <div className={`w-12 h-12 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: greenColors.primary }}>
               <Crown className="w-6 h-6 text-white" />
             </div>
-            <h1 className={`text-3xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>History of the Beast</h1>
+            <h1 className={`text-3xl font-black uppercase ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>History of the Best</h1>
           </div>
           
           {beastBabeHistory.length > 0 ? (

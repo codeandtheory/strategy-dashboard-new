@@ -134,6 +134,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         { href: '/admin/must-read', label: 'Must Reads', icon: FileText, permission: null, sectionAccess: 'content' as const },
         { href: '/admin/work-sample', label: 'Work Samples', icon: Briefcase, permission: null, sectionAccess: 'content' as const },
         { href: '/admin/content', label: 'Resources', icon: FolderOpen, permission: null, sectionAccess: 'content' as const },
+        { href: '/admin/video', label: 'Video', icon: Upload, permission: null, sectionAccess: 'content' as const },
       ]
     },
     {
@@ -144,7 +145,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         { href: '/admin/news', label: 'News', icon: Newspaper, permission: null, sectionAccess: 'leadership' as const },
         { href: '/admin/this-week', label: 'This Week Stats', icon: BarChart3, permission: null, sectionAccess: 'leadership' as const },
         { href: '/admin/curator-rotation', label: 'Curator Rotation', icon: RotateCw, permission: null, sectionAccess: 'leadership' as const },
-        { href: '/admin/video', label: 'Video', icon: Upload, permission: null, sectionAccess: 'leadership' as const },
+        { href: '/admin/channel-polls', label: 'Channel Polls', icon: MessageSquare, permission: 'canManagePlaylists' as const, sectionAccess: 'leadership' as const },
       ]
     },
     {
@@ -152,7 +153,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       sectionAccess: 'curation' as const,
       items: [
         { href: '/admin/playlists', label: 'Playlist', icon: Music, permission: 'canManagePlaylists' as const, sectionAccess: 'curation' as const },
-        { href: '/admin/channel-polls', label: 'Channel Polls', icon: MessageSquare, permission: 'canManagePlaylists' as const, sectionAccess: 'curation' as const },
         { href: '/admin/beast-babe', label: 'Beast Babe', icon: Crown, permission: 'canPassBeastBabe' as const, sectionAccess: 'curation' as const },
       ]
     },
@@ -175,17 +175,17 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       <main className="w-full max-w-[1200px] mx-auto px-6 py-10 pt-24">
         <div className="flex gap-6 w-full">
           {/* Left Sidebar Card - 1/4 width - Fixed height, doesn't scroll */}
-          <Card className={`w-1/4 ${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-4 flex flex-col sticky top-24 h-fit`} style={{ 
+          <Card className={`w-1/4 ${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-4 flex flex-col sticky top-24 self-start h-fit`} style={{ 
             borderColor: mode === 'chaos' ? '#00C896' : mode === 'chill' ? '#C8D961' : '#FFFFFF',
             borderWidth: mode === 'chaos' ? '2px' : '0px'
           }}>
-            <div className="mb-4">
+            <div className="mb-2">
               <h1 className={`text-xl font-black uppercase tracking-wider ${getTextClass()} mb-1`}>Admin Panel</h1>
             </div>
 
             {/* User Profile Section */}
             {authUser && (
-              <div className={`mb-4 p-2 ${getRoundedClass('rounded-lg')}`}>
+              <div className={`mb-2 p-2 ${getRoundedClass('rounded-lg')}`}>
                 <div className="flex items-center gap-2 mb-1">
                   <div className="[&>button]:bg-transparent [&>button]:border-0 [&>button]:p-0 [&>button]:shadow-none [&>button]:ring-0 [&>button]:ring-offset-0 [&>button]:hover:bg-transparent [&>button]:focus:bg-transparent [&>button]:focus:ring-0">
                     <AccountMenu />

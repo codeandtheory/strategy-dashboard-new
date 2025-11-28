@@ -91,9 +91,9 @@ export async function POST(request: NextRequest) {
     const { playlist_id, curator_name, curator_profile_id, assignment_date, is_manual_override } = body
 
     // Validate required fields
-    if (!playlist_id || !curator_name || !assignment_date) {
+    if (!curator_name || !assignment_date) {
       return NextResponse.json(
-        { error: 'Missing required fields: playlist_id, curator_name, and assignment_date are required' },
+        { error: 'Missing required fields: curator_name and assignment_date are required' },
         { status: 400 }
       )
     }
@@ -120,19 +120,55 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Look up curator profile if only name is provided
+    let finalCuratorProfileId = curator_profile_id
+    if (!finalCuratorProfileId && curator_name) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, special_access')
+        .or(`full_name.ilike.%${curator_name}%,email.ilike.%${curator_name}%`)
+        .limit(1)
+        .single()
+      
+      if (profile) {
+        finalCuratorProfileId = profile.id
+      }
+    }
+
+    // Grant curator permissions to the assigned person
+    if (finalCuratorProfileId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('special_access')
+        .eq('id', finalCuratorProfileId)
+        .single()
+
+      if (profile) {
+        const specialAccess = profile.special_access || []
+        if (!specialAccess.includes('curator')) {
+          await supabase
+            .from('profiles')
+            .update({
+              special_access: [...specialAccess, 'curator']
+            })
+            .eq('id', finalCuratorProfileId)
+        }
+      }
+    }
+
     // If manual override, just assign directly
     if (is_manual_override) {
       const { data: assignment, error } = await supabase
         .from('curator_assignments')
         .upsert({
-          playlist_id,
+          playlist_id: playlist_id || null,
           curator_name,
-          curator_profile_id: curator_profile_id || null,
+          curator_profile_id: finalCuratorProfileId || null,
           assignment_date,
           is_manual_override: true,
           assigned_by: user.id
         }, {
-          onConflict: 'playlist_id'
+          onConflict: playlist_id ? 'playlist_id' : undefined
         })
         .select()
         .single()
@@ -145,11 +181,13 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Also update the playlist's curator field
-      await supabase
-        .from('playlists')
-        .update({ curator: curator_name })
-        .eq('id', playlist_id)
+      // Also update the playlist's curator field if playlist_id is provided
+      if (playlist_id) {
+        await supabase
+          .from('playlists')
+          .update({ curator: curator_name })
+          .eq('id', playlist_id)
+      }
 
       return NextResponse.json({ assignment })
     }
@@ -164,18 +202,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Grant curator permissions
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('special_access')
+      .eq('id', selectedCurator.id)
+      .single()
+
+    if (profile) {
+      const specialAccess = profile.special_access || []
+      if (!specialAccess.includes('curator')) {
+        await supabase
+          .from('profiles')
+          .update({
+            special_access: [...specialAccess, 'curator']
+          })
+          .eq('id', selectedCurator.id)
+      }
+    }
+
     // Create assignment
     const { data: assignment, error } = await supabase
       .from('curator_assignments')
-      .upsert({
-        playlist_id,
+      .insert({
+        playlist_id: playlist_id || null,
         curator_name: selectedCurator.full_name,
         curator_profile_id: selectedCurator.id,
         assignment_date,
         is_manual_override: false,
         assigned_by: user.id
-      }, {
-        onConflict: 'playlist_id'
       })
       .select()
       .single()
@@ -188,14 +243,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Also update the playlist's curator field
-    await supabase
-      .from('playlists')
-      .update({ 
-        curator: selectedCurator.full_name,
-        curator_photo_url: selectedCurator.avatar_url || null
-      })
-      .eq('id', playlist_id)
+    // Also update the playlist's curator field if playlist_id is provided
+    if (playlist_id) {
+      await supabase
+        .from('playlists')
+        .update({ 
+          curator: selectedCurator.full_name,
+          curator_photo_url: selectedCurator.avatar_url || null
+        })
+        .eq('id', playlist_id)
+    }
 
     return NextResponse.json({ 
       assignment,

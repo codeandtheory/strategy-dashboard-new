@@ -221,8 +221,8 @@ export default function PlaylistsAdmin() {
       return
     }
 
-    if (!formData.date || !formData.curator.trim()) {
-      setError('Please fill in all required fields')
+    if (!formData.date) {
+      setError('Please fill in the date')
       return
     }
 
@@ -259,8 +259,16 @@ export default function PlaylistsAdmin() {
         setIsAddDialogOpen(false)
         resetForm()
         fetchPlaylists()
-        setSuccess(true)
-        setTimeout(() => setSuccess(false), 3000)
+        if (result.autoAssignedCurator) {
+          setSuccess(true)
+          setTimeout(() => {
+            setSuccess(false)
+            alert(`Curator automatically assigned: ${result.autoAssignedCurator.full_name}\n\nThey now have curator permissions.`)
+          }, 100)
+        } else {
+          setSuccess(true)
+          setTimeout(() => setSuccess(false), 3000)
+        }
       } else {
         const errorMsg = result.error || 'Failed to add playlist'
         setError(errorMsg)
@@ -608,15 +616,17 @@ export default function PlaylistsAdmin() {
                     />
                   </div>
                   <div>
-                    <Label className={cardStyle.text}>Curator *</Label>
+                    <Label className={cardStyle.text}>Curator (Optional)</Label>
                     <Input
                       value={formData.curator}
                       onChange={(e) => setFormData({ ...formData, curator: e.target.value })}
                       className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} mt-1`}
-                      placeholder="Rebecca Smith"
+                      placeholder="Leave empty to auto-assign"
                     />
                     <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
-                      Will use playlist owner if left empty
+                      {formData.curator.trim() 
+                        ? 'Curator will be set to the name you provide' 
+                        : 'A curator will be automatically assigned using random rotation'}
                     </p>
                   </div>
                 </div>
@@ -645,7 +655,7 @@ export default function PlaylistsAdmin() {
                 </Button>
                 <Button
                   onClick={handleAdd}
-                  disabled={!spotifyData || !formData.date || !formData.curator.trim() || saving}
+                  disabled={!spotifyData || !formData.date || saving}
                   className={`${getRoundedClass('rounded-lg')} ${
                     mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
                     mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :

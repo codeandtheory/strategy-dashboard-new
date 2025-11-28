@@ -57,7 +57,6 @@ export default function CuratorRotationPage() {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [formData, setFormData] = useState({
-    playlist_id: '',
     assignment_date: new Date().toISOString().split('T')[0],
     curator_name: '',
     curator_profile_id: '',
@@ -152,8 +151,8 @@ export default function CuratorRotationPage() {
   }
 
   const handleRandomAssign = async () => {
-    if (!formData.playlist_id || !formData.assignment_date) {
-      alert('Please select a playlist and date')
+    if (!formData.assignment_date) {
+      alert('Please select a date')
       return
     }
 
@@ -163,7 +162,6 @@ export default function CuratorRotationPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          playlist_id: formData.playlist_id,
           assignment_date: formData.assignment_date,
           is_manual_override: false
         })
@@ -179,7 +177,14 @@ export default function CuratorRotationPage() {
           })
         }
         await fetchData()
-        alert(`Randomly assigned: ${data.selectedCurator?.full_name || 'Unknown'}`)
+        alert(`Curator assigned: ${data.selectedCurator?.full_name || 'Unknown'}\n\nThey now have curator permissions to create playlists.`)
+        setIsAssignDialogOpen(false)
+        setFormData({
+          assignment_date: new Date().toISOString().split('T')[0],
+          curator_name: '',
+          curator_profile_id: '',
+          is_manual_override: false
+        })
       } else {
         alert(`Error: ${data.error}`)
       }
@@ -192,7 +197,7 @@ export default function CuratorRotationPage() {
   }
 
   const handleManualAssign = async () => {
-    if (!formData.playlist_id || !formData.assignment_date || !formData.curator_name) {
+    if (!formData.assignment_date || !formData.curator_name) {
       alert('Please fill in all required fields')
       return
     }
@@ -203,7 +208,6 @@ export default function CuratorRotationPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          playlist_id: formData.playlist_id,
           assignment_date: formData.assignment_date,
           curator_name: formData.curator_name,
           curator_profile_id: formData.curator_profile_id || null,
@@ -216,13 +220,12 @@ export default function CuratorRotationPage() {
         await fetchData()
         setIsAssignDialogOpen(false)
         setFormData({
-          playlist_id: '',
           assignment_date: new Date().toISOString().split('T')[0],
           curator_name: '',
           curator_profile_id: '',
           is_manual_override: false
         })
-        alert('Curator assigned successfully')
+        alert('Curator assigned successfully!\n\nThey now have curator permissions to create playlists.')
       } else {
         alert(`Error: ${data.error}`)
       }
@@ -281,21 +284,6 @@ export default function CuratorRotationPage() {
                   </DialogHeader>
                   <div className="space-y-4 mt-4">
                     <div>
-                      <Label className={cardStyle.text}>Playlist *</Label>
-                      <select
-                        value={formData.playlist_id}
-                        onChange={(e) => setFormData({ ...formData, playlist_id: e.target.value })}
-                        className={`w-full ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} p-2 ${getRoundedClass('rounded-md')} mt-1`}
-                      >
-                        <option value="">Select a playlist</option>
-                        {playlists.map(p => (
-                          <option key={p.id} value={p.id}>
-                            {p.date} - {p.title || 'Untitled'} ({p.curator})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
                       <Label className={cardStyle.text}>Assignment Date *</Label>
                       <Input
                         type="date"
@@ -303,11 +291,14 @@ export default function CuratorRotationPage() {
                         onChange={(e) => setFormData({ ...formData, assignment_date: e.target.value })}
                         className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} mt-1`}
                       />
+                      <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
+                        Assign a curator for this date. They will receive curator permissions to create playlists.
+                      </p>
                     </div>
                     <div className="flex gap-2">
                       <Button
                         onClick={handleRandomAssign}
-                        disabled={assigning || !formData.playlist_id || !formData.assignment_date}
+                        disabled={assigning || !formData.assignment_date}
                         className={`flex-1 ${getRoundedClass('rounded-lg')} ${
                           mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
                           mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
@@ -358,7 +349,7 @@ export default function CuratorRotationPage() {
                         </div>
                         <Button
                           onClick={handleManualAssign}
-                          disabled={assigning || !formData.playlist_id || !formData.assignment_date || !formData.curator_name}
+                          disabled={assigning || !formData.assignment_date || !formData.curator_name}
                           className={`w-full ${getRoundedClass('rounded-lg')} ${
                             mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
                             mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
@@ -421,6 +412,11 @@ export default function CuratorRotationPage() {
                                 <ExternalLink className="w-3 h-3" />
                               </a>
                             )}
+                          </div>
+                        )}
+                        {!assignment.playlists && (
+                          <div className={`text-xs ${cardStyle.text}/60 mt-1`}>
+                            No playlist created yet
                           </div>
                         )}
                       </div>

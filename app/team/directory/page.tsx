@@ -8,7 +8,7 @@ import { SiteHeader } from '@/components/site-header'
 import { Card } from '@/components/ui/card'
 import { Footer } from '@/components/footer'
 import { createClient } from '@/lib/supabase/client'
-import { Users, Search, Loader2, ArrowLeft, Crown, PartyPopper, Cake, Trophy } from 'lucide-react'
+import { Users, Search, Loader2, ArrowLeft, Crown, PartyPopper, Cake, Trophy, Calendar as CalendarIcon } from 'lucide-react'
 import Link from 'next/link'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
@@ -235,51 +235,8 @@ export default function TeamDirectoryPage() {
                       : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
                   }`}
                 >
-                  <PartyPopper className="w-4 h-4" />
-                  <span className="font-black uppercase text-sm">Anniversaries</span>
-                </Link>
-                
-                <Link
-                  href="/team"
-                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
-                    mode === 'chaos'
-                      ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50 text-white'
-                      : mode === 'chill'
-                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
-                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
-                  }`}
-                >
-                  <Cake className="w-4 h-4" />
-                  <span className="font-black uppercase text-sm">Birthdays</span>
-                </Link>
-                
-                <Link
-                  href="/team"
-                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
-                    mode === 'chaos'
-                      ? 'bg-[#00C896]/30 text-white/80 hover:bg-[#00C896]/50 text-white'
-                      : mode === 'chill'
-                      ? 'bg-white/30 text-[#4A1818]/60 hover:bg-white/50 text-[#4A1818]'
-                      : 'bg-black/40 text-white/60 hover:bg-black/60 text-white'
-                  }`}
-                >
-                  <Crown className="w-4 h-4" />
-                  <span className="font-black uppercase text-sm">History of the Beast</span>
-                </Link>
-                
-                {/* Links to separate pages */}
-                <Link
-                  href="/team/directory"
-                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
-                    mode === 'chaos'
-                      ? 'bg-[#00C896] text-black'
-                      : mode === 'chill'
-                      ? 'bg-[#00C896] text-white'
-                      : 'bg-white text-black'
-                  }`}
-                >
-                  <Users className="w-4 h-4" />
-                  <span className="font-black uppercase text-sm">Directory</span>
+                  <CalendarIcon className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">Team Dates</span>
                 </Link>
                 
                 <Link
@@ -293,7 +250,21 @@ export default function TeamDirectoryPage() {
                   }`}
                 >
                   <Crown className="w-4 h-4" />
-                  <span className="font-black uppercase text-sm">History of the Beast</span>
+                  <span className="font-black uppercase text-sm">History of the Best</span>
+                </Link>
+                
+                <Link
+                  href="/team/directory"
+                  className={`w-full text-left px-4 py-3 ${getRoundedClass('rounded-xl')} transition-all flex items-center gap-3 ${
+                    mode === 'chaos'
+                      ? 'bg-[#00C896] text-black'
+                      : mode === 'chill'
+                      ? 'bg-[#00C896] text-white'
+                      : 'bg-white text-black'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  <span className="font-black uppercase text-sm">Directory</span>
                 </Link>
               </div>
             </div>

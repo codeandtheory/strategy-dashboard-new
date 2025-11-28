@@ -289,6 +289,96 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+/**
+ * Select a random curator ensuring fair rotation
+ * Uses cryptographically secure random number generation
+ */
+async function selectRandomCurator(
+  supabase: any,
+  assignmentDate: string
+): Promise<{ id: string; full_name: string; avatar_url: string | null; discipline: string | null; role: string | null } | null> {
+  // Get all active team members
+  const { data: teamMembers, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, email, discipline, role, hierarchy_level, avatar_url, is_active')
+    .eq('is_active', true)
+    .not('full_name', 'is', null)
+
+  if (error || !teamMembers || teamMembers.length === 0) {
+    console.error('Error fetching team members:', error)
+    return null
+  }
+
+  // Get recent curator assignments (last N assignments where N = team size)
+  const { data: recentAssignments } = await supabase
+    .from('curator_assignments')
+    .select('curator_name, assignment_date')
+    .order('assignment_date', { ascending: false })
+    .limit(teamMembers.length)
+
+  // Create a set of recently assigned curators (normalized to lowercase)
+  const recentlyAssigned = new Set(
+    (recentAssignments || []).map(a => a.curator_name.toLowerCase().trim())
+  )
+
+  // Filter out recently assigned curators
+  let eligibleCurators = teamMembers.filter(member => {
+    const name = member.full_name?.toLowerCase().trim()
+    return name && !recentlyAssigned.has(name)
+  })
+
+  // If everyone has been assigned recently, reset and use all team members
+  if (eligibleCurators.length === 0) {
+    eligibleCurators = teamMembers
+  }
+
+  // Use cryptographically secure random number generation
+  const randomBytes = new Uint32Array(1)
+  crypto.getRandomValues(randomBytes)
+  
+  // Convert to float between 0 and 1
+  const random = randomBytes[0] / (0xFFFFFFFF + 1)
+  
+  // Select random curator
+  const selectedIndex = Math.floor(random * eligibleCurators.length)
+  const selected = eligibleCurators[selectedIndex]
+
+  if (!selected || !selected.full_name) {
+    return null
+  }
+
+  return {
+    id: selected.id,
+    full_name: selected.full_name,
+    avatar_url: selected.avatar_url || null,
+    discipline: selected.discipline || null,
+    role: selected.role || null
+  }
+}
+
+/**
+ * Grant curator permissions to a user
+ */
+async function grantCuratorPermissions(supabase: any, profileId: string): Promise<void> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('special_access')
+    .eq('id', profileId)
+    .single()
+
+  if (profile) {
+    const specialAccess = profile.special_access || []
+    if (!specialAccess.includes('curator')) {
+      await supabase
+        .from('profiles')
+        .update({
+          special_access: [...specialAccess, 'curator']
+        })
+        .eq('id', profileId)
+    }
+  }
+}
+
 // POST - Create a new playlist
 export async function POST(request: NextRequest) {
   try {
@@ -297,18 +387,58 @@ export async function POST(request: NextRequest) {
 
     const { date, title, curator, description, spotify_url, apple_playlist_url, cover_url, curator_photo_url, week_label, total_duration, track_count, artists_list } = body
 
-    if (!date || !curator || !spotify_url) {
+    if (!date || !spotify_url) {
       return NextResponse.json(
-        { error: 'Missing required fields: date, curator, and spotify_url are required' },
+        { error: 'Missing required fields: date and spotify_url are required' },
         { status: 400 }
       )
+    }
+
+    // Auto-assign curator if not provided
+    let finalCurator = curator
+    let finalCuratorPhotoUrl = curator_photo_url
+    let autoAssignedCurator = null
+    let curatorProfileId = null
+
+    if (!curator || !curator.trim()) {
+      // Auto-assign using random rotation
+      autoAssignedCurator = await selectRandomCurator(supabase, date)
+      if (autoAssignedCurator) {
+        finalCurator = autoAssignedCurator.full_name
+        finalCuratorPhotoUrl = autoAssignedCurator.avatar_url || null
+        curatorProfileId = autoAssignedCurator.id
+        
+        // Grant curator permissions
+        await grantCuratorPermissions(supabase, autoAssignedCurator.id)
+      } else {
+        return NextResponse.json(
+          { error: 'No eligible curators found for auto-assignment' },
+          { status: 400 }
+        )
+      }
+    } else {
+      // Look up curator profile if name is provided
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, avatar_url, special_access')
+        .or(`full_name.ilike.%${curator}%,email.ilike.%${curator}%`)
+        .limit(1)
+        .single()
+      
+      if (profile) {
+        curatorProfileId = profile.id
+        if (!finalCuratorPhotoUrl && profile.avatar_url) {
+          finalCuratorPhotoUrl = profile.avatar_url
+        }
+        // Grant curator permissions if not already granted
+        await grantCuratorPermissions(supabase, profile.id)
+      }
     }
 
     // Fetch Spotify data if cover_url or title are missing
     let finalTitle = title
     let finalCoverUrl = cover_url
     let finalDescription = description
-    let finalCuratorPhotoUrl = curator_photo_url
 
     if (!cover_url || !title) {
       const spotifyData = await fetchSpotifyPlaylistData(spotify_url)
@@ -316,21 +446,10 @@ export async function POST(request: NextRequest) {
         finalTitle = spotifyData.title || title
         finalCoverUrl = spotifyData.coverUrl || cover_url
         finalDescription = spotifyData.description || description
-        finalCuratorPhotoUrl = spotifyData.curatorPhotoUrl || curator_photo_url
-      }
-    }
-
-    // Look up curator's avatar from profiles if not provided
-    if (!finalCuratorPhotoUrl) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('avatar_url, full_name')
-        .or(`full_name.ilike.%${curator}%,email.ilike.%${curator}%`)
-        .limit(1)
-        .single()
-      
-      if (profile?.avatar_url) {
-        finalCuratorPhotoUrl = profile.avatar_url
+        // Only use Spotify curator photo if we didn't auto-assign
+        if (!autoAssignedCurator && !finalCuratorPhotoUrl) {
+          finalCuratorPhotoUrl = spotifyData.curatorPhotoUrl || null
+        }
       }
     }
 
@@ -339,7 +458,7 @@ export async function POST(request: NextRequest) {
       .insert({
         date,
         title: finalTitle || null,
-        curator,
+        curator: finalCurator,
         description: finalDescription || null,
         spotify_url,
         apple_playlist_url: apple_playlist_url || null,
@@ -361,7 +480,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json(playlist, { status: 201 })
+    // Create curator assignment record if curator was auto-assigned or if we have a profile ID
+    if (playlist && (autoAssignedCurator || curatorProfileId)) {
+      const { data: { user } } = await supabase.auth.getUser()
+      await supabase
+        .from('curator_assignments')
+        .insert({
+          playlist_id: playlist.id,
+          curator_name: finalCurator,
+          curator_profile_id: curatorProfileId || autoAssignedCurator?.id || null,
+          assignment_date: date,
+          is_manual_override: !autoAssignedCurator, // Manual if curator was provided
+          assigned_by: user?.id || null
+        })
+    }
+
+    return NextResponse.json({
+      ...playlist,
+      autoAssignedCurator: autoAssignedCurator ? {
+        id: autoAssignedCurator.id,
+        full_name: autoAssignedCurator.full_name
+      } : null
+    }, { status: 201 })
   } catch (error: any) {
     console.error('Error in POST /api/playlists:', error)
     return NextResponse.json(
