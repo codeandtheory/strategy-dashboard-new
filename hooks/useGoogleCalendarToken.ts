@@ -16,6 +16,7 @@ export function useGoogleCalendarToken() {
   const hasFetchedRef = useRef(false) // Track if we've successfully fetched
   const lastRefreshAttemptRef = useRef<number>(0) // Track last refresh attempt timestamp
   const refreshInProgressRef = useRef(false) // Track if refresh is in progress
+  const authNeededRef = useRef(false) // Track if we've determined auth is needed (prevents repeated checks)
 
   useEffect(() => {
     async function getToken() {
@@ -35,6 +36,14 @@ export function useGoogleCalendarToken() {
         // Token is expiring soon or expired, continue to refresh it
       }
       
+      // If we already know we need auth and haven't initiated it, don't keep checking
+      // This prevents repeated checks when user hasn't clicked the auth button yet
+      if (authNeededRef.current && needsAuth) {
+        setLoading(false)
+        isRequestingRef.current = false
+        return
+      }
+      
       isRequestingRef.current = true
       try {
         // Check cached token first
@@ -44,6 +53,8 @@ export function useGoogleCalendarToken() {
         if (cachedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry) - (5 * 60 * 1000)) {
           // Token is still valid (with 5 min buffer)
           setAccessToken(cachedToken)
+          setNeedsAuth(false)
+          authNeededRef.current = false // Reset auth needed flag if we have a valid token
           setLoading(false)
           isRequestingRef.current = false
           hasFetchedRef.current = true
@@ -78,6 +89,7 @@ export function useGoogleCalendarToken() {
                 localStorage.setItem('google_calendar_token_expiry', expiry.toString())
                 setAccessToken(data.accessToken)
                 setNeedsAuth(false)
+                authNeededRef.current = false // Reset auth needed flag on success
                 setLoading(false)
                 isRequestingRef.current = false
                 hasFetchedRef.current = true
@@ -90,6 +102,7 @@ export function useGoogleCalendarToken() {
               // If refresh token is invalid/expired, we need to re-authenticate
               if (response.status === 401 && errorData.needsAuth) {
                 console.log('Refresh token expired, need to re-authenticate')
+                authNeededRef.current = true
                 setNeedsAuth(true)
                 setError(null) // Don't show error, just trigger auth flow
                 setLoading(false)
@@ -102,6 +115,7 @@ export function useGoogleCalendarToken() {
           } catch (refreshError: any) {
             console.error('Error refreshing token:', refreshError)
             // If refresh fails, we need to re-authenticate
+            authNeededRef.current = true
             setNeedsAuth(true)
             setError(null) // Don't show error, just trigger auth flow
             setLoading(false)
@@ -110,6 +124,7 @@ export function useGoogleCalendarToken() {
           }
         } else {
           // No refresh token, need to authenticate
+          authNeededRef.current = true
           setNeedsAuth(true)
           setLoading(false)
           isRequestingRef.current = false
@@ -129,6 +144,10 @@ export function useGoogleCalendarToken() {
   // Function to initiate OAuth flow
   const initiateAuth = () => {
     if (isRequestingRef.current) return
+    
+    // Mark that we're initiating auth to prevent repeated calls
+    authNeededRef.current = true
+    isRequestingRef.current = true
     
     // Redirect to OAuth authorization endpoint
     window.location.href = '/api/calendar/auth'
@@ -192,6 +211,7 @@ export function useGoogleCalendarToken() {
           localStorage.setItem('google_calendar_token_expiry', expiry.toString())
           setAccessToken(data.accessToken)
           setNeedsAuth(false)
+          authNeededRef.current = false // Reset auth needed flag on success
           setError(null)
           refreshInProgressRef.current = false
           setRefreshTrigger(prev => prev + 1)
