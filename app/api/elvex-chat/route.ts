@@ -59,6 +59,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Log configuration (without exposing full API key)
+    console.log('Elvex chat config:', {
+      assistantId,
+      version,
+      baseUrl,
+      apiKeyPrefix: apiKey ? `${apiKey.substring(0, 8)}...` : 'not set'
+    })
+
     // Build conversation context from history if provided
     // Elvex expects a prompt, so we'll format the conversation history as context
     let prompt = message.trim()
@@ -83,6 +91,8 @@ export async function POST(request: NextRequest) {
     // Call Elvex API
     const elvexUrl = `${baseUrl}/v0/apps/${assistantId}/versions/${version}/text/generate`
     
+    console.log('Calling Elvex API:', elvexUrl)
+    
     const response = await fetch(elvexUrl, {
       method: 'POST',
       headers: {
@@ -96,9 +106,35 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Elvex API error:', response.status, errorText)
+      console.error('Elvex API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: elvexUrl,
+        error: errorText,
+        assistantId,
+        version
+      })
+      
+      // Provide more helpful error message
+      let errorMessage = `Elvex API error: ${response.status}`
+      try {
+        const errorJson = JSON.parse(errorText)
+        if (errorJson.errors && errorJson.errors[0] && errorJson.errors[0].detail) {
+          errorMessage = errorJson.errors[0].detail
+        } else {
+          errorMessage = errorText
+        }
+      } catch {
+        errorMessage = errorText || `HTTP ${response.status}`
+      }
+      
       return NextResponse.json(
-        { error: `Elvex API error: ${response.status} ${errorText}` },
+        { 
+          error: errorMessage,
+          details: response.status === 404 
+            ? 'Please verify that ELVEX_ASSISTANT_ID and ELVEX_VERSION are correct, and that the assistant version is published in Elvex.'
+            : undefined
+        },
         { status: response.status }
       )
     }

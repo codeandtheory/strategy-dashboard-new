@@ -2114,7 +2114,7 @@ export default function TeamDashboard() {
                       {/* Chatbot text link */}
                       <button
                         onClick={() => setShowChatbot(true)}
-                        className={`text-sm font-semibold hover:opacity-70 transition-opacity ${mode === 'code' ? 'font-mono' : ''}`}
+                        className={`text-sm font-semibold hover:opacity-70 transition-opacity flex items-center gap-2 ${mode === 'code' ? 'font-mono' : ''}`}
                         style={{
                           color: mode === 'chaos' 
                             ? (isLightBg ? '#000000' : '#FFFFFF')
@@ -2123,7 +2123,7 @@ export default function TeamDashboard() {
                             : '#FFFFFF'
                         }}
                       >
-                        {mode === 'code' ? '[DECKTALK]' : 'DeckTalk'}
+                        {mode === 'code' ? '[DECKTALK]' : 'DeckTalk'} {mode !== 'code' && <MessageCircle className="w-3 h-3" />}
                       </button>
                     </div>
                   </div>
