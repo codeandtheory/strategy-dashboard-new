@@ -526,3 +526,21 @@ body {
 [role="dialog"] {
   max-width: min(100%, 1200px) !important;
 }
+
+/* Ensure main content areas maintain full width up to max-width */
+main {
+  width: 100% !important;
+}
+
+/* Ensure main content areas maintain width up to 1200px */
+main {
+  min-width: 0;
+}
+
+/* On larger screens, ensure main maintains full width up to max-width */
+@media (min-width: 1200px) {
+  main {
+    width: 100%;
+    max-width: 1200px;
+  }
+}

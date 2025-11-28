@@ -479,7 +479,7 @@ export default function TeamPage() {
             <p className={getTextClass()}>Loading team data...</p>
           </div>
         )}
-        <div className="flex gap-6 w-full">
+        <div className="flex gap-6 w-full min-w-0">
           {/* Left Sidebar Card */}
           <Card className={`w-80 flex-shrink-0 min-w-80 ${mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-white' : 'bg-[#1a1a1a]'} ${getRoundedClass('rounded-[2.5rem]')} p-6 flex flex-col h-fit`} style={{ 
             borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : '#FFFFFF',
@@ -577,7 +577,7 @@ export default function TeamPage() {
           </Card>
 
           {/* Main Content Area */}
-          <div className="flex-1 min-w-0 flex flex-col">
+          <div className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
               <h1 className={`text-4xl font-black uppercase ${getTextClass()}`}>TEAM</h1>
