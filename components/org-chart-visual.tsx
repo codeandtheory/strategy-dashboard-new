@@ -65,24 +65,26 @@ export function OrgChartVisual({
   // Calculate node positions for a tree layout
   const calculatePositions = (nodes: OrgChartNode[], startX: number = 0, startY: number = 0): NodePosition[] => {
     const positions: NodePosition[] = []
-    let currentX = startX
-    let currentY = startY
 
-    function traverse(node: OrgChartNode, x: number, y: number, parentWidth: number = 0) {
+    // Helper to calculate descendant count
+    const getDescendantCount = (n: OrgChartNode): number => {
+      const isExpanded = expandedNodes.has(n.id) || expandedNodes.size === 0
+      if (!isExpanded || n.children.length === 0) return 1
+      return n.children.reduce((sum, child) => sum + getDescendantCount(child), 1)
+    }
+
+    // Calculate positions for each root node and its children
+    function calculateNodePosition(node: OrgChartNode, x: number, y: number): number {
       const isExpanded = expandedNodes.has(node.id) || expandedNodes.size === 0
       const hasChildren = node.children.length > 0 && isExpanded
-
-      // Calculate how many descendants this node has (for centering)
-      const getDescendantCount = (n: OrgChartNode): number => {
-        if (!expandedNodes.has(n.id) && expandedNodes.size > 0) return 1
-        if (n.children.length === 0) return 1
-        return n.children.reduce((sum, child) => sum + getDescendantCount(child), 1)
-      }
-
-      const descendantCount = hasChildren ? getDescendantCount(node) : 1
-      const totalWidth = descendantCount * HORIZONTAL_SPACING
-      const nodeX = x + (parentWidth - totalWidth) / 2 + totalWidth / 2 - NODE_WIDTH / 2
-
+      
+      // Calculate width needed for this subtree
+      const descendantCount = getDescendantCount(node)
+      const subtreeWidth = descendantCount * HORIZONTAL_SPACING
+      
+      // Center the node within its subtree
+      const nodeX = x + (subtreeWidth - NODE_WIDTH) / 2
+      
       positions.push({
         node,
         x: nodeX,
@@ -91,42 +93,24 @@ export function OrgChartVisual({
         height: NODE_HEIGHT
       })
 
+      // Position children
       if (hasChildren) {
-        let childX = nodeX - (totalWidth - NODE_WIDTH) / 2
-        node.children.forEach((child, index) => {
-          const childDescendantCount = getDescendantCount(child)
-          const childTotalWidth = childDescendantCount * HORIZONTAL_SPACING
-          traverse(child, childX + childTotalWidth / 2, y + VERTICAL_SPACING, childTotalWidth)
-          childX += childTotalWidth
+        let childX = x
+        node.children.forEach(child => {
+          const childSubtreeWidth = getDescendantCount(child) * HORIZONTAL_SPACING
+          calculateNodePosition(child, childX, y + VERTICAL_SPACING)
+          childX += childSubtreeWidth
         })
       }
+
+      return subtreeWidth
     }
 
-    // Calculate total width needed
-    const totalWidth = nodes.reduce((sum, node) => {
-      const getDescendantCount = (n: OrgChartNode): number => {
-        if (!expandedNodes.has(n.id) && expandedNodes.size > 0) return 1
-        if (n.children.length === 0) return 1
-        return n.children.reduce((sum, child) => sum + getDescendantCount(child), 1)
-      }
-      return sum + getDescendantCount(node) * HORIZONTAL_SPACING
-    }, 0)
-
-    const startXCentered = startX + (totalWidth - NODE_WIDTH) / 2
-
-    nodes.forEach((node, index) => {
-      const nodeDescendantCount = (() => {
-        const getDescendantCount = (n: OrgChartNode): number => {
-          if (!expandedNodes.has(n.id) && expandedNodes.size > 0) return 1
-          if (n.children.length === 0) return 1
-          return n.children.reduce((sum, child) => sum + getDescendantCount(child), 1)
-        }
-        return getDescendantCount(node)
-      })()
-      
-      const nodeTotalWidth = nodeDescendantCount * HORIZONTAL_SPACING
-      const nodeX = startX + index * HORIZONTAL_SPACING + (nodeTotalWidth - NODE_WIDTH) / 2
-      traverse(node, nodeX, startY, nodeTotalWidth)
+    // Position root nodes
+    let currentX = startX
+    nodes.forEach(node => {
+      const subtreeWidth = calculateNodePosition(node, currentX, startY)
+      currentX += subtreeWidth
     })
 
     return positions
@@ -288,23 +272,26 @@ export function OrgChartVisual({
     const positions = calculatePositions(disciplineTree)
 
     // Calculate canvas size
-    const maxX = Math.max(...positions.map(p => p.x + p.width), 0)
-    const maxY = Math.max(...positions.map(p => p.y + p.height), 0)
+    const maxX = positions.length > 0 ? Math.max(...positions.map(p => p.x + p.width), 0) : 0
+    const maxY = positions.length > 0 ? Math.max(...positions.map(p => p.y + p.height), 0) : 0
     const canvasWidth = Math.max(maxX + 100, 800)
     const canvasHeight = Math.max(maxY + 100, 600)
 
     // Build parent-child relationships for connectors
     const connectors: Array<{ parent: NodePosition; child: NodePosition }> = []
-    positions.forEach(parentPos => {
-      if (expandedNodes.has(parentPos.node.id) || expandedNodes.size === 0) {
-        parentPos.node.children.forEach(child => {
-          const childPos = positions.find(p => p.node.id === child.id)
-          if (childPos) {
-            connectors.push({ parent: parentPos, child: childPos })
-          }
-        })
-      }
-    })
+    if (positions.length > 0) {
+      positions.forEach(parentPos => {
+        const isExpanded = expandedNodes.has(parentPos.node.id) || expandedNodes.size === 0
+        if (isExpanded && parentPos.node.children.length > 0) {
+          parentPos.node.children.forEach(child => {
+            const childPos = positions.find(p => p.node.id === child.id)
+            if (childPos) {
+              connectors.push({ parent: parentPos, child: childPos })
+            }
+          })
+        }
+      })
+    }
 
     return (
       <div className="space-y-4">
@@ -317,15 +304,41 @@ export function OrgChartVisual({
           <span>Back to All Disciplines</span>
         </button>
 
-        <div className={`${getRoundedClass('rounded-xl')} p-4 overflow-auto`} style={{
-          backgroundColor: mode === 'chaos' ? '#1a1a1a' : mode === 'chill' ? '#F5E6D3' : '#000000'
-        }}>
-          <svg width={canvasWidth} height={canvasHeight} className="block">
-            {/* Render connectors first (behind nodes) */}
-            <g>{connectors.map(({ parent, child }) => renderConnector(parent, child))}</g>
-            {/* Render nodes on top */}
-            {positions.map(position => renderNode(position))}
-          </svg>
+        <div 
+          className={`${getRoundedClass('rounded-xl')} p-4 overflow-auto max-w-full`}
+          style={{
+            backgroundColor: mode === 'chaos' ? '#1a1a1a' : mode === 'chill' ? '#F5E6D3' : '#000000',
+            maxWidth: '100%',
+            width: '100%'
+          }}
+        >
+          {positions.length > 0 ? (
+            <div className="inline-block" style={{ minWidth: `${Math.min(canvasWidth, 1200)}px` }}>
+              <svg 
+                width={Math.min(canvasWidth, 1200)} 
+                height={canvasHeight} 
+                viewBox={`0 0 ${canvasWidth} ${canvasHeight}`}
+                className="block"
+                style={{ maxWidth: '100%', height: 'auto' }}
+                preserveAspectRatio="xMinYMin meet"
+              >
+                {/* Render connectors first (behind nodes) */}
+                <g>{connectors.map(({ parent, child }) => renderConnector(parent, child))}</g>
+                {/* Render nodes on top */}
+                {positions.map(position => renderNode(position))}
+              </svg>
+            </div>
+          ) : (
+            <p 
+              className="text-sm text-center py-8"
+              style={{ 
+                color: mode === 'chill' ? '#4A1818' : '#FFFFFF',
+                opacity: 0.6 
+              }}
+            >
+              No org chart data available. Set manager relationships in profiles to build the org chart.
+            </p>
+          )}
         </div>
       </div>
     )
