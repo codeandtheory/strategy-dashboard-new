@@ -22,7 +22,9 @@ import {
   Globe,
   Briefcase as BriefcaseIcon,
   Calendar as CalendarIcon,
-  Crown
+  Crown,
+  Music,
+  ExternalLink
 } from 'lucide-react'
 import Link from 'next/link'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -48,6 +50,7 @@ export default function TeamPage() {
   const [selectedProfile, setSelectedProfile] = useState<any>(null)
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
   const [loadingProfile, setLoadingProfile] = useState(false)
+  const [currentCurator, setCurrentCurator] = useState<{ curator: string; curator_photo_url: string | null; spotify_url: string | null; id: string } | null>(null)
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -70,7 +73,8 @@ export default function TeamPage() {
         fetchAnniversaries(),
         fetchSnapLeaderboard(),
         fetchAllProfiles(),
-        fetchBeastBabeHistory()
+        fetchBeastBabeHistory(),
+        fetchCurrentCurator()
       ])
     } catch (error) {
       console.error('Error fetching team data:', error)
@@ -312,6 +316,27 @@ export default function TeamPage() {
       }
     } catch (error) {
       console.error('Error fetching beast babe history:', error)
+    }
+  }
+
+  const fetchCurrentCurator = async () => {
+    try {
+      const response = await fetch('/api/playlists')
+      if (response.ok) {
+        const playlists = await response.json()
+        if (playlists && playlists.length > 0) {
+          // Get the most recent playlist (first one since they're ordered by date desc)
+          const mostRecent = playlists[0]
+          setCurrentCurator({
+            curator: mostRecent.curator || '',
+            curator_photo_url: mostRecent.curator_photo_url || null,
+            spotify_url: mostRecent.spotify_url || null,
+            id: mostRecent.id
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching current curator:', error)
     }
   }
 
@@ -573,10 +598,77 @@ export default function TeamPage() {
               </Card>
             </div>
 
-            {/* Beast Babe - Large Card */}
+            {/* Beast Babe and Curator - Side by Side */}
             {(activeFilter === 'all' || activeFilter === 'anniversaries' || activeFilter === 'birthdays') && (
-              <div className="mb-6">
-                <BeastBabeCard />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Beast Babe - 1/2 width */}
+                <div className="w-full">
+                  <BeastBabeCard />
+                </div>
+                
+                {/* Current Curator Card */}
+                <Card className={`${mode === 'chaos' ? 'bg-[#1A5D52]' : mode === 'chill' ? 'bg-[#E8F5E9]' : 'bg-[#1A5D52]'} ${getRoundedClass('rounded-xl')} p-6 min-h-[600px] flex flex-col`} style={{
+                  borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : greenColors.primary,
+                  borderWidth: '2px'
+                }}>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className={`w-12 h-12 ${getRoundedClass('rounded-lg')} flex items-center justify-center`} style={{ backgroundColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : greenColors.primary }}>
+                      <Music className="w-6 h-6 text-white" />
+                    </div>
+                    <h2 className={`text-2xl font-black uppercase ${mode === 'chill' ? 'text-[#1A5D52]' : 'text-white'}`}>Selected Curator</h2>
+                  </div>
+                  
+                  {currentCurator ? (
+                    <div className="flex-1 flex flex-col">
+                      {/* Curator Avatar */}
+                      <div className="flex justify-center mb-6">
+                        <div className="relative w-48 h-48 overflow-hidden rounded-full" style={{ borderWidth: '4px', borderColor: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.primaryPair : greenColors.primary }}>
+                          {currentCurator.curator_photo_url ? (
+                            <img
+                              src={currentCurator.curator_photo_url}
+                              alt={currentCurator.curator}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: mode === 'chaos' ? greenColors.primaryPair : mode === 'chill' ? greenColors.primary : greenColors.primaryPair }}>
+                              <Music className="w-16 h-16 text-white" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Curator Name */}
+                      <h3 className={`text-3xl font-black text-center mb-4 ${mode === 'chill' ? 'text-[#1A5D52]' : 'text-white'}`}>
+                        {currentCurator.curator}
+                      </h3>
+                      
+                      {/* Playlist Link */}
+                      {currentCurator.spotify_url && (
+                        <div className="mt-auto">
+                          <a
+                            href={currentCurator.spotify_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center justify-center gap-2 ${getRoundedClass('rounded-lg')} px-6 py-4 font-semibold transition-colors ${
+                              mode === 'chaos'
+                                ? 'bg-[#00C896] text-black hover:bg-[#00B886]'
+                                : mode === 'chill'
+                                ? 'bg-[#1A5D52] text-white hover:bg-[#154A42]'
+                                : 'bg-[#00C896] text-black hover:bg-[#00B886]'
+                            }`}
+                          >
+                            <span>View Playlist</span>
+                            <ExternalLink className="w-5 h-5" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className={`${mode === 'chill' ? 'text-[#1A5D52]/60' : 'text-white/60'}`}>No curator selected</p>
+                    </div>
+                  )}
+                </Card>
               </div>
             )}
 

@@ -16,6 +16,7 @@ import {
   Calendar
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 interface AnalyticsData {
@@ -58,10 +59,28 @@ interface AnalyticsData {
 export default function AnalyticsPage() {
   const { mode } = useMode()
   const { permissions } = usePermissions()
+  const router = useRouter()
+  
+  // Get timeRange from URL params or default to 30
+  const getTimeRangeFromUrl = () => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const days = params.get('days')
+      return days ? parseInt(days) : 30
+    }
+    return 30
+  }
+  
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [timeRange, setTimeRange] = useState<number>(30)
+  const [timeRange, setTimeRange] = useState<number>(getTimeRangeFromUrl())
+
+  // Sync timeRange from URL on mount
+  useEffect(() => {
+    const days = getTimeRangeFromUrl()
+    setTimeRange(days)
+  }, [])
 
   // Check permissions - only admins should access
   useEffect(() => {
@@ -75,10 +94,13 @@ export default function AnalyticsPage() {
     async function fetchAnalytics() {
       if (!permissions?.canManageUsers) return
       
+      // Get timeRange from URL
+      const days = getTimeRangeFromUrl()
+      
       try {
         setLoading(true)
         setError(null)
-        const response = await fetch(`/api/analytics?days=${timeRange}`)
+        const response = await fetch(`/api/analytics?days=${days}`)
         
         if (!response.ok) {
           throw new Error('Failed to fetch analytics')
@@ -86,6 +108,7 @@ export default function AnalyticsPage() {
         
         const analyticsData = await response.json()
         setData(analyticsData)
+        setTimeRange(days)
       } catch (err: any) {
         console.error('Error fetching analytics:', err)
         setError(err.message || 'Failed to load analytics')
@@ -95,7 +118,7 @@ export default function AnalyticsPage() {
     }
 
     fetchAnalytics()
-  }, [timeRange, permissions])
+  }, [permissions])
 
   const getBgClass = () => {
     switch (mode) {
@@ -206,7 +229,12 @@ export default function AnalyticsPage() {
                 {[7, 30, 90, 365].map(days => (
                   <button
                     key={days}
-                    onClick={() => setTimeRange(days)}
+                    onClick={() => {
+                      // Update URL with new time range and reload page
+                      const url = new URL(window.location.href)
+                      url.searchParams.set('days', days.toString())
+                      window.location.href = url.toString()
+                    }}
                     className={`px-3 py-1 ${getRoundedClass('rounded-lg')} text-xs font-medium transition-colors ${
                       timeRange === days
                         ? mode === 'chaos' 
