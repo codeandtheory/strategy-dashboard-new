@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { useMode } from '@/contexts/mode-context'
 import { useAuth } from '@/contexts/auth-context'
 import { SiteHeader } from '@/components/site-header'
@@ -14,7 +13,6 @@ import Link from 'next/link'
 export default function BeastHistoryPage() {
   const { mode } = useMode()
   const { user, authLoading } = useAuth()
-  const router = useRouter()
   const supabase = createClient()
   const [beastBabeHistory, setBeastBabeHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,11 +22,7 @@ export default function BeastHistoryPage() {
     activePitches: 0,
   })
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
-    }
-  }, [user, authLoading, router])
+  // Remove client-side redirect - let middleware handle auth
 
   useEffect(() => {
     fetchBeastBabeHistory()
@@ -301,137 +295,88 @@ export default function BeastHistoryPage() {
               <Loader2 className="w-8 h-8 animate-spin" style={{ color: mode === 'chaos' ? greenColors.primary : mode === 'chill' ? greenColors.complementary : '#FFFFFF' }} />
             </div>
           ) : beastBabeHistory.length > 0 ? (
-            <div className="relative" style={{ minHeight: `${beastBabeHistory.length * 120}px`, padding: '2rem 0' }}>
-              {/* Horizontal zigzag timeline SVG */}
-              <svg 
-                className="absolute inset-0 w-full h-full" 
-                style={{ overflow: 'visible', pointerEvents: 'none' }}
-                viewBox={`0 0 1000 ${beastBabeHistory.length * 120}`}
-                preserveAspectRatio="none"
-              >
-                <defs>
-                  <linearGradient id="timelineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor={greenColors.primary} stopOpacity="0.9" />
-                    <stop offset="50%" stopColor={greenColors.complementary} stopOpacity="0.7" />
-                    <stop offset="100%" stopColor={greenColors.primaryPair} stopOpacity="0.5" />
-                  </linearGradient>
-                </defs>
-                {/* Horizontal zigzag path */}
-                <path
-                  d={(() => {
-                    const segmentHeight = 120
-                    let path = `M 50 60`
-                    
-                    for (let i = 1; i < beastBabeHistory.length; i++) {
-                      const y = 60 + (i * segmentHeight)
-                      // Alternate between left and right sides
-                      const isRight = i % 2 === 1
-                      const x = isRight ? 950 : 50
-                      
-                      if (i === 1) {
-                        // First segment goes right
-                        path += ` L 950 ${y}`
-                      } else {
-                        // Subsequent segments zigzag
-                        const prevY = 60 + ((i - 1) * segmentHeight)
-                        const prevIsRight = (i - 1) % 2 === 1
-                        const prevX = prevIsRight ? 950 : 50
-                        
-                        // Vertical line down, then horizontal to the other side
-                        path += ` L ${prevX} ${y} L ${x} ${y}`
-                      }
-                    }
-                    return path
-                  })()}
-                  fill="none"
-                  stroke="url(#timelineGradient)"
-                  strokeWidth="6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ filter: 'drop-shadow(0 0 4px rgba(0, 200, 150, 0.3))' }}
-                />
-              </svg>
-              
-              {/* Avatars positioned along the timeline */}
+            <div className="space-y-6">
               {beastBabeHistory.map((entry, index) => {
-                const segmentHeight = 120
-                const y = 60 + (index * segmentHeight)
-                // Alternate between left and right sides
-                const isRight = index % 2 === 1
-                const x = isRight ? 950 : 50
-                
+                const isCurrent = index === 0
                 return (
                   <div
                     key={entry.id}
-                    className="absolute z-10"
-                    style={{
-                      left: `${(x / 1000) * 100}%`,
-                      top: `${(y / (beastBabeHistory.length * 120)) * 100}%`,
-                      transform: 'translate(-50%, 0)'
+                    className={`flex gap-4 items-start ${isCurrent ? 'pb-6 border-b-2' : ''}`}
+                    style={{ 
+                      borderColor: isCurrent ? greenColors.primary + '40' : 'transparent'
                     }}
                   >
-                    <div className="flex flex-col items-center">
-                      {/* Avatar - stays in original position */}
-                      <div className="relative mb-3">
-                        {entry.user?.avatar_url ? (
-                          <img
-                            src={entry.user.avatar_url}
-                            alt={entry.user.full_name || 'User'}
-                            className="w-14 h-14 rounded-full object-cover border-2"
-                            style={{ 
-                              borderColor: index === 0 ? greenColors.primary : greenColors.complementary,
-                              borderWidth: index === 0 ? '3px' : '2px',
-                              boxShadow: index === 0 ? `0 0 12px ${greenColors.primary}80` : `0 0 6px ${greenColors.complementary}40`
-                            }}
-                          />
-                        ) : (
-                          <div 
-                            className="w-14 h-14 rounded-full flex items-center justify-center border-2"
-                            style={{ 
-                              backgroundColor: greenColors.primaryPair + '60',
-                              borderColor: index === 0 ? greenColors.primary : greenColors.complementary,
-                              borderWidth: index === 0 ? '3px' : '2px',
-                              boxShadow: index === 0 ? `0 0 12px ${greenColors.primary}80` : `0 0 6px ${greenColors.complementary}40`
-                            }}
-                          >
-                            <Crown className="w-7 h-7" style={{ color: index === 0 ? greenColors.primary : greenColors.complementary }} />
-                          </div>
-                        )}
-                        {/* Crown badge for current */}
-                        {index === 0 && (
-                          <div 
-                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center animate-bounce z-20"
-                            style={{ backgroundColor: greenColors.primary }}
-                          >
-                            <Crown className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Content box below avatar, aligned left or right */}
-                      <div 
-                        className={`${getRoundedClass('rounded-lg')} px-4 py-3 backdrop-blur-sm`}
-                        style={{ 
-                          backgroundColor: mode === 'chaos' ? 'rgba(42, 42, 42, 0.95)' : mode === 'chill' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(26, 26, 26, 0.95)',
-                          border: `1px solid ${greenColors.primary}40`,
-                          width: 'min(calc(50% - 2rem), 400px)',
-                          maxWidth: 'calc(100vw - 600px)',
-                          textAlign: isRight ? 'right' : 'left',
-                          alignSelf: isRight ? 'flex-end' : 'flex-start'
-                        }}
-                      >
-                        <p className={`text-sm font-semibold mb-1.5 ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
+                    {/* Avatar */}
+                    <div className="relative flex-shrink-0">
+                      {entry.user?.avatar_url ? (
+                        <img
+                          src={entry.user.avatar_url}
+                          alt={entry.user.full_name || 'User'}
+                          className="w-16 h-16 rounded-full object-cover border-2"
+                          style={{ 
+                            borderColor: isCurrent ? greenColors.primary : greenColors.complementary,
+                            borderWidth: isCurrent ? '3px' : '2px',
+                            boxShadow: isCurrent ? `0 0 12px ${greenColors.primary}80` : `0 0 6px ${greenColors.complementary}40`
+                          }}
+                        />
+                      ) : (
+                        <div 
+                          className="w-16 h-16 rounded-full flex items-center justify-center border-2"
+                          style={{ 
+                            backgroundColor: greenColors.primaryPair + '60',
+                            borderColor: isCurrent ? greenColors.primary : greenColors.complementary,
+                            borderWidth: isCurrent ? '3px' : '2px',
+                            boxShadow: isCurrent ? `0 0 12px ${greenColors.primary}80` : `0 0 6px ${greenColors.complementary}40`
+                          }}
+                        >
+                          <Crown className="w-8 h-8" style={{ color: isCurrent ? greenColors.primary : greenColors.complementary }} />
+                        </div>
+                      )}
+                      {/* Crown badge for current */}
+                      {isCurrent && (
+                        <div 
+                          className="absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center animate-bounce z-20"
+                          style={{ backgroundColor: greenColors.primary }}
+                        >
+                          <Crown className="w-3.5 h-3.5 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className={`text-lg font-bold ${mode === 'chill' ? 'text-[#4A1818]' : 'text-white'}`}>
                           {entry.user?.full_name || entry.user?.email || 'Unknown'}
                         </p>
-                        <p className={`text-xs mb-2 ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
-                          {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </p>
-                        {entry.achievement && (
-                          <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/90' : 'text-white/90'} leading-relaxed`}>
-                            {entry.achievement}
-                          </p>
+                        {isCurrent && (
+                          <span 
+                            className={`text-xs font-bold px-2 py-0.5 ${getRoundedClass('rounded')}`}
+                            style={{ 
+                              backgroundColor: greenColors.primary + '20',
+                              color: greenColors.primary
+                            }}
+                          >
+                            CURRENT
+                          </span>
                         )}
                       </div>
+                      <p className={`text-sm mb-3 ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-white/70'}`}>
+                        {new Date(entry.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                      </p>
+                      {entry.achievement && (
+                        <div 
+                          className={`${getRoundedClass('rounded-lg')} p-4`}
+                          style={{ 
+                            backgroundColor: mode === 'chaos' ? 'rgba(42, 42, 42, 0.5)' : mode === 'chill' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(26, 26, 26, 0.5)',
+                            border: `1px solid ${greenColors.primary}30`
+                          }}
+                        >
+                          <p className={`text-sm ${mode === 'chill' ? 'text-[#4A1818]/90' : 'text-white/90'} leading-relaxed`}>
+                            {entry.achievement}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
