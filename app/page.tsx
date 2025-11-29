@@ -938,6 +938,8 @@ export default function TeamDashboard() {
   const playlistFetchedForUserRef = useRef<string | null>(null) // Track which user we've fetched playlist for
   const calendarFetchInProgressRef = useRef(false) // Track if calendar fetch is in progress
   const lastCalendarFetchUserRef = useRef<string | null>(null) // Track last user we fetched calendar for
+  const lastCalendarFetchTokenRef = useRef<string | null>(null) // Track last token we used to fetch
+  const lastSuccessfulFetchRef = useRef<number>(0) // Track timestamp of last successful fetch
   
   // Fetch calendar events
   useEffect(() => {
@@ -947,12 +949,21 @@ export default function TeamDashboard() {
         return
       }
       
-      // Prevent duplicate fetches: only fetch if user changed, or if not already in progress
+      // Prevent duplicate fetches: only fetch if user changed, token changed, or if not already in progress
       const userChanged = lastCalendarFetchUserRef.current !== user.id
+      const tokenChanged = lastCalendarFetchTokenRef.current !== googleCalendarToken
+      const timeSinceLastFetch = Date.now() - lastSuccessfulFetchRef.current
+      const MIN_FETCH_INTERVAL = 5000 // Don't fetch more than once every 5 seconds
       
       // Skip if already fetching (unless user changed or token just became available)
-      if (calendarFetchInProgressRef.current && !userChanged) {
+      if (calendarFetchInProgressRef.current && !userChanged && !tokenChanged) {
         console.log('⏸️  Calendar fetch skipped: already in progress')
+        return
+      }
+      
+      // Skip if we just fetched recently (unless user/token changed or eventsExpanded changed)
+      if (!userChanged && !tokenChanged && timeSinceLastFetch < MIN_FETCH_INTERVAL) {
+        console.log(`⏸️  Calendar fetch skipped: fetched ${Math.round(timeSinceLastFetch / 1000)}s ago`)
         return
       }
 
@@ -1009,6 +1020,8 @@ export default function TeamDashboard() {
           if (result.events && Array.isArray(result.events)) {
             console.log(`📅 Setting ${result.events.length} calendar events`)
             setCalendarEvents(result.events)
+            lastSuccessfulFetchRef.current = Date.now() // Track successful fetch
+            lastCalendarFetchTokenRef.current = googleCalendarToken || null // Track token used
           } else {
             setCalendarEvents([])
           }
@@ -1073,6 +1086,8 @@ export default function TeamDashboard() {
           
           // Check if token expired and refresh if needed (AFTER setting events)
           // This way events are displayed even if token needs refresh
+          // NOTE: We refresh the token silently for future use, but don't re-fetch events
+          // to avoid infinite loops. The next natural fetch will use the refreshed token.
           if (result.tokenExpired && googleCalendarToken && refreshCalendarToken) {
             const now = Date.now()
             const fiveMinutes = 5 * 60 * 1000
@@ -1096,14 +1111,10 @@ export default function TeamDashboard() {
                 if (tokenRefreshAttemptsRef.current < 2) {
                   tokenRefreshAttemptsRef.current += 1
                   lastTokenRefreshRef.current = now
-                  console.log(`🔄 Token expired detected - refreshing token (attempt ${tokenRefreshAttemptsRef.current})...`)
+                  console.log(`🔄 Token expired detected - refreshing token silently (attempt ${tokenRefreshAttemptsRef.current})...`)
                   refreshCalendarToken()
-                  // Wait a bit for token to refresh, then retry
-                  setTimeout(() => {
-                    calendarFetchInProgressRef.current = false // Reset before retry
-                    fetchCalendarEvents()
-                  }, 2000)
-                  // Don't return here - events are already set, just refresh token for next time
+                  // Don't re-fetch events here - events are already set above
+                  // The next natural fetch (when user expands/collapses or component re-mounts) will use the refreshed token
                 } else {
                   console.error('⚠️ Token refresh failed after multiple attempts - using fallback authentication')
                   tokenRefreshAttemptsRef.current = 0 // Reset for next time
@@ -1160,7 +1171,7 @@ export default function TeamDashboard() {
         clearTimeout(refreshTimeoutRef.current)
       }
     }
-  }, [user, eventsExpanded, googleCalendarToken, calendarIds, refreshCalendarToken, tokenLoading, needsAuth]) // Added tokenLoading and needsAuth to dependencies
+  }, [user, eventsExpanded, googleCalendarToken, calendarIds, tokenLoading, needsAuth]) // Removed refreshCalendarToken to prevent infinite loops
 
   const handleSnapAdded = async () => {
     // Refresh snaps list for the logged-in user
