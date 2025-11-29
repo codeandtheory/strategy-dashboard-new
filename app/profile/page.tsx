@@ -910,7 +910,7 @@ export default function ProfilePage() {
                     {avatarGallery.map((avatar) => (
                       <Card
                         key={avatar.id}
-                        className={`bg-white ${getRoundedClass('rounded-xl')} p-2 shadow-sm relative group overflow-hidden flex flex-col`}
+                        className={`bg-white ${getRoundedClass('rounded-xl')} p-2 shadow-sm relative group overflow-hidden`}
                       >
                         <div className="relative">
                           <img
@@ -928,29 +928,7 @@ export default function ProfilePage() {
                               Download
                             </Button>
                           </div>
-                          <div className={`absolute top-2 left-2 px-2 py-1 ${getRoundedClass('rounded-md')} text-xs font-bold ${
-                            mode === 'chaos' ? 'bg-[#C4F500] text-black' : 
-                            mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818]' : 
-                            'bg-black text-white'
-                          }`}>
-                            {avatar.date ? new Date(avatar.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
-                          </div>
                         </div>
-                        {avatar.character_name && (
-                          <div className={`mt-2 px-2 py-1 text-center ${getRoundedClass('rounded-md')} ${
-                            mode === 'chaos' ? 'bg-black/5' : 
-                            mode === 'chill' ? 'bg-[#F5E6D3]' : 
-                            'bg-black/5'
-                          }`}>
-                            <p className={`text-xs font-semibold ${
-                              mode === 'chaos' ? 'text-black' : 
-                              mode === 'chill' ? 'text-[#4A1818]' : 
-                              'text-white'
-                            }`}>
-                              {avatar.character_name}
-                            </p>
-                          </div>
-                        )}
                       </Card>
                     ))}
                   </div>

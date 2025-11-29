@@ -45,11 +45,19 @@ export async function GET(request: NextRequest) {
     console.log(`Found ${horoscopes?.length || 0} horoscopes in database for user ${user.id}`)
 
     // Create a map of image URLs to horoscope metadata for quick lookup
-    const horoscopeMap = new Map<string, typeof horoscopes[0]>()
+    // Also create a map by filename for better matching
+    const horoscopeMapByUrl = new Map<string, typeof horoscopes[0]>()
+    const horoscopeMapByFilename = new Map<string, typeof horoscopes[0]>()
     if (horoscopes) {
       horoscopes.forEach(h => {
         if (h.image_url) {
-          horoscopeMap.set(h.image_url, h)
+          horoscopeMapByUrl.set(h.image_url, h)
+          // Extract filename from URL for matching
+          const urlParts = h.image_url.split('/')
+          const filenameFromUrl = urlParts[urlParts.length - 1]
+          if (filenameFromUrl) {
+            horoscopeMapByFilename.set(filenameFromUrl, h)
+          }
         }
       })
     }
@@ -64,25 +72,39 @@ export async function GET(request: NextRequest) {
           .getPublicUrl(filePath)
 
         // Try to extract date from filename (format: horoscope-{userId}-{date}-{timestamp}.png)
+        // Also try alternative formats
         let extractedDate = null
-        const dateMatch = file.name.match(/horoscope-[^-]+-(\d{4}-\d{2}-\d{2})-/)
-        if (dateMatch) {
-          extractedDate = dateMatch[1]
+        const dateMatch1 = file.name.match(/horoscope-[^-]+-(\d{4}-\d{2}-\d{2})-/)
+        const dateMatch2 = file.name.match(/(\d{4}-\d{2}-\d{2})/)
+        if (dateMatch1) {
+          extractedDate = dateMatch1[1]
+        } else if (dateMatch2) {
+          extractedDate = dateMatch2[1]
         }
 
-        // Look up metadata from database if available
-        const horoscopeData = Array.from(horoscopeMap.values()).find(h => {
-          // Check if the storage URL matches the database URL
-          if (h.image_url && publicUrl) {
-            return h.image_url.includes(file.name) || publicUrl.includes(file.name)
-          }
-          return false
-        })
+        // Look up metadata from database - try multiple matching strategies
+        let horoscopeData = horoscopeMapByFilename.get(file.name)
+        if (!horoscopeData) {
+          // Try matching by URL
+          horoscopeData = Array.from(horoscopeMapByUrl.values()).find(h => {
+            if (h.image_url && publicUrl) {
+              // Check if URLs match or if database URL contains the filename
+              return h.image_url.includes(file.name) || 
+                     publicUrl.includes(file.name) ||
+                     h.image_url === publicUrl
+            }
+            return false
+          })
+        }
+
+        // Use database date if available, otherwise use extracted date from filename
+        // Only fall back to file.created_at if we truly can't find a date
+        const finalDate = horoscopeData?.date || extractedDate || null
 
         return {
           id: horoscopeData?.id || file.id || file.name,
           url: publicUrl,
-          date: horoscopeData?.date || extractedDate || file.created_at?.split('T')[0] || null,
+          date: finalDate,
           star_sign: horoscopeData?.star_sign || null,
           character_name: horoscopeData?.character_name || null,
           generated_at: horoscopeData?.generated_at || file.created_at || null,
