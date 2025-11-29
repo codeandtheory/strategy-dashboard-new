@@ -164,6 +164,14 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // If we just authenticated and have a user, clean up the URL param first
+    if (justAuthenticated && user) {
+      console.log('[Middleware] Successfully authenticated, removing just_authenticated param')
+      const url = request.nextUrl.clone()
+      url.searchParams.delete('just_authenticated')
+      return NextResponse.redirect(url)
+    }
+
     // Protect all routes except login, auth callback, profile setup, and API routes
     if (
       !user &&
@@ -174,24 +182,15 @@ export async function middleware(request: NextRequest) {
     ) {
       // If we just authenticated but still no user, allow through anyway
       // The client-side auth context will handle the session once cookies propagate
+      // Don't redirect - just let the request through to avoid redirect loops
       if (justAuthenticated) {
         console.log('[Middleware] Just authenticated but no user found yet - allowing through (cookies may still be propagating)')
-        // Remove the just_authenticated param and allow through
-        const url = request.nextUrl.clone()
-        url.searchParams.delete('just_authenticated')
-        return NextResponse.redirect(url)
+        // Just allow the request through - client-side will handle URL cleanup
+        return response
       }
       console.log('[Middleware] No user found, redirecting to login. Pathname:', pathname)
       const url = request.nextUrl.clone()
       url.pathname = '/login'
-      return NextResponse.redirect(url)
-    }
-
-    // If we just authenticated and have a user, clean up the URL param
-    if (justAuthenticated && user) {
-      console.log('[Middleware] Successfully authenticated, removing just_authenticated param')
-      const url = request.nextUrl.clone()
-      url.searchParams.delete('just_authenticated')
       return NextResponse.redirect(url)
     }
 

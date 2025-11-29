@@ -8,7 +8,8 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code')
   const error = requestUrl.searchParams.get('error')
   const errorDescription = requestUrl.searchParams.get('error_description')
-  const origin = requestUrl.origin
+  // Use NEXT_PUBLIC_APP_URL if set (for custom domain), otherwise use request origin
+  const origin = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin
 
   // Handle OAuth errors
   if (error) {
