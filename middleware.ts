@@ -142,13 +142,12 @@ export async function middleware(request: NextRequest) {
     // If there's an error getting the session, treat as unauthenticated
     if (sessionError) {
       console.error('[Middleware] Error getting session:', sessionError.message)
-      // If we just authenticated, give it a chance - don't redirect immediately
+      // If we just authenticated, allow through - cookies may still be propagating
+      // Don't redirect to avoid loops - just let the request through
       if (justAuthenticated) {
         console.log('[Middleware] Session error after auth, but allowing through (cookies may still be propagating)')
-        // Remove the just_authenticated param and allow through
-        const url = request.nextUrl.clone()
-        url.searchParams.delete('just_authenticated')
-        return NextResponse.redirect(url)
+        // Just allow the request through - don't redirect
+        return response
       }
       // If we can't verify auth, redirect to login (except for login/auth/profile routes)
       if (

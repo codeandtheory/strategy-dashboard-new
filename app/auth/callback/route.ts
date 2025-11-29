@@ -8,8 +8,22 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code')
   const error = requestUrl.searchParams.get('error')
   const errorDescription = requestUrl.searchParams.get('error_description')
-  // Use NEXT_PUBLIC_APP_URL if set (for custom domain), otherwise use request origin
-  const origin = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin
+  
+  // Determine the correct origin to use for redirects
+  // Priority: 1. NEXT_PUBLIC_APP_URL (custom domain), 2. Request host header, 3. Request origin
+  let origin = process.env.NEXT_PUBLIC_APP_URL
+  if (!origin) {
+    // Use the host header if available (preserves custom domain)
+    const host = request.headers.get('host')
+    if (host) {
+      const protocol = requestUrl.protocol
+      origin = `${protocol}//${host}`
+    } else {
+      origin = requestUrl.origin
+    }
+  }
+  
+  console.log('[Auth Callback] Using origin for redirects:', origin)
 
   // Handle OAuth errors
   if (error) {
@@ -45,6 +59,8 @@ export async function GET(request: NextRequest) {
                   sameSite: options.sameSite || 'lax' as const,
                   secure: options.secure !== undefined ? options.secure : isProduction,
                   httpOnly: options.httpOnly !== undefined ? options.httpOnly : true,
+                  // Don't set domain explicitly - let browser handle it based on the request
+                  // Setting domain explicitly can cause issues with subdomains
                 }
                 request.cookies.set({ name, value, ...cookieOptions })
                 response.cookies.set({ name, value, ...cookieOptions })

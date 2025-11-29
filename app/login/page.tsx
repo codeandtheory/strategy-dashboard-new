@@ -46,8 +46,10 @@ export default function LoginPage() {
       setError(null)
 
       // Use NEXT_PUBLIC_APP_URL if set (for custom domain), otherwise use current origin
+      // This ensures OAuth redirects use the correct domain
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
       const redirectTo = `${appUrl}/auth/callback`
+      console.log('[Login] Using redirect URL:', redirectTo)
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
