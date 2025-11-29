@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import { NextRequest } from 'next/server'
+import { google } from 'googleapis'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -90,6 +91,49 @@ export async function GET(request: NextRequest) {
 
       console.log('[Auth Callback] Successfully authenticated user:', exchangeSession.user.email)
       console.log('[Auth Callback] Session expires at:', new Date(exchangeSession.expires_at! * 1000).toISOString())
+
+      // Try to extract and store Google Calendar refresh token
+      // Since Supabase already exchanged the code, we check if provider_refresh_token exists
+      // If not, we'll need to make a separate OAuth request (handled client-side)
+      try {
+        const providerRefreshToken = (exchangeSession as any).provider_refresh_token
+        const providerToken = (exchangeSession as any).provider_token
+        
+        if (providerRefreshToken) {
+          console.log('[Auth Callback] Found provider refresh token, storing in user metadata...')
+          const { error: updateError } = await supabase.auth.updateUser({
+            data: {
+              google_calendar_refresh_token: providerRefreshToken,
+              google_calendar_token_updated_at: new Date().toISOString(),
+            }
+          })
+          
+          if (updateError) {
+            console.error('[Auth Callback] Error storing refresh token:', updateError)
+          } else {
+            console.log('[Auth Callback] Successfully stored Google Calendar refresh token')
+          }
+        } else if (providerToken) {
+          // If we have provider_token but no refresh token, we can try to get refresh token
+          // by making a new OAuth request with offline access
+          // But we can't do that server-side without user interaction
+          // So we'll set a flag to trigger client-side OAuth flow
+          console.log('[Auth Callback] Provider token found but no refresh token')
+          console.log('[Auth Callback] Will attempt to get refresh token via separate OAuth flow')
+          
+          // Check if user already has a refresh token stored
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user && !user.user_metadata?.google_calendar_refresh_token) {
+            // Set a flag in the redirect URL to trigger client-side refresh token acquisition
+            redirectUrl.searchParams.set('needs_calendar_refresh_token', 'true')
+          }
+        } else {
+          console.log('[Auth Callback] No provider token or refresh token found')
+        }
+      } catch (tokenError: any) {
+        console.error('[Auth Callback] Error processing refresh token:', tokenError)
+        // Don't fail the auth flow if we can't store the refresh token
+      }
 
       // Verify the session is accessible after setting cookies
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()

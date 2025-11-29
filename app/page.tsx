@@ -294,8 +294,11 @@ export default function TeamDashboard() {
         window.history.replaceState({}, '', newUrl.toString())
       }
       
-      // Legacy: Check if we just authenticated to avoid double Google popup
-      if (params.get('just_authenticated') === 'true') {
+      // Check if we just authenticated and need to get calendar refresh token
+      const needsRefreshToken = params.get('needs_calendar_refresh_token')
+      const justAuthenticated = params.get('just_authenticated')
+      
+      if (justAuthenticated === 'true') {
         // Set flag in sessionStorage so useGoogleCalendarToken can detect it
         sessionStorage.setItem('just_authenticated', 'true')
         sessionStorage.setItem('auth_timestamp', Date.now().toString())
@@ -304,8 +307,25 @@ export default function TeamDashboard() {
         newUrl.searchParams.delete('just_authenticated')
         window.history.replaceState({}, '', newUrl.toString())
       }
+      
+      // If we need a refresh token and don't have one, automatically trigger calendar OAuth
+      if (needsRefreshToken === 'true' && !googleCalendarToken && !tokenLoading && needsAuth && initiateAuth) {
+        console.log('🔄 Just authenticated with Google, automatically requesting calendar refresh token...')
+        // Clear the URL parameter
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete('needs_calendar_refresh_token')
+        window.history.replaceState({}, '', newUrl.toString())
+        
+        // Wait a bit for the session to be fully established, then trigger calendar OAuth
+        setTimeout(() => {
+          if (initiateAuth) {
+            console.log('🚀 Initiating calendar OAuth to get refresh token...')
+            initiateAuth()
+          }
+        }, 2000) // Wait 2 seconds for session to be ready
+      }
     }
-  }, [refreshCalendarToken])
+  }, [refreshCalendarToken, googleCalendarToken, tokenLoading, needsAuth, initiateAuth])
 
   // Format today's date in user's timezone
   useEffect(() => {
@@ -922,13 +942,17 @@ export default function TeamDashboard() {
   // Fetch calendar events
   useEffect(() => {
     async function fetchCalendarEvents() {
-      if (!user) return
+      if (!user) {
+        console.log('⏸️  Calendar fetch skipped: no user')
+        return
+      }
       
       // Prevent duplicate fetches: only fetch if user changed, or if not already in progress
       const userChanged = lastCalendarFetchUserRef.current !== user.id
       
       // Skip if already fetching (unless user changed or token just became available)
       if (calendarFetchInProgressRef.current && !userChanged) {
+        console.log('⏸️  Calendar fetch skipped: already in progress')
         return
       }
 
@@ -938,6 +962,15 @@ export default function TeamDashboard() {
       try {
         setCalendarLoading(true)
         setCalendarError(null)
+
+        // Check if we have calendar IDs to fetch
+        if (!calendarIds || calendarIds.length === 0) {
+          console.warn('⚠️ No calendar IDs configured - skipping fetch')
+          setCalendarEvents([])
+          setCalendarLoading(false)
+          calendarFetchInProgressRef.current = false
+          return
+        }
 
         // Calculate time range based on expanded state
         const now = new Date()
@@ -953,12 +986,23 @@ export default function TeamDashboard() {
         let apiUrl = `/api/calendar?calendarIds=${calendarIdsParam}&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&maxResults=50`
         if (googleCalendarToken) {
           apiUrl += `&accessToken=${encodeURIComponent(googleCalendarToken)}`
+          console.log('🔄 Fetching calendar events with OAuth token...')
+        } else {
+          console.warn('⚠️ No OAuth token available - using fallback authentication (service account)')
+          console.warn('⚠️ Service account may not have access to Code and Theory calendars')
+          if (needsAuth) {
+            console.warn('💡 User needs to authenticate with Google Calendar. Check for auth button in UI.')
+          } else if (tokenLoading) {
+            console.log('⏳ Token is still loading, will retry when available...')
+          }
         }
         
+        console.log(`📅 Fetching from ${calendarIds.length} calendar(s):`, calendarIds)
         const response = await fetch(apiUrl)
 
         if (response.ok) {
           const result = await response.json()
+          console.log(`✅ Calendar API response: ${result.count} events, ${result.successfulCalendars} successful, ${result.failedCalendars} failed`)
           
           // Check if token expired and refresh if needed
           if (result.tokenExpired && googleCalendarToken && refreshCalendarToken) {
@@ -970,6 +1014,8 @@ export default function TeamDashboard() {
               const timeRemaining = Math.ceil((fiveMinutes - (now - lastTokenRefreshRef.current)) / 1000)
               console.log(`⏸️  Token refresh cooldown active. Please wait ${timeRemaining} seconds. Using fallback authentication.`)
               // Don't trigger refresh, just continue with fallback
+              // Reset counter and continue processing
+              tokenRefreshAttemptsRef.current = 0
             } else {
               // Clear any existing debounce timeout
               if (refreshTimeoutRef.current) {
@@ -989,12 +1035,17 @@ export default function TeamDashboard() {
                     calendarFetchInProgressRef.current = false // Reset before retry
                     fetchCalendarEvents()
                   }, 2000)
+                  return // Exit early, will retry after token refresh
                 } else {
                   console.error('⚠️ Token refresh failed after multiple attempts - using fallback authentication')
                   tokenRefreshAttemptsRef.current = 0 // Reset for next time
+                  // Continue processing with fallback auth
                 }
               }, 1000) // 1 second debounce
-              return
+              // Don't return here - let it continue if refresh is not needed
+              if (tokenRefreshAttemptsRef.current < 2) {
+                return // Only return if we're actually attempting refresh
+              }
             }
           } else {
             // Reset counter on successful response
@@ -1004,12 +1055,15 @@ export default function TeamDashboard() {
           if (result.failedCalendars > 0) {
             const failedDetails = result.failedCalendarDetails || []
             
+            // Check if we're using service account (which might not have access)
+            const usingServiceAccount = !result.usingOAuth2
+            const hasCodeAndTheoryCalendars = failedDetails.some((f: any) => 
+              f.id.includes('codeandtheory.com_')
+            )
+            
             if (result.count === 0 && result.successfulCalendars === 0) {
               // Only show error if no events were loaded at all (all calendars failed)
               const failedCount = failedDetails.length
-              const hasCodeAndTheoryCalendars = failedDetails.some((f: any) => 
-                f.id.includes('codeandtheory.com_')
-              )
               
               // Create a user-friendly summary
               let errorSummary = ''
@@ -1019,12 +1073,32 @@ export default function TeamDashboard() {
                 errorSummary = `${failedCount} calendar${failedCount > 1 ? 's' : ''}`
               }
               
-              setCalendarError(`Some calendars are not accessible. ${errorSummary}: Calendar not found or not accessible`)
+              let errorMessage = `Some calendars are not accessible. ${errorSummary}: Calendar not found or not accessible`
+              
+              // Add helpful hint if using service account
+              if (usingServiceAccount && hasCodeAndTheoryCalendars) {
+                errorMessage += '. Please authenticate with Google Calendar to access Code and Theory calendars.'
+                console.warn('💡 Service account does not have access to Code and Theory calendars.')
+                console.warn('💡 User should authenticate with Google Calendar OAuth to use their own account.')
+              }
+              
+              setCalendarError(errorMessage)
               console.warn(`${result.failedCalendars} calendar(s) failed to load. Check server logs for details.`)
             } else {
-              // Some calendars worked, so clear any previous error
-              setCalendarError(null)
-              // Only log if all calendars failed, otherwise it's expected behavior
+              // Some calendars worked, but some failed
+              if (usingServiceAccount && hasCodeAndTheoryCalendars) {
+                const failedCodeAndTheory = failedDetails.filter((f: any) => f.id.includes('codeandtheory.com_')).length
+                if (failedCodeAndTheory > 0) {
+                  console.warn(`⚠️ ${failedCodeAndTheory} Code and Theory calendar(s) failed - service account may not have access`)
+                  console.warn('💡 Authenticate with Google Calendar OAuth to access these calendars')
+                  setCalendarError(`${failedCodeAndTheory} Code and Theory calendar(s) not accessible. Please authenticate with Google Calendar.`)
+                } else {
+                  setCalendarError(null)
+                }
+              } else {
+                // Some calendars worked, so clear any previous error
+                setCalendarError(null)
+              }
             }
           } else {
             // No failed calendars, clear any previous error
@@ -1042,11 +1116,16 @@ export default function TeamDashboard() {
           }
         } else {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-          console.error('Calendar API error:', errorData)
+          console.error('❌ Calendar API error:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData.error,
+            details: errorData.details
+          })
           setCalendarError(errorData.error || 'Failed to fetch calendar events')
         }
       } catch (error: any) {
-        console.error('Error fetching calendar events:', error)
+        console.error('❌ Error fetching calendar events:', error)
         setCalendarError(error.message || 'Failed to load calendar events')
       } finally {
         setCalendarLoading(false)
@@ -1054,9 +1133,24 @@ export default function TeamDashboard() {
       }
     }
 
-    // Fetch events immediately - don't wait for token
+    // Fetch events - wait a bit for token to load if it's still loading
     // Token will be used if available, otherwise falls back to service account
-    fetchCalendarEvents()
+    if (tokenLoading && !googleCalendarToken) {
+      // Wait a bit for token to load, then fetch
+      const timeoutId = setTimeout(() => {
+        console.log('⏳ Token loading timeout - fetching with fallback auth')
+        fetchCalendarEvents()
+      }, 2000) // Wait 2 seconds for token to load
+      
+      return () => {
+        clearTimeout(timeoutId)
+        if (refreshTimeoutRef.current) {
+          clearTimeout(refreshTimeoutRef.current)
+        }
+      }
+    } else {
+      fetchCalendarEvents()
+    }
     
     // Cleanup: clear timeout on unmount
     return () => {
@@ -1064,7 +1158,7 @@ export default function TeamDashboard() {
         clearTimeout(refreshTimeoutRef.current)
       }
     }
-  }, [user, eventsExpanded, googleCalendarToken, calendarIds, refreshCalendarToken]) // Removed tokenLoading and tokenError from dependencies to prevent duplicate fetches
+  }, [user, eventsExpanded, googleCalendarToken, calendarIds, refreshCalendarToken, tokenLoading, needsAuth]) // Added tokenLoading and needsAuth to dependencies
 
   const handleSnapAdded = async () => {
     // Refresh snaps list for the logged-in user

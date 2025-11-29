@@ -17,6 +17,7 @@ export function useGoogleCalendarToken() {
   const lastRefreshAttemptRef = useRef<number>(0) // Track last refresh attempt timestamp
   const refreshInProgressRef = useRef(false) // Track if refresh is in progress
   const authNeededRef = useRef(false) // Track if we've determined auth is needed (prevents repeated checks)
+  const usingProviderTokenRef = useRef(false) // Track if we're using Supabase provider token
 
   useEffect(() => {
     async function getToken() {
@@ -71,7 +72,32 @@ export function useGoogleCalendarToken() {
           return
         }
 
-        // Check if user has a refresh token stored
+        // First, try to use the provider token from Supabase session (if available)
+        // This is available when user logs in with Google OAuth that includes calendar scopes
+        const providerToken = (session as any).provider_token
+        if (providerToken) {
+          // Check if token is still valid (Supabase tokens typically last 1 hour)
+          const tokenExpiry = session.expires_at ? session.expires_at * 1000 : Date.now() + (3600 * 1000)
+          if (Date.now() < tokenExpiry - (5 * 60 * 1000)) {
+            // Token is still valid (with 5 min buffer)
+            console.log('✅ Using Supabase provider token for Google Calendar')
+            localStorage.setItem('google_calendar_token', providerToken)
+            localStorage.setItem('google_calendar_token_expiry', tokenExpiry.toString())
+            setAccessToken(providerToken)
+            setNeedsAuth(false)
+            authNeededRef.current = false
+            usingProviderTokenRef.current = true
+            setLoading(false)
+            isRequestingRef.current = false
+            hasFetchedRef.current = true
+            setError(null)
+            return
+          } else {
+            console.log('⚠️ Supabase provider token expired, trying refresh token...')
+          }
+        }
+
+        // Check if user has a refresh token stored (from separate calendar OAuth flow)
         const refreshToken = session.user?.user_metadata?.google_calendar_refresh_token
         
         if (refreshToken) {

@@ -111,7 +111,19 @@ export async function GET(request: NextRequest) {
     } else {
       // Use server-side authentication (OAuth2 refresh token or service account)
       console.log('⚠️ No access token provided - falling back to server-side authentication')
-      calendar = getCalendarClient()
+      try {
+        calendar = getCalendarClient()
+      } catch (authError: any) {
+        console.error('❌ Failed to initialize calendar client with fallback authentication:', authError.message)
+        return NextResponse.json(
+          {
+            error: 'Calendar authentication failed',
+            details: authError.message,
+            hint: 'Either provide an access token or configure server-side authentication (OAuth2 refresh token or service account)',
+          },
+          { status: 500 }
+        )
+      }
     }
     const allEvents: CalendarEvent[] = []
     const successfulCalendars: string[] = []
