@@ -24,6 +24,12 @@ export async function GET(request: NextRequest) {
     const client = searchParams.get('client')
     const sortBy = searchParams.get('sortBy') || 'date'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
+    
+    // Pagination parameters (optional)
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limitParam = searchParams.get('limit')
+    const limit = limitParam ? parseInt(limitParam, 10) : 1000 // Default to large limit if not specified
+    const offset = (page - 1) * limit
 
     // Build query - fetch base data first, then enrich with related data
     let query = supabase
@@ -78,8 +84,10 @@ export async function GET(request: NextRequest) {
       query = query.eq('client', client)
     }
 
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1)
+    // Apply pagination only if limit is specified and reasonable
+    if (limitParam && limit < 10000) {
+      query = query.range(offset, offset + limit - 1)
+    }
 
     const { data: workSamplesData, error, count } = await query
 

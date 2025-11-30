@@ -38,7 +38,10 @@ export async function GET(request: Request) {
       query = query.order('created_at', { ascending: sortOrder === 'asc' })
     }
 
-    const { data: resources, error } = await query
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1)
+
+    const { data: resources, error, count } = await query
 
     if (error) {
       console.error('Error fetching resources:', error)
