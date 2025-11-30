@@ -47,6 +47,12 @@ export async function GET(request: NextRequest) {
     const assignedTo = searchParams.get('assigned_to')
     const sortBy = searchParams.get('sortBy') || 'created_at'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
+    
+    // Pagination parameters (optional)
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limitParam = searchParams.get('limit')
+    const limit = limitParam ? parseInt(limitParam, 10) : 1000 // Default to large limit if not specified
+    const offset = (page - 1) * limit
 
     // Build query - select all possible columns to handle schema variations
     // Join with profiles to get submitted_by profile info
@@ -104,8 +110,10 @@ export async function GET(request: NextRequest) {
       query = query.order('created_at', { ascending: sortOrder === 'asc' })
     }
 
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1)
+    // Apply pagination only if limit is specified and reasonable
+    if (limitParam && limit < 10000) {
+      query = query.range(offset, offset + limit - 1)
+    }
 
     const { data, error, count } = await query
 
