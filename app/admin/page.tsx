@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { useMode } from '@/contexts/mode-context'
 import { createClient } from '@/lib/supabase/client'
 import { getPermissions, type BaseRole } from '@/lib/permissions'
+import { useAdminSimulation } from '@/contexts/admin-simulation-context'
 import { 
   FileText, 
   Newspaper, 
@@ -32,7 +33,7 @@ export default function AdminDashboard() {
   const { mode } = useMode()
   const supabase = createClient()
   const [testingSlack, setTestingSlack] = useState(false)
-  const [simulatedRole, setSimulatedRole] = useState<BaseRole | 'visitor' | null>(null)
+  const { simulatedRole, setSimulatedRole } = useAdminSimulation()
   
   // Use simulated role if set, otherwise use real permissions
   const effectivePermissions = simulatedRole && simulatedRole !== 'visitor'

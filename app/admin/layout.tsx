@@ -30,10 +30,11 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useEffect, useState } from 'react'
-import { getRoleDisplayName, getSpecialAccessDisplayName } from '@/lib/permissions'
+import { getRoleDisplayName, getSpecialAccessDisplayName, getPermissions, type BaseRole } from '@/lib/permissions'
 import { AccountMenu } from '@/components/account-menu'
 import { Footer } from '@/components/footer'
 import { createClient } from '@/lib/supabase/client'
+import { useAdminSimulation } from '@/contexts/admin-simulation-context'
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { mode } = useMode()
@@ -41,13 +42,21 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { user: authUser, signOut } = useAuth()
   const { user, permissions, isLoading } = usePermissions()
+  const { simulatedRole } = useAdminSimulation()
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
   const [isSelectedCurator, setIsSelectedCurator] = useState(false)
   const supabase = createClient()
 
   // Check if user is the selected curator (active assignment)
+  // Skip this check when simulating a role
   useEffect(() => {
     async function checkCuratorStatus() {
+      // Don't check curator status when simulating
+      if (simulatedRole) {
+        setIsSelectedCurator(false)
+        return
+      }
+
       if (!authUser?.id) {
         setIsSelectedCurator(false)
         return
@@ -78,7 +87,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     }
 
     checkCuratorStatus()
-  }, [authUser?.id, supabase])
+  }, [authUser?.id, supabase, simulatedRole])
 
   // Allow all users to access admin - access control handled within pages
   if (isLoading) {
@@ -136,13 +145,26 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Check if user is current beast babe
-  const isCurrentBeastBabe = user?.specialAccess?.includes('beast_babe') || false
+  // Use simulated role if set, otherwise use real user
+  const effectiveUser = simulatedRole && simulatedRole !== 'visitor'
+    ? { baseRole: simulatedRole, specialAccess: [] }
+    : simulatedRole === 'visitor'
+    ? null
+    : user
+
+  const effectivePermissions = effectiveUser ? getPermissions(effectiveUser) : null
+
+  // Check if user is current beast babe (only if not simulating)
+  const isCurrentBeastBabe = simulatedRole ? false : (user?.specialAccess?.includes('beast_babe') || false)
 
   // Helper function to check if user has access to a section
   const hasSectionAccess = (sectionKey: 'content' | 'leadership' | 'curation' | 'admin'): boolean => {
-    if (!user) return false
-    const role = user.baseRole
+    // If simulating visitor, no access
+    if (simulatedRole === 'visitor') return false
+    
+    // If simulating a role, use that role
+    const role = effectiveUser?.baseRole
+    if (!role) return false
     
     // All logged in users can see Content Management
     if (sectionKey === 'content') return true
@@ -154,10 +176,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     
     // Curation section: check for specific access
     if (sectionKey === 'curation') {
-      // Playlist: if user is selected curator
-      // Beast Babe: if user is current beast babe
+      // Playlist: if user is selected curator (only if not simulating)
+      // Beast Babe: if user is current beast babe (only if not simulating)
       // We'll handle this at the item level
-      return isSelectedCurator || isCurrentBeastBabe || role === 'contributor' || role === 'leader' || role === 'admin'
+      const hasCuratorAccess = simulatedRole ? false : isSelectedCurator
+      return hasCuratorAccess || isCurrentBeastBabe || role === 'contributor' || role === 'leader' || role === 'admin'
     }
     
     return false
@@ -239,7 +262,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <Shield className="w-2.5 h-2.5" />
                       <span className={`text-[10px] font-medium ${getTextClass()}`}>
-                        {user ? getRoleDisplayName(user.baseRole) : 'User'}
+                        {simulatedRole 
+                          ? simulatedRole === 'visitor' 
+                            ? 'Visitor' 
+                            : getRoleDisplayName(simulatedRole)
+                          : user 
+                            ? getRoleDisplayName(user.baseRole) 
+                            : 'User'}
                       </span>
                     </div>
                     <p className={`text-[10px] ${getTextClass()}/70 truncate`}>
@@ -277,16 +306,16 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                     if (item.sectionAccess && !hasSectionAccess(item.sectionAccess)) {
                       return false
                     }
-                    // Check permissions
-                    if (item.permission && !permissions?.[item.permission]) {
+                    // Check permissions (use effective permissions when simulating)
+                    if (item.permission && !effectivePermissions?.[item.permission]) {
                       return false
                     }
-                    // Check curator requirement
-                    if ((item as any).requiresCurator && !isSelectedCurator) {
+                    // Check curator requirement (only if not simulating)
+                    if ((item as any).requiresCurator && (simulatedRole || !isSelectedCurator)) {
                       return false
                     }
-                    // Check beast babe requirement
-                    if ((item as any).requiresBeastBabe && !isCurrentBeastBabe) {
+                    // Check beast babe requirement (only if not simulating)
+                    if ((item as any).requiresBeastBabe && (simulatedRole || !isCurrentBeastBabe)) {
                       return false
                     }
                     return true
@@ -326,18 +355,18 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                             return null
                           }
                           
-                          // Check permissions if required
-                          if (item.permission && !permissions?.[item.permission]) {
+                          // Check permissions if required (use effective permissions when simulating)
+                          if (item.permission && !effectivePermissions?.[item.permission]) {
                             return null
                           }
                           
-                          // Check if item requires curator status
-                          if ((item as any).requiresCurator && !isSelectedCurator) {
+                          // Check if item requires curator status (only if not simulating)
+                          if ((item as any).requiresCurator && (simulatedRole || !isSelectedCurator)) {
                             return null
                           }
                           
-                          // Check if item requires beast babe status
-                          if ((item as any).requiresBeastBabe && !isCurrentBeastBabe) {
+                          // Check if item requires beast babe status (only if not simulating)
+                          if ((item as any).requiresBeastBabe && (simulatedRole || !isCurrentBeastBabe)) {
                             return null
                           }
                           
@@ -391,6 +420,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   )
 }
 
+import { AdminSimulationProvider } from '@/contexts/admin-simulation-context'
+
 export default function AdminLayout({
   children,
 }: {
@@ -398,7 +429,9 @@ export default function AdminLayout({
 }) {
   return (
     <PermissionsProvider>
-      <AdminLayoutContent>{children}</AdminLayoutContent>
+      <AdminSimulationProvider>
+        <AdminLayoutContent>{children}</AdminLayoutContent>
+      </AdminSimulationProvider>
     </PermissionsProvider>
   )
 }
