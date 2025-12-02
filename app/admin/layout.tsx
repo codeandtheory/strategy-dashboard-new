@@ -219,7 +219,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       title: 'CURATION',
       sectionAccess: 'curation' as const,
       items: [
-        { href: '/admin/playlists', label: 'Playlist', icon: Music, permission: null, sectionAccess: 'curation' as const, requiresCurator: true },
+        { href: '/admin/playlists', label: 'Playlist', icon: Music, permission: 'canManagePlaylists' as const, sectionAccess: 'curation' as const, requiresCurator: false },
         { href: '/admin/beast-babe', label: 'Beast Babe', icon: Crown, permission: null, sectionAccess: 'curation' as const, requiresBeastBabe: true },
       ]
     },
@@ -307,8 +307,24 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                       return false
                     }
                     // Check permissions (use effective permissions when simulating)
-                    if (item.permission && !effectivePermissions?.[item.permission]) {
-                      return false
+                    // For playlists, only allow: admin, leader, OR current selected curator
+                    if (item.permission) {
+                      const isPlaylistItem = item.href === '/admin/playlists'
+                      if (isPlaylistItem) {
+                        // For playlist: check if user is admin/leader OR is current selected curator
+                        const role = effectiveUser?.baseRole
+                        const isAdminOrLeader = role === 'admin' || role === 'leader'
+                        const isCurrentCurator = !simulatedRole && isSelectedCurator
+                        if (!isAdminOrLeader && !isCurrentCurator) {
+                          return false
+                        }
+                      } else {
+                        // For other items, use normal permission check
+                        const hasPermission = effectivePermissions?.[item.permission]
+                        if (!hasPermission) {
+                          return false
+                        }
+                      }
                     }
                     // Check curator requirement (only if not simulating)
                     if ((item as any).requiresCurator && (simulatedRole || !isSelectedCurator)) {
@@ -356,8 +372,24 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                           }
                           
                           // Check permissions if required (use effective permissions when simulating)
-                          if (item.permission && !effectivePermissions?.[item.permission]) {
-                            return null
+                          // For playlists, only allow: admin, leader, OR current selected curator
+                          if (item.permission) {
+                            const isPlaylistItem = item.href === '/admin/playlists'
+                            if (isPlaylistItem) {
+                              // For playlist: check if user is admin/leader OR is current selected curator
+                              const role = effectiveUser?.baseRole
+                              const isAdminOrLeader = role === 'admin' || role === 'leader'
+                              const isCurrentCurator = !simulatedRole && isSelectedCurator
+                              if (!isAdminOrLeader && !isCurrentCurator) {
+                                return null
+                              }
+                            } else {
+                              // For other items, use normal permission check
+                              const hasPermission = effectivePermissions?.[item.permission]
+                              if (!hasPermission) {
+                                return null
+                              }
+                            }
                           }
                           
                           // Check if item requires curator status (only if not simulating)
