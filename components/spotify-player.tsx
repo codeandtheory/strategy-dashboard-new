@@ -98,7 +98,7 @@ export function SpotifyPlayer({
               alt={playlist.title || "Playlist cover"}
               fill
               className="object-cover rounded-none"
-              unoptimized={albumArtwork.includes('unsplash.com')}
+              unoptimized={albumArtwork.includes('unsplash.com') || albumArtwork.includes('mosaic.scdn.co')}
             />
           </div>
           {/* Vinyl - positioned behind cover */}
