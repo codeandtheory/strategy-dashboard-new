@@ -1,8 +1,108 @@
 'use client'
 
+import React from 'react'
 import { Music, ExternalLink } from 'lucide-react'
 import { useMode } from '@/contexts/mode-context'
 import '../styles/playlist-card.css'
+
+// Helper function to parse HTML links and URLs in text
+function parseLinks(text: string, mode: 'chaos' | 'chill' | 'code'): React.ReactNode[] {
+  if (!text) return [];
+  
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  
+  // First, find all HTML anchor tags
+  const anchorRegex = /<a\s+[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi;
+  const anchors: Array<{ start: number; end: number; href: string; text: string }> = [];
+  
+  let match: RegExpExecArray | null;
+  while ((match = anchorRegex.exec(text)) !== null) {
+    anchors.push({
+      start: match.index,
+      end: match.index + match[0].length,
+      href: match[1],
+      text: match[2]
+    });
+  }
+  
+  // Then find plain URLs (not inside anchor tags)
+  const urlRegex = /(https?:\/\/[^\s<>]+)/g;
+  const urls: Array<{ start: number; end: number; url: string }> = [];
+  
+  // Reset regex
+  urlRegex.lastIndex = 0;
+  while ((match = urlRegex.exec(text)) !== null) {
+    // Check if this URL is inside an anchor tag
+    const isInsideAnchor = anchors.some(a => 
+      match && match.index >= a.start && match.index < a.end
+    );
+    
+    if (!isInsideAnchor && match) {
+      urls.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        url: match[0]
+      });
+    }
+  }
+  
+  // Combine and sort all matches
+  const allMatches = [
+    ...anchors.map(a => ({ ...a, type: 'anchor' as const })),
+    ...urls.map(u => ({ ...u, type: 'url' as const }))
+  ].sort((a, b) => a.start - b.start);
+  
+  // Build the parts array
+  allMatches.forEach((match, index) => {
+    // Add text before this match
+    if (match.start > lastIndex) {
+      parts.push(text.substring(lastIndex, match.start));
+    }
+    
+    // Add the link
+    const linkClass = mode === 'chill' 
+      ? 'text-[#4A1818]/90 underline hover:opacity-80 transition-opacity break-all'
+      : 'text-foreground/90 underline hover:opacity-80 transition-opacity break-all';
+    
+    if (match.type === 'anchor') {
+      parts.push(
+        <a
+          key={`link-${index}`}
+          href={match.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={linkClass}
+          style={{ wordBreak: 'break-all' }}
+        >
+          {match.text}
+        </a>
+      );
+    } else {
+      parts.push(
+        <a
+          key={`url-${index}`}
+          href={match.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={linkClass}
+          style={{ wordBreak: 'break-all' }}
+        >
+          {match.url}
+        </a>
+      );
+    }
+    
+    lastIndex = match.end;
+  });
+  
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+  
+  return parts.length > 0 ? parts : [text];
+}
 
 interface PlaylistCardProps {
   id: string
@@ -144,23 +244,7 @@ export function PlaylistCard({
             className={`text-xs md:text-sm mt-2 line-clamp-2 break-words whitespace-pre-wrap ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-foreground/70'}`}
             style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
           >
-            {description.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
-              if (part.match(/^https?:\/\//)) {
-                return (
-                  <a
-                    key={index}
-                    href={part}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`underline hover:opacity-80 transition-opacity break-all ${mode === 'chill' ? 'text-[#4A1818]/90' : 'text-foreground/90'}`}
-                    style={{ wordBreak: 'break-all' }}
-                  >
-                    {part}
-                  </a>
-                )
-              }
-              return <span key={index}>{part}</span>
-            })}
+            {parseLinks(description, mode)}
           </p>
         )}
         <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-foreground/50'}`}>

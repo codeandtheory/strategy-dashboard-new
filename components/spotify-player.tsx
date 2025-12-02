@@ -7,6 +7,101 @@ import { PlaylistData, Track, SpotifyPlayerProps as SpotifyPlayerPropsType } fro
 import Image from 'next/image';
 import '../styles/playlist-card.css';
 
+// Helper function to parse HTML links and URLs in text
+function parseLinks(text: string): React.ReactNode[] {
+  if (!text) return [];
+  
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  
+  // First, find all HTML anchor tags
+  const anchorRegex = /<a\s+[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi;
+  const anchors: Array<{ start: number; end: number; href: string; text: string }> = [];
+  
+  let match: RegExpExecArray | null;
+  while ((match = anchorRegex.exec(text)) !== null) {
+    anchors.push({
+      start: match.index,
+      end: match.index + match[0].length,
+      href: match[1],
+      text: match[2]
+    });
+  }
+  
+  // Then find plain URLs (not inside anchor tags)
+  const urlRegex = /(https?:\/\/[^\s<>]+)/g;
+  const urls: Array<{ start: number; end: number; url: string }> = [];
+  
+  // Reset regex
+  urlRegex.lastIndex = 0;
+  while ((match = urlRegex.exec(text)) !== null) {
+    // Check if this URL is inside an anchor tag
+    const isInsideAnchor = anchors.some(a => 
+      match && match.index >= a.start && match.index < a.end
+    );
+    
+    if (!isInsideAnchor && match) {
+      urls.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        url: match[0]
+      });
+    }
+  }
+  
+  // Combine and sort all matches
+  const allMatches = [
+    ...anchors.map(a => ({ ...a, type: 'anchor' as const })),
+    ...urls.map(u => ({ ...u, type: 'url' as const }))
+  ].sort((a, b) => a.start - b.start);
+  
+  // Build the parts array
+  allMatches.forEach((match, index) => {
+    // Add text before this match
+    if (match.start > lastIndex) {
+      parts.push(text.substring(lastIndex, match.start));
+    }
+    
+    // Add the link
+    if (match.type === 'anchor') {
+      parts.push(
+        <a
+          key={`link-${index}`}
+          href={match.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-foreground/90 underline hover:text-foreground transition-colors break-all"
+          style={{ wordBreak: 'break-all' }}
+        >
+          {match.text}
+        </a>
+      );
+    } else {
+      parts.push(
+        <a
+          key={`url-${index}`}
+          href={match.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-foreground/90 underline hover:text-foreground transition-colors break-all"
+          style={{ wordBreak: 'break-all' }}
+        >
+          {match.url}
+        </a>
+      );
+    }
+    
+    lastIndex = match.end;
+  });
+  
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+  
+  return parts.length > 0 ? parts : [text];
+}
+
 export function SpotifyPlayer({
   playlist,
   isPlaying: externalIsPlaying,
@@ -166,23 +261,7 @@ export function SpotifyPlayer({
             className="text-sm md:text-base text-foreground/70 break-words whitespace-pre-wrap"
             style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
           >
-            {playlist.description.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
-              if (part.match(/^https?:\/\//)) {
-                return (
-                  <a
-                    key={index}
-                    href={part}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-foreground/90 underline hover:text-foreground transition-colors break-all"
-                    style={{ wordBreak: 'break-all' }}
-                  >
-                    {part}
-                  </a>
-                )
-              }
-              return <span key={index}>{part}</span>
-            })}
+            {parseLinks(playlist.description)}
           </p>
         </motion.div>
       )}
