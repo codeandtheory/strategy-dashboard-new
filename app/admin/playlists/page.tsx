@@ -141,18 +141,31 @@ export default function PlaylistsAdmin() {
       if (searchQuery) params.append('search', searchQuery)
       if (sortBy) params.append('sortBy', sortBy)
       if (sortOrder) params.append('sortOrder', sortOrder)
+      // Add cache-busting timestamp to ensure fresh data
+      params.append('_t', Date.now().toString())
 
-      const response = await fetch(`/api/playlists?${params.toString()}`)
+      console.log('[Playlists] Fetching playlists from API...')
+      const response = await fetch(`/api/playlists?${params.toString()}`, {
+        cache: 'no-store', // Ensure we don't get cached data
+      })
       const result = await response.json()
       
+      console.log('[Playlists] API response:', { 
+        ok: response.ok, 
+        status: response.status, 
+        count: Array.isArray(result) ? result.length : 0 
+      })
+      
       if (response.ok) {
-        setPlaylists(Array.isArray(result) ? result : [])
+        const playlistsArray = Array.isArray(result) ? result : []
+        console.log('[Playlists] Setting playlists:', playlistsArray.length, 'items')
+        setPlaylists(playlistsArray)
       } else {
-        console.error('Error fetching playlists:', result.error)
+        console.error('[Playlists] Error fetching playlists:', result.error)
         setPlaylists([])
       }
     } catch (error) {
-      console.error('Error fetching playlists:', error)
+      console.error('[Playlists] Error fetching playlists:', error)
       setPlaylists([])
     } finally {
       setLoading(false)
@@ -484,7 +497,10 @@ export default function PlaylistsAdmin() {
       if (response.ok) {
         setIsAddDialogOpen(false)
         resetForm()
-        fetchPlaylists()
+        // Add a small delay to ensure the database write is committed before fetching
+        setTimeout(() => {
+          fetchPlaylists()
+        }, 200)
         if (result.autoAssignedCurator) {
           setSuccess(true)
           setTimeout(() => {
@@ -586,7 +602,10 @@ export default function PlaylistsAdmin() {
         setIsEditDialogOpen(false)
         setEditingItem(null)
         resetForm()
-        fetchPlaylists()
+        // Add a small delay to ensure the database write is committed before fetching
+        setTimeout(() => {
+          fetchPlaylists()
+        }, 200)
         setSuccess(true)
         setTimeout(() => setSuccess(false), 3000)
       } else {
