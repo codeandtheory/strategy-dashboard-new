@@ -73,6 +73,7 @@ export default function PlaylistsAdmin() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const supabase = createClient()
 
   // Theme-aware styling helpers
   const getBgClass = () => {
@@ -211,6 +212,41 @@ export default function PlaylistsAdmin() {
   useEffect(() => {
     fetchPlaylists()
   }, [])
+
+  // Fetch current curator for the selected date
+  useEffect(() => {
+    async function fetchCurrentCurator() {
+      if (!formData.date) return
+
+      try {
+        const { data, error } = await supabase
+          .from('curator_assignments')
+          .select('curator_name')
+          .lte('start_date', formData.date)
+          .gte('end_date', formData.date)
+          .eq('skipped', false)
+          .order('assignment_date', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          // PGRST116 is "not found" which is fine
+          console.warn('Error fetching current curator:', error)
+          return
+        }
+
+        // Only set curator if it's empty (don't overwrite if user has already entered something)
+        // But if user is admin, allow them to see and edit it
+        if (data?.curator_name && !formData.curator.trim()) {
+          setFormData(prev => ({ ...prev, curator: data.curator_name }))
+        }
+      } catch (err) {
+        console.warn('Error fetching current curator:', err)
+      }
+    }
+
+    fetchCurrentCurator()
+  }, [formData.date])
 
   // Handle add
   const handleAdd = async () => {
@@ -614,17 +650,20 @@ export default function PlaylistsAdmin() {
                     />
                   </div>
                   <div>
-                    <Label className={cardStyle.text}>Curator (Optional)</Label>
+                    <Label className={cardStyle.text}>Curator {permissions?.canManageUsers ? '(Editable)' : ''}</Label>
                     <Input
                       value={formData.curator}
                       onChange={(e) => setFormData({ ...formData, curator: e.target.value })}
                       className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} mt-1`}
-                      placeholder="Leave empty to auto-assign"
+                      placeholder="Defaults to current curator for this date"
+                      disabled={!permissions?.canManageUsers}
                     />
                     <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
-                      {formData.curator.trim() 
-                        ? 'Curator will be set to the name you provide' 
-                        : 'A curator will be automatically assigned using random rotation'}
+                      {permissions?.canManageUsers
+                        ? formData.curator.trim()
+                          ? 'Curator will be set to the name you provide (admin override)'
+                          : 'Defaults to the current curator assigned for this date. You can override as admin.'
+                        : 'Curator is set to the current curator for this date'}
                     </p>
                   </div>
                 </div>
@@ -908,13 +947,19 @@ export default function PlaylistsAdmin() {
                   />
                 </div>
                 <div>
-                  <Label className={cardStyle.text}>Curator *</Label>
+                  <Label className={cardStyle.text}>Curator * {permissions?.canManageUsers ? '(Editable)' : ''}</Label>
                   <Input
                     value={formData.curator}
                     onChange={(e) => setFormData({ ...formData, curator: e.target.value })}
                     className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} mt-1`}
-                    placeholder="Rebecca Smith"
+                    placeholder="Defaults to current curator for this date"
+                    disabled={!permissions?.canManageUsers}
                   />
+                  <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
+                    {permissions?.canManageUsers
+                      ? 'You can override the curator as an admin'
+                      : 'Curator is set to the current curator for this date'}
+                  </p>
                 </div>
               </div>
 
