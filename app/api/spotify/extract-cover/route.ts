@@ -3,7 +3,20 @@ import { NextRequest, NextResponse } from 'next/server'
 /**
  * Extract cover image URL from Spotify playlist page
  * This fetches the HTML and looks for og:image meta tag or i.scdn.co image URLs
+ * 
+ * Route: POST /api/spotify/extract-cover
  */
+
+// GET handler for testing/debugging
+export async function GET(request: NextRequest) {
+  return NextResponse.json({ 
+    message: 'Extract Cover API is working',
+    endpoint: '/api/spotify/extract-cover',
+    method: 'POST',
+    usage: 'Send a POST request with { url: "spotify_playlist_url" }'
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -21,6 +34,9 @@ export async function POST(request: NextRequest) {
 
     try {
       // Fetch the Spotify page
+      const endpoint = cleanUrl
+      console.log('[Extract Cover] Fetching from endpoint:', endpoint)
+      
       const response = await fetch(cleanUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -30,8 +46,40 @@ export async function POST(request: NextRequest) {
         signal: AbortSignal.timeout(10000), // 10 second timeout
       })
 
+      console.log('[Extract Cover] Response status:', response.status, response.statusText)
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch page: ${response.statusText}`)
+        let errorBody = null
+        try {
+          const contentType = response.headers.get('content-type')
+          if (contentType?.includes('application/json')) {
+            errorBody = await response.json()
+          } else {
+            errorBody = await response.text()
+          }
+        } catch (e) {
+          // Couldn't parse error body
+        }
+        
+        console.error('[Extract Cover] Error details:', {
+          endpoint,
+          status: response.status,
+          statusText: response.statusText,
+          errorBody
+        })
+        
+        return NextResponse.json(
+          { 
+            error: `Failed to fetch page: ${response.statusText}`,
+            details: {
+              endpoint,
+              statusCode: response.status,
+              statusText: response.statusText,
+              errorBody
+            }
+          },
+          { status: response.status }
+        )
       }
 
       const html = await response.text()
@@ -73,8 +121,19 @@ export async function POST(request: NextRequest) {
       }
 
       console.warn('[Extract Cover] Could not find cover image in page HTML')
+      console.warn('[Extract Cover] HTML length:', html.length)
+      console.warn('[Extract Cover] HTML preview (first 500 chars):', html.substring(0, 500))
+      
       return NextResponse.json(
-        { error: 'Could not find cover image in the Spotify page. The page may have changed or the playlist may be private.' },
+        { 
+          error: 'Could not find cover image in the Spotify page. The page may have changed or the playlist may be private.',
+          details: {
+            endpoint: cleanUrl,
+            statusCode: 200, // Page loaded successfully but no image found
+            htmlLength: html.length,
+            searchedFor: ['og:image meta tag', 'i.scdn.co URLs', 'img tags with scdn.co']
+          }
+        },
         { status: 404 }
       )
     } catch (fetchError: any) {

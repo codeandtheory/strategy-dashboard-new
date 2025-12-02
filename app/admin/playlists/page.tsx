@@ -777,20 +777,42 @@ export default function PlaylistsAdmin() {
                             try {
                               setExtractingCover(true)
                               setError(null)
-                              const response = await fetch('/api/spotify/extract-cover', {
+                              const endpoint = '/api/spotify/extract-cover'
+                              console.log('[Extract Cover] Calling endpoint:', endpoint)
+                              console.log('[Extract Cover] Request body:', { url: formData.spotify_url })
+                              
+                              const response = await fetch(endpoint, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ url: formData.spotify_url }),
                               })
+                              
+                              console.log('[Extract Cover] Response status:', response.status, response.statusText)
+                              
                               const data = await response.json()
+                              console.log('[Extract Cover] Response data:', data)
+                              
                               if (response.ok && data.coverUrl) {
                                 setFormData({ ...formData, cover_url: data.coverUrl })
                                 setSuccess(true)
                                 setTimeout(() => setSuccess(false), 3000)
                               } else {
-                                setError(data.error || 'Could not extract cover image. You can still add the playlist without it.')
+                                // Log detailed error information
+                                console.error('[Extract Cover] Error details:', {
+                                  endpoint,
+                                  statusCode: response.status,
+                                  statusText: response.statusText,
+                                  errorBody: data
+                                })
+                                
+                                let errorMsg = data.error || 'Could not extract cover image. You can still add the playlist without it.'
+                                if (data.details) {
+                                  errorMsg += `\n\nDebug info:\n- Endpoint: ${data.details.endpoint || endpoint}\n- Status: ${data.details.statusCode || response.status}\n- Details: ${JSON.stringify(data.details, null, 2)}`
+                                }
+                                setError(errorMsg)
                               }
                             } catch (err: any) {
+                              console.error('[Extract Cover] Exception:', err)
                               setError(`Failed to extract cover: ${err.message}. You can still add the playlist without it.`)
                             } finally {
                               setExtractingCover(false)
@@ -880,20 +902,42 @@ export default function PlaylistsAdmin() {
                             try {
                               setExtractingCover(true)
                               setError(null)
-                              const response = await fetch('/api/spotify/extract-cover', {
+                              const endpoint = '/api/spotify/extract-cover'
+                              console.log('[Extract Cover] Calling endpoint:', endpoint)
+                              console.log('[Extract Cover] Request body:', { url: formData.spotify_url })
+                              
+                              const response = await fetch(endpoint, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ url: formData.spotify_url }),
                               })
+                              
+                              console.log('[Extract Cover] Response status:', response.status, response.statusText)
+                              
                               const data = await response.json()
+                              console.log('[Extract Cover] Response data:', data)
+                              
                               if (response.ok && data.coverUrl) {
                                 setFormData({ ...formData, cover_url: data.coverUrl })
                                 setSuccess(true)
                                 setTimeout(() => setSuccess(false), 3000)
                               } else {
-                                setError(data.error || 'Could not extract cover image. You can still add the playlist without it.')
+                                // Log detailed error information
+                                console.error('[Extract Cover] Error details:', {
+                                  endpoint,
+                                  statusCode: response.status,
+                                  statusText: response.statusText,
+                                  errorBody: data
+                                })
+                                
+                                let errorMsg = data.error || 'Could not extract cover image. You can still add the playlist without it.'
+                                if (data.details) {
+                                  errorMsg += `\n\nDebug info:\n- Endpoint: ${data.details.endpoint || endpoint}\n- Status: ${data.details.statusCode || response.status}\n- Details: ${JSON.stringify(data.details, null, 2)}`
+                                }
+                                setError(errorMsg)
                               }
                             } catch (err: any) {
+                              console.error('[Extract Cover] Exception:', err)
                               setError(`Failed to extract cover: ${err.message}. You can still add the playlist without it.`)
                             } finally {
                               setExtractingCover(false)
