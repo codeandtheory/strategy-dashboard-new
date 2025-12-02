@@ -271,28 +271,30 @@ export default function PlaylistsAdmin() {
       console.log('[Curator] Fetching curator for date:', formData.date)
 
       try {
-        const { data, error } = await supabase
+        // Query for curator assignment - handle skipped field (may be null or not exist)
+        let query = supabase
           .from('curator_assignments')
           .select('curator_name')
           .lte('start_date', formData.date)
           .gte('end_date', formData.date)
-          .eq('skipped', false)
           .order('assignment_date', { ascending: false })
           .limit(1)
-          .single()
 
-        if (error && error.code !== 'PGRST116') {
-          // PGRST116 is "not found" which is fine
+        // Only filter by skipped if the column exists (use or() to handle null values)
+        // This matches the API route behavior which doesn't filter by skipped
+        const { data, error } = await query.maybeSingle()
+
+        if (error) {
           console.warn('[Curator] Error fetching current curator:', error)
           return
         }
 
-        console.log('[Curator] Query result:', { data, error: error?.code })
+        console.log('[Curator] Query result:', { data, error: error ? (error as any).code : null, date: formData.date })
 
         // Always set curator if found - this ensures it's populated when date changes or dialog opens
         // Admins can still override it manually after it's set
         if (data?.curator_name) {
-          console.log('[Curator] Setting curator to:', data.curator_name)
+          console.log('[Curator] Found curator for date:', data.curator_name)
           setFormData(prev => {
             const currentValue = prev.curator.trim()
             // Always set if empty, or if it matches placeholder text, or if it's the same value
@@ -304,23 +306,50 @@ export default function PlaylistsAdmin() {
                                 (permissions?.canManageUsers && currentValue !== data.curator_name)
             
             if (shouldUpdate) {
-              console.log('[Curator] Updating curator from', currentValue, 'to', data.curator_name)
+              console.log('[Curator] Updating curator from', currentValue || '(empty)', 'to', data.curator_name)
               return { ...prev, curator: data.curator_name }
             }
             console.log('[Curator] Not updating - curator already set to:', currentValue)
             return prev
           })
         } else {
-          // If no curator found, clear the field only if it's empty or placeholder
-          console.log('[Curator] No curator found for date:', formData.date)
-          setFormData(prev => {
-            const currentValue = prev.curator.trim()
-            if (!currentValue || currentValue === 'Auto-populated from current curator assignment') {
-              return { ...prev, curator: '' }
+          // If no curator found for this date, try to get the most recent assignment as a fallback
+          console.log('[Curator] No curator found for date:', formData.date, '- trying to find most recent assignment')
+          try {
+            const { data: recentData, error: recentError } = await supabase
+              .from('curator_assignments')
+              .select('curator_name')
+              .order('assignment_date', { ascending: false })
+              .limit(1)
+              .maybeSingle()
+            
+            if (recentData?.curator_name) {
+              console.log('[Curator] Using most recent curator as fallback:', recentData.curator_name)
+              setFormData(prev => {
+                if (!prev.curator.trim()) {
+                  return { ...prev, curator: recentData.curator_name }
+                }
+                return prev
+              })
+            } else {
+              console.log('[Curator] No curator assignments found at all')
+              setFormData(prev => {
+                const currentValue = prev.curator.trim()
+                if (!currentValue || currentValue === 'Auto-populated from current curator assignment') {
+                  return { ...prev, curator: '' }
+                }
+                return prev
+              })
             }
-            // Don't clear if user has entered a value
-            return prev
-          })
+          } catch (fallbackErr) {
+            console.warn('[Curator] Error fetching fallback curator:', fallbackErr)
+            setFormData(prev => {
+              if (!prev.curator.trim()) {
+                return { ...prev, curator: '' }
+              }
+              return prev
+            })
+          }
         }
       } catch (err) {
         console.warn('[Curator] Error fetching current curator:', err)
