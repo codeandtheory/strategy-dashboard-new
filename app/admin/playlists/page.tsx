@@ -282,18 +282,27 @@ export default function PlaylistsAdmin() {
           return
         }
 
-        // Only set curator if it's empty (don't overwrite if user has already entered something)
-        // But if user is admin, allow them to see and edit it
-        if (data?.curator_name && !formData.curator.trim()) {
-          setFormData(prev => ({ ...prev, curator: data.curator_name }))
+        // Always set curator if found (user can still override if admin)
+        // Only set if currently empty to avoid overwriting user input
+        if (data?.curator_name) {
+          setFormData(prev => {
+            // Only update if curator is empty or if user is admin (they can override)
+            if (!prev.curator.trim() || permissions?.canManageUsers) {
+              return { ...prev, curator: data.curator_name }
+            }
+            return prev
+          })
         }
       } catch (err) {
         console.warn('Error fetching current curator:', err)
       }
     }
 
-    fetchCurrentCurator()
-  }, [formData.date])
+    // Only fetch if dialog is open (to avoid unnecessary calls)
+    if (isAddDialogOpen) {
+      fetchCurrentCurator()
+    }
+  }, [formData.date, isAddDialogOpen]) // Also fetch when dialog opens
 
   // Handle add
   const handleAdd = async () => {
@@ -309,8 +318,9 @@ export default function PlaylistsAdmin() {
 
     // For manual entry (when API fetch failed), require at least title
     // Also allow adding without fetching if user enters title manually
-    if ((spotifyData?.manualEntry || !spotifyData) && !spotifyData?.title?.trim() && !formData.title?.trim()) {
-      setError('Please enter a playlist title (or try fetching from Spotify first)')
+    const hasTitle = spotifyData?.title?.trim() || formData.title?.trim()
+    if ((spotifyData?.manualEntry || !spotifyData) && !hasTitle) {
+      setError('Please enter a playlist title')
       return
     }
 
@@ -319,15 +329,43 @@ export default function PlaylistsAdmin() {
       setError(null)
       setSuccess(false)
 
-      const finalCurator = formData.curator.trim()
+      // Curator should be auto-populated, but if empty, try to get from current assignment
+      let finalCurator = formData.curator.trim()
       if (!finalCurator) {
-        setError('Please enter a curator name')
-        setSaving(false)
-        return
+        // Try to fetch current curator one more time
+        try {
+          const { data } = await supabase
+            .from('curator_assignments')
+            .select('curator_name')
+            .lte('start_date', formData.date)
+            .gte('end_date', formData.date)
+            .eq('skipped', false)
+            .order('assignment_date', { ascending: false })
+            .limit(1)
+            .single()
+          
+          if (data?.curator_name) {
+            finalCurator = data.curator_name
+          } else {
+            setError('Please enter a curator name or ensure there is a curator assigned for this date')
+            setSaving(false)
+            return
+          }
+        } catch (err) {
+          setError('Please enter a curator name')
+          setSaving(false)
+          return
+        }
       }
 
       const finalDescription = formData.description.trim() || spotifyData?.description || ''
-      const finalTitle = formData.title?.trim() || spotifyData?.title || 'Untitled Playlist'
+      // Title is required - use form data first, then spotify data
+      const finalTitle = formData.title?.trim() || spotifyData?.title
+      if (!finalTitle || !finalTitle.trim()) {
+        setError('Please enter a playlist title')
+        setSaving(false)
+        return
+      }
       const finalCoverUrl = formData.cover_url?.trim() || spotifyData?.coverUrl || null
 
       const response = await fetch('/api/playlists', {
@@ -615,6 +653,12 @@ export default function PlaylistsAdmin() {
               <DialogHeader>
                 <DialogTitle className={cardStyle.text}>Add New Playlist</DialogTitle>
               </DialogHeader>
+              {/* Fetch curator when dialog opens */}
+              {isAddDialogOpen && !formData.curator.trim() && (
+                <div className="text-xs text-muted-foreground mb-2">
+                  Loading current curator...
+                </div>
+              )}
               <div className="space-y-4">
                 <div>
                   <Label className={cardStyle.text}>Spotify Playlist URL *</Label>
@@ -648,7 +692,7 @@ export default function PlaylistsAdmin() {
                     </Button>
                   </div>
                   <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
-                    Paste a Spotify playlist link and click Fetch to automatically populate fields. 
+                    Paste a Spotify playlist link and click Fetch to automatically populate fields. If Fetch fails, you can enter details manually below - just fill in the title and click Add. 
                     If the playlist can't be fetched (e.g., algorithm-generated playlists), you can enter the details manually below.
                   </p>
                 </div>
@@ -733,7 +777,7 @@ export default function PlaylistsAdmin() {
                         placeholder="https://..."
                       />
                       <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
-                        Right-click the playlist cover image on Spotify and copy image URL
+                        Optional: You can find the cover image URL by inspecting the Spotify page (F12 → Elements → find the img tag), or leave blank. The playlist will work without it.
                       </p>
                       {formData.cover_url && (
                         <img 
@@ -765,8 +809,8 @@ export default function PlaylistsAdmin() {
                       value={formData.curator}
                       onChange={(e) => setFormData({ ...formData, curator: e.target.value })}
                       className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} mt-1`}
-                      placeholder="Defaults to current curator for this date"
-                      disabled={!permissions?.canManageUsers}
+                      placeholder="Auto-populated from current curator assignment"
+                      readOnly={!permissions?.canManageUsers && formData.curator.trim() !== ''}
                     />
                     <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
                       {permissions?.canManageUsers
@@ -802,7 +846,7 @@ export default function PlaylistsAdmin() {
                 </Button>
                 <Button
                   onClick={handleAdd}
-                  disabled={!formData.spotify_url.trim() || !formData.date || (!spotifyData && !formData.title.trim()) || saving}
+                  disabled={!formData.spotify_url.trim() || !formData.date || saving}
                   className={`${getRoundedClass('rounded-lg')} ${
                     mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
                     mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
