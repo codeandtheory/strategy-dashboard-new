@@ -532,24 +532,50 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const { error } = await supabase
+    // First check if the playlist exists
+    const { data: existingPlaylist, error: fetchError } = await supabase
+      .from('playlists')
+      .select('id')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !existingPlaylist) {
+      console.error('Error fetching playlist for deletion:', fetchError)
+      return NextResponse.json(
+        { error: 'Playlist not found' },
+        { status: 404 }
+      )
+    }
+
+    // Delete the playlist
+    const { error, data } = await supabase
       .from('playlists')
       .delete()
       .eq('id', id)
+      .select()
 
     if (error) {
       console.error('Error deleting playlist:', error)
+      console.error('Error details:', JSON.stringify(error, null, 2))
       return NextResponse.json(
-        { error: 'Failed to delete playlist' },
+        { 
+          error: 'Failed to delete playlist',
+          details: error.message || 'Unknown error'
+        },
         { status: 500 }
       )
     }
 
-    return NextResponse.json({ success: true })
+    console.log(`[API] Successfully deleted playlist: ${id}`)
+    return NextResponse.json({ success: true, message: 'Playlist deleted successfully' })
   } catch (error: any) {
     console.error('Error in DELETE /api/playlists:', error)
+    console.error('Error stack:', error?.stack)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { 
+        error: error.message || 'Internal server error',
+        details: error.toString()
+      },
       { status: 500 }
     )
   }

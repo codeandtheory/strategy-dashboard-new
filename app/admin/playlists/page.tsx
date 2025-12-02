@@ -522,14 +522,21 @@ export default function PlaylistsAdmin() {
       const result = await response.json()
       
       if (response.ok) {
+        setSuccess(true)
+        setTimeout(() => setSuccess(false), 3000)
         fetchPlaylists()
         setSelectedIds(new Set())
       } else {
-        alert(`Error: ${result.error}`)
+        const errorMsg = result.error || result.details || 'Failed to delete playlist'
+        setError(errorMsg)
+        console.error('Error deleting playlist:', result)
+        setTimeout(() => setError(null), 5000)
       }
     } catch (error) {
       console.error('Error deleting playlist:', error)
-      alert('Failed to delete playlist')
+      const errorMsg = error instanceof Error ? error.message : 'Failed to delete playlist'
+      setError(errorMsg)
+      setTimeout(() => setError(null), 5000)
     }
   }
 
