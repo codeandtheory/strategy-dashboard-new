@@ -177,21 +177,19 @@ export default function PlaylistsAdmin() {
 
       const data = await response.json()
       
-      // Use curator from form if provided, otherwise use Spotify owner
-      const finalCurator = formData.curator.trim() || data.curator
+      // Curator is set by the user, not from the playlist owner
+      // Use curator from form if provided, otherwise leave empty for user to fill
+      const finalCurator = formData.curator.trim()
       
       setSpotifyData({
         ...data,
-        curator: finalCurator,
-        curatorPhotoUrl: data.curatorPhotoUrl || null,
+        curator: finalCurator, // Only use curator from form, not from API
+        curatorPhotoUrl: null, // Curator photo comes from user profile, not playlist owner
         description: formData.description.trim() || data.description || '',
       })
       setSuccess(true)
       
-      // Auto-populate curator if empty
-      if (!formData.curator.trim()) {
-        setFormData(prev => ({ ...prev, curator: data.curator }))
-      }
+      // Don't auto-populate curator - user should enter it themselves
     } catch (err: any) {
       setError(err.message || 'Failed to fetch playlist data')
       setSpotifyData(null)
