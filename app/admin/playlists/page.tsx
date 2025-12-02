@@ -263,7 +263,12 @@ export default function PlaylistsAdmin() {
   // Fetch current curator for the selected date
   useEffect(() => {
     async function fetchCurrentCurator() {
-      if (!formData.date) return
+      if (!formData.date) {
+        console.log('[Curator] No date set, skipping fetch')
+        return
+      }
+
+      console.log('[Curator] Fetching curator for date:', formData.date)
 
       try {
         const { data, error } = await supabase
@@ -278,45 +283,58 @@ export default function PlaylistsAdmin() {
 
         if (error && error.code !== 'PGRST116') {
           // PGRST116 is "not found" which is fine
-          console.warn('Error fetching current curator:', error)
+          console.warn('[Curator] Error fetching current curator:', error)
           return
         }
 
-        // Always set curator if found - this ensures it's populated when date changes
-        // Admins can still override it manually
+        console.log('[Curator] Query result:', { data, error: error?.code })
+
+        // Always set curator if found - this ensures it's populated when date changes or dialog opens
+        // Admins can still override it manually after it's set
         if (data?.curator_name) {
+          console.log('[Curator] Setting curator to:', data.curator_name)
           setFormData(prev => {
-            // Always update curator when date changes, unless admin has manually entered something different
-            // Check if current value is just placeholder text or empty
             const currentValue = prev.curator.trim()
-            const isPlaceholder = !currentValue || 
-                                  currentValue === 'Auto-populated from current curator assignment' ||
-                                  currentValue === data.curator_name
+            // Always set if empty, or if it matches placeholder text, or if it's the same value
+            // Only skip if admin has manually entered a different value
+            const shouldUpdate = !currentValue || 
+                                currentValue === 'Auto-populated from current curator assignment' ||
+                                currentValue === data.curator_name ||
+                                // For admins, allow updating even if there's a value (they can override)
+                                (permissions?.canManageUsers && currentValue !== data.curator_name)
             
-            if (isPlaceholder || permissions?.canManageUsers) {
+            if (shouldUpdate) {
+              console.log('[Curator] Updating curator from', currentValue, 'to', data.curator_name)
               return { ...prev, curator: data.curator_name }
             }
+            console.log('[Curator] Not updating - curator already set to:', currentValue)
             return prev
           })
         } else {
-          // If no curator found, clear the field
+          // If no curator found, clear the field only if it's empty or placeholder
+          console.log('[Curator] No curator found for date:', formData.date)
           setFormData(prev => {
-            if (!prev.curator.trim() || prev.curator === 'Auto-populated from current curator assignment') {
+            const currentValue = prev.curator.trim()
+            if (!currentValue || currentValue === 'Auto-populated from current curator assignment') {
               return { ...prev, curator: '' }
             }
+            // Don't clear if user has entered a value
             return prev
           })
         }
       } catch (err) {
-        console.warn('Error fetching current curator:', err)
+        console.warn('[Curator] Error fetching current curator:', err)
       }
     }
 
-    // Only fetch if dialog is open (to avoid unnecessary calls)
-    if (isAddDialogOpen) {
+    // Fetch when dialog opens or date changes
+    if (isAddDialogOpen && formData.date) {
+      console.log('[Curator] Dialog is open with date:', formData.date, '- fetching curator')
       fetchCurrentCurator()
+    } else {
+      console.log('[Curator] Skipping fetch - dialog open:', isAddDialogOpen, 'date:', formData.date)
     }
-  }, [formData.date, isAddDialogOpen]) // Also fetch when dialog opens
+  }, [formData.date, isAddDialogOpen, permissions?.canManageUsers]) // Also fetch when dialog opens
 
   // Handle add
   const handleAdd = async () => {
