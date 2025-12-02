@@ -140,8 +140,27 @@ export function PlaylistCard({
           </p>
         )}
         {description && (
-          <p className={`text-xs md:text-sm mt-2 line-clamp-2 ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-foreground/70'}`}>
-            {description}
+          <p 
+            className={`text-xs md:text-sm mt-2 line-clamp-2 break-words whitespace-pre-wrap ${mode === 'chill' ? 'text-[#4A1818]/70' : 'text-foreground/70'}`}
+            style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+          >
+            {description.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
+              if (part.match(/^https?:\/\//)) {
+                return (
+                  <a
+                    key={index}
+                    href={part}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`underline hover:opacity-80 transition-opacity break-all ${mode === 'chill' ? 'text-[#4A1818]/90' : 'text-foreground/90'}`}
+                    style={{ wordBreak: 'break-all' }}
+                  >
+                    {part}
+                  </a>
+                )
+              }
+              return <span key={index}>{part}</span>
+            })}
           </p>
         )}
         <p className={`text-xs ${mode === 'chill' ? 'text-[#4A1818]/50' : 'text-foreground/50'}`}>

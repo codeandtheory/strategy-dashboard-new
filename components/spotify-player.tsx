@@ -157,13 +157,32 @@ export function SpotifyPlayer({
       {/* Description */}
       {playlist.description && (
         <motion.div 
-          className="text-center mb-2"
+          className="text-center mb-2 px-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
         >
-          <p className="text-sm md:text-base text-foreground/70">
-            {playlist.description}
+          <p 
+            className="text-sm md:text-base text-foreground/70 break-words whitespace-pre-wrap"
+            style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+          >
+            {playlist.description.split(/(https?:\/\/[^\s]+)/g).map((part, index) => {
+              if (part.match(/^https?:\/\//)) {
+                return (
+                  <a
+                    key={index}
+                    href={part}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-foreground/90 underline hover:text-foreground transition-colors break-all"
+                    style={{ wordBreak: 'break-all' }}
+                  >
+                    {part}
+                  </a>
+                )
+              }
+              return <span key={index}>{part}</span>
+            })}
           </p>
         </motion.div>
       )}
