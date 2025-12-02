@@ -313,9 +313,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                       if (isPlaylistItem) {
                         // For playlist: check if user is admin/leader OR is current selected curator
                         const role = effectiveUser?.baseRole
+                        const hasPermission = effectivePermissions?.[item.permission]
+                        // Allow if: admin/leader role OR has canManagePlaylists permission OR is current curator
                         const isAdminOrLeader = role === 'admin' || role === 'leader'
                         const isCurrentCurator = !simulatedRole && isSelectedCurator
-                        if (!isAdminOrLeader && !isCurrentCurator) {
+                        if (!isAdminOrLeader && !hasPermission && !isCurrentCurator) {
                           return false
                         }
                       } else {
@@ -331,8 +333,14 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                       return false
                     }
                     // Check beast babe requirement (only if not simulating)
-                    if ((item as any).requiresBeastBabe && (simulatedRole || !isCurrentBeastBabe)) {
-                      return false
+                    // Allow admins to see Beast Babe tab
+                    if ((item as any).requiresBeastBabe) {
+                      const role = effectiveUser?.baseRole
+                      const isAdmin = role === 'admin'
+                      const hasBeastBabeAccess = !simulatedRole && isCurrentBeastBabe
+                      if (!isAdmin && !hasBeastBabeAccess) {
+                        return false
+                      }
                     }
                     return true
                   })
@@ -378,9 +386,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                             if (isPlaylistItem) {
                               // For playlist: check if user is admin/leader OR is current selected curator
                               const role = effectiveUser?.baseRole
+                              const hasPermission = effectivePermissions?.[item.permission]
+                              // Allow if: admin/leader role OR has canManagePlaylists permission OR is current curator
                               const isAdminOrLeader = role === 'admin' || role === 'leader'
                               const isCurrentCurator = !simulatedRole && isSelectedCurator
-                              if (!isAdminOrLeader && !isCurrentCurator) {
+                              if (!isAdminOrLeader && !hasPermission && !isCurrentCurator) {
                                 return null
                               }
                             } else {
@@ -398,8 +408,14 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                           }
                           
                           // Check if item requires beast babe status (only if not simulating)
-                          if ((item as any).requiresBeastBabe && (simulatedRole || !isCurrentBeastBabe)) {
-                            return null
+                          // Allow admins to see Beast Babe tab
+                          if ((item as any).requiresBeastBabe) {
+                            const role = effectiveUser?.baseRole
+                            const isAdmin = role === 'admin'
+                            const hasBeastBabeAccess = !simulatedRole && isCurrentBeastBabe
+                            if (!isAdmin && !hasBeastBabeAccess) {
+                              return null
+                            }
                           }
                           
                           const Icon = item.icon
