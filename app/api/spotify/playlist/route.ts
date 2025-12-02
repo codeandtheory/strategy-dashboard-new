@@ -1,42 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Extract playlist ID from Spotify URL
-// Spotify playlist IDs are base62 encoded (alphanumeric)
-// URLs can be: https://open.spotify.com/playlist/ID or spotify:playlist:ID
-// Must strip query params (?si=...), fragments (#...), and trailing slashes
+// Robust parser: split on open.spotify.com/playlist/ and take the next path segment
+// Must strip query params (?si=...) and trailing slashes
 function extractPlaylistId(url: string): string | null {
   if (!url || typeof url !== 'string') {
+    console.error('[Spotify API] Invalid URL input (not a string):', url)
     return null
   }
 
-  // Clean the URL - remove query parameters, fragments, and trailing slashes
-  // URLs like: https://open.spotify.com/playlist/37i9dQZF1DX1leCUq7he50?si=...&pi=...
-  let cleanUrl = url.trim()
-    .split('?')[0]  // Remove query params (?si=...)
-    .split('#')[0]   // Remove fragments (#...)
-    .replace(/\/+$/, '') // Remove trailing slashes
+  const originalUrl = url.trim()
   
-  // Patterns to match Spotify playlist URLs (in order of specificity)
-  const patterns = [
-    // https://open.spotify.com/playlist/37i9dQZF1DX1leCUq7he50
-    // https://spotify.com/playlist/37i9dQZF1DX1leCUq7he50
-    /(?:open\.)?spotify\.com\/playlist\/([a-zA-Z0-9]+)/i,
-    // spotify:playlist:37i9dQZF1DX1leCUq7he50
-    /spotify:playlist:([a-zA-Z0-9]+)/i,
-    // Just the ID if it's already extracted (alphanumeric, typically 22 chars but can vary)
-    /^([a-zA-Z0-9]+)$/,
-  ]
+  // Remove query parameters and fragments
+  let cleanUrl = originalUrl.split('?')[0].split('#')[0]
   
-  for (const pattern of patterns) {
-    const match = cleanUrl.match(pattern)
-    if (match && match[1]) {
-      const playlistId = match[1]
-      console.log(`[Spotify API] Extracted playlist ID: ${playlistId} from URL: ${url}`)
-      return playlistId
+  // Remove trailing slashes
+  cleanUrl = cleanUrl.replace(/\/+$/, '')
+  
+  // Primary method: Split on open.spotify.com/playlist/ and take the next segment
+  if (cleanUrl.includes('open.spotify.com/playlist/')) {
+    const parts = cleanUrl.split('open.spotify.com/playlist/')
+    if (parts.length > 1) {
+      const playlistId = parts[1].split('/')[0].trim()
+      if (playlistId && /^[a-zA-Z0-9]+$/.test(playlistId)) {
+        console.log(`[Spotify API] Extracted playlist ID: ${playlistId} from URL: ${originalUrl}`)
+        return playlistId
+      }
     }
   }
   
-  console.error(`[Spotify API] Could not extract playlist ID from URL: ${url}`)
+  // Fallback: Also handle spotify.com/playlist/ (without "open")
+  if (cleanUrl.includes('spotify.com/playlist/')) {
+    const parts = cleanUrl.split('spotify.com/playlist/')
+    if (parts.length > 1) {
+      const playlistId = parts[1].split('/')[0].trim()
+      if (playlistId && /^[a-zA-Z0-9]+$/.test(playlistId)) {
+        console.log(`[Spotify API] Extracted playlist ID: ${playlistId} from URL: ${originalUrl}`)
+        return playlistId
+      }
+    }
+  }
+  
+  // Handle spotify:playlist:ID format
+  if (cleanUrl.includes('spotify:playlist:')) {
+    const parts = cleanUrl.split('spotify:playlist:')
+    if (parts.length > 1) {
+      const playlistId = parts[1].split(':')[0].split('?')[0].trim()
+      if (playlistId && /^[a-zA-Z0-9]+$/.test(playlistId)) {
+        console.log(`[Spotify API] Extracted playlist ID: ${playlistId} from URL: ${originalUrl}`)
+        return playlistId
+      }
+    }
+  }
+  
+  // If it's just the ID itself (alphanumeric)
+  if (/^[a-zA-Z0-9]+$/.test(cleanUrl)) {
+    console.log(`[Spotify API] Using URL as playlist ID: ${cleanUrl}`)
+    return cleanUrl
+  }
+  
+  console.error(`[Spotify API] Could not extract playlist ID from URL: ${originalUrl}`)
   console.error(`[Spotify API] Cleaned URL: ${cleanUrl}`)
   return null
 }
@@ -82,70 +105,83 @@ async function getAccessToken(): Promise<string> {
 // Uses GET /v1/playlists/{playlist_id} - the standard playlist endpoint
 // Do NOT use /v1/users/{user_id}/playlists/{playlist_id} as it breaks for Spotify editorial playlists
 async function fetchPlaylistData(playlistId: string, accessToken: string) {
-  // Try multiple approaches: without market, then with different markets
-  // Some playlists (especially Spotify-owned ones) require a market parameter
-  // Start with US market as recommended, then try others
-  const marketsToTry = [null, 'US', 'PL', 'GB', 'DE', 'FR'] // null = no market parameter
+  // Use the standard endpoint: GET https://api.spotify.com/v1/playlists/{id}
+  // Try without market first, then with US market (most common)
+  const marketsToTry = [null, 'US'] // null = no market parameter
   
   for (const market of marketsToTry) {
-    const url = market 
+    const spotifyUrl = market 
       ? `https://api.spotify.com/v1/playlists/${playlistId}?market=${market}`
       : `https://api.spotify.com/v1/playlists/${playlistId}`
     
-    console.log(`[Spotify API] Fetching playlist: ${playlistId} from ${url}`)
+    console.log(`[Spotify API] Fetching playlist ID: ${playlistId}`)
+    console.log(`[Spotify API] Spotify endpoint: ${spotifyUrl}`)
     
-    const response = await fetch(url, {
+    const response = await fetch(spotifyUrl, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
       },
     })
 
+    console.log(`[Spotify API] Response status: ${response.status} ${response.statusText}`)
+
     if (response.ok) {
       const data = await response.json()
       console.log(`[Spotify API] Successfully fetched playlist ${playlistId}${market ? ` with market=${market}` : ' without market'}`)
+      console.log(`[Spotify API] Playlist name: ${data.name || 'N/A'}`)
+      console.log(`[Spotify API] Cover image available: ${!!data.images?.[0]?.url}`)
       return data
+    }
+
+    // Log error response body
+    let errorBody = null
+    try {
+      const contentType = response.headers.get('content-type')
+      if (contentType?.includes('application/json')) {
+        errorBody = await response.json()
+        console.error(`[Spotify API] Error response body (JSON):`, JSON.stringify(errorBody, null, 2))
+      } else {
+        errorBody = await response.text()
+        console.error(`[Spotify API] Error response body (text):`, errorBody)
+      }
+    } catch (e) {
+      console.error(`[Spotify API] Could not parse error response body`)
     }
 
     // If 404, try next market. For other errors, log and continue trying
     if (response.status === 404) {
       console.log(`[Spotify API] Playlist ${playlistId} not found${market ? ` with market=${market}` : ' without market'}, trying next...`)
+      if (market === marketsToTry[marketsToTry.length - 1]) {
+        // Last attempt failed with 404
+        const error = new Error('Playlist not found. The playlist may be private, region-restricted, or unavailable via the API.')
+        ;(error as any).status = 404
+        ;(error as any).errorBody = errorBody
+        throw error
+      }
       continue
     }
 
-    // For non-404 errors, log and try next market
-    const errorText = await response.text()
-    console.warn(`[Spotify API] Error ${response.status} fetching playlist ${playlistId}${market ? ` with market=${market}` : ' without market'}: ${errorText}`)
-    
-    // If it's not a 404 and not the last market, continue trying
-    if (market !== marketsToTry[marketsToTry.length - 1]) {
-      continue
-    }
-    
-    // Last attempt failed, throw error
-    let errorMessage = `Failed to fetch playlist: ${errorText}`
-    try {
-      const errorJson = JSON.parse(errorText)
-      if (errorJson.error?.message) {
-        errorMessage = errorJson.error.message
+    // For non-404 errors, if it's the last attempt, throw
+    if (market === marketsToTry[marketsToTry.length - 1]) {
+      let errorMessage = `Failed to fetch playlist: ${response.statusText}`
+      if (errorBody && typeof errorBody === 'object' && errorBody.error?.message) {
+        errorMessage = errorBody.error.message
+      } else if (typeof errorBody === 'string') {
+        errorMessage = errorBody
       }
-    } catch {
-      // Keep original error message if not JSON
+      
+      const error = new Error(errorMessage)
+      ;(error as any).status = response.status
+      ;(error as any).errorBody = errorBody
+      throw error
     }
     
-    const error = new Error(errorMessage)
-    ;(error as any).status = response.status
-    throw error
+    // Not the last attempt, continue trying
+    console.warn(`[Spotify API] Error ${response.status} fetching playlist ${playlistId}${market ? ` with market=${market}` : ' without market'}, trying next...`)
   }
 
-  // All attempts failed with 404
-  // Check if this is a Spotify algorithm-generated playlist (starts with 37i9dQZF1DX)
-  // These often require user authentication even if they appear public
-  const isAlgorithmPlaylist = playlistId.startsWith('37i9dQZF1DX')
-  const errorMessage = isAlgorithmPlaylist
-    ? 'This appears to be a Spotify algorithm-generated playlist (like "Today\'s Top Hits" or "Discover Weekly"). These playlists may require user authentication to access via the API, even though they appear public in the web interface. Please try a user-created playlist instead.'
-    : 'Playlist not found in any available market. The playlist may be private, region-restricted, or unavailable via the API.'
-  
-  throw new Error(errorMessage)
+  // Should never reach here, but just in case
+  throw new Error('Failed to fetch playlist after all attempts')
 }
 
 // Fetch all tracks from a playlist (handles pagination)
@@ -213,7 +249,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract playlist ID from URL
+    console.log('[Spotify API] Parsing playlist ID from URL:', url)
     const playlistId = extractPlaylistId(url)
+    
     if (!playlistId) {
       console.error('[Spotify API] Invalid playlist URL:', url)
       return NextResponse.json(
@@ -222,13 +260,36 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    console.log('[Spotify API] Extracted playlist ID:', playlistId, 'from URL:', url)
+    console.log('[Spotify API] Parsed playlistId:', playlistId)
+    console.log('[Spotify API] Original URL:', url)
 
     // Get access token
     const accessToken = await getAccessToken()
+    if (!accessToken) {
+      console.error('[Spotify API] Failed to get access token')
+      return NextResponse.json(
+        { error: 'Failed to authenticate with Spotify API' },
+        { status: 500 }
+      )
+    }
 
     // Fetch playlist data
-    const playlistData = await fetchPlaylistData(playlistId, accessToken)
+    let playlistData
+    try {
+      playlistData = await fetchPlaylistData(playlistId, accessToken)
+    } catch (error: any) {
+      console.error('[Spotify API] Error fetching playlist data:', error)
+      console.error('[Spotify API] Error status:', error.status)
+      console.error('[Spotify API] Error body:', error.errorBody)
+      
+      return NextResponse.json(
+        { 
+          error: error.message || 'Failed to fetch playlist from Spotify',
+          details: error.errorBody || null
+        },
+        { status: error.status || 500 }
+      )
+    }
 
     // Do not depend on owner data - it may not exist for Spotify-owned playlists
     // Extract owner info safely (owner may be null/undefined for Spotify-owned playlists)
