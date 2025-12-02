@@ -200,6 +200,13 @@ export default function PlaylistsAdmin() {
         description: formData.description.trim() || data.description || '',
       })
       
+      // Update formData with fetched title and cover URL (for both add and edit dialogs)
+      setFormData(prev => ({
+        ...prev,
+        title: data.title || prev.title, // Update title from fetched data
+        cover_url: data.coverUrl || prev.cover_url, // Update cover URL from fetched data
+      }))
+      
       // Show appropriate success message
       if (data.coverUrl && !hasTracklist) {
         setSuccess(true)
@@ -468,8 +475,9 @@ export default function PlaylistsAdmin() {
       setSuccess(false)
 
       // If we have Spotify data, use it; otherwise use form data
-      const finalTitle = spotifyData?.title || editingItem.title
-      const finalCoverUrl = spotifyData?.coverUrl || editingItem.cover_url || formData.cover_url?.trim()
+      // Prefer formData.title (which gets updated when fetching) over spotifyData.title
+      const finalTitle = formData.title?.trim() || spotifyData?.title || editingItem.title
+      const finalCoverUrl = formData.cover_url?.trim() || spotifyData?.coverUrl || editingItem.cover_url
       const finalDescription = formData.description.trim() || spotifyData?.description || editingItem.description || ''
       const finalCurator = formData.curator.trim()
       const finalTotalDuration = spotifyData?.totalDuration || editingItem.total_duration || null
@@ -1208,16 +1216,12 @@ export default function PlaylistsAdmin() {
                         <Label className={cardStyle.text}>Cover Image</Label>
                         <img 
                           src={spotifyData.coverUrl} 
-                          alt={spotifyData.title}
+                          alt={spotifyData.title || 'Playlist cover'}
                           className="w-32 h-32 object-cover rounded-lg mt-2"
                         />
                       </div>
                     )}
                     <div className="space-y-2">
-                      <div>
-                        <Label className={cardStyle.text}>Title</Label>
-                        <p className={`text-sm font-semibold ${cardStyle.text}`}>{spotifyData.title}</p>
-                      </div>
                       {spotifyData.totalDuration && (
                         <div>
                           <Label className={cardStyle.text}>Duration</Label>
@@ -1240,6 +1244,19 @@ export default function PlaylistsAdmin() {
                   )}
                 </div>
               )}
+
+              <div>
+                <Label className={cardStyle.text}>Title *</Label>
+                <Input
+                  value={formData.title || spotifyData?.title || ''}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} mt-1`}
+                  placeholder="Playlist title"
+                />
+                <p className={`text-xs ${cardStyle.text}/70 mt-1`}>
+                  {spotifyData?.title ? 'Title fetched from Spotify. You can edit it if needed.' : 'Enter playlist title or fetch from Spotify'}
+                </p>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
