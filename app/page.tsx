@@ -211,8 +211,10 @@ export default function TeamDashboard() {
     article_title: string
     article_url: string
     created_at: string
+    pinned: boolean
   }>>([])
   const [mustReadsLoading, setMustReadsLoading] = useState(true)
+  const [lastVisitTime, setLastVisitTime] = useState<string | null>(null)
   const [profiles, setProfiles] = useState<Array<{
     id: string
     full_name: string | null
@@ -792,16 +794,26 @@ export default function TeamDashboard() {
     fetchWeeklyPlaylist()
   }, [user])
 
+  // Load last visit time from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('dashboard_last_visit')
+      setLastVisitTime(stored)
+      // Update last visit time to now
+      localStorage.setItem('dashboard_last_visit', new Date().toISOString())
+    }
+  }, [])
+
   // Fetch latest must reads
   useEffect(() => {
     async function fetchLatestMustReads() {
       try {
         setMustReadsLoading(true)
-        const response = await fetch('/api/must-reads?sortBy=created_at&sortOrder=desc')
+        const response = await fetch('/api/must-reads?sortBy=created_at&sortOrder=desc&limit=10')
         if (response.ok) {
           const result = await response.json()
-          // Get the 3 latest must reads
-          setLatestMustReads((result.data || []).slice(0, 3))
+          // Get all must reads (we'll separate pinned vs weekly in the UI)
+          setLatestMustReads(result.data || [])
         }
       } catch (error) {
         console.error('Error fetching must reads:', error)
@@ -4537,29 +4549,100 @@ export default function TeamDashboard() {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin" style={{ color: mustReadsStyle.accent }} />
                   </div>
-                ) : latestMustReads.length > 0 ? (
-                  <div className="space-y-3 flex-1">
-                    {latestMustReads.map((read) => (
-                      <a
-                        key={read.id}
-                        href={read.article_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`block ${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-4 border-2 hover:opacity-80 transition-all`}
-                        style={{ borderColor: `${mustReadsStyle.accent}40` }}
-                      >
-                        <p className={`text-sm font-black mb-1 ${mustReadsStyle.text} line-clamp-2`}>{read.article_title}</p>
-                        <p className={`text-xs ${mustReadsStyle.text}/60`}>
-                          {new Date(read.created_at).toLocaleDateString()}
-                        </p>
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex-1 flex items-center justify-center">
-                    <p className={`text-sm ${mustReadsStyle.text}/60`}>No must reads yet</p>
-                  </div>
-                )}
+                ) : (() => {
+                  // Separate pinned and weekly articles
+                  const pinnedArticles = latestMustReads.filter(read => read.pinned)
+                  const weeklyArticles = latestMustReads.filter(read => !read.pinned).slice(0, 5) // Show up to 5 weekly articles
+                  
+                  // Helper function to check if article is new
+                  const isNew = (createdAt: string) => {
+                    if (!lastVisitTime) return false
+                    return new Date(createdAt) > new Date(lastVisitTime)
+                  }
+                  
+                  return latestMustReads.length > 0 ? (
+                    <div className="space-y-4 flex-1">
+                      {/* Pinned Articles Section */}
+                      {pinnedArticles.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Star className="w-3 h-3" style={{ color: mustReadsStyle.accent }} fill={mustReadsStyle.accent} />
+                            <span className={`text-xs font-black uppercase ${mustReadsStyle.text}/80`}>Pinned</span>
+                          </div>
+                          <div className="space-y-2">
+                            {pinnedArticles.map((read) => (
+                              <a
+                                key={read.id}
+                                href={read.article_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`block ${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-3 border-2 hover:opacity-80 transition-all relative`}
+                                style={{ borderColor: `${mustReadsStyle.accent}60` }}
+                              >
+                                <div className="flex items-start gap-2">
+                                  <p className={`text-sm font-black flex-1 ${mustReadsStyle.text} line-clamp-2`}>{read.article_title}</p>
+                                  {isNew(read.created_at) && (
+                                    <Badge className="text-[8px] px-1.5 py-0.5 font-black uppercase shrink-0" style={{ backgroundColor: mustReadsStyle.accent, color: mode === 'chill' ? '#4A1818' : 'white' }}>
+                                      New
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className={`text-xs mt-1 ${mustReadsStyle.text}/60`}>
+                                  {new Date(read.created_at).toLocaleDateString()}
+                                </p>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Weekly Articles Section */}
+                      {weeklyArticles.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="w-3 h-3" style={{ color: mustReadsStyle.accent }} />
+                            <span className={`text-xs font-black uppercase ${mustReadsStyle.text}/80`}>This Week</span>
+                          </div>
+                          <div className="space-y-2">
+                            {weeklyArticles.map((read) => (
+                              <a
+                                key={read.id}
+                                href={read.article_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`block ${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-3 border-2 hover:opacity-80 transition-all relative`}
+                                style={{ borderColor: `${mustReadsStyle.accent}40` }}
+                              >
+                                <div className="flex items-start gap-2">
+                                  <p className={`text-sm font-black flex-1 ${mustReadsStyle.text} line-clamp-2`}>{read.article_title}</p>
+                                  {isNew(read.created_at) && (
+                                    <Badge className="text-[8px] px-1.5 py-0.5 font-black uppercase shrink-0" style={{ backgroundColor: mustReadsStyle.accent, color: mode === 'chill' ? '#4A1818' : 'white' }}>
+                                      New
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className={`text-xs mt-1 ${mustReadsStyle.text}/60`}>
+                                  {new Date(read.created_at).toLocaleDateString()}
+                                </p>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Empty State */}
+                      {pinnedArticles.length === 0 && weeklyArticles.length === 0 && (
+                        <div className="flex-1 flex items-center justify-center">
+                          <p className={`text-sm ${mustReadsStyle.text}/60`}>No must reads yet</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className={`text-sm ${mustReadsStyle.text}/60`}>No must reads yet</p>
+                    </div>
+                  )
+                })()}
                 <Link href="/admin/must-read">
                   <Button className={`w-full mt-4 ${mode === 'chaos' ? 'bg-black text-[#00A3E0] hover:bg-[#0F0F0F]' : mode === 'chill' ? 'bg-[#4A1818] text-[#00A3E0] hover:bg-[#3A1414]' : 'bg-white text-black hover:bg-[#e5e5e5]'} font-black rounded-full h-10 text-sm uppercase`}>
                     View All Must Reads
