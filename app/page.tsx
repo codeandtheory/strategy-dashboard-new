@@ -2313,6 +2313,30 @@ export default function TeamDashboard() {
                       >
                         {mode === 'code' ? '[BRIEF]' : 'Brief'} {mode !== 'code' && <FileText className="w-3 h-3 ml-2" />}
                       </Button>
+                      <div className="flex flex-col items-end gap-1">
+                        <Button 
+                          onClick={() => window.open('https://v0-oy-tqp-vjks-hi.vercel.app/', '_blank')}
+                          className={`${mode === 'chaos' ? (isLightBg ? 'hover:bg-[#0F0F0F]' : 'hover:bg-[#2a2a2a]') + ' hover:scale-105' : mode === 'chill' ? 'hover:bg-[#3A1414]' : mode === 'code' ? 'hover:bg-[#1a1a1a] border border-[#FFFFFF]' : 'hover:bg-[#1a1a1a]'} font-semibold ${getRoundedClass('rounded-full')} py-2 px-5 text-sm tracking-normal transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}
+                          style={mode === 'chaos' ? {
+                            backgroundColor: isLightBg ? '#000000' : '#1a1a1a',
+                            color: '#FFFFFF'
+                          } : mode === 'chill' ? {
+                            backgroundColor: '#4A1818',
+                            color: '#FFFFFF'
+                          } : mode === 'code' ? {
+                            backgroundColor: '#000000',
+                            color: '#FFFFFF'
+                          } : {
+                            backgroundColor: '#000000',
+                            color: '#FFFFFF'
+                          }}
+                        >
+                          {mode === 'code' ? '[AI RESOURCE LIBRARY]' : 'AI Resource Library'} {mode !== 'code' && <Bot className="w-3 h-3 ml-2" />}
+                        </Button>
+                        <span className={`text-[10px] ${mode === 'chaos' ? (isLightBg ? 'text-black/60' : 'text-white/60') : mode === 'chill' ? 'text-white/60' : 'text-white/60'}`}>
+                          password: codeandtheory
+                        </span>
+                      </div>
                       <Button 
                         onClick={() => setShowChatbot(true)}
                         className={`${mode === 'chaos' ? (isLightBg ? 'hover:bg-[#0F0F0F]' : 'hover:bg-[#2a2a2a]') + ' hover:scale-105' : mode === 'chill' ? 'hover:bg-[#3A1414]' : mode === 'code' ? 'hover:bg-[#1a1a1a] border border-[#FFFFFF]' : 'hover:bg-[#1a1a1a]'} font-semibold ${getRoundedClass('rounded-full')} py-2 px-5 text-sm tracking-normal transition-all hover:shadow-2xl ${mode === 'code' ? 'font-mono' : ''}`}
@@ -4723,7 +4747,7 @@ export default function TeamDashboard() {
                           })}
                           {/* View Archive Link */}
                           <Link
-                            href={`/admin/must-read${selectedCategory !== 'this-week' ? `?category=${selectedCategory}` : '?pinned=false'}`}
+                            href="/media"
                             className={`block text-xs font-black uppercase opacity-60 hover:opacity-100 transition-all mt-4 text-center ${mustReadsStyle.text}`}
                           >
                             View Archive →
