@@ -4561,35 +4561,35 @@ export default function TeamDashboard() {
                   }
                   
                   return latestMustReads.length > 0 ? (
-                    <div className="space-y-4 flex-1">
+                    <div className="space-y-3 flex-1">
                       {/* Pinned Articles Section */}
                       {pinnedArticles.length > 0 && (
                         <div>
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 mb-1.5">
                             <Star className="w-3 h-3" style={{ color: mustReadsStyle.accent }} fill={mustReadsStyle.accent} />
                             <span className={`text-xs font-black uppercase ${mustReadsStyle.text}/80`}>Pinned</span>
                           </div>
-                          <div className="space-y-2">
-                            {pinnedArticles.map((read) => (
+                          <div className="space-y-0.5">
+                            {pinnedArticles.map((read, index) => (
                               <a
                                 key={read.id}
                                 href={read.article_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className={`block ${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-3 border-2 hover:opacity-80 transition-all relative`}
-                                style={{ borderColor: `${mustReadsStyle.accent}60` }}
+                                className={`flex items-center gap-2 py-1.5 px-1 hover:opacity-80 transition-all group ${index < pinnedArticles.length - 1 ? 'border-b' : ''}`}
+                                style={{ borderColor: `${mustReadsStyle.accent}20` }}
                               >
-                                <div className="flex items-start gap-2">
-                                  <p className={`text-sm font-black flex-1 ${mustReadsStyle.text} line-clamp-2`}>{read.article_title}</p>
+                                <p className={`text-xs font-black flex-1 ${mustReadsStyle.text} line-clamp-1 group-hover:underline`}>{read.article_title}</p>
+                                <div className="flex items-center gap-1.5 shrink-0">
                                   {isNew(read.created_at) && (
-                                    <Badge className="text-[8px] px-1.5 py-0.5 font-black uppercase shrink-0" style={{ backgroundColor: mustReadsStyle.accent, color: mode === 'chill' ? '#4A1818' : 'white' }}>
+                                    <Badge className="text-[7px] px-1 py-0 font-black uppercase" style={{ backgroundColor: mustReadsStyle.accent, color: mode === 'chill' ? '#4A1818' : 'white' }}>
                                       New
                                     </Badge>
                                   )}
+                                  <span className={`text-[10px] ${mustReadsStyle.text}/50`}>
+                                    {new Date(read.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                  </span>
                                 </div>
-                                <p className={`text-xs mt-1 ${mustReadsStyle.text}/60`}>
-                                  {new Date(read.created_at).toLocaleDateString()}
-                                </p>
                               </a>
                             ))}
                           </div>
@@ -4599,31 +4599,31 @@ export default function TeamDashboard() {
                       {/* Weekly Articles Section */}
                       {weeklyArticles.length > 0 && (
                         <div>
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 mb-1.5">
                             <Calendar className="w-3 h-3" style={{ color: mustReadsStyle.accent }} />
                             <span className={`text-xs font-black uppercase ${mustReadsStyle.text}/80`}>This Week</span>
                           </div>
-                          <div className="space-y-2">
-                            {weeklyArticles.map((read) => (
+                          <div className="space-y-0.5">
+                            {weeklyArticles.map((read, index) => (
                               <a
                                 key={read.id}
                                 href={read.article_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className={`block ${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} rounded-xl p-3 border-2 hover:opacity-80 transition-all relative`}
-                                style={{ borderColor: `${mustReadsStyle.accent}40` }}
+                                className={`flex items-center gap-2 py-1.5 px-1 hover:opacity-80 transition-all group ${index < weeklyArticles.length - 1 ? 'border-b' : ''}`}
+                                style={{ borderColor: `${mustReadsStyle.accent}20` }}
                               >
-                                <div className="flex items-start gap-2">
-                                  <p className={`text-sm font-black flex-1 ${mustReadsStyle.text} line-clamp-2`}>{read.article_title}</p>
+                                <p className={`text-xs font-black flex-1 ${mustReadsStyle.text} line-clamp-1 group-hover:underline`}>{read.article_title}</p>
+                                <div className="flex items-center gap-1.5 shrink-0">
                                   {isNew(read.created_at) && (
-                                    <Badge className="text-[8px] px-1.5 py-0.5 font-black uppercase shrink-0" style={{ backgroundColor: mustReadsStyle.accent, color: mode === 'chill' ? '#4A1818' : 'white' }}>
+                                    <Badge className="text-[7px] px-1 py-0 font-black uppercase" style={{ backgroundColor: mustReadsStyle.accent, color: mode === 'chill' ? '#4A1818' : 'white' }}>
                                       New
                                     </Badge>
                                   )}
+                                  <span className={`text-[10px] ${mustReadsStyle.text}/50`}>
+                                    {new Date(read.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                  </span>
                                 </div>
-                                <p className={`text-xs mt-1 ${mustReadsStyle.text}/60`}>
-                                  {new Date(read.created_at).toLocaleDateString()}
-                                </p>
                               </a>
                             ))}
                           </div>
