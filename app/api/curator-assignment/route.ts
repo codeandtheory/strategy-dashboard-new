@@ -61,11 +61,71 @@ export async function GET(request: NextRequest) {
     )
 
     // Get curator counts per person from curator_assignments (excluding skipped)
+    // Build counts by matching assignments to team members using profile_id (preferred) and name (fallback)
     const curatorCounts: Record<string, number> = {}
+    const curatorCountsByProfileId: Record<string, number> = {}
+    const processedAssignmentIds = new Set<string>() // Track which assignments we've counted
+    
+    // First pass: Count by profile_id (most reliable)
     assignments?.forEach(assignment => {
-      // Only count non-skipped assignments
-      if (!assignment.skipped) {
-        const name = assignment.curator_name.toLowerCase().trim()
+      if (!assignment.skipped && assignment.curator_profile_id) {
+        curatorCountsByProfileId[assignment.curator_profile_id] = (curatorCountsByProfileId[assignment.curator_profile_id] || 0) + 1
+        processedAssignmentIds.add(assignment.id)
+      }
+    })
+    
+    // Second pass: Match assignments to team members and build counts by member name
+    // This ensures counts are stored using the team member's name as the key
+    if (teamMembers) {
+      teamMembers.forEach(member => {
+        const memberName = member.full_name?.toLowerCase().trim() || ''
+        if (!memberName) return
+        
+        // Start with profile_id count if available (from first pass)
+        let memberCount = curatorCountsByProfileId[member.id] || 0
+        
+        // Look for assignments that match this member but weren't counted in first pass
+        // (assignments without profile_id that match by name)
+        assignments?.forEach(assignment => {
+          if (processedAssignmentIds.has(assignment.id)) return // Already counted
+          if (assignment.skipped) return
+          
+          // Only process assignments without profile_id (those with profile_id were counted in first pass)
+          if (!assignment.curator_profile_id) {
+            const assignmentName = assignment.curator_name?.toLowerCase().trim() || ''
+            if (!assignmentName) return
+            
+            // Fuzzy name matching
+            const nameMatches = (
+              assignmentName === memberName ||
+              assignmentName.includes(memberName) ||
+              memberName.includes(assignmentName) ||
+              // Check if first name matches (e.g., "Leann" matches "Leann Down")
+              (assignmentName.split(' ')[0] && memberName.split(' ')[0] && 
+               assignmentName.split(' ')[0] === memberName.split(' ')[0])
+            )
+            
+            if (nameMatches) {
+              memberCount++
+              processedAssignmentIds.add(assignment.id) // Mark as processed
+            }
+          }
+        })
+        
+        // Store count using member's name as key (always store if count > 0)
+        if (memberCount > 0) {
+          curatorCounts[memberName] = memberCount
+        }
+      })
+    }
+    
+    // Third pass: Count remaining assignments by their curator_name (for assignments that don't match any team member)
+    assignments?.forEach(assignment => {
+      if (processedAssignmentIds.has(assignment.id)) return // Already counted
+      if (assignment.skipped) return
+      
+      const name = assignment.curator_name.toLowerCase().trim()
+      if (name) {
         curatorCounts[name] = (curatorCounts[name] || 0) + 1
       }
     })
@@ -91,6 +151,7 @@ export async function GET(request: NextRequest) {
       rotationStatus: {
         recentlyAssigned: Array.from(recentlyAssigned),
         curatorCounts,
+        curatorCountsByProfileId, // Also return profile_id based counts for more accurate matching
         totalAssignments: assignments?.length || 0
       }
     })

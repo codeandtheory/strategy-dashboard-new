@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useMode } from '@/contexts/mode-context'
 import { useAuth } from '@/contexts/auth-context'
-import { RotateCw, Plus, Loader2, Shuffle, UserCheck, Calendar, Music, ExternalLink, SkipForward, X } from 'lucide-react'
+import { RotateCw, Plus, Loader2, Shuffle, UserCheck, Calendar, Music, ExternalLink, SkipForward, X, Search } from 'lucide-react'
 
 interface CuratorAssignment {
   id: string
@@ -57,10 +57,12 @@ export default function CuratorRotationPage() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [curatorCounts, setCuratorCounts] = useState<Record<string, number>>({})
+  const [curatorCountsByProfileId, setCuratorCountsByProfileId] = useState<Record<string, number>>({})
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [formData, setFormData] = useState({
     assignment_date: new Date().toISOString().split('T')[0],
     curator_name: '',
@@ -128,8 +130,8 @@ export default function CuratorRotationPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Fetch assignments and team members
-      const response = await fetch('/api/curator-assignment?limit=100')
+      // Fetch assignments and team members - increase limit to show all assignments
+      const response = await fetch('/api/curator-assignment?limit=1000')
       const data = await response.json()
       
       if (data.assignments) {
@@ -140,6 +142,12 @@ export default function CuratorRotationPage() {
       }
       if (data.rotationStatus?.curatorCounts) {
         setCuratorCounts(data.rotationStatus.curatorCounts)
+      }
+      if (data.rotationStatus?.curatorCountsByProfileId) {
+        setCuratorCountsByProfileId(data.rotationStatus.curatorCountsByProfileId)
+      }
+      if (data.rotationStatus?.curatorCountsByProfileId) {
+        setCuratorCountsByProfileId(data.rotationStatus.curatorCountsByProfileId)
       }
 
       // Fetch playlists for assignment
@@ -254,7 +262,12 @@ export default function CuratorRotationPage() {
     }
   }
 
-  const getCuratorCount = (name: string) => {
+  const getCuratorCount = (name: string, profileId?: string) => {
+    // First try to get count by profile_id (more accurate)
+    if (profileId && curatorCountsByProfileId[profileId] !== undefined) {
+      return curatorCountsByProfileId[profileId]
+    }
+    // Fallback to name-based matching
     return curatorCounts[name.toLowerCase().trim()] || 0
   }
 
@@ -345,7 +358,9 @@ export default function CuratorRotationPage() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <Calendar className={`w-6 h-6 ${getTextClass()}`} />
-                <h2 className={`text-xl font-black uppercase ${getTextClass()}`}>Recent Assignments</h2>
+                <h2 className={`text-xl font-black uppercase ${getTextClass()}`}>
+                  Recent Assignments {assignments.length > 0 && `(${assignments.length})`}
+                </h2>
               </div>
               <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
                 <DialogTrigger asChild>
@@ -460,11 +475,46 @@ export default function CuratorRotationPage() {
               </Dialog>
             </div>
 
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${cardStyle.text}/50`} />
+                <Input
+                  type="text"
+                  placeholder="Search by curator name or date..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={`pl-10 ${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} ${getRoundedClass('rounded-lg')}`}
+                />
+              </div>
+            </div>
+
             <div className="space-y-3 max-h-[600px] overflow-y-auto">
-              {assignments.length === 0 ? (
-                <p className={`${cardStyle.text}/70 text-center py-8`}>No assignments yet</p>
-              ) : (
-                assignments.map(assignment => (
+              {(() => {
+                // Filter assignments by search query
+                const filteredAssignments = assignments.filter(assignment => {
+                  if (!searchQuery.trim()) return true
+                  const query = searchQuery.toLowerCase()
+                  const curatorName = assignment.curator_name?.toLowerCase() || ''
+                  const assignmentDate = new Date(assignment.assignment_date).toLocaleDateString('en-US').toLowerCase()
+                  const startDate = new Date(assignment.start_date).toLocaleDateString('en-US').toLowerCase()
+                  const endDate = new Date(assignment.end_date).toLocaleDateString('en-US').toLowerCase()
+                  
+                  return curatorName.includes(query) || 
+                         assignmentDate.includes(query) || 
+                         startDate.includes(query) || 
+                         endDate.includes(query)
+                })
+
+                if (filteredAssignments.length === 0) {
+                  return (
+                    <p className={`${cardStyle.text}/70 text-center py-8`}>
+                      {searchQuery ? `No assignments found matching "${searchQuery}"` : 'No assignments yet'}
+                    </p>
+                  )
+                }
+
+                return filteredAssignments.map(assignment => (
                   <div
                     key={assignment.id}
                     className={`${cardStyle.border} border ${getRoundedClass('rounded-xl')} p-4`}
@@ -592,7 +642,7 @@ export default function CuratorRotationPage() {
                     </div>
                   </div>
                 ))
-              )}
+              })()}
             </div>
           </Card>
 
@@ -620,8 +670,8 @@ export default function CuratorRotationPage() {
                 // Sort each discipline group by count (descending)
                 Object.keys(groupedByDiscipline).forEach(discipline => {
                   groupedByDiscipline[discipline].sort((a, b) => {
-                    const countA = getCuratorCount(a.full_name || '')
-                    const countB = getCuratorCount(b.full_name || '')
+                    const countA = getCuratorCount(a.full_name || '', a.id)
+                    const countB = getCuratorCount(b.full_name || '', b.id)
                     if (countA !== countB) return countB - countA
                     return (a.full_name || '').localeCompare(b.full_name || '')
                   })
@@ -629,8 +679,8 @@ export default function CuratorRotationPage() {
 
                 // Sort disciplines by highest count in that discipline (descending)
                 const sortedDisciplines = Object.keys(groupedByDiscipline).sort((a, b) => {
-                  const maxCountA = Math.max(...groupedByDiscipline[a].map(m => getCuratorCount(m.full_name || '')))
-                  const maxCountB = Math.max(...groupedByDiscipline[b].map(m => getCuratorCount(m.full_name || '')))
+                  const maxCountA = Math.max(...groupedByDiscipline[a].map(m => getCuratorCount(m.full_name || '', m.id)))
+                  const maxCountB = Math.max(...groupedByDiscipline[b].map(m => getCuratorCount(m.full_name || '', m.id)))
                   return maxCountB - maxCountA
                 })
 
@@ -640,7 +690,7 @@ export default function CuratorRotationPage() {
                       {discipline}
                     </h3>
                     {groupedByDiscipline[discipline].map(member => {
-                      const count = getCuratorCount(member.full_name || '')
+                      const count = getCuratorCount(member.full_name || '', member.id)
                       return (
                         <div
                           key={member.id}
