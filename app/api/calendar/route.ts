@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
+import { createClient } from '@/lib/supabase/server'
 
 // Initialize Google Calendar API
 // Only supports OAuth2 authentication (no service account fallback)
@@ -222,6 +223,108 @@ export async function GET(request: NextRequest) {
         // Continue with other calendars even if one fails
       }
     }
+
+    // Fetch manual calendar events
+    let manualEvents: CalendarEvent[] = []
+    try {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Fetch manual events within the same time range
+        const minDate = new Date(timeMin).toISOString().split('T')[0]
+        const maxDate = new Date(timeMax).toISOString().split('T')[0]
+        
+        // Fetch events that might overlap with the time range
+        // An event overlaps if: start_date <= maxDate AND (end_date >= minDate OR end_date IS NULL)
+        // We'll fetch events where start_date <= maxDate and filter in memory
+        const { data: manualEventsData, error: manualError } = await supabase
+          .from('manual_calendar_events')
+          .select('*')
+          .lte('start_date', maxDate)
+          .order('start_date', { ascending: true })
+          .order('start_time', { ascending: true, nullsFirst: false })
+
+        if (!manualError && manualEventsData) {
+          // Filter events that actually overlap with the time range
+          const filteredManualEvents = manualEventsData.filter((event) => {
+            const eventStart = new Date(event.start_date)
+            const eventEnd = event.end_date ? new Date(event.end_date) : eventStart
+            const rangeStart = new Date(timeMin)
+            const rangeEnd = new Date(timeMax)
+            
+            // Event overlaps if: eventStart <= rangeEnd AND eventEnd >= rangeStart
+            return eventStart <= rangeEnd && eventEnd >= rangeStart
+          })
+          
+          // Transform manual events to match CalendarEvent interface
+          manualEvents = filteredManualEvents.map((event) => {
+            // Build start dateTime or date
+            let startDateTime: string | undefined
+            let startDate: string | undefined
+            
+            if (event.is_all_day) {
+              startDate = event.start_date
+            } else {
+              // Combine date and time for dateTime
+              if (event.start_time) {
+                const [hours, minutes] = event.start_time.split(':')
+                const dateObj = new Date(event.start_date)
+                dateObj.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+                startDateTime = dateObj.toISOString()
+              } else {
+                startDate = event.start_date
+              }
+            }
+
+            // Build end dateTime or date
+            let endDateTime: string | undefined
+            let endDate: string | undefined
+            const endDateValue = event.end_date || event.start_date
+            
+            if (event.is_all_day) {
+              endDate = endDateValue
+            } else {
+              if (event.end_time) {
+                const [hours, minutes] = event.end_time.split(':')
+                const dateObj = new Date(endDateValue)
+                dateObj.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+                endDateTime = dateObj.toISOString()
+              } else {
+                endDate = endDateValue
+              }
+            }
+
+            return {
+              id: `manual_${event.id}`, // Prefix to avoid conflicts
+              summary: event.title,
+              start: {
+                dateTime: startDateTime,
+                date: startDate,
+              },
+              end: {
+                dateTime: endDateTime,
+                date: endDate,
+              },
+              location: event.location || undefined,
+              description: event.description || undefined,
+              calendarId: 'manual',
+              calendarName: 'Manual Events',
+            }
+          })
+          
+          console.log(`Found ${manualEvents.length} manual calendar events`)
+        } else if (manualError) {
+          console.warn('Error fetching manual calendar events:', manualError)
+        }
+      }
+    } catch (error: any) {
+      console.warn('Error fetching manual calendar events:', error)
+      // Continue without manual events if there's an error
+    }
+
+    // Merge manual events with Google Calendar events
+    allEvents.push(...manualEvents)
 
     // Sort all events by start time
     allEvents.sort((a, b) => {

@@ -894,16 +894,22 @@ export default function WorkSampleAdmin() {
                       className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="pitch_won"
-                      checked={formData.pitch_won}
-                      onChange={(e) => setFormData({ ...formData, pitch_won: e.target.checked })}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="pitch_won" className={cardStyle.text}>Won</Label>
-                  </div>
+                  {(() => {
+                    const selectedType = allTypes.find(t => t.id === formData.type_id)
+                    const isPitchType = selectedType?.name?.toLowerCase() === 'pitch'
+                    return isPitchType ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="pitch_won"
+                          checked={formData.pitch_won}
+                          onChange={(e) => setFormData({ ...formData, pitch_won: e.target.checked })}
+                          className="w-4 h-4"
+                        />
+                        <Label htmlFor="pitch_won" className={cardStyle.text}>Won</Label>
+                      </div>
+                    ) : null
+                  })()}
                 </div>
 
                 {/* Right Column */}
@@ -1244,16 +1250,22 @@ export default function WorkSampleAdmin() {
                     className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
                   />
                 </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="edit_pitch_won"
-                    checked={formData.pitch_won}
-                    onChange={(e) => setFormData({ ...formData, pitch_won: e.target.checked })}
-                    className="w-4 h-4"
-                  />
-                  <Label htmlFor="edit_pitch_won" className={cardStyle.text}>Won</Label>
-                </div>
+                {(() => {
+                  const selectedType = allTypes.find(t => t.id === formData.type_id)
+                  const isPitchType = selectedType?.name?.toLowerCase() === 'pitch'
+                  return isPitchType ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="edit_pitch_won"
+                        checked={formData.pitch_won}
+                        onChange={(e) => setFormData({ ...formData, pitch_won: e.target.checked })}
+                        className="w-4 h-4"
+                      />
+                      <Label htmlFor="edit_pitch_won" className={cardStyle.text}>Won</Label>
+                    </div>
+                  ) : null
+                })()}
               </div>
 
               {/* Right Column */}

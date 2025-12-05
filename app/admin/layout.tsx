@@ -26,7 +26,8 @@ import {
   ChevronUp,
   BarChart3,
   MessageSquare,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Calendar
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -229,6 +230,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       sectionAccess: 'admin' as const,
       items: [
         { href: '/admin/quick-links', label: 'Quick Links', icon: LinkIcon, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
+        { href: '/admin/calendar-events', label: 'Calendar Events', icon: Calendar, permission: null, sectionAccess: 'admin' as const },
         { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
         { href: '/admin/users', label: 'User Management', icon: Users, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
         { href: '/admin/notifications', label: 'Push Notifications', icon: Bell, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
