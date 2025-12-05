@@ -149,6 +149,14 @@ export default function TeamDashboard() {
       email: string | null
       avatar_url: string | null
     } | null
+    recipients?: Array<{
+      user_id: string
+      recipient_profile: {
+        full_name: string | null
+        email: string | null
+        avatar_url: string | null
+      } | null
+    }>
   }>>([])
   const [snapViewType, setSnapViewType] = useState<'received' | 'given'>('received')
   const [showAddSnapDialog, setShowAddSnapDialog] = useState(false)
@@ -2722,7 +2730,13 @@ export default function TeamDashboard() {
                   ) : (
                     snaps.map((snap, idx) => {
                       const senderName = snap.submitted_by_profile?.full_name || snap.submitted_by_profile?.email || null
-                      const recipientName = snap.mentioned_user_profile?.full_name || snap.mentioned_user_profile?.email || snap.mentioned || 'Team'
+                      // Get all recipient names - prefer recipients array, fallback to mentioned_user_profile
+                      const recipientNames = snap.recipients && snap.recipients.length > 0
+                        ? snap.recipients.map(r => r.recipient_profile?.full_name || r.recipient_profile?.email).filter(Boolean)
+                        : [snap.mentioned_user_profile?.full_name || snap.mentioned_user_profile?.email || snap.mentioned || 'Team'].filter(Boolean)
+                      const recipientName = recipientNames.length > 0 
+                        ? recipientNames.join(', ')
+                        : 'Team'
                       
                       // Determine which avatar to show
                       let profilePicture: string | null = null

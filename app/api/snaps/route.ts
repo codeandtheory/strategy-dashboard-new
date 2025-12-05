@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0
 
     // Build query - join with profiles to get submitter and mentioned user info
+    // Also join with snap_recipients to get all recipients
     let query = supabase
       .from('snaps')
       .select(`
@@ -36,12 +37,32 @@ export async function GET(request: NextRequest) {
         created_at,
         updated_at,
         submitted_by_profile:profiles!submitted_by(id, email, full_name, avatar_url),
-        mentioned_user_profile:profiles!mentioned_user_id(id, email, full_name, avatar_url)
+        mentioned_user_profile:profiles!mentioned_user_id(id, email, full_name, avatar_url),
+        recipients:snap_recipients(
+          user_id,
+          recipient_profile:profiles!user_id(id, email, full_name, avatar_url)
+        )
       `)
 
     // Apply filters
     if (mentionedUserId) {
-      query = query.eq('mentioned_user_id', mentionedUserId)
+      // Check both the old mentioned_user_id field and the new junction table
+      // First, get snap IDs from the junction table
+      const { data: recipientSnaps } = await supabase
+        .from('snap_recipients')
+        .select('snap_id')
+        .eq('user_id', mentionedUserId)
+      
+      const recipientSnapIds = recipientSnaps?.map(r => r.snap_id) || []
+      
+      // Query snaps that either have mentioned_user_id OR are in the junction table
+      if (recipientSnapIds.length > 0) {
+        // Combine both conditions: check mentioned_user_id OR id in recipientSnapIds
+        query = query.or(`mentioned_user_id.eq.${mentionedUserId},id.in.(${recipientSnapIds.join(',')})`)
+      } else {
+        // Only check mentioned_user_id if no junction table entries found
+        query = query.eq('mentioned_user_id', mentionedUserId)
+      }
     }
 
     if (submittedBy) {
@@ -94,7 +115,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { snap_content, mentioned, submit_anonymously, date } = body
+    const { snap_content, mentioned, mentioned_user_ids, submit_anonymously, date } = body
 
     if (!snap_content || !snap_content.trim()) {
       return NextResponse.json(
@@ -118,10 +139,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Try to match mentioned name to a user profile
-    let mentionedUserId: string | null = null
-    if (mentioned && mentioned.trim()) {
-      // Search for user by full_name (case-insensitive, partial match)
+    // Handle multiple recipients: use mentioned_user_ids array if provided, otherwise fall back to mentioned
+    let recipientUserIds: string[] = []
+    
+    if (mentioned_user_ids && Array.isArray(mentioned_user_ids) && mentioned_user_ids.length > 0) {
+      // Use the provided array of user IDs
+      recipientUserIds = mentioned_user_ids.filter((id: string) => id && id.trim())
+    } else if (mentioned && mentioned.trim()) {
+      // Legacy: Try to match mentioned name to a user profile
       const { data: mentionedUser } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -130,19 +155,22 @@ export async function POST(request: NextRequest) {
         .maybeSingle()
 
       if (mentionedUser) {
-        mentionedUserId = mentionedUser.id
+        recipientUserIds = [mentionedUser.id]
       }
     }
+
+    // Use first recipient for backward compatibility with mentioned_user_id field
+    const firstRecipientId = recipientUserIds.length > 0 ? recipientUserIds[0] : null
 
     // Prepare snap data
     // Always set from_user_id to the logged-in user (even if anonymous, we still track who sent it)
     const snapData: any = {
       snap_content: snap_content.trim(),
       mentioned: mentioned?.trim() || null,
-      mentioned_user_id: mentionedUserId,
+      mentioned_user_id: firstRecipientId, // Keep for backward compatibility
       submitted_by: submit_anonymously ? null : user.id,
       from_user_id: user.id, // Always record the logged-in user as the giver
-      to_user_id: mentionedUserId || user.id, // Recipient or fallback to user
+      to_user_id: firstRecipientId || user.id, // Recipient or fallback to user
       message: snap_content.trim(), // Also set message field
       date: date || new Date().toISOString().split('T')[0], // Use provided date or today
     }
@@ -172,7 +200,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ data: newSnap }, { status: 201 })
+    // Create entries in snap_recipients junction table for all recipients
+    if (recipientUserIds.length > 0 && newSnap) {
+      const recipientEntries = recipientUserIds.map(userId => ({
+        snap_id: newSnap.id,
+        user_id: userId
+      }))
+
+      const { error: recipientsError } = await supabase
+        .from('snap_recipients')
+        .insert(recipientEntries)
+
+      if (recipientsError) {
+        console.error('Error creating snap recipients:', recipientsError)
+        // Don't fail the request, but log the error
+      }
+    }
+
+    // Fetch the complete snap with recipients
+    const { data: completeSnap, error: fetchError } = await supabase
+      .from('snaps')
+      .select(`
+        id,
+        date,
+        snap_content,
+        mentioned,
+        mentioned_user_id,
+        submitted_by,
+        created_at,
+        updated_at,
+        submitted_by_profile:profiles!submitted_by(id, email, full_name, avatar_url),
+        mentioned_user_profile:profiles!mentioned_user_id(id, email, full_name, avatar_url),
+        recipients:snap_recipients(
+          user_id,
+          recipient_profile:profiles!user_id(id, email, full_name, avatar_url)
+        )
+      `)
+      .eq('id', newSnap.id)
+      .single()
+
+    return NextResponse.json({ data: completeSnap || newSnap }, { status: 201 })
   } catch (error: any) {
     console.error('Error in snaps POST API:', error)
     return NextResponse.json(

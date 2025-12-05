@@ -38,6 +38,7 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
   
   const [snapContent, setSnapContent] = useState('')
   const [mentioned, setMentioned] = useState('')
+  const [selectedRecipients, setSelectedRecipients] = useState<Profile[]>([])
   const [submitAnonymously, setSubmitAnonymously] = useState(false)
   const [suggestions, setSuggestions] = useState<Profile[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -188,11 +189,17 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
     
     debounceTimerRef.current = setTimeout(() => {
       const searchLower = mentioned.toLowerCase()
-      const filtered = allProfiles.filter(profile => {
-        const name = profile.full_name?.toLowerCase() || ''
-        const email = profile.email?.toLowerCase() || ''
-        return name.includes(searchLower) || email.includes(searchLower)
-      }).slice(0, 5)
+      // Filter out already selected recipients
+      const selectedIds = new Set(selectedRecipients.map(r => r.id))
+      const filtered = allProfiles
+        .filter(profile => {
+          // Exclude already selected profiles
+          if (selectedIds.has(profile.id)) return false
+          const name = profile.full_name?.toLowerCase() || ''
+          const email = profile.email?.toLowerCase() || ''
+          return name.includes(searchLower) || email.includes(searchLower)
+        })
+        .slice(0, 5)
       
       setSuggestions(filtered)
       setShowSuggestions(filtered.length > 0)
@@ -204,7 +211,7 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
         clearTimeout(debounceTimerRef.current)
       }
     }
-  }, [mentioned, allProfiles])
+  }, [mentioned, allProfiles, selectedRecipients])
   
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -219,17 +226,24 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
     } else if (e.key === 'Enter' && selectedIndex >= 0) {
       e.preventDefault()
       const selected = suggestions[selectedIndex]
-      setMentioned(selected.full_name || selected.email || '')
-      setShowSuggestions(false)
+      handleSelectSuggestion(selected)
     } else if (e.key === 'Escape') {
       setShowSuggestions(false)
     }
   }
   
   const handleSelectSuggestion = (profile: Profile) => {
-    setMentioned(profile.full_name || profile.email || '')
+    // Add to selected recipients if not already selected
+    if (!selectedRecipients.find(r => r.id === profile.id)) {
+      setSelectedRecipients([...selectedRecipients, profile])
+    }
+    setMentioned('')
     setShowSuggestions(false)
-    inputRef.current?.blur()
+    inputRef.current?.focus()
+  }
+
+  const handleRemoveRecipient = (profileId: string) => {
+    setSelectedRecipients(selectedRecipients.filter(r => r.id !== profileId))
   }
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -244,6 +258,13 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
     setSubmitting(true)
     
     try {
+      // Prepare recipient user IDs array
+      const mentionedUserIds = selectedRecipients.map(r => r.id)
+      // For backward compatibility, also send the first recipient's name as 'mentioned'
+      const mentionedName = selectedRecipients.length > 0 
+        ? selectedRecipients.map(r => r.full_name || r.email).join(', ')
+        : mentioned.trim() || null
+
       const response = await fetch('/api/snaps', {
         method: 'POST',
         headers: {
@@ -251,7 +272,8 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
         },
         body: JSON.stringify({
           snap_content: snapContent,
-          mentioned: mentioned.trim() || null,
+          mentioned: mentionedName,
+          mentioned_user_ids: mentionedUserIds.length > 0 ? mentionedUserIds : undefined,
           submit_anonymously: submitAnonymously,
         }),
       })
@@ -265,6 +287,7 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
       // Success - reset form and close dialog
       setSnapContent('')
       setMentioned('')
+      setSelectedRecipients([])
       setSubmitAnonymously(false)
       onSuccess()
       onOpenChange(false)
@@ -317,8 +340,31 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
           
           <div className="relative">
             <Label htmlFor="mentioned" className="mb-2 block">
-              Mentioned (Recipient)
+              Recipients {selectedRecipients.length > 0 && `(${selectedRecipients.length})`}
             </Label>
+            
+            {/* Selected Recipients */}
+            {selectedRecipients.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {selectedRecipients.map((profile) => (
+                  <div
+                    key={profile.id}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md text-sm"
+                  >
+                    <span>{profile.full_name || profile.email}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRecipient(profile.id)}
+                      className="ml-1 hover:text-destructive"
+                      aria-label="Remove recipient"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
             <Input
               ref={inputRef}
               id="mentioned"
@@ -335,7 +381,7 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
                 // Delay to allow click on suggestion
                 setTimeout(() => setShowSuggestions(false), 200)
               }}
-              placeholder="Start typing a name..."
+              placeholder="Start typing a name to add recipients..."
               className="w-full"
             />
             {showSuggestions && suggestions.length > 0 && (
@@ -360,7 +406,7 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
               </div>
             )}
             <p className="text-xs text-muted-foreground mt-1">
-              The person this snap is for (optional)
+              Add one or more people this snap is for (optional)
             </p>
           </div>
           

@@ -14,6 +14,16 @@ import Link from 'next/link'
 import { AddSnapDialog } from '@/components/add-snap-dialog'
 import { Footer } from '@/components/footer'
 
+interface SnapRecipient {
+  user_id: string
+  recipient_profile: {
+    id: string
+    email: string | null
+    full_name: string | null
+    avatar_url: string | null
+  } | null
+}
+
 interface Snap {
   id: string
   date: string
@@ -34,6 +44,7 @@ interface Snap {
     full_name: string | null
     avatar_url: string | null
   } | null
+  recipients?: SnapRecipient[]
 }
 
 type FilterType = 'all' | 'about-me' | 'i-gave'
@@ -515,7 +526,13 @@ export default function SnapsPage() {
               <>
                 {filteredSnaps.map((snap) => {
                   const fromName = getDisplayName(snap.submitted_by_profile)
-                  const toName = getDisplayName(snap.mentioned_user_profile) || snap.mentioned || 'Team'
+                  // Get all recipient names - prefer recipients array, fallback to mentioned_user_profile
+                  const recipientNames = snap.recipients && snap.recipients.length > 0
+                    ? snap.recipients.map(r => getDisplayName(r.recipient_profile)).filter(Boolean)
+                    : [getDisplayName(snap.mentioned_user_profile) || snap.mentioned || 'Team'].filter(Boolean)
+                  const toName = recipientNames.length > 0 
+                    ? recipientNames.join(', ')
+                    : 'Team'
                   const isAnonymous = !snap.submitted_by_profile
                   
                   // Determine which profile picture to show based on filter
