@@ -43,6 +43,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (mounted) {
           setUser(session?.user ?? null)
           setLoading(false)
+          
+          // Ensure profile exists for authenticated users (safety net)
+          if (session?.user) {
+            // Run this check once after initial session load
+            fetch('/api/profiles/ensure', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            })
+            .then(async (response) => {
+              if (response.ok) {
+                const result = await response.json()
+                if (result.created && result.needsSetup) {
+                  // Profile was just created, redirect to profile setup
+                  // Only redirect if we're not already on profile pages
+                  if (pathname && !pathname.startsWith('/profile') && !pathname.startsWith('/login') && !pathname.startsWith('/auth')) {
+                    router.push('/profile/setup')
+                  }
+                }
+              }
+            })
+            .catch((error) => {
+              // Silently fail - don't interrupt user experience
+              if (process.env.NODE_ENV === 'development') {
+                console.error('[Auth] Error ensuring profile on initial load:', error)
+              }
+            })
+          }
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error)
@@ -73,8 +102,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
-      // Track login events
+      // Track login events and ensure profile exists
       if (event === 'SIGNED_IN' && session?.user) {
+        // Ensure profile exists (safety net if trigger fails)
+        try {
+          const ensureResponse = await fetch('/api/profiles/ensure', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+          
+          if (ensureResponse.ok) {
+            const result = await ensureResponse.json()
+            if (result.created && result.needsSetup) {
+              // Profile was just created, redirect to profile setup
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[Auth] Profile created via safety net, redirecting to setup:', session.user.email)
+              }
+              // Only redirect if we're not already on profile pages
+              if (pathname && !pathname.startsWith('/profile') && !pathname.startsWith('/login') && !pathname.startsWith('/auth')) {
+                router.push('/profile/setup')
+              }
+            }
+          } else {
+            // Log but don't fail - user can still use the app
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('[Auth] Failed to ensure profile exists:', await ensureResponse.text())
+            }
+          }
+        } catch (error) {
+          // Silently fail - don't interrupt user experience
+          if (process.env.NODE_ENV === 'development') {
+            console.error('[Auth] Error ensuring profile exists:', error)
+          }
+        }
+
+        // Track analytics
         try {
           await fetch('/api/analytics/track', {
             method: 'POST',

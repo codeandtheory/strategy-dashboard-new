@@ -17,10 +17,21 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+-- Drop existing policies if they exist (to allow re-running this script)
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Service role can manage all profiles" ON public.profiles;
+
 -- Users can view their own profile
 CREATE POLICY "Users can view own profile"
   ON public.profiles FOR SELECT
   USING (auth.uid() = id);
+
+-- Users can insert their own profile (safety net if trigger fails)
+CREATE POLICY "Users can insert own profile"
+  ON public.profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
 
 -- Users can update their own profile (limited fields)
 CREATE POLICY "Users can update own profile"
@@ -34,17 +45,28 @@ CREATE POLICY "Service role can manage all profiles"
   USING (auth.role() = 'service_role');
 
 -- Function to automatically create profile on user signup
+-- This version includes error handling and all required fields
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name, avatar_url)
+  -- Insert profile with all required fields
+  INSERT INTO public.profiles (id, email, full_name, avatar_url, base_role, created_at, updated_at)
   VALUES (
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
-    NEW.raw_user_meta_data->>'avatar_url'
-  );
+    NEW.raw_user_meta_data->>'avatar_url',
+    'user', -- Default base_role
+    NOW(),  -- created_at
+    NOW()   -- updated_at
+  )
+  ON CONFLICT (id) DO NOTHING; -- If profile already exists, do nothing
   RETURN NEW;
+EXCEPTION
+  WHEN others THEN
+    -- Log the error but don't fail the auth user creation
+    RAISE WARNING 'Error creating profile for user %: %', NEW.id, SQLERRM;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
