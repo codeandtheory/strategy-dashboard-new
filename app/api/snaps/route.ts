@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { snap_content, mentioned, mentioned_user_ids, submit_anonymously, date } = body
+    const { snap_content, mentioned, mentioned_user_ids, submit_anonymously, date, submitted_by, admin_mode } = body
 
     if (!snap_content || !snap_content.trim()) {
       return NextResponse.json(
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     // Verify user exists in profiles table
     const { data: profileCheck, error: profileError } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, base_role')
       .eq('id', user.id)
       .single()
 
@@ -138,6 +138,39 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Check if admin mode is allowed (only admins can use admin_mode)
+    const isAdmin = profileCheck.base_role === 'admin'
+    if (admin_mode && !isAdmin) {
+      return NextResponse.json(
+        { error: 'Only admins can create snaps on behalf of other users' },
+        { status: 403 }
+      )
+    }
+
+    // Determine who submitted the snap
+    let finalSubmittedBy: string | null = null
+    if (admin_mode && submitted_by) {
+      // Admin is creating snap on behalf of another user
+      // Verify the submitted_by user exists
+      const { data: submittedByUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', submitted_by)
+        .single()
+
+      if (!submittedByUser) {
+        return NextResponse.json(
+          { error: 'Invalid user selected for "from" field' },
+          { status: 400 }
+        )
+      }
+      finalSubmittedBy = submitted_by
+    } else if (!submit_anonymously) {
+      // Regular user creating their own snap
+      finalSubmittedBy = user.id
+    }
+    // If submit_anonymously is true and not admin mode, finalSubmittedBy remains null
 
     // Handle multiple recipients: use mentioned_user_ids array if provided, otherwise fall back to mentioned
     let recipientUserIds: string[] = []
@@ -163,13 +196,12 @@ export async function POST(request: NextRequest) {
     const firstRecipientId = recipientUserIds.length > 0 ? recipientUserIds[0] : null
 
     // Prepare snap data
-    // Always set from_user_id to the logged-in user (even if anonymous, we still track who sent it)
     const snapData: any = {
       snap_content: snap_content.trim(),
       mentioned: mentioned?.trim() || null,
       mentioned_user_id: firstRecipientId, // Keep for backward compatibility
-      submitted_by: submit_anonymously ? null : user.id,
-      from_user_id: user.id, // Always record the logged-in user as the giver
+      submitted_by: finalSubmittedBy, // Use the determined submitted_by value
+      from_user_id: admin_mode ? finalSubmittedBy || user.id : user.id, // In admin mode, use the selected user, otherwise the logged-in admin
       to_user_id: firstRecipientId || user.id, // Recipient or fallback to user
       message: snap_content.trim(), // Also set message field
       date: date || new Date().toISOString().split('T')[0], // Use provided date or today

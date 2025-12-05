@@ -21,6 +21,8 @@ interface AddSnapDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
+  adminMode?: boolean // If true, allows selecting "from" user
+  defaultFromUserId?: string // Pre-select a "from" user in admin mode
 }
 
 interface Profile {
@@ -29,7 +31,7 @@ interface Profile {
   email: string | null
 }
 
-export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogProps) {
+export function AddSnapDialog({ open, onOpenChange, onSuccess, adminMode = false, defaultFromUserId }: AddSnapDialogProps) {
   const { user } = useAuth()
   const { mode } = useMode()
   const supabase = createClient()
@@ -40,6 +42,10 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
   const [mentioned, setMentioned] = useState('')
   const [selectedRecipients, setSelectedRecipients] = useState<Profile[]>([])
   const [submitAnonymously, setSubmitAnonymously] = useState(false)
+  const [fromUser, setFromUser] = useState<Profile | null>(null)
+  const [fromUserSearch, setFromUserSearch] = useState('')
+  const [fromUserSuggestions, setFromUserSuggestions] = useState<Profile[]>([])
+  const [showFromUserSuggestions, setShowFromUserSuggestions] = useState(false)
   const [suggestions, setSuggestions] = useState<Profile[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
@@ -175,7 +181,17 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
   
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
   
-  // Debounced search for autocomplete
+  // Initialize from user if defaultFromUserId is provided
+  useEffect(() => {
+    if (adminMode && defaultFromUserId && allProfiles.length > 0 && !fromUser) {
+      const defaultUser = allProfiles.find(p => p.id === defaultFromUserId)
+      if (defaultUser) {
+        setFromUser(defaultUser)
+      }
+    }
+  }, [adminMode, defaultFromUserId, allProfiles, fromUser])
+  
+  // Debounced search for recipients autocomplete
   useEffect(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current)
@@ -212,6 +228,33 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
       }
     }
   }, [mentioned, allProfiles, selectedRecipients])
+  
+  // Debounced search for "from" user autocomplete (admin mode)
+  useEffect(() => {
+    if (!adminMode) return
+    
+    const timer = setTimeout(() => {
+      if (fromUserSearch.length < 1) {
+        setFromUserSuggestions([])
+        setShowFromUserSuggestions(false)
+        return
+      }
+      
+      const searchLower = fromUserSearch.toLowerCase()
+      const filtered = allProfiles
+        .filter(profile => {
+          const name = profile.full_name?.toLowerCase() || ''
+          const email = profile.email?.toLowerCase() || ''
+          return name.includes(searchLower) || email.includes(searchLower)
+        })
+        .slice(0, 5)
+      
+      setFromUserSuggestions(filtered)
+      setShowFromUserSuggestions(filtered.length > 0)
+    }, 200)
+    
+    return () => clearTimeout(timer)
+  }, [fromUserSearch, allProfiles, adminMode])
   
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -255,6 +298,11 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
       return
     }
     
+    if (adminMode && !fromUser) {
+      setError('Please select who is giving this snap')
+      return
+    }
+    
     setSubmitting(true)
     
     try {
@@ -265,6 +313,9 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
         ? selectedRecipients.map(r => r.full_name || r.email).join(', ')
         : mentioned.trim() || null
 
+      // In admin mode, use the selected "from" user, otherwise use the logged-in user
+      const submittedByUserId = adminMode && fromUser ? fromUser.id : (submitAnonymously ? null : user?.id)
+
       const response = await fetch('/api/snaps', {
         method: 'POST',
         headers: {
@@ -274,7 +325,9 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
           snap_content: snapContent,
           mentioned: mentionedName,
           mentioned_user_ids: mentionedUserIds.length > 0 ? mentionedUserIds : undefined,
-          submit_anonymously: submitAnonymously,
+          submit_anonymously: adminMode ? false : submitAnonymously, // Don't allow anonymous in admin mode
+          submitted_by: submittedByUserId, // Admin can set this
+          admin_mode: adminMode, // Flag to indicate admin is creating this
         }),
       })
       
@@ -289,6 +342,8 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
       setMentioned('')
       setSelectedRecipients([])
       setSubmitAnonymously(false)
+      setFromUser(null)
+      setFromUserSearch('')
       onSuccess()
       onOpenChange(false)
     } catch (err: any) {
@@ -311,9 +366,12 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
         }}
       >
         <DialogHeader>
-          <DialogTitle>Add a Snap</DialogTitle>
+          <DialogTitle>{adminMode ? 'Add Snap (Admin)' : 'Add a Snap'}</DialogTitle>
           <DialogDescription>
-            Recognize someone for their great work or contribution
+            {adminMode 
+              ? 'Create a snap on behalf of another user'
+              : 'Recognize someone for their great work or contribution'
+            }
           </DialogDescription>
         </DialogHeader>
         
@@ -324,6 +382,75 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
         )}
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          {adminMode && (
+            <div className="relative">
+              <Label htmlFor="from-user" className="mb-2 block">
+                From (Who is giving this snap) <span className="text-destructive">*</span>
+              </Label>
+              {fromUser ? (
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md text-sm">
+                    <span>{fromUser.full_name || fromUser.email}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFromUser(null)
+                        setFromUserSearch('')
+                      }}
+                      className="ml-1 hover:text-destructive"
+                      aria-label="Remove from user"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Input
+                    id="from-user"
+                    type="text"
+                    value={fromUserSearch}
+                    onChange={(e) => setFromUserSearch(e.target.value)}
+                    onFocus={() => {
+                      if (fromUserSuggestions.length > 0) {
+                        setShowFromUserSuggestions(true)
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowFromUserSuggestions(false), 200)
+                    }}
+                    placeholder="Start typing a name..."
+                    className="w-full"
+                    required
+                  />
+                  {showFromUserSuggestions && fromUserSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 border border-border rounded-md shadow-lg max-h-60 overflow-auto"
+                      style={{ backgroundColor: 'rgb(0, 0, 0)', opacity: 1 }}
+                    >
+                      {fromUserSuggestions.map((profile) => (
+                        <button
+                          key={profile.id}
+                          type="button"
+                          onClick={() => {
+                            setFromUser(profile)
+                            setFromUserSearch('')
+                            setShowFromUserSuggestions(false)
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-800 hover:text-white text-white"
+                        >
+                          {profile.full_name || profile.email}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Select the person who is giving this snap
+              </p>
+            </div>
+          )}
+          
           <div>
             <Label htmlFor="snap-content" className="mb-2 block">
               Snap Content <span className="text-destructive">*</span>
@@ -410,18 +537,20 @@ export function AddSnapDialog({ open, onOpenChange, onSuccess }: AddSnapDialogPr
             </p>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="submit-anonymously"
-              checked={submitAnonymously}
-              onChange={(e) => setSubmitAnonymously(e.target.checked)}
-              className="rounded border-gray-300"
-            />
-            <Label htmlFor="submit-anonymously" className="text-sm font-normal cursor-pointer">
-              Submit anonymously
-            </Label>
-          </div>
+          {!adminMode && (
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="submit-anonymously"
+                checked={submitAnonymously}
+                onChange={(e) => setSubmitAnonymously(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <Label htmlFor="submit-anonymously" className="text-sm font-normal cursor-pointer">
+                Submit anonymously
+              </Label>
+            </div>
+          )}
           
           <div className="flex justify-end gap-2 pt-4">
             <Button

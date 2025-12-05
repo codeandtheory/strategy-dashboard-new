@@ -231,6 +231,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       items: [
         { href: '/admin/quick-links', label: 'Quick Links', icon: LinkIcon, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
         { href: '/admin/calendar-events', label: 'Calendar Events', icon: Calendar, permission: null, sectionAccess: 'admin' as const },
+        { href: '/admin/snaps', label: 'Manage Snaps', icon: MessageSquare, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
         { href: '/admin/analytics', label: 'Analytics', icon: BarChart3, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
         { href: '/admin/users', label: 'User Management', icon: Users, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
         { href: '/admin/notifications', label: 'Push Notifications', icon: Bell, permission: 'canManageUsers' as const, sectionAccess: 'admin' as const },
