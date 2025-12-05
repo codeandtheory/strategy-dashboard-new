@@ -390,7 +390,7 @@ export default function PollsArchivePage() {
                   data: sandwichData,
                   isSandwichPoll: true,
                   imageUrl: '/emotional-geography-sandwiches.png',
-                  bigTakeaway: 'A big takeaway'
+                  bigTakeaway: 'People are not arguing about sandwiches.\n\nThey are arguing about their emotional lowest point of the day.'
                 })
                 setIsPollDialogOpen(true)
               }}
@@ -946,7 +946,7 @@ export default function PollsArchivePage() {
                             {/* Big Takeaway */}
                             {selectedPoll.bigTakeaway && (
                               <div className="mt-8 pt-8 border-t" style={{ borderColor: mode === 'chaos' ? 'rgba(255, 255, 255, 0.1)' : mode === 'chill' ? 'rgba(74, 24, 24, 0.1)' : 'rgba(255, 255, 255, 0.1)' }}>
-                                <h4 className={`text-2xl font-black mb-4 ${getTextClass()}`}>
+                                <h4 className={`text-2xl font-black mb-4 ${getTextClass()} whitespace-pre-line`}>
                                   {selectedPoll.bigTakeaway}
                                 </h4>
                               </div>
