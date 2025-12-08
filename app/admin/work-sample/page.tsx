@@ -153,7 +153,7 @@ export default function WorkSampleAdmin() {
   const cardStyle = getCardStyle()
 
   // Fetch work samples
-  const fetchWorkSamples = async (skipCache = false) => {
+  const fetchWorkSamples = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
@@ -162,16 +162,8 @@ export default function WorkSampleAdmin() {
       if (filterAuthorId) params.append('author_id', filterAuthorId)
       if (sortBy) params.append('sortBy', sortBy)
       if (sortOrder) params.append('sortOrder', sortOrder)
-      
-      // Add cache-busting parameter if needed
-      if (skipCache) {
-        params.append('_t', Date.now().toString())
-      }
 
-      const response = await fetch(`/api/work-samples?${params.toString()}`, {
-        cache: skipCache ? 'no-store' : 'default',
-        headers: skipCache ? { 'Cache-Control': 'no-cache' } : undefined,
-      })
+      const response = await fetch(`/api/work-samples?${params.toString()}`)
       const result = await response.json()
       
       if (response.ok) {
@@ -581,20 +573,7 @@ export default function WorkSampleAdmin() {
       if (response.ok) {
         setIsAddDialogOpen(false)
         resetForm()
-        
-        // Check if active filters would hide the new work sample
-        const wouldBeHidden = (filterTypeId && formData.type_id !== filterTypeId) || 
-                              (filterAuthorId && formData.author_id !== filterAuthorId)
-        
-        // If filters would hide it, clear them so the new item is visible
-        if (wouldBeHidden) {
-          setFilterTypeId(null)
-          setFilterAuthorId(null)
-          console.log('ℹ️ Cleared filters to show newly added work sample')
-        }
-        
-        // Refresh with cache-busting to ensure new item appears
-        fetchWorkSamples(true)
+        fetchWorkSamples()
       } else {
         const errorMsg = result.details 
           ? `${result.error}\n\nDetails: ${result.details}`
@@ -664,8 +643,7 @@ export default function WorkSampleAdmin() {
         setIsEditDialogOpen(false)
         setEditingItem(null)
         resetForm()
-        // Refresh with cache-busting to ensure updated item appears
-        fetchWorkSamples(true)
+        fetchWorkSamples()
       } else {
         const errorMsg = result.details 
           ? `${result.error}\n\nDetails: ${result.details}${result.code ? `\nCode: ${result.code}` : ''}`
@@ -686,31 +664,19 @@ export default function WorkSampleAdmin() {
     try {
       const response = await fetch(`/api/work-samples?id=${id}`, {
         method: 'DELETE',
-        cache: 'no-store',
       })
 
       const result = await response.json()
       
       if (response.ok) {
-        // Optimistically remove from UI immediately
-        setWorkSamples(prev => prev.filter(item => item.id !== id))
-        setSelectedIds(prev => {
-          const newSet = new Set(prev)
-          newSet.delete(id)
-          return newSet
-        })
-        // Then refresh from server (skip cache to ensure we get fresh data)
-        setTimeout(() => fetchWorkSamples(true), 100)
+        fetchWorkSamples()
+        setSelectedIds(new Set())
       } else {
-        alert(`Error: ${result.error || result.details || 'Failed to delete work sample'}`)
-        // Refresh to ensure UI is in sync
-        fetchWorkSamples(true)
+        alert(`Error: ${result.error}`)
       }
     } catch (error) {
       console.error('Error deleting work sample:', error)
       alert('Failed to delete work sample')
-      // Refresh to ensure UI is in sync
-      fetchWorkSamples(true)
     }
   }
 
@@ -720,31 +686,22 @@ export default function WorkSampleAdmin() {
     if (!confirm(`Are you sure you want to delete ${selectedIds.size} work sample(s)?`)) return
 
     try {
-      const ids = Array.from(selectedIds)
-      const idsParam = ids.join(',')
-      const response = await fetch(`/api/work-samples?ids=${idsParam}`, {
+      const ids = Array.from(selectedIds).join(',')
+      const response = await fetch(`/api/work-samples?ids=${ids}`, {
         method: 'DELETE',
-        cache: 'no-store',
       })
 
       const result = await response.json()
       
       if (response.ok) {
-        // Optimistically remove from UI immediately
-        setWorkSamples(prev => prev.filter(item => !ids.includes(item.id)))
+        fetchWorkSamples()
         setSelectedIds(new Set())
-        // Then refresh from server (skip cache to ensure we get fresh data)
-        setTimeout(() => fetchWorkSamples(true), 100)
       } else {
-        alert(`Error: ${result.error || result.details || 'Failed to delete work samples'}`)
-        // Refresh to ensure UI is in sync
-        fetchWorkSamples(true)
+        alert(`Error: ${result.error}`)
       }
     } catch (error) {
       console.error('Error deleting work samples:', error)
       alert('Failed to delete work samples')
-      // Refresh to ensure UI is in sync
-      fetchWorkSamples(true)
     }
   }
 
