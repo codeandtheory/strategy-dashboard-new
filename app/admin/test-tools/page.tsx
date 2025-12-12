@@ -11,7 +11,8 @@ import {
   Loader2,
   AlertCircle,
   UserX,
-  RefreshCw
+  RefreshCw,
+  Sparkles
 } from 'lucide-react'
 
 export default function TestToolsPage() {
@@ -20,6 +21,8 @@ export default function TestToolsPage() {
   const supabase = createClient()
   const [testingSlack, setTestingSlack] = useState(false)
   const [resettingProfile, setResettingProfile] = useState(false)
+  const [testingVercelAI, setTestingVercelAI] = useState(false)
+  const [vercelAIResult, setVercelAIResult] = useState<any>(null)
 
   // Theme-aware styling helpers
   const getBgClass = () => {
@@ -178,6 +181,31 @@ export default function TestToolsPage() {
     }
   }
 
+  const handleTestVercelAI = async () => {
+    setTestingVercelAI(true)
+    setVercelAIResult(null)
+    try {
+      const response = await fetch('/api/test-vercel-ai')
+      const data = await response.json()
+      setVercelAIResult(data)
+      
+      if (data.success) {
+        console.log('✅ Vercel AI SDK test passed:', data)
+      } else {
+        console.error('❌ Vercel AI SDK test failed:', data)
+      }
+    } catch (error: any) {
+      console.error('Error testing Vercel AI:', error)
+      setVercelAIResult({
+        success: false,
+        error: error.message || 'Failed to test Vercel AI SDK',
+        details: 'Network error or server error'
+      })
+    } finally {
+      setTestingVercelAI(false)
+    }
+  }
+
   return (
     <div className={`${getBgClass()} ${mode === 'code' ? 'font-mono' : 'font-[family-name:var(--font-raleway)]'}`}>
       {/* Header */}
@@ -220,6 +248,78 @@ export default function TestToolsPage() {
                 </>
               )}
             </Button>
+          </div>
+        </Card>
+      </div>
+
+      {/* Vercel AI SDK Testing */}
+      <div className="mb-8">
+        <h2 className={`text-2xl font-black uppercase tracking-wider ${getTextClass()} mb-4`}>Vercel AI SDK</h2>
+        <Card className={`${getCardStyle().bg} ${getCardStyle().border} border p-6 ${getRoundedClass('rounded-xl')}`}>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className={`text-lg font-black uppercase ${getCardStyle().text} mb-2`}>Test Vercel AI SDK</h3>
+                <p className={`${getCardStyle().text}/70 text-sm mb-4`}>
+                  Test if Vercel AI SDK is working correctly. This will attempt to generate a simple text response using the AI SDK.
+                </p>
+              </div>
+              <Button
+                onClick={handleTestVercelAI}
+                disabled={testingVercelAI}
+                className={`${getRoundedClass('rounded-lg')} ${
+                  mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
+                  mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
+                  'bg-[#FFFFFF] text-black hover:bg-[#FFFFFF]/80'
+                } font-black uppercase tracking-wider ${mode === 'code' ? 'font-mono' : ''}`}
+              >
+                {testingVercelAI ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Testing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Test AI SDK
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            {vercelAIResult && (
+              <div className={`mt-4 p-4 ${getRoundedClass('rounded-lg')} ${
+                vercelAIResult.success 
+                  ? 'bg-green-500/20 border border-green-500/50' 
+                  : 'bg-red-500/20 border border-red-500/50'
+              }`}>
+                <div className={`font-bold mb-2 ${getCardStyle().text}`}>
+                  {vercelAIResult.success ? '✅ Success' : '❌ Failed'}
+                </div>
+                {vercelAIResult.success ? (
+                  <div className={`space-y-2 ${getCardStyle().text}/90 text-sm`}>
+                    <div><strong>Message:</strong> {vercelAIResult.message}</div>
+                    <div><strong>Response:</strong> {vercelAIResult.response}</div>
+                    {vercelAIResult.details && (
+                      <div className="mt-2 text-xs opacity-70">
+                        <div><strong>Model:</strong> {vercelAIResult.details.model}</div>
+                        <div><strong>Tokens:</strong> {vercelAIResult.details.tokensUsed}</div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className={`space-y-2 ${getCardStyle().text}/90 text-sm`}>
+                    <div><strong>Error:</strong> {vercelAIResult.error}</div>
+                    {vercelAIResult.details && (
+                      <details className="mt-2 text-xs opacity-70">
+                        <summary className="cursor-pointer">Details</summary>
+                        <pre className="mt-2 whitespace-pre-wrap">{JSON.stringify(vercelAIResult.details, null, 2)}</pre>
+                      </details>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </Card>
       </div>
