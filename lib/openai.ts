@@ -64,31 +64,50 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
         temperature: 0.9,
       })
     } catch (error: any) {
-      // Extract error message from various possible locations
+      // Extract error message from various possible locations (Vercel AI SDK format)
       const errorMessage = error?.message || 
                           error?.cause?.message ||
+                          error?.data?.error?.message ||
                           error?.toString() || 
                           ''
       const lowerMessage = errorMessage.toLowerCase()
-      const status = error?.statusCode || error?.status
+      const status = error?.statusCode || 
+                     error?.status || 
+                     error?.cause?.statusCode ||
+                     error?.cause?.status
+
+      console.log('🔍 Vercel AI SDK error detected:', {
+        message: errorMessage.substring(0, 200),
+        status,
+        hasFallback: !!fallbackOpenAI,
+        errorKeys: Object.keys(error || {})
+      })
 
       // Check for quota/billing errors (can be 400, 402, or 429)
+      // Vercel AI SDK may format errors differently
       const isQuotaError = status === 402 ||
+                          status === 401 || // Sometimes quota errors come as 401
                           (status === 429 && (
                             lowerMessage.includes('exceeded your current quota') ||
                             lowerMessage.includes('quota') ||
                             lowerMessage.includes('billing') ||
                             lowerMessage.includes('check your plan and billing')
                           )) ||
+                          (status === 400 && (
+                            lowerMessage.includes('quota') ||
+                            lowerMessage.includes('billing')
+                          )) ||
                           lowerMessage.includes('exceeded your current quota') ||
                           lowerMessage.includes('quota exceeded') ||
                           lowerMessage.includes('hard billing limit') ||
-                          lowerMessage.includes('usage limit')
+                          lowerMessage.includes('usage limit') ||
+                          lowerMessage.includes('insufficient_quota') ||
+                          lowerMessage.includes('billing_limit_reached')
       
       // Try fallback key if available and primary key hit limits
-      if ((isQuotaError || status === 429) && fallbackOpenAI) {
+      if ((isQuotaError || status === 429 || status === 401) && fallbackOpenAI) {
         console.log('⚠️ Primary OpenAI API key hit limits, trying fallback key for text transformation...')
-        console.log('   Error:', errorMessage.substring(0, 200))
+        console.log('   Original error:', errorMessage.substring(0, 200))
         try {
           result = await generateText({
             model: fallbackOpenAI('gpt-4o-mini', {
@@ -99,16 +118,24 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
             maxTokens: 600,
             temperature: 0.9,
           })
+          console.log('✅ Fallback key succeeded!')
         } catch (fallbackError: any) {
           console.error('❌ Fallback API key also failed:', fallbackError?.message || fallbackError)
           // If fallback also fails with quota error, throw a clear message
-          const fallbackMessage = fallbackError?.message || fallbackError?.toString() || ''
-          if (fallbackMessage.toLowerCase().includes('quota') || fallbackMessage.toLowerCase().includes('billing')) {
+          const fallbackMessage = fallbackError?.message || 
+                                  fallbackError?.cause?.message ||
+                                  fallbackError?.toString() || ''
+          const fallbackLower = fallbackMessage.toLowerCase()
+          if (fallbackLower.includes('quota') || 
+              fallbackLower.includes('billing') ||
+              fallbackLower.includes('insufficient_quota') ||
+              fallbackLower.includes('billing_limit_reached')) {
             throw new Error('Both primary and fallback OpenAI API keys have exceeded their quotas. Please check your OpenAI account billing settings.')
           }
           throw fallbackError
         }
       } else {
+        // No fallback available or not a quota error - throw original error
         throw error
       }
     }
