@@ -153,12 +153,30 @@ async function generateImageFromPrompt(
                           lowerMessage.includes('usage limit') ||
                           lowerMessage.includes('check your plan and billing')
 
+      // Check if error message indicates fallback was already tried
+      const fallbackAlreadyTried = lowerMessage.includes('both primary and fallback') ||
+                                   lowerMessage.includes('fallback api key also failed')
+
+      // If quota error and fallback was already tried, throw the original error (it has better context)
+      if (isQuotaError && fallbackAlreadyTried) {
+        throw error // Re-throw the original error which should indicate both keys failed
+      }
+
       // Don't retry on billing/quota errors - fail immediately
+      // Note: callOpenAIWithFallback should have already tried the fallback, so if we get here
+      // it means either no fallback is configured or the error isn't from callOpenAIWithFallback
       if (isQuotaError || (status === 400 && isQuotaError)) {
         const hasFallback = !!process.env.OPENAI_API_KEY_FALLBACK
-        throw new Error(
-          `OpenAI quota/billing limit reached. ${hasFallback ? 'Fallback key will be tried automatically.' : 'Please check your OpenAI account billing settings and add payment method if needed. You can also set OPENAI_API_KEY_FALLBACK environment variable to use a secondary API key.'}`
-        )
+        // If we have a fallback but got a quota error, it means callOpenAIWithFallback already tried it
+        if (hasFallback) {
+          throw new Error(
+            'OpenAI quota/billing limit reached. Both primary and fallback API keys have exceeded their quotas. Please check your OpenAI account billing settings.'
+          )
+        } else {
+          throw new Error(
+            'OpenAI quota/billing limit reached. Please check your OpenAI account billing settings and add payment method if needed. You can also set OPENAI_API_KEY_FALLBACK environment variable to use a secondary API key.'
+          )
+        }
       }
 
       // Rate limit (429) that's not quota-related - retry with backoff
@@ -177,9 +195,15 @@ async function generateImageFromPrompt(
       // Quota error with 429 status - don't retry
       if (status === 429 && isQuotaError) {
         const hasFallback = !!process.env.OPENAI_API_KEY_FALLBACK
-        throw new Error(
-          `OpenAI quota exceeded (429). ${hasFallback ? 'Fallback key will be tried automatically.' : 'Please check your OpenAI account billing settings. You can also set OPENAI_API_KEY_FALLBACK environment variable to use a secondary API key.'}`
-        )
+        if (hasFallback) {
+          throw new Error(
+            'OpenAI quota exceeded (429). Both primary and fallback API keys have exceeded their quotas. Please check your OpenAI account billing settings.'
+          )
+        } else {
+          throw new Error(
+            'OpenAI quota exceeded (429). Please check your OpenAI account billing settings. You can also set OPENAI_API_KEY_FALLBACK environment variable to use a secondary API key.'
+          )
+        }
       }
 
       // If this was the last attempt, throw the error
