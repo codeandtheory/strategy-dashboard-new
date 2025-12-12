@@ -1,12 +1,27 @@
 import OpenAI from 'openai'
+import { generateText } from 'ai'
+import { openai as vercelOpenAI } from '@ai-sdk/openai'
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error('OPENAI_API_KEY is not set in environment variables')
 }
 
+// Keep OpenAI SDK for image generation (DALL-E)
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
+
+// Vercel AI SDK OpenAI provider for text generation
+const primaryOpenAI = vercelOpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
+
+// Fallback OpenAI provider (optional)
+const fallbackOpenAI = process.env.OPENAI_API_KEY_FALLBACK
+  ? vercelOpenAI({
+      apiKey: process.env.OPENAI_API_KEY_FALLBACK,
+    })
+  : null
 
 /**
  * Transform a Cafe Astrology horoscope into Co-Star style with do's and don'ts
@@ -36,33 +51,25 @@ Return a JSON object with this exact structure:
 
 Make the do's and don'ts silly, specific, and related to the horoscope content. They should be funny and slightly absurd but still relevant.`
 
-    // Support fallback API key for rate limit/quota errors
-    let completion
+    // Use Vercel AI SDK for text generation with fallback support
+    let result
     try {
-      completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        response_format: { type: 'json_object' },
-        max_tokens: 600,
+      result = await generateText({
+        model: primaryOpenAI('gpt-4o-mini'),
+        system: 'You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON.',
+        prompt: prompt,
+        maxTokens: 600,
         temperature: 0.9,
+        responseFormat: { type: 'json_object' },
       })
     } catch (error: any) {
       // Extract error message from various possible locations
-      const errorMessage = error?.response?.data?.error?.message || 
-                          error?.message || 
-                          error?.error?.message || 
+      const errorMessage = error?.message || 
+                          error?.cause?.message ||
+                          error?.toString() || 
                           ''
       const lowerMessage = errorMessage.toLowerCase()
-      const status = error?.response?.status || error?.status
+      const status = error?.statusCode || error?.status
 
       // Check for quota/billing errors (can be 400, 402, or 429)
       const isQuotaError = status === 402 ||
@@ -78,33 +85,22 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
                           lowerMessage.includes('usage limit')
       
       // Try fallback key if available and primary key hit limits
-      if ((isQuotaError || status === 429) && process.env.OPENAI_API_KEY_FALLBACK) {
+      if ((isQuotaError || status === 429) && fallbackOpenAI) {
         console.log('⚠️ Primary OpenAI API key hit limits, trying fallback key for text transformation...')
         console.log('   Error:', errorMessage.substring(0, 200))
         try {
-          const fallbackOpenai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY_FALLBACK,
-          })
-          completion = await fallbackOpenai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON.',
-              },
-              {
-                role: 'user',
-                content: prompt,
-              },
-            ],
-            response_format: { type: 'json_object' },
-            max_tokens: 600,
+          result = await generateText({
+            model: fallbackOpenAI('gpt-4o-mini'),
+            system: 'You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON.',
+            prompt: prompt,
+            maxTokens: 600,
             temperature: 0.9,
+            responseFormat: { type: 'json_object' },
           })
         } catch (fallbackError: any) {
           console.error('❌ Fallback API key also failed:', fallbackError?.message || fallbackError)
           // If fallback also fails with quota error, throw a clear message
-          const fallbackMessage = fallbackError?.response?.data?.error?.message || fallbackError?.message || ''
+          const fallbackMessage = fallbackError?.message || fallbackError?.toString() || ''
           if (fallbackMessage.toLowerCase().includes('quota') || fallbackMessage.toLowerCase().includes('billing')) {
             throw new Error('Both primary and fallback OpenAI API keys have exceeded their quotas. Please check your OpenAI account billing settings.')
           }
@@ -115,7 +111,7 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
       }
     }
 
-    const responseText = completion.choices[0]?.message?.content?.trim()
+    const responseText = result.text.trim()
     if (!responseText) {
       throw new Error('Failed to transform horoscope - empty response')
     }
@@ -135,36 +131,33 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
   } catch (error: any) {
     console.error('❌ Error transforming horoscope:', error)
     
-    // Handle specific OpenAI API errors
-    if (error.response) {
-      const status = error.response.status
-      const errorData = error.response.data
-      const errorMessage = errorData?.error?.message || error.message || 'OpenAI API error'
-      
-      console.error('OpenAI API error response:', {
-        status,
-        errorData,
-        errorMessage
-      })
-      
-      // Check for billing/quota errors - fail immediately, don't retry
-      if (status === 400 || status === 429) {
-        const lowerMessage = errorMessage.toLowerCase()
-        if (lowerMessage.includes('billing') || 
-            lowerMessage.includes('quota') ||
-            lowerMessage.includes('hard billing limit') ||
-            lowerMessage.includes('usage limit') ||
-            lowerMessage.includes('exceeded your current quota')) {
-          const billingError = 'OpenAI billing/quota limit reached. Please check your OpenAI account billing settings and add payment method if needed.'
-          console.error('🚫 BILLING/QUOTA LIMIT REACHED:', billingError)
-          throw new Error(billingError)
-        }
+    // Handle Vercel AI SDK errors
+    const errorMessage = error?.message || error?.toString() || 'OpenAI API error'
+    const status = error?.statusCode || error?.status
+    const lowerMessage = errorMessage.toLowerCase()
+    
+    console.error('Vercel AI SDK error:', {
+      status,
+      errorMessage,
+      error
+    })
+    
+    // Check for billing/quota errors - fail immediately, don't retry
+    if (status === 400 || status === 429) {
+      if (lowerMessage.includes('billing') || 
+          lowerMessage.includes('quota') ||
+          lowerMessage.includes('hard billing limit') ||
+          lowerMessage.includes('usage limit') ||
+          lowerMessage.includes('exceeded your current quota')) {
+        const billingError = 'OpenAI billing/quota limit reached. Please check your OpenAI account billing settings and add payment method if needed.'
+        console.error('🚫 BILLING/QUOTA LIMIT REACHED:', billingError)
+        throw new Error(billingError)
       }
-      
-      // Rate limit (429) - but not quota-related
-      if (status === 429) {
-        throw new Error('OpenAI API rate limit exceeded. Please try again in a few minutes.')
-      }
+    }
+    
+    // Rate limit (429) - but not quota-related
+    if (status === 429) {
+      throw new Error('OpenAI API rate limit exceeded. Please try again in a few minutes.')
     }
     
     throw error
@@ -246,21 +239,21 @@ export async function generateHoroscopeImage(
 
   // Add new selections to recent history (keep last 7)
   const updatedStyleGroupIds = selectedStyleGroupId
-    ? [...recentStyleGroupIds.filter((id) => id !== selectedStyleGroupId), selectedStyleGroupId].slice(-7)
+    ? [...recentStyleGroupIds.filter((id: string) => id !== selectedStyleGroupId), selectedStyleGroupId].slice(-7)
     : recentStyleGroupIds
 
   const updatedStyleReferenceIds = [
-    ...recentStyleReferenceIds.filter((id) => id !== slots.style_reference_id),
+    ...recentStyleReferenceIds.filter((id: string) => id !== slots.style_reference_id),
     slots.style_reference_id,
   ].slice(-7)
 
   const updatedSubjectRoleIds = [
-    ...recentSubjectRoleIds.filter((id) => id !== slots.subject_role_id),
+    ...recentSubjectRoleIds.filter((id: string) => id !== slots.subject_role_id),
     slots.subject_role_id,
   ].slice(-7)
 
   const updatedSettingPlaceIds = [
-    ...recentSettingPlaceIds.filter((id) => id !== slots.setting_place_id),
+    ...recentSettingPlaceIds.filter((id: string) => id !== slots.setting_place_id),
     slots.setting_place_id,
   ].slice(-7)
 

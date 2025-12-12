@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   role TEXT, -- Job title/role (e.g., "Creative Director", "Senior Engineer")
   base_role TEXT NOT NULL DEFAULT 'user' CHECK (base_role IN ('user', 'contributor', 'leader', 'admin')),
   special_access TEXT[] DEFAULT '{}',
+  is_guest BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );
@@ -50,13 +51,14 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   -- Insert profile with all required fields
-  INSERT INTO public.profiles (id, email, full_name, avatar_url, base_role, created_at, updated_at)
+  INSERT INTO public.profiles (id, email, full_name, avatar_url, base_role, is_guest, created_at, updated_at)
   VALUES (
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
     NEW.raw_user_meta_data->>'avatar_url',
     'user', -- Default base_role
+    FALSE,  -- Default is_guest
     NOW(),  -- created_at
     NOW()   -- updated_at
   )
@@ -79,4 +81,5 @@ CREATE TRIGGER on_auth_user_created
 -- Index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
 CREATE INDEX IF NOT EXISTS idx_profiles_base_role ON public.profiles(base_role);
+CREATE INDEX IF NOT EXISTS idx_profiles_is_guest ON public.profiles(is_guest);
 

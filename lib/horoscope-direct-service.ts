@@ -1,7 +1,9 @@
 /**
  * Direct Horoscope Generation Service
  * 
- * This service replaces n8n workflow with direct OpenAI API calls.
+ * This service replaces n8n workflow with direct API calls.
+ * - Text generation: Uses Vercel AI SDK (via transformHoroscopeToCoStarStyle)
+ * - Image generation: Uses OpenAI SDK (DALL-E 3)
  * It generates both horoscope text and image in parallel for better performance.
  */
 
@@ -199,7 +201,7 @@ async function generateImageFromPrompt(
 export async function generateHoroscopeDirect(
   request: HoroscopeGenerationRequest
 ): Promise<HoroscopeGenerationResponse> {
-  console.log('🚀 Generating horoscope via direct OpenAI API calls (replacing n8n)...')
+  console.log('🚀 Generating horoscope via Vercel AI SDK (text) and OpenAI SDK (image)...')
   console.log('Request payload:', {
     starSign: request.starSign,
     hasCafeAstrologyText: !!request.cafeAstrologyText,
