@@ -89,7 +89,7 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
       console.log('🔍 Vercel AI SDK error detected:', {
         message: errorMessage.substring(0, 200),
         status,
-        hasFallback: !!fallbackOpenAI,
+        hasFallback: !!process.env.OPENAI_API_KEY_FALLBACK,
         errorKeys: Object.keys(error || {}),
         fullError: JSON.stringify(error, null, 2).substring(0, 500)
       })
@@ -121,7 +121,7 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
         isQuotaError,
         status,
         lowerMessage: lowerMessage.substring(0, 100),
-        hasFallback: !!fallbackOpenAI
+        hasFallback: !!process.env.OPENAI_API_KEY_FALLBACK
       })
       
       // Try fallback key if available and primary key hit limits
