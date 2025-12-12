@@ -1,6 +1,4 @@
 import OpenAI from 'openai'
-import { generateText } from 'ai'
-import { openai as vercelOpenAI } from '@ai-sdk/openai'
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error('OPENAI_API_KEY is not set in environment variables')
@@ -11,27 +9,21 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-// Vercel AI SDK OpenAI provider for text generation
-// Initialize lazily to avoid issues with module loading
-let primaryOpenAI: any = null
-let fallbackOpenAI: any = null
-
-function getPrimaryOpenAI() {
-  if (!primaryOpenAI) {
-    primaryOpenAI = vercelOpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
+// Dynamic import for Vercel AI SDK to avoid bundling issues
+async function getVercelAISDK() {
+  try {
+    const [aiModule, openaiModule] = await Promise.all([
+      import('ai'),
+      import('@ai-sdk/openai')
+    ])
+    return {
+      generateText: aiModule.generateText,
+      vercelOpenAI: openaiModule.openai
+    }
+  } catch (error: any) {
+    console.error('❌ Failed to load Vercel AI SDK:', error)
+    throw new Error(`Failed to load Vercel AI SDK: ${error.message}. Make sure "ai" and "@ai-sdk/openai" packages are installed.`)
   }
-  return primaryOpenAI
-}
-
-function getFallbackOpenAI() {
-  if (!fallbackOpenAI && process.env.OPENAI_API_KEY_FALLBACK) {
-    fallbackOpenAI = vercelOpenAI({
-      apiKey: process.env.OPENAI_API_KEY_FALLBACK,
-    })
-  }
-  return fallbackOpenAI
 }
 
 /**
@@ -63,13 +55,19 @@ Return a JSON object with this exact structure:
 Make the do's and don'ts silly, specific, and related to the horoscope content. They should be funny and slightly absurd but still relevant.`
 
     // Use Vercel AI SDK for text generation with fallback support
+    // Dynamically import to avoid bundling issues
+    const { generateText, vercelOpenAI } = await getVercelAISDK()
+    
+    const primaryOpenAI = vercelOpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+    
     let result
     try {
-      const model = getPrimaryOpenAI()('gpt-4o-mini', {
-        responseFormat: { type: 'json_object' },
-      })
       result = await generateText({
-        model: model,
+        model: primaryOpenAI('gpt-4o-mini', {
+          responseFormat: { type: 'json_object' },
+        }),
         system: 'You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON.',
         prompt: prompt,
         maxTokens: 600,
@@ -128,17 +126,18 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
       
       // Try fallback key if available and primary key hit limits
       // Be more aggressive - try fallback on ANY error if we have one configured
-      const fallback = getFallbackOpenAI()
-      if (fallback && (isQuotaError || status === 429 || status === 401 || status === 400)) {
+      if (process.env.OPENAI_API_KEY_FALLBACK && (isQuotaError || status === 429 || status === 401 || status === 400)) {
         console.log('⚠️ Primary OpenAI API key hit limits, trying fallback key for text transformation...')
         console.log('   Original error:', errorMessage.substring(0, 200))
         console.log('   Error status:', status)
         try {
-          const fallbackModel = fallback('gpt-4o-mini', {
-            responseFormat: { type: 'json_object' },
+          const fallbackOpenAI = vercelOpenAI({
+            apiKey: process.env.OPENAI_API_KEY_FALLBACK,
           })
           result = await generateText({
-            model: fallbackModel,
+            model: fallbackOpenAI('gpt-4o-mini', {
+              responseFormat: { type: 'json_object' },
+            }),
             system: 'You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON.',
             prompt: prompt,
             maxTokens: 600,
@@ -162,7 +161,7 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
       } else {
         // No fallback available or not a quota error - throw original error
         console.log('⚠️ Not trying fallback:', {
-          hasFallback: !!getFallbackOpenAI(),
+          hasFallback: !!process.env.OPENAI_API_KEY_FALLBACK,
           isQuotaError,
           status
         })
