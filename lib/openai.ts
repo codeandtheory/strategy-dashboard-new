@@ -80,11 +80,13 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
         message: errorMessage.substring(0, 200),
         status,
         hasFallback: !!fallbackOpenAI,
-        errorKeys: Object.keys(error || {})
+        errorKeys: Object.keys(error || {}),
+        fullError: JSON.stringify(error, null, 2).substring(0, 500)
       })
 
       // Check for quota/billing errors (can be 400, 402, or 429)
       // Vercel AI SDK may format errors differently
+      // Also check error message content regardless of status code
       const isQuotaError = status === 402 ||
                           status === 401 || // Sometimes quota errors come as 401
                           (status === 429 && (
@@ -102,12 +104,22 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
                           lowerMessage.includes('hard billing limit') ||
                           lowerMessage.includes('usage limit') ||
                           lowerMessage.includes('insufficient_quota') ||
-                          lowerMessage.includes('billing_limit_reached')
+                          lowerMessage.includes('billing_limit_reached') ||
+                          lowerMessage.includes('quota/billing limit reached') // Catch this specific message
+      
+      console.log('🔍 Quota error detection:', {
+        isQuotaError,
+        status,
+        lowerMessage: lowerMessage.substring(0, 100),
+        hasFallback: !!fallbackOpenAI
+      })
       
       // Try fallback key if available and primary key hit limits
-      if ((isQuotaError || status === 429 || status === 401) && fallbackOpenAI) {
+      // Be more aggressive - try fallback on ANY error if we have one configured
+      if (fallbackOpenAI && (isQuotaError || status === 429 || status === 401 || status === 400)) {
         console.log('⚠️ Primary OpenAI API key hit limits, trying fallback key for text transformation...')
         console.log('   Original error:', errorMessage.substring(0, 200))
+        console.log('   Error status:', status)
         try {
           result = await generateText({
             model: fallbackOpenAI('gpt-4o-mini', {
@@ -121,7 +133,6 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
           console.log('✅ Fallback key succeeded!')
         } catch (fallbackError: any) {
           console.error('❌ Fallback API key also failed:', fallbackError?.message || fallbackError)
-          // If fallback also fails with quota error, throw a clear message
           const fallbackMessage = fallbackError?.message || 
                                   fallbackError?.cause?.message ||
                                   fallbackError?.toString() || ''
@@ -136,6 +147,11 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
         }
       } else {
         // No fallback available or not a quota error - throw original error
+        console.log('⚠️ Not trying fallback:', {
+          hasFallback: !!fallbackOpenAI,
+          isQuotaError,
+          status
+        })
         throw error
       }
     }
