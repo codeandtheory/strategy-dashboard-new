@@ -1010,9 +1010,28 @@ export async function GET(request: NextRequest) {
       }
     } catch (error: any) {
       console.error('❌ Error generating horoscope:', error)
+      console.error('   Error name:', error.name)
+      console.error('   Error message:', error.message)
+      console.error('   Error stack:', error.stack?.substring(0, 500))
       console.error('   Error code:', error.code)
       console.error('   Error type:', error.type)
       console.error('   Error status:', error.status)
+      console.error('   Full error:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2).substring(0, 1000))
+      
+      // Check for module import errors (Vercel AI SDK not installed)
+      if (error.message?.includes('Cannot find module') || 
+          error.message?.includes('Vercel AI SDK') ||
+          error.code === 'MODULE_NOT_FOUND') {
+        console.error('🚫 MODULE IMPORT ERROR - Vercel AI SDK packages may not be installed')
+        return NextResponse.json(
+          { 
+            error: 'Failed to generate horoscope: Vercel AI SDK packages not installed',
+            code: 'module_error',
+            details: 'The "ai" and "@ai-sdk/openai" packages need to be installed. Please check Vercel deployment logs.'
+          },
+          { status: 500 }
+        )
+      }
       
       // Handle OpenAI API errors
       if (error.message?.includes('OpenAI') || error.message?.includes('billing') || error.message?.includes('rate limit')) {
@@ -1045,8 +1064,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { 
           error: `Failed to generate horoscope: ${error.message || 'Unknown error'}`,
-          code: error.code,
-          details: error.details || error.message
+          code: error.code || 'unknown_error',
+          details: error.details || error.message || 'An unexpected error occurred. Check server logs for details.'
         },
         { status: error.status || 500 }
       )
