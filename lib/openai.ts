@@ -55,12 +55,13 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
     let result
     try {
       result = await generateText({
-        model: primaryOpenAI('gpt-4o-mini'),
+        model: primaryOpenAI('gpt-4o-mini', {
+          responseFormat: { type: 'json_object' },
+        }),
         system: 'You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON.',
         prompt: prompt,
         maxTokens: 600,
         temperature: 0.9,
-        responseFormat: { type: 'json_object' },
       })
     } catch (error: any) {
       // Extract error message from various possible locations
@@ -90,12 +91,13 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
         console.log('   Error:', errorMessage.substring(0, 200))
         try {
           result = await generateText({
-            model: fallbackOpenAI('gpt-4o-mini'),
+            model: fallbackOpenAI('gpt-4o-mini', {
+              responseFormat: { type: 'json_object' },
+            }),
             system: 'You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON.',
             prompt: prompt,
             maxTokens: 600,
             temperature: 0.9,
-            responseFormat: { type: 'json_object' },
           })
         } catch (fallbackError: any) {
           console.error('❌ Fallback API key also failed:', fallbackError?.message || fallbackError)
