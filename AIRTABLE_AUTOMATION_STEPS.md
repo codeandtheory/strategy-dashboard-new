@@ -199,7 +199,21 @@ return {
 
 ---
 
-## Step 5: Generate Image (Generate Image with AI)
+## Step 5: Set Up Image Storage Table (Required)
+
+Since Airtable requires a Record ID and Attachment Field, you need a table to store the images.
+
+1. In your Airtable base, create a new table called **"Horoscope Images"** (or use an existing table)
+2. Add these fields:
+   - **Image** (Attachment field) - This is where the generated image will be stored
+   - **User ID** (Single line text) - Optional, for tracking
+   - **Date** (Date) - Optional, for tracking
+   - **Image URL** (URL or Single line text) - Optional, to store the URL
+3. **Save the table**
+
+---
+
+## Step 6: Generate Image (Generate Image with AI)
 
 1. Click **"Add action"** (after "Build Image Prompt" or "Parse Horoscope Text")
 2. Select **"Generate image with AI"** (or "Generate image")
@@ -213,13 +227,14 @@ return {
 ```
 *(Replace `action_1` with the actual name/number of your "Build Image Prompt" action)*
 
-**Record ID:** 
-- **Leave this blank** or set to "Don't save to record"
-- You don't need to save to a table - you'll use the image URL in the next step
+**Record ID:**
+- You need to create a record first, OR
+- Use a script action before this to create a record and get its ID
+- OR use: Create a record action → Get record ID → Use in image generation
 
 **Output Attachment Field:**
-- **Leave this blank** or set to "Don't save to record"
-- You don't need an attachment field - the image URL will be available in the action output
+- Select the **"Image"** attachment field from your "Horoscope Images" table
+- This is where Airtable will save the generated image
 
 **Settings:**
 - **Model:** DALL-E 3 (or best available)
@@ -227,13 +242,21 @@ return {
 - **Quality:** Standard or HD
 - **Style:** Natural (or your preference)
 
-**Note:** The image URL will be available in the action output (like `{{action_2.output.url}}` or `{{action_2.output.imageUrl}}`). You'll use this in the "Combine Results" step to send it back to your app. You don't need to store it in an Airtable table.
+**Alternative Approach (If you can't create record first):**
+
+If creating a record is complex, you can:
+1. Create a record in "Horoscope Images" table before this action
+2. Use that record's ID in the "Record ID" field
+3. The image will be saved to that record's "Image" field
+4. Then extract the image URL from the record in the "Combine Results" step
 
 4. Click **"Save"**
 
+**Note:** After the image is generated, you can access the image URL from the record's attachment field in the next step.
+
 ---
 
-## Step 6: Combine Results (Run a Script)
+## Step 7: Combine Results (Run a Script)
 
 1. Click **"Add action"** (after both "Generate Horoscope Text" and "Generate Image")
 2. Select **"Run a script"**
@@ -284,7 +307,7 @@ return {
 
 ---
 
-## Step 7: Send Webhook Back to Your App
+## Step 8: Send Webhook Back to Your App
 
 1. Click **"Add action"** (after "Combine Results")
 2. Select **"Send webhook"** or **"Make HTTP request"**
@@ -327,7 +350,7 @@ Content-Type: application/json
 
 ---
 
-## Step 8: Add Error Handling (Optional but Recommended)
+## Step 9: Add Error Handling (Optional but Recommended)
 
 1. For each AI generation action, set up error handling:
    - Click on the action
@@ -352,7 +375,7 @@ Content-Type: application/json
 
 ---
 
-## Step 9: Test the Automation
+## Step 10: Test the Automation
 
 1. **Turn on the automation** (toggle switch at the top of the automation editor)
 2. **Test it:**
@@ -367,7 +390,7 @@ Content-Type: application/json
 
 ---
 
-## Step 10: Set Environment Variable in Vercel
+## Step 11: Set Environment Variable in Vercel
 
 1. Go to your Vercel project dashboard
 2. Navigate to **Settings** → **Environment Variables**
