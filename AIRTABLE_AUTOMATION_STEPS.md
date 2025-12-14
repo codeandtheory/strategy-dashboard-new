@@ -213,9 +213,30 @@ Since Airtable requires a Record ID and Attachment Field, you need a table to st
 
 ---
 
-## Step 6: Generate Image (Generate Image with AI)
+## Step 6a: Create Record for Image Storage
 
 1. Click **"Add action"** (after "Build Image Prompt" or "Parse Horoscope Text")
+2. Select **"Create record"**
+3. Configure the action:
+
+**Action Name:** `Create Image Record`
+
+**Table:** Select your "Horoscope Images" table
+
+**Fields to set:**
+- **User ID:** `{{trigger.body.userId}}`
+- **Date:** `{{trigger.body.date}}`
+- (Leave Image field empty - it will be filled by the image generation action)
+
+4. Click **"Save"**
+
+**Note:** This creates a record and gives you a Record ID to use in the next step.
+
+---
+
+## Step 6b: Generate Image (Generate Image with AI)
+
+1. Click **"Add action"** (after "Create Image Record")
 2. Select **"Generate image with AI"** (or "Generate image")
 3. Configure the action:
 
@@ -228,9 +249,9 @@ Since Airtable requires a Record ID and Attachment Field, you need a table to st
 *(Replace `action_1` with the actual name/number of your "Build Image Prompt" action)*
 
 **Record ID:**
-- You need to create a record first, OR
-- Use a script action before this to create a record and get its ID
-- OR use: Create a record action → Get record ID → Use in image generation
+- Use: `{{action_2.id}}` or `{{action_2.recordId}}`
+- (Replace `action_2` with your "Create Image Record" action name/number)
+- This is the record ID from the record you just created
 
 **Output Attachment Field:**
 - Select the **"Image"** attachment field from your "Horoscope Images" table
@@ -271,17 +292,29 @@ const config = input.config();
 // Common names: output, result, text, horoscope, etc.
 const textData = config.output || config.result || config.text || {};
 
-// Get image result (adjust to match your image generation action)
-// The image URL is usually in: output.url, output.imageUrl, url, imageUrl, etc.
-const imageData = config.output || config.result || {};
+// Get the image record that was created and updated
+// The image is stored in the attachment field of the record
+const imageRecord = config.record || config.output || {};
 
-// Extract image URL - try common field names
-let imageUrl = imageData.url || imageData.imageUrl || imageData.output || imageData.attachmentUrl || '';
-if (!imageUrl && imageData.content) {
-  imageUrl = imageData.content;
+// Extract image URL from attachment field
+// Attachments in Airtable are arrays with objects containing 'url' property
+let imageUrl = '';
+if (imageRecord.Image && Array.isArray(imageRecord.Image) && imageRecord.Image.length > 0) {
+  // Get the first attachment's URL
+  const attachment = imageRecord.Image[0];
+  imageUrl = attachment.url || attachment.thumbnails?.large?.url || attachment.thumbnails?.full?.url || '';
 }
-if (!imageUrl && typeof imageData === 'string') {
-  imageUrl = imageData;
+
+// Fallback: try other common field names from action output
+if (!imageUrl) {
+  const imageData = config.output || config.result || {};
+  imageUrl = imageData.url || imageData.imageUrl || imageData.output || imageData.attachmentUrl || '';
+  if (!imageUrl && imageData.content) {
+    imageUrl = imageData.content;
+  }
+  if (!imageUrl && typeof imageData === 'string') {
+    imageUrl = imageData;
+  }
 }
 
 // Get original webhook data
