@@ -108,12 +108,34 @@ for (let record of query.records) {
 }
 ```
 
-#### Option B: Airtable Automation
+#### Option B: Airtable Automation with Webhook (Recommended)
 
 1. Create an Automation in Airtable
-2. Trigger: "When record matches conditions" → `Status = "Pending"`
-3. Action: Run a script or use Airtable AI extension
-4. Update record with results
+2. **Trigger**: "When record matches conditions" → `Status = "Pending"`
+3. **Action 1**: Run a script or use Airtable AI extension to generate horoscope & image
+4. **Action 2**: Update record with results (`Status = "Completed"`, horoscope text, image URL, etc.)
+5. **Action 3**: Send webhook to your app:
+   - URL: `https://your-app.vercel.app/api/airtable/horoscope-webhook`
+   - Method: POST
+   - Body: Include `recordId`, `status`, `horoscope`, `dos`, `donts`, `imageUrl`, etc.
+
+**Webhook Payload Example:**
+```json
+{
+  "recordId": "recXXXXXXXXXXXXXX",
+  "status": "Completed",
+  "horoscope": "Your generated horoscope text...",
+  "dos": ["Do thing 1", "Do thing 2", "Do thing 3"],
+  "donts": ["Don't thing 1", "Don't thing 2", "Don't thing 3"],
+  "imageUrl": "https://...",
+  "characterName": "Optional character name"
+}
+```
+
+**Benefits of Webhook:**
+- ✅ Real-time: App gets notified immediately when generation is done
+- ✅ More efficient: No polling needed
+- ✅ Faster: No waiting for polling intervals
 
 #### Option C: Third-Party Integration
 

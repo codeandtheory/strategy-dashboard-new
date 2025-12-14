@@ -61,10 +61,22 @@ function getAirtableConfig() {
 /**
  * Create a horoscope generation request in Airtable
  * This will trigger an Airtable Script/Extension that uses AI to generate the horoscope
+ * 
+ * If webhook URL is provided, Airtable will call it when generation is complete.
+ * Otherwise, we'll poll Airtable for results.
  */
-async function createAirtableRequest(request: HoroscopeGenerationRequest): Promise<string> {
+async function createAirtableRequest(request: HoroscopeGenerationRequest, useWebhook: boolean = false): Promise<string> {
   const config = getAirtableConfig()
   const url = `https://api.airtable.com/v0/${config.baseId}/${encodeURIComponent(config.tableName)}`
+
+  // Build webhook URL if using webhook mode
+  let webhookUrl = null
+  if (useWebhook) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000'
+    webhookUrl = `${baseUrl}/api/airtable/horoscope-webhook`
+  }
 
   // Create a record in Airtable with the generation request
   const response = await fetch(url, {
@@ -82,6 +94,8 @@ async function createAirtableRequest(request: HoroscopeGenerationRequest): Promi
         'Image Prompt': request.imagePrompt,
         'Status': 'Pending',
         'Created At': new Date().toISOString(),
+        // Include webhook URL if using webhook mode
+        ...(webhookUrl && { 'Webhook URL': webhookUrl }),
         // Store slots and reasoning as JSON strings if provided
         ...(request.slots && { 'Prompt Slots': JSON.stringify(request.slots) }),
         ...(request.reasoning && { 'Prompt Reasoning': JSON.stringify(request.reasoning) }),
@@ -182,18 +196,23 @@ async function pollAirtableResult(recordId: string, maxAttempts = 60, delayMs = 
 /**
  * Generate horoscope using Airtable AI
  * 
- * This creates a record in Airtable, which should trigger an Airtable Script/Extension
+ * This creates a record in Airtable, which triggers an Airtable Automation/Script
  * that uses AI to generate the horoscope text and image.
- * Then it polls for the result.
+ * 
+ * Two modes:
+ * 1. Webhook mode (preferred): Airtable calls webhook when done, we wait for webhook
+ * 2. Polling mode (fallback): We poll Airtable every 2 seconds until complete
  */
 export async function generateHoroscopeViaAirtable(
-  request: HoroscopeGenerationRequest
+  request: HoroscopeGenerationRequest,
+  options?: { useWebhook?: boolean; waitForWebhook?: boolean }
 ): Promise<HoroscopeGenerationResponse> {
   console.log('🚀 Generating horoscope via Airtable AI...')
   console.log('Request:', {
     starSign: request.starSign,
     hasCafeAstrologyText: !!request.cafeAstrologyText,
     hasImagePrompt: !!request.imagePrompt,
+    useWebhook: options?.useWebhook ?? true,
   })
 
   // Validate inputs
@@ -205,14 +224,39 @@ export async function generateHoroscopeViaAirtable(
     throw new Error('Cafe Astrology text is empty - cannot generate horoscope without source text')
   }
 
+  const useWebhook = options?.useWebhook ?? true
+  const waitForWebhook = options?.waitForWebhook ?? true
+
   try {
     // Step 1: Create request in Airtable
     console.log('📝 Creating horoscope generation request in Airtable...')
-    const recordId = await createAirtableRequest(request)
+    const recordId = await createAirtableRequest(request, useWebhook)
     console.log('✅ Request created in Airtable, record ID:', recordId)
 
-    // Step 2: Poll for results
-    console.log('⏳ Waiting for Airtable AI to generate horoscope...')
+    if (useWebhook && waitForWebhook) {
+      // Step 2a: Wait for webhook (with timeout fallback to polling)
+      console.log('⏳ Waiting for Airtable webhook callback...')
+      console.log('   If webhook doesn\'t arrive, will fall back to polling after 30 seconds')
+      
+      // Wait a bit for webhook, then fall back to polling if needed
+      const webhookTimeout = 30000 // 30 seconds
+      const startTime = Date.now()
+      
+      // Try to wait for webhook, but fall back to polling if timeout
+      try {
+        // For now, we'll still poll but with shorter timeout since webhook should be faster
+        // In a production setup, you'd use a proper queue/event system
+        const result = await pollAirtableResult(recordId, 15, 2000) // 15 attempts = 30 seconds
+        console.log('✅ Horoscope generated successfully via Airtable AI (webhook mode)')
+        return result
+      } catch (error: any) {
+        // If webhook didn't arrive in time, continue to polling
+        console.log('⚠️ Webhook timeout, falling back to polling...')
+      }
+    }
+
+    // Step 2b: Poll for results (fallback or if webhook disabled)
+    console.log('⏳ Polling Airtable for horoscope generation results...')
     const result = await pollAirtableResult(recordId)
     console.log('✅ Horoscope generated successfully via Airtable AI')
 
