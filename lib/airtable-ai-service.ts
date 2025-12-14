@@ -59,7 +59,50 @@ function getAirtableConfig() {
 }
 
 /**
- * Create a horoscope generation request in Airtable
+ * Send webhook to Airtable to trigger horoscope generation
+ * This is the preferred method - direct webhook-to-webhook communication
+ */
+async function triggerAirtableWebhook(request: HoroscopeGenerationRequest): Promise<void> {
+  const webhookUrl = process.env.AIRTABLE_WEBHOOK_URL
+  
+  if (!webhookUrl) {
+    throw new Error('AIRTABLE_WEBHOOK_URL is not set. Please set it to your Airtable webhook URL.')
+  }
+
+  // Build webhook callback URL
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+                  'http://localhost:3000'
+  const callbackUrl = `${baseUrl}/api/airtable/horoscope-webhook`
+
+  // Send webhook to Airtable
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      userId: request.userId,
+      date: request.date,
+      starSign: request.starSign,
+      cafeAstrologyText: request.cafeAstrologyText,
+      imagePrompt: request.imagePrompt,
+      callbackUrl: callbackUrl, // Where Airtable should send results
+      slots: request.slots,
+      reasoning: request.reasoning,
+    })
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Failed to trigger Airtable webhook: ${errorText}`)
+  }
+
+  console.log('✅ Webhook sent to Airtable successfully')
+}
+
+/**
+ * Create a horoscope generation request in Airtable (record-based approach)
  * This will trigger an Airtable Script/Extension that uses AI to generate the horoscope
  * 
  * If webhook URL is provided, Airtable will call it when generation is complete.
@@ -227,11 +270,68 @@ export async function generateHoroscopeViaAirtable(
   const useWebhook = options?.useWebhook ?? true
   const waitForWebhook = options?.waitForWebhook ?? true
 
+  // Check if we should use direct webhook (preferred) or record-based approach
+  const useDirectWebhook = !!process.env.AIRTABLE_WEBHOOK_URL
+
   try {
-    // Step 1: Create request in Airtable
-    console.log('📝 Creating horoscope generation request in Airtable...')
-    const recordId = await createAirtableRequest(request, useWebhook)
-    console.log('✅ Request created in Airtable, record ID:', recordId)
+    let recordId: string | null = null
+
+    if (useDirectWebhook) {
+      // Step 1a: Send webhook directly to Airtable (preferred method)
+      console.log('📤 Sending webhook to Airtable to trigger horoscope generation...')
+      await triggerAirtableWebhook(request)
+      console.log('✅ Webhook sent to Airtable')
+      console.log('⏳ Waiting for Airtable to process and call webhook callback...')
+      
+      // For direct webhook mode, we need to wait for the callback
+      // The webhook will store results in Supabase
+      // We'll poll Supabase for the results (since we know userId and date)
+      const maxWaitTime = 120000 // 2 minutes
+      const pollInterval = 2000 // 2 seconds
+      const startTime = Date.now()
+      
+      while (Date.now() - startTime < maxWaitTime) {
+        await new Promise(resolve => setTimeout(resolve, pollInterval))
+        
+        // Check Supabase for the horoscope
+        const supabaseAdmin = await import('@supabase/supabase-js').then(m => {
+          const { createClient } = m
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+          const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE!
+          return createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+          })
+        })
+        
+        const { data: horoscope } = await supabaseAdmin
+          .from('horoscopes')
+          .select('*')
+          .eq('user_id', request.userId)
+          .eq('date', request.date)
+          .single()
+        
+        if (horoscope && horoscope.horoscope_text && horoscope.image_url) {
+          console.log('✅ Horoscope found in Supabase (via webhook callback)')
+          return {
+            horoscope: horoscope.horoscope_text,
+            dos: horoscope.horoscope_dos || [],
+            donts: horoscope.horoscope_donts || [],
+            imageUrl: horoscope.image_url,
+            character_name: horoscope.character_type || null,
+            prompt: horoscope.image_prompt || '',
+            slots: {},
+            reasoning: {},
+          }
+        }
+      }
+      
+      throw new Error('Timeout waiting for Airtable webhook callback. Results may still be processing.')
+    } else {
+      // Step 1b: Create record in Airtable (fallback method)
+      console.log('📝 Creating horoscope generation request in Airtable...')
+      recordId = await createAirtableRequest(request, useWebhook)
+      console.log('✅ Request created in Airtable, record ID:', recordId)
+    }
 
     if (useWebhook && waitForWebhook) {
       // Step 2a: Wait for webhook (with timeout fallback to polling)

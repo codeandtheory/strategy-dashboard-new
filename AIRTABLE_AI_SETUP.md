@@ -108,7 +108,29 @@ for (let record of query.records) {
 }
 ```
 
-#### Option B: Airtable Automation with Webhook (Recommended)
+#### Option B: Airtable Automation with Webhook Trigger (Recommended)
+
+**Two webhook approaches:**
+
+##### Option B1: Webhook Trigger (Best - No Record Needed)
+
+1. Create an Automation in Airtable
+2. **Trigger**: "When webhook is received" 
+   - Get the webhook URL from Airtable (e.g., `https://hooks.airtable.com/workflows/...`)
+   - Set this as `AIRTABLE_WEBHOOK_URL` environment variable
+3. **Action 1**: Run a script or use Airtable AI extension to generate horoscope & image
+   - Access webhook payload data (cafeAstrologyText, starSign, imagePrompt, etc.)
+4. **Action 2**: Send webhook back to your app:
+   - URL: `https://your-app.vercel.app/api/airtable/horoscope-webhook`
+   - Method: POST
+   - Body: Include `userId`, `date`, `horoscope`, `dos`, `donts`, `imageUrl`, etc.
+
+**Benefits:**
+- ✅ No Airtable record needed (cleaner)
+- ✅ Direct webhook-to-webhook communication
+- ✅ Faster (no database operations in Airtable)
+
+##### Option B2: Record-Based with Webhook Callback
 
 1. Create an Automation in Airtable
 2. **Trigger**: "When record matches conditions" → `Status = "Pending"`
@@ -149,11 +171,18 @@ Use tools like:
 Add these to your Vercel project:
 
 ```bash
-# Airtable Configuration
+# Airtable Configuration (choose one approach)
+
+# Option 1: Webhook Trigger (Recommended - No Airtable table needed)
+AIRTABLE_WEBHOOK_URL=https://hooks.airtable.com/workflows/...  # Your Airtable webhook URL
+
+# Option 2: Record-Based (Fallback - Requires Airtable table)
 AIRTABLE_API_KEY=patXXXXXXXXXXXXXXXXXXXX  # Your Airtable Personal Access Token
 AIRTABLE_AI_BASE_ID=appXXXXXXXXXXXXXXXXXXXX  # Your Airtable Base ID
 AIRTABLE_AI_TABLE_NAME=Horoscope Generation  # Optional, defaults to "Horoscope Generation"
 ```
+
+**Note:** If `AIRTABLE_WEBHOOK_URL` is set, the app will use webhook triggers. Otherwise, it will use the record-based approach.
 
 **To get your Airtable credentials:**
 1. **API Key**: Go to https://airtable.com/create/tokens
