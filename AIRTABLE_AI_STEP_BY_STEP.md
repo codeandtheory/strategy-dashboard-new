@@ -107,10 +107,12 @@ If you prefer Airtable to fetch the text itself, create a table with URLs:
 **Script:**
 ```javascript
 // Get the HTML response from the HTTP request
-const html = input.config().htmlResponse || input.config().response || '';
+// Adjust field names based on your Airtable setup
+const html = input.config().htmlResponse || input.config().response || input.config().body || '';
 
 // Get star sign from webhook (passed through)
-const starSign = input.config().starSign || input.config().triggerBody?.starSign || '';
+const triggerBody = input.config().triggerBody || {};
+const starSign = input.config().starSign || triggerBody.starSign || '';
 
 if (!html) {
   throw new Error('No HTML response received from Cafe Astrology');
@@ -141,7 +143,7 @@ if (dateMatch) {
   extracted = extracted.replace(/\s+/g, ' ').trim();
   
   // Find the actual horoscope text (usually the longest paragraph)
-  const sentences = extracted.split(/[.!?]\s+/).filter(s => s.length > 50);
+  const sentences = extracted.split(/[.!?]\s+/).filter(function(s) { return s.length > 50; });
   if (sentences.length > 0) {
     horoscopeText = sentences.slice(0, 5).join('. ').trim();
     if (horoscopeText && !horoscopeText.endsWith('.')) {
@@ -165,7 +167,8 @@ if (!horoscopeText || horoscopeText.length < 200) {
       const afterDate = allText.substring(dateIndex + dateText.length);
       const endMarkers = ['Creativity:', 'Love:', 'Business:', 'Yesterday', 'Tomorrow', 'Choose Another Sign'];
       let endIndex = afterDate.length;
-      for (const marker of endMarkers) {
+      for (let i = 0; i < endMarkers.length; i++) {
+        const marker = endMarkers[i];
         const markerIndex = afterDate.indexOf(marker);
         if (markerIndex !== -1 && markerIndex < endIndex) {
           endIndex = markerIndex;
@@ -180,8 +183,10 @@ if (!horoscopeText || horoscopeText.length < 200) {
   }
 }
 
+// Check if we have valid horoscope text
+const textLength = horoscopeText ? horoscopeText.length : 0;
 if (!horoscopeText || horoscopeText.length < 100) {
-  throw new Error(`Could not extract horoscope text from Cafe Astrology page. Found text length: ${horoscopeText?.length || 0}`);
+  throw new Error('Could not extract horoscope text from Cafe Astrology page. Found text length: ' + textLength);
 }
 
 // Return the extracted text and star sign
