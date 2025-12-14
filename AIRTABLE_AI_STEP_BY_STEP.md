@@ -66,17 +66,22 @@ Your automation will:
 
 **Simplest Approach:** The app already fetches the Cafe Astrology text and passes it in the webhook. You can use it directly!
 
-1. Click **"Add action"** after the webhook trigger
-2. The Cafe Astrology text is already in `{{trigger.body.cafeAstrologyText}}`
-3. You can skip to Step 4 (Build Image Prompt) and use the text directly in Step 5
+**You don't need any action here** - just use `{{trigger.body.cafeAstrologyText}}` directly in Step 5 when generating the horoscope text.
 
-**Alternative: If you want Airtable to fetch it (using a table with URLs)**
+The Cafe Astrology text is already available from the webhook, so you can skip this step and go straight to Step 4 (Build Image Prompt).
 
-If you prefer Airtable to fetch the text itself, create a table with URLs:
+**Alternative: If you want Airtable to fetch it (Not Recommended)**
 
-### Step 3a: Create the URLs Table (Optional)
+If you really want Airtable to fetch the text itself (not recommended since the app already does this), you would need:
+1. A table with URLs (see table structure below)
+2. An HTTP request extension (like Data Fetcher)
+3. A parsing script
 
-1. In your Airtable base, create a new table called **"Cafe Astrology URLs"**
+But **we strongly recommend skipping this** and just using `{{trigger.body.cafeAstrologyText}}` from the webhook, which is already available and doesn't require any additional actions.
+
+**If you still want to create the URLs table for reference:**
+
+1. In your Airtable base, create a new table called **"Cafe Astrology URLs"** (optional)
 2. Add these fields:
    - **Star Sign** (Single select or Single line text) - The zodiac sign name
    - **URL** (URL or Single line text) - The Cafe Astrology URL for that sign
@@ -97,115 +102,7 @@ If you prefer Airtable to fetch the text itself, create a table with URLs:
 | Aquarius | https://cafeastrology.com/aquariusdailyhoroscope.html |
 | Pisces | https://cafeastrology.com/piscesdailyhoroscope.html |
 
-4. **Save the table**
-
-**Note:** Since Airtable doesn't have a direct HTTP request action, and the app already fetches the text, we recommend using the text from the webhook (`{{trigger.body.cafeAstrologyText}}`) directly. This is simpler and more reliable.
-
-1. Click **"Add action"** after "Fetch Cafe Astrology HTML"
-2. Select **"Run a script"**
-
-**Script:**
-```javascript
-// IMPORTANT: input.config() can only be called ONCE in Airtable scripts
-// Store it in a variable first
-const config = input.config();
-
-// Get the HTML response from the HTTP request
-// Adjust field names based on your Airtable setup
-const html = config.htmlResponse || config.response || config.body || '';
-
-// Get star sign from webhook (passed through)
-const triggerBody = config.triggerBody || {};
-const starSign = config.starSign || triggerBody.starSign || '';
-
-if (!html) {
-  throw new Error('No HTML response received from Cafe Astrology');
-}
-
-// Parse the HTML to extract the daily horoscope text
-let horoscopeText = '';
-
-// Method 1: Look for the date pattern and extract text after it
-const datePattern = /(November|December|January|February|March|April|May|June|July|August|September|October)\s+\d{1,2},\s+\d{4}/;
-const dateMatch = html.match(datePattern);
-
-if (dateMatch) {
-  const dateIndex = html.indexOf(dateMatch[0]);
-  const afterDate = html.substring(dateIndex + dateMatch[0].length);
-  
-  // Extract text until we hit another section
-  const nextSection = afterDate.match(/<(h[1-6]|div class|section|nav|footer|Creativity:)/i);
-  const endIndex = nextSection ? afterDate.indexOf(nextSection[0]) : Math.min(afterDate.length, 2000);
-  
-  let extracted = afterDate.substring(0, endIndex);
-  // Remove HTML tags
-  extracted = extracted.replace(/<[^>]*>/g, ' ');
-  // Remove script and style content
-  extracted = extracted.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ');
-  extracted = extracted.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ');
-  // Clean up whitespace
-  extracted = extracted.replace(/\s+/g, ' ').trim();
-  
-  // Find the actual horoscope text (usually the longest paragraph)
-  const sentences = extracted.split(/[.!?]\s+/).filter(function(s) { return s.length > 50; });
-  if (sentences.length > 0) {
-    horoscopeText = sentences.slice(0, 5).join('. ').trim();
-    if (horoscopeText && !horoscopeText.endsWith('.')) {
-      horoscopeText += '.';
-    }
-  }
-}
-
-// Method 2: Look for paragraph tags with substantial content
-if (!horoscopeText || horoscopeText.length < 200) {
-  const allText = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
-                      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
-                      .replace(/<[^>]+>/g, ' ')
-                      .replace(/\s+/g, ' ')
-                      .trim();
-  
-  if (dateMatch) {
-    const dateText = dateMatch[0];
-    const dateIndex = allText.indexOf(dateText);
-    if (dateIndex !== -1) {
-      const afterDate = allText.substring(dateIndex + dateText.length);
-      const endMarkers = ['Creativity:', 'Love:', 'Business:', 'Yesterday', 'Tomorrow', 'Choose Another Sign'];
-      let endIndex = afterDate.length;
-      for (let i = 0; i < endMarkers.length; i++) {
-        const marker = endMarkers[i];
-        const markerIndex = afterDate.indexOf(marker);
-        if (markerIndex !== -1 && markerIndex < endIndex) {
-          endIndex = markerIndex;
-        }
-      }
-      
-      const extracted = afterDate.substring(0, endIndex).trim();
-      if (extracted.length > 200) {
-        horoscopeText = extracted;
-      }
-    }
-  }
-}
-
-// Check if we have valid horoscope text
-const textLength = horoscopeText ? horoscopeText.length : 0;
-if (!horoscopeText || horoscopeText.length < 100) {
-  throw new Error('Could not extract horoscope text from Cafe Astrology page. Found text length: ' + textLength);
-}
-
-// Return the extracted text and star sign
-return {
-  cafeAstrologyText: horoscopeText,
-  starSign: starSign
-};
-```
-
-**Note:** In Airtable scripts, you access input data using `input.config()`. The exact field names depend on how Airtable passes data between actions. You may need to adjust:
-- `input.config().htmlResponse` - might be `input.config().response` or `input.config().body`
-- `input.config().starSign` - might come from the trigger body
-
-3. **Name this action:** "Parse Cafe Astrology Text"
-4. **Save the action**
+**But again, you don't need this table** - the app already fetches the text and passes it in the webhook!
 
 // Parse the HTML to extract the daily horoscope text
 let horoscopeText = '';
@@ -338,7 +235,7 @@ Return ONLY the image prompt text, nothing else. Make it detailed and specific (
 ### If Using "Generate structured data with AI":
 
 **Input Data:**
-- Access Cafe Astrology text: `{{trigger.body.cafeAstrologyText}}` (from webhook)
+- Access Cafe Astrology text: `{{trigger.body.cafeAstrologyText}}` (from webhook - already fetched by the app)
 - Access star sign: `{{trigger.body.starSign}}`
 
 **Prompt:**
