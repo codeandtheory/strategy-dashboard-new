@@ -61,10 +61,12 @@ Your automation will:
 
 ## Step 3: Fetch Cafe Astrology Text
 
-1. Click **"Add action"** after the webhook trigger
-2. Select **"Make HTTP request"** or **"Run a script"**
+We'll use two actions: one to make the HTTP request, and one to parse the HTML.
 
-### Option A: Using "Make HTTP request"
+### Step 3a: Make HTTP Request
+
+1. Click **"Add action"** after the webhook trigger
+2. Select **"Make HTTP request"**
 
 **URL:**
 ```
@@ -77,52 +79,112 @@ https://cafeastrology.com/{{trigger.body.starSign.toLowerCase()}}dailyhoroscope.
 ```
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
 ```
 
-**Response Handling:**
-- Store the HTML response
-- You'll need to parse it in the next step
+**Response Format:** Text
 
-### Option B: Using "Run a script" (Recommended - Handles Parsing)
+3. **Name this action:** "Fetch Cafe Astrology HTML"
+4. **Save the action**
+
+### Step 3b: Parse HTML to Extract Horoscope Text
+
+1. Click **"Add action"** after "Fetch Cafe Astrology HTML"
+2. Select **"Run a script"**
 
 **Script:**
 ```javascript
-// Get star sign from webhook
-const starSign = {{trigger.body.starSign}};
+// Get the HTML response from the HTTP request
+const html = input.config().htmlResponse || input.config().response || '';
 
-// Map star signs to Cafe Astrology URL format
-const signMap = {
-  'Aries': 'aries',
-  'Taurus': 'taurus',
-  'Gemini': 'gemini',
-  'Cancer': 'cancer',
-  'Leo': 'leo',
-  'Virgo': 'virgo',
-  'Libra': 'libra',
-  'Scorpio': 'scorpio',
-  'Sagittarius': 'sagittarius',
-  'Capricorn': 'capricorn',
-  'Aquarius': 'aquarius',
-  'Pisces': 'pisces',
-};
+// Get star sign from webhook (passed through)
+const starSign = input.config().starSign || input.config().triggerBody?.starSign || '';
 
-const signSlug = signMap[starSign] || starSign.toLowerCase();
-const url = `https://cafeastrology.com/${signSlug}dailyhoroscope.html`;
-
-// Fetch the page
-const response = await fetch(url, {
-  headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.5',
-  },
-});
-
-if (!response.ok) {
-  throw new Error(`Failed to fetch horoscope: ${response.status} ${response.statusText}`);
+if (!html) {
+  throw new Error('No HTML response received from Cafe Astrology');
 }
 
-const html = await response.text();
+// Parse the HTML to extract the daily horoscope text
+let horoscopeText = '';
+
+// Method 1: Look for the date pattern and extract text after it
+const datePattern = /(November|December|January|February|March|April|May|June|July|August|September|October)\s+\d{1,2},\s+\d{4}/;
+const dateMatch = html.match(datePattern);
+
+if (dateMatch) {
+  const dateIndex = html.indexOf(dateMatch[0]);
+  const afterDate = html.substring(dateIndex + dateMatch[0].length);
+  
+  // Extract text until we hit another section
+  const nextSection = afterDate.match(/<(h[1-6]|div class|section|nav|footer|Creativity:)/i);
+  const endIndex = nextSection ? afterDate.indexOf(nextSection[0]) : Math.min(afterDate.length, 2000);
+  
+  let extracted = afterDate.substring(0, endIndex);
+  // Remove HTML tags
+  extracted = extracted.replace(/<[^>]*>/g, ' ');
+  // Remove script and style content
+  extracted = extracted.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ');
+  extracted = extracted.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ');
+  // Clean up whitespace
+  extracted = extracted.replace(/\s+/g, ' ').trim();
+  
+  // Find the actual horoscope text (usually the longest paragraph)
+  const sentences = extracted.split(/[.!?]\s+/).filter(s => s.length > 50);
+  if (sentences.length > 0) {
+    horoscopeText = sentences.slice(0, 5).join('. ').trim();
+    if (horoscopeText && !horoscopeText.endsWith('.')) {
+      horoscopeText += '.';
+    }
+  }
+}
+
+// Method 2: Look for paragraph tags with substantial content
+if (!horoscopeText || horoscopeText.length < 200) {
+  const allText = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+                      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+                      .replace(/<[^>]+>/g, ' ')
+                      .replace(/\s+/g, ' ')
+                      .trim();
+  
+  if (dateMatch) {
+    const dateText = dateMatch[0];
+    const dateIndex = allText.indexOf(dateText);
+    if (dateIndex !== -1) {
+      const afterDate = allText.substring(dateIndex + dateText.length);
+      const endMarkers = ['Creativity:', 'Love:', 'Business:', 'Yesterday', 'Tomorrow', 'Choose Another Sign'];
+      let endIndex = afterDate.length;
+      for (const marker of endMarkers) {
+        const markerIndex = afterDate.indexOf(marker);
+        if (markerIndex !== -1 && markerIndex < endIndex) {
+          endIndex = markerIndex;
+        }
+      }
+      
+      const extracted = afterDate.substring(0, endIndex).trim();
+      if (extracted.length > 200) {
+        horoscopeText = extracted;
+      }
+    }
+  }
+}
+
+if (!horoscopeText || horoscopeText.length < 100) {
+  throw new Error(`Could not extract horoscope text from Cafe Astrology page. Found text length: ${horoscopeText?.length || 0}`);
+}
+
+// Return the extracted text and star sign
+return {
+  cafeAstrologyText: horoscopeText,
+  starSign: starSign
+};
+```
+
+**Note:** In Airtable scripts, you access input data using `input.config()`. The exact field names depend on how Airtable passes data between actions. You may need to adjust:
+- `input.config().htmlResponse` - might be `input.config().response` or `input.config().body`
+- `input.config().starSign` - might come from the trigger body
+
+3. **Name this action:** "Parse Cafe Astrology Text"
+4. **Save the action**
 
 // Parse the HTML to extract the daily horoscope text
 let horoscopeText = '';
