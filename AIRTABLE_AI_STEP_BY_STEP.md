@@ -41,6 +41,7 @@ Your automation will:
   "userId": "user-uuid-here",
   "date": "2024-12-12",
   "starSign": "Aries",
+  "cafeAstrologyText": "Today's horoscope text from Cafe Astrology...",
   "userProfile": {
     "name": "John Doe",
     "role": "Designer",
@@ -57,37 +58,48 @@ Your automation will:
 }
 ```
 
+**Note:** The app will fetch the Cafe Astrology text and pass it in the webhook. If you prefer Airtable to fetch it, you can use the table approach below.
+
 ---
 
-## Step 3: Fetch Cafe Astrology Text
+## Step 3: Get Cafe Astrology Text
 
-We'll use two actions: one to make the HTTP request, and one to parse the HTML.
-
-### Step 3a: Make HTTP Request
+**Simplest Approach:** The app already fetches the Cafe Astrology text and passes it in the webhook. You can use it directly!
 
 1. Click **"Add action"** after the webhook trigger
-2. Select **"Make HTTP request"**
+2. The Cafe Astrology text is already in `{{trigger.body.cafeAstrologyText}}`
+3. You can skip to Step 4 (Build Image Prompt) and use the text directly in Step 5
 
-**URL:**
-```
-https://cafeastrology.com/{{trigger.body.starSign.toLowerCase()}}dailyhoroscope.html
-```
+**Alternative: If you want Airtable to fetch it (using a table with URLs)**
 
-**Method:** GET
+If you prefer Airtable to fetch the text itself, create a table with URLs:
 
-**Headers:**
-```
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-```
+### Step 3a: Create the URLs Table (Optional)
 
-**Response Format:** Text
+1. In your Airtable base, create a new table called **"Cafe Astrology URLs"**
+2. Add these fields:
+   - **Star Sign** (Single select or Single line text) - The zodiac sign name
+   - **URL** (URL or Single line text) - The Cafe Astrology URL for that sign
+3. Add records for each star sign:
 
-3. **Name this action:** "Fetch Cafe Astrology HTML"
-4. **Save the action**
+| Star Sign | URL |
+|-----------|-----|
+| Aries | https://cafeastrology.com/ariesdailyhoroscope.html |
+| Taurus | https://cafeastrology.com/taurusdailyhoroscope.html |
+| Gemini | https://cafeastrology.com/geminidailyhoroscope.html |
+| Cancer | https://cafeastrology.com/cancerdailyhoroscope.html |
+| Leo | https://cafeastrology.com/leodailyhoroscope.html |
+| Virgo | https://cafeastrology.com/virgodailyhoroscope.html |
+| Libra | https://cafeastrology.com/libradailyhoroscope.html |
+| Scorpio | https://cafeastrology.com/scorpiodailyhoroscope.html |
+| Sagittarius | https://cafeastrology.com/sagittariusdailyhoroscope.html |
+| Capricorn | https://cafeastrology.com/capricorndailyhoroscope.html |
+| Aquarius | https://cafeastrology.com/aquariusdailyhoroscope.html |
+| Pisces | https://cafeastrology.com/piscesdailyhoroscope.html |
 
-### Step 3b: Parse HTML to Extract Horoscope Text
+4. **Save the table**
+
+**Note:** Since Airtable doesn't have a direct HTTP request action, and the app already fetches the text, we recommend using the text from the webhook (`{{trigger.body.cafeAstrologyText}}`) directly. This is simpler and more reliable.
 
 1. Click **"Add action"** after "Fetch Cafe Astrology HTML"
 2. Select **"Run a script"**
@@ -317,7 +329,7 @@ Return ONLY the image prompt text, nothing else. Make it detailed and specific (
 ### If Using "Generate structured data with AI":
 
 **Input Data:**
-- Access Cafe Astrology text: `{{action_1.output.cafeAstrologyText}}` (replace `action_1` with your "Fetch Cafe Astrology Text" action name)
+- Access Cafe Astrology text: `{{trigger.body.cafeAstrologyText}}` (from webhook)
 - Access star sign: `{{trigger.body.starSign}}`
 
 **Prompt:**
@@ -325,7 +337,7 @@ Return ONLY the image prompt text, nothing else. Make it detailed and specific (
 Transform this horoscope from Cafe Astrology into the irreverent, silly style of Co-Star. Make it witty, slightly sarcastic, and fun. Keep the core meaning but make it more casual and entertaining.
 
 Original horoscope for {{trigger.body.starSign}}:
-{{action_1.output.cafeAstrologyText}}
+{{trigger.body.cafeAstrologyText}}
 
 Return a JSON object with this exact structure:
 {

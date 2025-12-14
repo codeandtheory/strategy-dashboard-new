@@ -763,7 +763,9 @@ export async function GET(request: NextRequest) {
           })
           const airtableStartTime = Date.now()
           
-          // Call Airtable AI service - Airtable will fetch Cafe Astrology and build prompt
+          // Call Airtable AI service
+          // Pass Cafe Astrology text (app fetches it) - Airtable can use it or fetch its own
+          // Airtable will build image prompt from user profile
           directResult = await generateHoroscopeViaAirtable({
             starSign,
             userId,
@@ -780,9 +782,9 @@ export async function GET(request: NextRequest) {
             },
             weekday: userProfile.weekday,
             season: userProfile.season,
-            // Optional: pass pre-fetched data if available (Airtable can use or ignore)
+            // Pass Cafe Astrology text (app already fetched it)
             cafeAstrologyText: cafeAstrologyText,
-            imagePrompt: imagePrompt,
+            // Don't pass imagePrompt - let Airtable build it from user profile
             slots: promptSlots,
             reasoning: promptReasoning,
           })

@@ -89,6 +89,7 @@ async function triggerAirtableWebhook(request: HoroscopeGenerationRequest): Prom
 
   // Send webhook to Airtable with user profile data
   // Airtable will fetch Cafe Astrology text and build image prompt
+  // If Airtable can't make HTTP requests, we'll pass the text directly
   const response = await fetch(webhookUrl, {
     method: 'POST',
     headers: {
@@ -112,8 +113,9 @@ async function triggerAirtableWebhook(request: HoroscopeGenerationRequest): Prom
       weekday: request.weekday,
       season: request.season,
       callbackUrl: callbackUrl, // Where Airtable should send results
-      // Optional: pass these if already computed, otherwise Airtable will build them
-      cafeAstrologyText: request.cafeAstrologyText, // Optional - Airtable can fetch if not provided
+      // Pass Cafe Astrology text if available (app can fetch it, or Airtable can use this)
+      cafeAstrologyText: request.cafeAstrologyText, // App will fetch this and pass it
+      // Optional: pass image prompt if already computed
       imagePrompt: request.imagePrompt, // Optional - Airtable can build if not provided
       slots: request.slots, // Optional
       reasoning: request.reasoning, // Optional
