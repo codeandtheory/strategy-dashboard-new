@@ -319,18 +319,33 @@ async function generateImageViaAirtable(prompt: string): Promise<string> {
 
       // Check if generation is complete
       if (fields.Status === 'Completed' || fields.Status === 'Complete') {
-        // Extract the image URL
-        // Airtable might store it in different fields
-        const imageUrl = fields['Image URL'] || 
-                        fields['Image'] || 
-                        (fields['Image'] && fields['Image'][0] && fields['Image'][0].url) ||
-                        ''
+        // Extract the image URL from attachment field
+        // Airtable "Generate image with AI" saves to an attachment field
+        // Attachment fields are arrays: [{ url: "...", filename: "...", size: ... }]
+        let imageUrl: string | null = null
+        
+        // Try different possible field names for the attachment
+        const attachmentField = fields['Image'] || 
+                               fields['Image Attachment'] || 
+                               fields['Generated Image'] ||
+                               fields['Image File']
+        
+        if (attachmentField && Array.isArray(attachmentField) && attachmentField.length > 0) {
+          // Airtable attachment field format: [{ url: "...", filename: "...", ... }]
+          imageUrl = attachmentField[0].url
+        } else if (typeof attachmentField === 'object' && attachmentField !== null && attachmentField.url) {
+          // Single attachment object (not array)
+          imageUrl = attachmentField.url
+        } else if (fields['Image URL']) {
+          // Fallback: if stored as URL field instead of attachment
+          imageUrl = fields['Image URL']
+        }
 
         if (imageUrl) {
           console.log('✅ Image generated successfully via Airtable')
           return imageUrl
         } else {
-          throw new Error('Airtable image generation completed but no image URL found')
+          throw new Error('Airtable image generation completed but no image URL found in attachment field')
         }
       }
 
