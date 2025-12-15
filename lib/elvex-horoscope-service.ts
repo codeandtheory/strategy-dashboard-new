@@ -49,6 +49,19 @@ function getElvexConfig() {
   const version = process.env.ELVEX_HOROSCOPE_VERSION || process.env.ELVEX_VERSION
   const baseUrl = process.env.ELVEX_BASE_URL || 'https://api.elvex.ai'
 
+  // Debug: Log what we're reading (without exposing full API key)
+  console.log('🔍 Reading Elvex config from env:', {
+    hasApiKey: !!apiKey,
+    apiKeyPrefix: apiKey ? `${apiKey.substring(0, 8)}...` : 'missing',
+    ELVEX_HOROSCOPE_ASSISTANT_ID: process.env.ELVEX_HOROSCOPE_ASSISTANT_ID || 'not set',
+    ELVEX_ASSISTANT_ID: process.env.ELVEX_ASSISTANT_ID || 'not set',
+    selectedAssistantId: assistantId || 'not set',
+    ELVEX_HOROSCOPE_VERSION: process.env.ELVEX_HOROSCOPE_VERSION || 'not set',
+    ELVEX_VERSION: process.env.ELVEX_VERSION || 'not set',
+    selectedVersion: version || 'not set',
+    baseUrl,
+  })
+
   if (!apiKey) {
     throw new Error('ELVEX_API_KEY is not set. Please set it in environment variables.')
   }
