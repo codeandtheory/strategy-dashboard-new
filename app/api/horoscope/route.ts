@@ -762,8 +762,8 @@ export async function GET(request: NextRequest) {
         
         let directResult
         {
-          console.log('🚀 Generating horoscope text and image via Elvex API...')
-          console.log('   Using Elvex API for both text and image generation')
+          console.log('🚀 Generating horoscope text via Elvex API...')
+          console.log('   Using Elvex API for text generation (image handled separately via Airtable)')
           console.log('🔍 DEBUG: Elvex API call parameters:', {
             starSign,
             userId,
@@ -796,7 +796,8 @@ export async function GET(request: NextRequest) {
         }
         
         // Validate result before using it
-        console.log('📥 Received direct API result:', {
+        // Note: Elvex only returns horoscope text - image/caption come from Airtable separately
+        console.log('📥 Received Elvex API result (text only):', {
           hasHoroscope: !!directResult.horoscope,
           horoscopeLength: directResult.horoscope?.length || 0,
           horoscopePreview: directResult.horoscope?.substring(0, 100) || 'MISSING',
@@ -804,18 +805,13 @@ export async function GET(request: NextRequest) {
           dosCount: directResult.dos?.length || 0,
           hasDonts: !!directResult.donts,
           dontsCount: directResult.donts?.length || 0,
-          hasImageUrl: !!directResult.imageUrl,
-          imageUrl: directResult.imageUrl || 'MISSING',
-          imageUrlLength: directResult.imageUrl?.length || 0,
-          imageUrlPreview: directResult.imageUrl?.substring(0, 100) || 'MISSING',
         })
-        console.log('🔍 DEBUG: Direct API result validation:', {
-          allFieldsPresent: !!(directResult.horoscope && directResult.dos && directResult.donts && directResult.imageUrl),
+        console.log('🔍 DEBUG: Elvex API result validation:', {
+          allFieldsPresent: !!(directResult.horoscope && directResult.dos && directResult.donts),
           missingFields: [
             !directResult.horoscope && 'horoscope',
             !directResult.dos && 'dos',
             !directResult.donts && 'donts',
-            !directResult.imageUrl && 'imageUrl'
           ].filter(Boolean)
         })
 
@@ -823,16 +819,12 @@ export async function GET(request: NextRequest) {
           throw new Error('Invalid direct API result: missing horoscope text, dos, or donts')
         }
 
-        // Image URL is optional - horoscope text can be returned without image
-        if (!directResult.imageUrl) {
-          console.log('⚠️ No image URL in result - horoscope text will be returned without image')
-        }
-
+        // Elvex only returns horoscope text - image and caption are handled separately via Airtable
         horoscopeText = directResult.horoscope
         horoscopeDos = directResult.dos
         horoscopeDonts = directResult.donts
-        imageUrl = directResult.imageUrl || null // Allow null image URL
-        // Note: imageCaption is handled separately by the avatar endpoint, not stored with horoscope
+        // Image and caption are fetched separately from the avatar endpoint or database
+        imageUrl = null // Will be set from avatar endpoint or database
         
         // Character name is not generated in direct mode (was previously from n8n image analysis)
         // Set to null for now - can be added later if needed

@@ -36,8 +36,6 @@ interface HoroscopeGenerationResponse {
   horoscope: string
   dos: string[]
   donts: string[]
-  imageUrl: string | null // Can be null if image generation fails
-  // Note: imageCaption is handled separately by the avatar endpoint, not returned here
   character_name?: string | null
   prompt: string
   slots: any
@@ -685,13 +683,9 @@ export async function generateHoroscopeViaElvex(
 
   const startTime = Date.now()
 
-  // Validate that image prompt is provided (should be built by route using buildHoroscopePrompt)
-  if (!request.imagePrompt || request.imagePrompt.trim() === '') {
-    throw new Error('Image prompt is required. The route should build it using buildHoroscopePrompt() with slot-based logic.')
-  }
-
   try {
-    // Generate horoscope text using Elvex
+    // Generate horoscope text using Elvex only
+    // Image and caption generation are handled separately via Airtable (avatar endpoint)
     console.log('📝 Generating horoscope text with Elvex...')
     const textResult = await transformHoroscopeWithElvex(
       request.cafeAstrologyText,
@@ -699,66 +693,15 @@ export async function generateHoroscopeViaElvex(
     )
     console.log('✅ Horoscope text generated successfully')
 
-    // Generate image using Airtable (separate operation)
-    // Note: Caption is handled separately by the avatar endpoint, not returned here
-    const imagePrompt = request.imagePrompt
-    let imageUrl: string | null = null
-    
-    console.log('🔍 DEBUG: Image generation check:')
-    console.log('   imagePrompt exists:', !!imagePrompt)
-    console.log('   imagePrompt type:', typeof imagePrompt)
-    console.log('   imagePrompt length:', imagePrompt?.length || 0)
-    console.log('   imagePrompt value:', imagePrompt ? imagePrompt.substring(0, 100) + '...' : 'null/undefined')
-    console.log('   imagePrompt.trim() result:', imagePrompt ? imagePrompt.trim() : 'N/A')
-    console.log('   imagePrompt.trim() length:', imagePrompt ? imagePrompt.trim().length : 0)
-    console.log('   Condition check (imagePrompt && imagePrompt.trim() !== ""):', !!(imagePrompt && imagePrompt.trim() !== ''))
-    
-    if (imagePrompt && imagePrompt.trim() !== '') {
-      console.log('🚀 ========== STARTING AIRTABLE IMAGE GENERATION ==========')
-      console.log('🖼️ Image prompt provided, attempting Airtable image generation...')
-      console.log('   Image prompt length:', imagePrompt.length)
-      console.log('   Image prompt preview (first 200 chars):', imagePrompt.substring(0, 200) + '...')
-      console.log('   Full image prompt:', imagePrompt)
-      console.log('   Timezone:', request.timezone || 'not provided')
-      console.log('   About to call generateImageViaAirtable()...')
-      
-      try {
-        // Pass timezone from request if available
-        console.log('📞 Calling generateImageViaAirtable() now...')
-        const imageResult = await generateImageViaAirtable(imagePrompt, request.timezone)
-        imageUrl = imageResult.imageUrl
-        // Note: Caption is handled separately by the avatar endpoint, not stored here
-        console.log('✅ Image generated successfully via Airtable')
-        console.log('   Image URL:', imageUrl ? imageUrl.substring(0, 100) + '...' : 'null')
-        console.log('🚀 ========== AIRTABLE IMAGE GENERATION COMPLETED SUCCESSFULLY ==========')
-      } catch (imageError: any) {
-        // Image generation failed, but we still have the text
-        console.error('🚀 ========== AIRTABLE IMAGE GENERATION FAILED ==========')
-        console.error('❌ Image generation via Airtable failed:')
-        console.error('   Error message:', imageError.message)
-        console.error('   Error name:', imageError.name)
-        console.error('   Error stack:', imageError.stack?.substring(0, 1000))
-        console.log('📝 Continuing with text-only horoscope (image will be null)')
-        console.log('🚀 ========== CONTINUING WITHOUT IMAGE ==========')
-        // Don't throw - we want to return the text even if image fails
-      }
-    } else {
-      console.log('⚠️ No image prompt provided - skipping Airtable image generation')
-      console.log('   imagePrompt value:', imagePrompt)
-      console.log('   imagePrompt is empty or falsy')
-    }
-
     const elapsed = Date.now() - startTime
-    console.log(`✅ Horoscope generation completed in ${elapsed}ms (text: ✅, image: ${imageUrl ? '✅' : '❌'})`)
+    console.log(`✅ Horoscope text generation completed in ${elapsed}ms`)
 
     return {
       horoscope: textResult.horoscope,
       dos: textResult.dos,
       donts: textResult.donts,
-      imageUrl, // null if image generation failed
-      // Note: imageCaption is handled separately by the avatar endpoint, not returned here
       character_name: null,
-      prompt: imagePrompt,
+      prompt: request.imagePrompt || '', // Store prompt for reference, but don't generate image here
       slots: request.slots || {},
       reasoning: request.reasoning || {},
     }
