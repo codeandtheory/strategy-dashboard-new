@@ -456,8 +456,11 @@ export async function GET(request: NextRequest) {
       const cachedReasoning = slots?.reasoning || null
       
       // Return the existing image immediately - don't regenerate
-      console.log('   📤 Returning cached image with character_name:', characterName || 'null')
-      return NextResponse.json({
+      console.log('   📤 Returning cached image')
+      console.log('      character_name value:', characterName)
+      console.log('      character_name type:', typeof characterName)
+      console.log('      character_name will be sent as:', characterName || null)
+      const responseData = {
         image_url: cachedHoroscope.image_url,
         image_prompt: cachedHoroscope.image_prompt || null,
         prompt_slots: cachedHoroscope.prompt_slots_json || null,
@@ -465,7 +468,9 @@ export async function GET(request: NextRequest) {
         prompt_slots_reasoning: cachedReasoning,
         character_name: characterName || null,
         cached: true,
-      })
+      }
+      console.log('   📤 Full response data character_name:', responseData.character_name)
+      return NextResponse.json(responseData)
     }
     
     // CRITICAL SAFETY CHECK: DISABLED for debugging

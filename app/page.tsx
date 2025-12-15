@@ -1577,18 +1577,18 @@ export default function TeamDashboard() {
             setHoroscopeImageSlotsReasoning(imageData.prompt_slots_reasoning || null)
             // Set character name - should be a clean string from API
             const caption = imageData.character_name
-            console.log('   📝 Processing character_name from API:', {
-              value: caption,
-              type: typeof caption,
-              isString: typeof caption === 'string',
-              length: typeof caption === 'string' ? caption.length : 0,
-              truthy: !!caption
-            })
+            console.log('   📝 Processing character_name from API')
+            console.log('      Value:', caption)
+            console.log('      Type:', typeof caption)
+            console.log('      Is String:', typeof caption === 'string')
+            console.log('      Length:', typeof caption === 'string' ? caption.length : 0)
+            console.log('      Truthy:', !!caption)
             if (typeof caption === 'string' && caption.length > 0) {
               console.log('   ✅ Setting character name:', caption)
               setHoroscopeImageCaption(caption)
             } else {
               console.log('   ⚠️ Character name is not a valid string, setting to null')
+              console.log('      Caption value was:', caption)
               setHoroscopeImageCaption(null)
             }
             setHoroscopeImageLoading(false)
