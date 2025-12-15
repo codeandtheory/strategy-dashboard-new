@@ -365,9 +365,38 @@ async function generateImageViaAirtable(prompt: string, timezone?: string): Prom
 
     const createData = await createResponse.json()
     console.log('📥 Airtable API response data:', JSON.stringify(createData, null, 2))
+    
+    if (!createData.id) {
+      console.error('❌ CRITICAL: Airtable response missing record ID!')
+      console.error('   Response:', JSON.stringify(createData, null, 2))
+      throw new Error('Airtable API returned success but no record ID in response')
+    }
+    
     const recordId = createData.id
-    console.log('✅ Image generation request created in Airtable, record ID:', recordId)
-    console.log('✅ Full record data:', JSON.stringify(createData, null, 2))
+    console.log('✅ Image generation request created in Airtable')
+    console.log('   Record ID:', recordId)
+    console.log('   Record fields:', JSON.stringify(createData.fields, null, 2))
+    console.log('   Full record data:', JSON.stringify(createData, null, 2))
+    
+    // Verify the record was actually created by fetching it back
+    console.log('🔍 Verifying record was created in Airtable...')
+    const verifyUrl = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}/${recordId}`
+    const verifyResponse = await fetch(verifyUrl, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      }
+    })
+    
+    if (verifyResponse.ok) {
+      const verifyData = await verifyResponse.json()
+      console.log('✅ Verification successful - record exists in Airtable')
+      console.log('   Verified record:', JSON.stringify(verifyData, null, 2))
+    } else {
+      console.error('❌ Verification failed - record not found in Airtable!')
+      console.error('   Status:', verifyResponse.status, verifyResponse.statusText)
+      const errorText = await verifyResponse.text()
+      console.error('   Error:', errorText)
+    }
 
     // Step 2: Poll Airtable for the generated image
     // Airtable Automation/Script should generate the image and update the record
