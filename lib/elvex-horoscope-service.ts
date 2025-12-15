@@ -370,6 +370,7 @@ async function generateImageViaAirtable(prompt: string, timezone?: string): Prom
 
   try {
     // Step 1: Create a record in Airtable with the image prompt
+    console.log('🚀 ========== ABOUT TO CREATE AIRTABLE RECORD ==========')
     console.log('📝 Creating image generation request in Airtable...')
     console.log(`   URL: ${url}`)
     console.log(`   Timezone: ${timezone || 'UTC (not provided)'}`)
@@ -386,6 +387,14 @@ async function generateImageViaAirtable(prompt: string, timezone?: string): Prom
     }
     console.log('📤 Request body:', JSON.stringify(requestBody, null, 2))
     
+    console.log('🚀 ========== MAKING AIRTABLE API CALL ==========')
+    console.log('   Method: POST')
+    console.log('   URL:', url)
+    console.log('   Headers:', {
+      'Authorization': `Bearer ${apiKey ? apiKey.substring(0, 12) + '...' : 'MISSING'}`,
+      'Content-Type': 'application/json'
+    })
+    
     const createResponse = await fetch(url, {
       method: 'POST',
       headers: {
@@ -394,6 +403,8 @@ async function generateImageViaAirtable(prompt: string, timezone?: string): Prom
       },
       body: JSON.stringify(requestBody)
     })
+    
+    console.log('🚀 ========== AIRTABLE API CALL COMPLETED ==========')
 
     console.log('📥 Airtable API response status:', createResponse.status, createResponse.statusText)
     console.log('📥 Airtable API response headers:', Object.fromEntries(createResponse.headers.entries()))
