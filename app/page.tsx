@@ -29,6 +29,7 @@ import { TeamPulseCard } from '@/components/team-pulse-card'
 import { Footer } from '@/components/footer'
 import { BeastBabeCard } from '@/components/beast-babe-card'
 import { VideoEmbed } from '@/components/video-embed'
+import { NewsCard } from '@/components/news-card'
 import Image from 'next/image'
 
 // Force dynamic rendering to avoid SSR issues with context
@@ -2169,6 +2170,9 @@ export default function TeamDashboard() {
       <SiteHeader rightContent={horoscopeImageActions} />
 
       <main className="w-full max-w-[1200px] mx-auto px-6 py-4 flex-1 pb-0 pt-24 relative">
+        {/* News Card - Full Width */}
+        <NewsCard />
+
         {/* Hero Section and Quick Links - Side by Side */}
         <section className="mb-12 relative">
           <div className="flex items-stretch gap-4 w-full">
