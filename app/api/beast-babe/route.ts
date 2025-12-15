@@ -149,9 +149,7 @@ export async function POST(request: NextRequest) {
     const { data: currentBeastBabeProfiles } = await supabaseAdmin
       .from('profiles')
       .select('id, special_access')
-      .contains('special_access', ['beast_babe'])((p: any) => 
-      Array.isArray(p.special_access) && p.special_access.includes('beast_babe')
-    )
+      .contains('special_access', ['beast_babe'])
 
     const currentBeastBabeId = currentBeastBabeProfiles && currentBeastBabeProfiles.length > 0 
       ? currentBeastBabeProfiles[0].id 
