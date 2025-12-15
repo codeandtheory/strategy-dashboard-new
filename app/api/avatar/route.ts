@@ -328,27 +328,62 @@ export async function GET(request: NextRequest) {
             const todayDateForQuery = getTodayDateInTimezone(userTimezone, now)
             const createdAt = todayDateForQuery // Format: YYYY-MM-DD
             
-            // Query Airtable for existing records (read-only)
-            const filterFormula = `AND({User ID} = "${userId}", {Created At} = "${createdAt}")`
-            const queryUrl = `${url}?filterByFormula=${encodeURIComponent(filterFormula)}`
-            
-            const queryResponse = await fetch(queryUrl, {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-              },
+            console.log('   🔍 Airtable query parameters:', {
+              userId,
+              userTimezone,
+              todayDateForQuery,
+              createdAt,
+              baseId,
+              tableName,
+              tableIdentifier
             })
             
-            if (queryResponse.ok) {
-              const queryData = await queryResponse.json()
-              console.log('   📋 Airtable query response:', {
-                recordCount: queryData.records?.length || 0,
-                hasRecords: !!(queryData.records && queryData.records.length > 0),
-                status: queryResponse.status
+            // Query Airtable for existing records (read-only)
+            // Try multiple date formats and also try without date filter
+            const filterFormulas = [
+              `AND({User ID} = "${userId}", {Created At} = "${createdAt}")`,
+              `{User ID} = "${userId}"`, // Just by User ID, no date filter
+            ]
+            
+            let queryData = null
+            let foundRecords = false
+            
+            for (const filterFormula of filterFormulas) {
+              const queryUrl = `${url}?filterByFormula=${encodeURIComponent(filterFormula)}`
+              console.log('   🔍 Trying Airtable query:', {
+                filterFormula,
+                queryUrl: queryUrl.substring(0, 200) + '...'
               })
               
-              if (queryData.records && queryData.records.length > 0) {
+              const queryResponse = await fetch(queryUrl, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${apiKey}`,
+                  'Content-Type': 'application/json',
+                },
+              })
+              
+              if (queryResponse.ok) {
+                queryData = await queryResponse.json()
+                console.log('   📋 Airtable query response:', {
+                  recordCount: queryData.records?.length || 0,
+                  hasRecords: !!(queryData.records && queryData.records.length > 0),
+                  status: queryResponse.status,
+                  filterFormula
+                })
+                
+                if (queryData.records && queryData.records.length > 0) {
+                  foundRecords = true
+                  console.log('   ✅ Found records with filter:', filterFormula)
+                  break
+                }
+              } else {
+                const errorText = await queryResponse.text().catch(() => 'Unknown error')
+                console.log('   ⚠️ Airtable query failed:', queryResponse.status, errorText.substring(0, 200))
+              }
+            }
+            
+            if (foundRecords && queryData && queryData.records && queryData.records.length > 0) {
                 // Check all records for character name (in case first one doesn't have it)
                 // Priority: "Caption" field first (this is where Airtable stores it), then "Character Name"
                 for (const record of queryData.records) {
