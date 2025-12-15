@@ -293,14 +293,31 @@ function formatDateInTimezone(timezone: string): string {
 
 async function generateImageViaAirtable(prompt: string, timezone?: string): Promise<string> {
   console.log('🖼️ Generating image via Airtable...')
+  console.log('📋 Airtable configuration check:')
+  console.log('   AIRTABLE_API_KEY:', process.env.AIRTABLE_API_KEY ? `${process.env.AIRTABLE_API_KEY.substring(0, 8)}...` : 'NOT SET')
+  console.log('   AIRTABLE_IMAGE_BASE_ID:', process.env.AIRTABLE_IMAGE_BASE_ID || 'NOT SET')
+  console.log('   AIRTABLE_AI_BASE_ID:', process.env.AIRTABLE_AI_BASE_ID || 'NOT SET')
+  console.log('   AIRTABLE_BASE_ID:', process.env.AIRTABLE_BASE_ID || 'NOT SET')
+  console.log('   AIRTABLE_IMAGE_TABLE_NAME:', process.env.AIRTABLE_IMAGE_TABLE_NAME || 'NOT SET (will use default: Image Generation)')
   
   // Get Airtable configuration
   const apiKey = process.env.AIRTABLE_API_KEY
   const baseId = process.env.AIRTABLE_IMAGE_BASE_ID || process.env.AIRTABLE_AI_BASE_ID || process.env.AIRTABLE_BASE_ID
   const tableName = process.env.AIRTABLE_IMAGE_TABLE_NAME || 'Image Generation'
 
+  console.log('🔍 Resolved configuration:')
+  console.log('   apiKey:', apiKey ? 'SET' : 'MISSING')
+  console.log('   baseId:', baseId || 'MISSING')
+  console.log('   tableName:', tableName)
+
   if (!apiKey || !baseId) {
-    throw new Error('Airtable configuration missing. Please set AIRTABLE_API_KEY and AIRTABLE_IMAGE_BASE_ID (or AIRTABLE_AI_BASE_ID) environment variables.')
+    const errorMsg = 'Airtable configuration missing. Please set AIRTABLE_API_KEY and AIRTABLE_IMAGE_BASE_ID (or AIRTABLE_AI_BASE_ID) environment variables.'
+    console.error('❌', errorMsg)
+    console.error('   Missing:', {
+      apiKey: !apiKey,
+      baseId: !baseId
+    })
+    throw new Error(errorMsg)
   }
 
   const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`
@@ -467,17 +484,23 @@ export async function generateHoroscopeViaElvex(
     let imageUrl: string | null = null
     
     if (imagePrompt) {
+      console.log('🖼️ Image prompt provided, attempting Airtable image generation...')
+      console.log('   Image prompt length:', imagePrompt.length)
+      console.log('   Image prompt preview:', imagePrompt.substring(0, 100) + '...')
       try {
-        console.log('🖼️ Generating image via Airtable...')
         // Pass timezone from request if available
         imageUrl = await generateImageViaAirtable(imagePrompt, request.timezone)
         console.log('✅ Image generated successfully via Airtable')
       } catch (imageError: any) {
         // Image generation failed, but we still have the text
-        console.error('⚠️ Image generation via Airtable failed, but horoscope text is available:', imageError.message)
+        console.error('❌ Image generation via Airtable failed:')
+        console.error('   Error message:', imageError.message)
+        console.error('   Error stack:', imageError.stack?.substring(0, 500))
         console.log('📝 Continuing with text-only horoscope (image will be null)')
         // Don't throw - we want to return the text even if image fails
       }
+    } else {
+      console.log('⚠️ No image prompt provided - skipping Airtable image generation')
     }
 
     const elapsed = Date.now() - startTime
