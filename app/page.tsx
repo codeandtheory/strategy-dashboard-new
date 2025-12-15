@@ -1578,23 +1578,31 @@ export default function TeamDashboard() {
             // Ensure character_name is a string, not an object
             const caption = imageData.character_name
             let finalCaption: string | null = null
-            if (typeof caption === 'string') {
+            if (typeof caption === 'string' && caption.length > 0) {
               finalCaption = caption
             } else if (caption && typeof caption === 'object') {
               // Handle React Query/SWR state objects
-              if ('value' in caption && typeof caption.value === 'string') {
-                finalCaption = caption.value
-              } else if ('data' in caption && typeof caption.data === 'string') {
-                finalCaption = caption.data
+              const captionObj = caption as any
+              if ('value' in captionObj && typeof captionObj.value === 'string' && captionObj.value.length > 0) {
+                finalCaption = captionObj.value
+              } else if ('data' in captionObj && typeof captionObj.data === 'string' && captionObj.data.length > 0) {
+                finalCaption = captionObj.data
               } else {
-                console.warn('   Character name is an object but no string value found:', caption)
+                console.warn('   Character name is an object but no valid string value found:', JSON.stringify(caption))
                 finalCaption = null
               }
             } else {
               finalCaption = null
             }
             console.log('   Final caption to set:', finalCaption)
-            setHoroscopeImageCaption(finalCaption)
+            console.log('   Final caption type:', typeof finalCaption)
+            // CRITICAL: Only set if it's actually a string, never set an object
+            if (typeof finalCaption === 'string') {
+              setHoroscopeImageCaption(finalCaption)
+            } else {
+              console.error('   ERROR: Attempted to set non-string caption:', finalCaption)
+              setHoroscopeImageCaption(null)
+            }
             setHoroscopeImageLoading(false)
             setHoroscopeImageError(null)
             console.log('Reasoning state set to:', imageData.prompt_slots_reasoning)
