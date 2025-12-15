@@ -474,19 +474,75 @@ export async function GET(request: NextRequest) {
     
     if (!cachedHoroscope.image_url || cachedHoroscope.image_url.trim() === '') {
       console.log('⚠️ Horoscope exists but image_url is null or empty')
-      console.log('   This means image generation failed (likely Airtable error)')
+      console.log('   Attempting to generate image via Airtable...')
       console.log('   Horoscope date:', cachedHoroscope.date)
       console.log('   Has text:', !!cachedHoroscope.horoscope_text)
-      console.log('   Image URL:', cachedHoroscope.image_url)
-      return NextResponse.json(
-        { 
-          error: 'Image generation failed. The horoscope was generated but image generation via Airtable failed. Please check Airtable configuration and try regenerating.',
-          details: 'Image generation is handled separately from text generation. Check Vercel logs for Airtable errors.',
-          hasHoroscope: true,
-          imageUrl: null
-        },
-        { status: 404 }
-      )
+      console.log('   Has image prompt:', !!cachedHoroscope.image_prompt)
+      console.log('   Image prompt length:', cachedHoroscope.image_prompt?.length || 0)
+      
+      // Try to generate image via Airtable if we have a prompt
+      if (cachedHoroscope.image_prompt && cachedHoroscope.image_prompt.trim() !== '') {
+        try {
+          console.log('🚀 ========== GENERATING IMAGE VIA AIRTABLE FROM AVATAR ENDPOINT ==========')
+          console.log('   Prompt:', cachedHoroscope.image_prompt.substring(0, 200) + '...')
+          console.log('   Timezone:', profile.timezone || 'UTC')
+          
+          const imageResult = await generateImageViaAirtable(cachedHoroscope.image_prompt, profile.timezone || undefined)
+          
+          if (imageResult.imageUrl) {
+            console.log('✅ Image generated successfully via Airtable')
+            console.log('   Image URL:', imageResult.imageUrl.substring(0, 100) + '...')
+            
+            // Update the horoscope record with the image URL
+            const { error: updateError } = await supabaseAdmin
+              .from('horoscopes')
+              .update({ image_url: imageResult.imageUrl })
+              .eq('user_id', userId)
+              .eq('date', todayDate)
+            
+            if (updateError) {
+              console.error('❌ Failed to update horoscope with image URL:', updateError)
+            } else {
+              console.log('✅ Updated horoscope with image URL')
+            }
+            
+            // Return the image URL and related data (simplified for now)
+            return NextResponse.json({
+              image_url: imageResult.imageUrl,
+              image_prompt: cachedHoroscope.image_prompt,
+              prompt_slots: cachedHoroscope.prompt_slots_json || null,
+              prompt_slots_labels: null,
+              prompt_slots_reasoning: cachedHoroscope.prompt_slots_json?.reasoning || null,
+              cached: false, // Just generated
+            })
+          } else {
+            throw new Error('Airtable returned no image URL')
+          }
+        } catch (imageError: any) {
+          console.error('❌ Failed to generate image via Airtable:', imageError)
+          console.error('   Error message:', imageError.message)
+          return NextResponse.json(
+            { 
+              error: 'Image generation failed. The horoscope was generated but image generation via Airtable failed. Please check Airtable configuration and try regenerating.',
+              details: `Airtable error: ${imageError.message}`,
+              hasHoroscope: true,
+              imageUrl: null
+            },
+            { status: 404 }
+          )
+        }
+      } else {
+        console.log('⚠️ No image prompt available - cannot generate image')
+        return NextResponse.json(
+          { 
+            error: 'Image generation failed. The horoscope was generated but no image prompt is available.',
+            details: 'Image prompt is required to generate images. Please regenerate the horoscope.',
+            hasHoroscope: true,
+            imageUrl: null
+          },
+          { status: 404 }
+        )
+      }
     }
     
     // Return the existing image URL and related data
