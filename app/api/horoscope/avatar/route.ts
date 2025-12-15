@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
     // This is the primary check to prevent unnecessary API calls
     const { data: cachedHoroscope, error: cacheError } = await supabaseAdmin
       .from('horoscopes')
-      .select('image_url, image_prompt, prompt_slots_json, date, generated_at')
+      .select('image_url, image_prompt, prompt_slots_json, character_name, date, generated_at')
       .eq('user_id', userId)
       .eq('date', todayDate)
       .maybeSingle()
@@ -264,12 +264,15 @@ export async function GET(request: NextRequest) {
       willReturnCached: !!cachedHoroscope && cachedHoroscope.image_url && isFromToday
     })
     
+    // CRITICAL: Check if image exists FIRST - if it does, return it immediately
+    // This prevents regenerating images that already exist
     if (cachedHoroscope && cachedHoroscope.image_url && cachedHoroscope.image_url.trim() !== '' && isFromToday) {
-      console.log('✅ Found image in database - returning latest data')
+      console.log('✅ Found existing image in database for today - returning it')
       console.log('   Image URL:', cachedHoroscope.image_url.substring(0, 100) + '...')
       console.log('   Date:', cachedHoroscope.date)
       console.log('   Generated at:', cachedHoroscope.generated_at)
       console.log('   Has prompt slots:', !!cachedHoroscope.prompt_slots_json)
+      console.log('   ⚠️ NOT regenerating - image already exists for today')
       
       // Resolve slot IDs to labels for display (only if prompt_slots_json exists)
       const slots = cachedHoroscope.prompt_slots_json
@@ -318,27 +321,18 @@ export async function GET(request: NextRequest) {
       }
       
       // Extract reasoning from cached slots if available
-      // Reasoning is stored at the top level of prompt_slots_json: { ...slots, reasoning }
       const cachedReasoning = slots?.reasoning || null
-      console.log('Cached reasoning:', cachedReasoning)
-      console.log('Cached slots structure:', slots ? Object.keys(slots) : 'no slots')
-      console.log('Has reasoning property:', slots && 'reasoning' in slots)
-      if (slots && cachedReasoning) {
-        console.log('Reasoning keys:', Object.keys(cachedReasoning))
-      }
       
+      // Return the existing image immediately - don't regenerate
       return NextResponse.json({
         image_url: cachedHoroscope.image_url,
         image_prompt: cachedHoroscope.image_prompt || null,
         prompt_slots: cachedHoroscope.prompt_slots_json || null,
         prompt_slots_labels: Object.keys(slotLabels).length > 0 ? slotLabels : null,
         prompt_slots_reasoning: cachedReasoning,
-        cached: false, // Mark as not cached since we're always returning latest
+        character_name: cachedHoroscope.character_name || null,
+        cached: true,
       })
-    } else {
-      console.log('⚠️ No image found in database for today - main endpoint should generate it first')
-      console.log('   This endpoint only returns cached images, it does not generate new ones')
-      console.log('   Please call /api/horoscope first to generate both text and image via n8n')
     }
     
     // CRITICAL SAFETY CHECK: DISABLED for debugging
