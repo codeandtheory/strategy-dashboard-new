@@ -346,12 +346,17 @@ export async function GET(request: NextRequest) {
               tableIdentifier
             })
             
-            // Query by User ID only (no date filter) to find any records for this user
-            // This is more reliable than date matching
-            const filterFormula = `{User ID} = "${userId}"`
-            const queryUrl = `${url}?filterByFormula=${encodeURIComponent(filterFormula)}&sort[0][field]=Created At&sort[0][direction]=desc&maxRecords=10`
+            // Query by User ID AND date to get only today's caption
+            // Use same date format as generateImageViaAirtable uses
+            const filterFormula = `AND({User ID} = "${userId}", {Created At} = "${createdAt}")`
+            const queryUrl = `${url}?filterByFormula=${encodeURIComponent(filterFormula)}`
             
-            console.log('   🔍 Querying Airtable (read-only):', queryUrl.substring(0, 200) + '...')
+            console.log('   🔍 Querying Airtable (read-only) for today\'s caption:', {
+              userId,
+              createdAt,
+              filterFormula,
+              queryUrl: queryUrl.substring(0, 200) + '...'
+            })
             
             const queryResponse = await fetch(queryUrl, {
               method: 'GET',
