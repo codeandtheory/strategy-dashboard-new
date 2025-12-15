@@ -16,20 +16,24 @@ async function getVercelAISDK() {
     const aiModule = await import('ai')
     const openaiModule = await import('@ai-sdk/openai')
     
-    // Extract functions explicitly to avoid minification issues
-    const generateText = aiModule.generateText
-    const vercelOpenAI = openaiModule.openai
+    // Use bracket notation and store in variables to avoid minification
+    const generateTextKey = 'generateText'
+    const vercelOpenAIKey = 'openai'
+    
+    const generateText = aiModule[generateTextKey]
+    const vercelOpenAI = openaiModule[vercelOpenAIKey]
     
     if (typeof generateText !== 'function') {
-      throw new Error('generateText is not a function')
+      throw new Error(`generateText is not a function (type: ${typeof generateText})`)
     }
     if (typeof vercelOpenAI !== 'function') {
-      throw new Error('vercelOpenAI is not a function')
+      throw new Error(`vercelOpenAI is not a function (type: ${typeof vercelOpenAI})`)
     }
     
+    // Return as object with string keys to avoid minification
     return {
-      generateText,
-      vercelOpenAI
+      [generateTextKey]: generateText,
+      vercelOpenAI: vercelOpenAI
     }
   } catch (error: any) {
     console.error('❌ Failed to load Vercel AI SDK:', error)
@@ -72,15 +76,26 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
 
     // Use Vercel AI SDK for text generation with fallback support
     // Dynamically import to avoid bundling issues
-    const { generateText, vercelOpenAI } = await getVercelAISDK()
+    const sdk = await getVercelAISDK()
     
-    const primaryOpenAI = vercelOpenAI({
+    // Use bracket notation to avoid minification issues
+    const generateTextFn = sdk['generateText']
+    const vercelOpenAIFn = sdk['vercelOpenAI']
+    
+    if (typeof generateTextFn !== 'function') {
+      throw new Error('generateText is not a function after extraction')
+    }
+    if (typeof vercelOpenAIFn !== 'function') {
+      throw new Error('vercelOpenAI is not a function after extraction')
+    }
+    
+    const primaryOpenAI = vercelOpenAIFn({
       apiKey: process.env.OPENAI_API_KEY,
     })
     
     let result
     try {
-      result = await generateText({
+      result = await generateTextFn({
         model: primaryOpenAI('gpt-4o-mini', {
           responseFormat: { type: 'json_object' },
         }),
@@ -147,10 +162,10 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
         console.log('   Original error:', errorMessage.substring(0, 200))
         console.log('   Error status:', status)
         try {
-          const fallbackOpenAI = vercelOpenAI({
+          const fallbackOpenAI = vercelOpenAIFn({
             apiKey: process.env.OPENAI_API_KEY_FALLBACK,
           })
-          result = await generateText({
+          result = await generateTextFn({
             model: fallbackOpenAI('gpt-4o-mini', {
               responseFormat: { type: 'json_object' },
             }),
