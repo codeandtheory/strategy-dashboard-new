@@ -1596,6 +1596,9 @@ export default function TeamDashboard() {
             setHoroscopeImageSlots(imageData.prompt_slots || null)
             setHoroscopeImageSlotsLabels(imageData.prompt_slots_labels || null)
             setHoroscopeImageSlotsReasoning(imageData.prompt_slots_reasoning || null)
+            setHoroscopeImageCaption(imageData.character_name || null)
+            setHoroscopeImageLoading(false)
+            setHoroscopeImageError(null)
             console.log('Reasoning state set to:', imageData.prompt_slots_reasoning)
             hasFetchedRef.current = true // Mark as fetched
           } else if (!horoscopeAvatarEnabled) {
@@ -1604,6 +1607,49 @@ export default function TeamDashboard() {
             setHoroscopeImageLoading(false)
             setHoroscopeImageError(null)
           }
+        } else if (imageData && imageData.generating) {
+          // Image is being generated in background - poll again after a delay
+          console.log('⏳ Image is generating in background, will poll again...')
+          console.log('   Message:', imageData.message)
+          // Keep loading state active and poll again after 5 seconds
+          setTimeout(async () => {
+            if (isMounted && horoscopeAvatarEnabled) {
+              try {
+                const pollResponse = await fetch('/api/horoscope/avatar')
+                if (pollResponse.ok) {
+                  const pollData = await pollResponse.json()
+                  if (pollData.image_url) {
+                    console.log('✅ Image ready after polling:', pollData.image_url)
+                    setHoroscopeImage(pollData.image_url)
+                    setHoroscopeImagePrompt(pollData.image_prompt || null)
+                    setHoroscopeImageSlots(pollData.prompt_slots || null)
+                    setHoroscopeImageSlotsLabels(pollData.prompt_slots_labels || null)
+                    setHoroscopeImageSlotsReasoning(pollData.prompt_slots_reasoning || null)
+                    setHoroscopeImageCaption(pollData.character_name || null)
+                    setHoroscopeImageLoading(false)
+                    setHoroscopeImageError(null)
+                    hasFetchedRef.current = true
+                  } else if (pollData.generating) {
+                    // Still generating, poll again after another 5 seconds
+                    console.log('⏳ Still generating, will poll again...')
+                    setTimeout(() => {
+                      if (isMounted) {
+                        fetchHoroscopeData() // Recursive call to poll again
+                      }
+                    }, 5000)
+                  } else {
+                    // Generation failed or completed without image
+                    setHoroscopeImageLoading(false)
+                    setHoroscopeImageError('Image generation is taking longer than expected. Please try again later.')
+                  }
+                }
+              } catch (pollError) {
+                console.error('Error polling for image:', pollError)
+                setHoroscopeImageLoading(false)
+                setHoroscopeImageError('Failed to check image status. Please try again later.')
+              }
+            }
+          }, 5000)
         } else if (textData.image_url) {
           // Image URL was already set from text response above
           console.log('✅ Image URL already set from text response:', textData.image_url)
