@@ -267,12 +267,14 @@ export async function GET(request: NextRequest) {
     // CRITICAL: Check if image exists FIRST - if it does, return it immediately
     // This prevents regenerating images that already exist
     if (cachedHoroscope && cachedHoroscope.image_url && cachedHoroscope.image_url.trim() !== '' && isFromToday) {
+      console.log('🚀 ========== AVATAR ENDPOINT: FOUND CACHED IMAGE ==========')
       console.log('✅ Found existing image in database for today - returning it')
       console.log('   Image URL:', cachedHoroscope.image_url.substring(0, 100) + '...')
       console.log('   Date:', cachedHoroscope.date)
       console.log('   Generated at:', cachedHoroscope.generated_at)
       console.log('   Has prompt slots:', !!cachedHoroscope.prompt_slots_json)
       console.log('   Character name in DB:', cachedHoroscope.character_name || 'null/empty')
+      console.log('   Character name type:', typeof cachedHoroscope.character_name)
       console.log('   ⚠️ NOT regenerating - image already exists for today')
       
       // Clean character_name if it's a JSON stringified object (one-time cleanup)
@@ -305,7 +307,10 @@ export async function GET(request: NextRequest) {
       
       // If character_name is missing, check Airtable for it (read-only, don't create new records)
       if (!characterName && cachedHoroscope.image_prompt) {
+        console.log('🔍 ========== CHECKING AIRTABLE FOR CHARACTER NAME ==========')
         console.log('   ⚠️ Character name missing in database - checking Airtable (read-only)...')
+        console.log('   User ID:', userId)
+        console.log('   Image prompt exists:', !!cachedHoroscope.image_prompt)
         try {
           // Direct Airtable query to check for existing records without creating new ones
           const baseId = process.env.AIRTABLE_IMAGE_BASE_ID
