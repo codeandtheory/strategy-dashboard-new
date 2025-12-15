@@ -337,29 +337,52 @@ export async function GET(request: NextRequest) {
             
             if (queryResponse.ok) {
               const queryData = await queryResponse.json()
+              console.log('   📋 Airtable query response:', {
+                recordCount: queryData.records?.length || 0,
+                hasRecords: !!(queryData.records && queryData.records.length > 0)
+              })
+              
               if (queryData.records && queryData.records.length > 0) {
-                // Check first record for character name
-                const record = queryData.records[0]
-                const foundCaption = record.fields?.['Character Name'] || record.fields?.['Caption']
+                // Check all records for character name (in case first one doesn't have it)
+                for (const record of queryData.records) {
+                  const foundCaption = record.fields?.['Character Name'] || record.fields?.['Caption']
+                  console.log('   🔍 Checking record:', {
+                    id: record.id,
+                    hasCharacterName: !!record.fields?.['Character Name'],
+                    hasCaption: !!record.fields?.['Caption'],
+                    characterNameValue: record.fields?.['Character Name'],
+                    captionValue: record.fields?.['Caption'],
+                    allFields: Object.keys(record.fields || {})
+                  })
+                  
+                  if (foundCaption && typeof foundCaption === 'string' && foundCaption.length > 0) {
+                    console.log('   ✅ Found character name in Airtable:', foundCaption)
+                    characterName = foundCaption
+                    // Update database with character name
+                    const { error: updateError } = await supabaseAdmin
+                      .from('horoscopes')
+                      .update({ character_name: characterName })
+                      .eq('user_id', userId)
+                      .eq('date', todayDate)
+                    
+                    if (updateError) {
+                      console.error('   ❌ Error updating database with character name:', updateError)
+                    } else {
+                      console.log('   ✅ Updated database with character name from Airtable:', characterName)
+                    }
+                    break // Found it, stop looking
+                  }
+                }
                 
-                if (foundCaption && typeof foundCaption === 'string' && foundCaption.length > 0) {
-                  console.log('   ✅ Found character name in Airtable:', foundCaption)
-                  characterName = foundCaption
-                  // Update database with character name
-                  await supabaseAdmin
-                    .from('horoscopes')
-                    .update({ character_name: characterName })
-                    .eq('user_id', userId)
-                    .eq('date', todayDate)
-                  console.log('   ✅ Updated database with character name from Airtable')
-                } else {
-                  console.log('   ⚠️ No character name found in Airtable record')
+                if (!characterName) {
+                  console.log('   ⚠️ No character name found in any Airtable record')
                 }
               } else {
                 console.log('   ⚠️ No Airtable records found for today')
               }
             } else {
-              console.log('   ⚠️ Airtable query failed:', queryResponse.status)
+              const errorText = await queryResponse.text().catch(() => 'Unknown error')
+              console.log('   ⚠️ Airtable query failed:', queryResponse.status, errorText.substring(0, 200))
             }
           }
         } catch (error: any) {
@@ -418,6 +441,7 @@ export async function GET(request: NextRequest) {
       const cachedReasoning = slots?.reasoning || null
       
       // Return the existing image immediately - don't regenerate
+      console.log('   📤 Returning cached image with character_name:', characterName || 'null')
       return NextResponse.json({
         image_url: cachedHoroscope.image_url,
         image_prompt: cachedHoroscope.image_prompt || null,
