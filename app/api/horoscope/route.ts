@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateHoroscopeDirect } from '@/lib/horoscope-direct-service'
 import { generateHoroscopeViaAirtable } from '@/lib/airtable-ai-service'
+import { generateHoroscopeViaElvex } from '@/lib/elvex-horoscope-service'
 import { fetchCafeAstrologyHoroscope } from '@/lib/cafe-astrology'
 import {
   buildUserProfile,
@@ -745,23 +746,19 @@ export async function GET(request: NextRequest) {
           throw new Error('Failed to build image prompt - prompt is empty')
         }
         
-        // Check if we should use Airtable AI (if configured)
-        const useAirtableAI = !!process.env.AIRTABLE_WEBHOOK_URL || (process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_AI_BASE_ID)
+        // Use Elvex API (required)
+        if (!process.env.ELVEX_API_KEY) {
+          throw new Error('ELVEX_API_KEY is required. Please set it in environment variables.')
+        }
         
         // Debug logging
-        console.log('🔍 Airtable AI check:', {
-          hasWebhookUrl: !!process.env.AIRTABLE_WEBHOOK_URL,
-          hasApiKey: !!process.env.AIRTABLE_API_KEY,
-          hasBaseId: !!process.env.AIRTABLE_AI_BASE_ID,
-          willUseAirtable: useAirtableAI
-        })
+        console.log('🔍 Using Elvex API for horoscope generation')
         
         let directResult
-        if (useAirtableAI) {
-          console.log('🚀 Generating horoscope text and image via Airtable AI...')
-          console.log('   Using Airtable AI tokens for generation')
-          console.log('   Airtable will fetch Cafe Astrology text and build image prompt')
-          console.log('🔍 DEBUG: Airtable AI call parameters:', {
+        {
+          console.log('🚀 Generating horoscope text and image via Elvex API...')
+          console.log('   Using Elvex API for both text and image generation')
+          console.log('🔍 DEBUG: Elvex API call parameters:', {
             starSign,
             userId,
             date: todayDate,
@@ -769,15 +766,14 @@ export async function GET(request: NextRequest) {
             weekday: userProfile.weekday,
             season: userProfile.season
           })
-          const airtableStartTime = Date.now()
+          const elvexStartTime = Date.now()
           
-          // Call Airtable AI service
-          // Pass Cafe Astrology text (app fetches it) - Airtable can use it or fetch its own
-          // Airtable will build image prompt from user profile
-          directResult = await generateHoroscopeViaAirtable({
+          // Call Elvex service
+          directResult = await generateHoroscopeViaElvex({
             starSign,
             userId,
             date: todayDate,
+            cafeAstrologyText: cafeAstrologyText,
             userProfile: {
               name: profile.full_name || null,
               role: profile.role || null,
@@ -790,41 +786,13 @@ export async function GET(request: NextRequest) {
             },
             weekday: userProfile.weekday,
             season: userProfile.season,
-            // Pass Cafe Astrology text (app already fetched it)
-            cafeAstrologyText: cafeAstrologyText,
-            // Don't pass imagePrompt - let Airtable build it from user profile
+            imagePrompt: imagePrompt, // Optional - Elvex will generate if not provided
             slots: promptSlots,
             reasoning: promptReasoning,
           })
           
-          const airtableElapsed = Date.now() - airtableStartTime
-          console.log(`✅ Airtable AI generation completed in ${airtableElapsed}ms`)
-        } else {
-          console.log('🚀 Generating horoscope text and image via direct OpenAI API calls...')
-          console.log('   This replaces n8n workflow with direct API calls for better performance')
-          console.log('🔍 DEBUG: Direct API call parameters:', {
-            starSign,
-            imagePromptLength: imagePrompt?.length || 0,
-            userId,
-            date: todayDate,
-            dateType: typeof todayDate,
-            cafeAstrologyTextLength: cafeAstrologyText?.length || 0
-          })
-          const directStartTime = Date.now()
-          
-          // Call direct service for both text transformation and image generation
-          directResult = await generateHoroscopeDirect({
-            cafeAstrologyText,
-            starSign,
-            imagePrompt,
-            slots: promptSlots,
-            reasoning: promptReasoning,
-            userId,
-            date: todayDate,
-          })
-          
-          const directElapsed = Date.now() - directStartTime
-          console.log(`✅ Direct API calls completed in ${directElapsed}ms`)
+          const elvexElapsed = Date.now() - elvexStartTime
+          console.log(`✅ Elvex API generation completed in ${elvexElapsed}ms`)
         }
         
         // Validate result before using it
