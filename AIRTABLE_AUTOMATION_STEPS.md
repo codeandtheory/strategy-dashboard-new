@@ -464,16 +464,108 @@ Some Airtable extensions (like "Data Fetcher" or "HTTP Request") might be availa
 
 ## Step 10: Test the Automation
 
+### Step 10a: Turn On the Automation
+
 1. **Turn on the automation** (toggle switch at the top of the automation editor)
-2. **Test it:**
-   - Use Airtable's test feature, OR
-   - Send a test webhook from your app
-3. **Check the logs:**
-   - Click on each action to see if it completed successfully
-   - Check for any errors
-4. **Verify the webhook:**
-   - Check your app's logs to see if the webhook was received
-   - Verify the data format matches what your app expects
+2. Click **"Save"** if prompted
+
+### Step 10b: Send a Test Webhook Request
+
+The webhook URL needs to receive a request to trigger the automation. Here's how to test it:
+
+**Option 1: Use curl (Terminal/Command Line)**
+
+```bash
+curl -X POST https://hooks.airtable.com/workflows/v1/YOUR_WEBHOOK_ID \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "test-user-123",
+    "date": "2024-12-12",
+    "starSign": "Aries",
+    "cafeAstrologyText": "Today is a good day for Aries to take action and move forward with confidence. The stars align in your favor, bringing opportunities for growth and success.",
+    "userProfile": {
+      "name": "Test User",
+      "role": "Designer",
+      "hobbies": ["photography", "reading"],
+      "likes_fantasy": true,
+      "likes_scifi": false,
+      "likes_cute": true,
+      "likes_minimal": false,
+      "hates_clowns": true
+    },
+    "weekday": "Thursday",
+    "season": "Winter",
+    "callbackUrl": "https://your-app.vercel.app/api/airtable/horoscope-webhook"
+  }'
+```
+
+*(Replace `YOUR_WEBHOOK_ID` with your actual webhook URL from Step 2)*
+
+**Option 2: Use a Tool like Postman or Insomnia**
+
+1. Create a new POST request
+2. URL: Your Airtable webhook URL (from Step 2)
+3. Headers: `Content-Type: application/json`
+4. Body (JSON):
+```json
+{
+  "userId": "test-user-123",
+  "date": "2024-12-12",
+  "starSign": "Aries",
+  "cafeAstrologyText": "Today is a good day for Aries to take action and move forward with confidence. The stars align in your favor, bringing opportunities for growth and success.",
+  "userProfile": {
+    "name": "Test User",
+    "role": "Designer",
+    "hobbies": ["photography", "reading"],
+    "likes_fantasy": true,
+    "likes_scifi": false,
+    "likes_cute": true,
+    "likes_minimal": false,
+    "hates_clowns": true
+  },
+  "weekday": "Thursday",
+  "season": "Winter",
+  "callbackUrl": "https://your-app.vercel.app/api/airtable/horoscope-webhook"
+}
+```
+
+**Option 3: Use Airtable's Test Feature (If Available)**
+
+1. In the automation editor, look for a **"Test"** or **"Run test"** button
+2. Click it to send a test webhook
+3. You may need to provide the test payload manually
+
+### Step 10c: Check the Automation Logs
+
+1. After sending the test request, go back to your automation
+2. Click on each action to see if it completed successfully
+3. Look for:
+   - ✅ Green checkmarks = Success
+   - ❌ Red X = Error (click to see error details)
+   - ⏳ In progress = Still running
+
+### Step 10d: Verify Results
+
+1. **Check your "Horoscope Images" table** - Should have a new record with the generated image
+2. **Check your "Horoscope Results" table** (if you created one) - Should have the completed results
+3. **Check Airtable logs** - Each action should show its output
+
+### Troubleshooting
+
+**"This URL has not received any requests recently"**
+- This is normal before you send a test request
+- Send a test webhook using one of the methods above
+- The message should disappear once a request is received
+
+**Automation not triggering**
+- Make sure the automation is turned ON (toggle at top)
+- Verify the webhook URL is correct
+- Check that the request format matches what Airtable expects
+
+**Actions failing**
+- Click on the failed action to see error details
+- Check that all required fields are filled
+- Verify AI credits/tokens are available
 
 ---
 
