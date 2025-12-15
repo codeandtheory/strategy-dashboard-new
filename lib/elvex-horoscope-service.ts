@@ -381,9 +381,17 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
   const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableIdentifier)}`
 
   // Format Created At in user's timezone, or UTC if not provided
-  const createdAt = timezone 
-    ? formatDateInTimezone(timezone)
-    : new Date().toISOString()
+  // Airtable Date field expects YYYY-MM-DD format (date only, no time)
+  let createdAt: string
+  if (timezone) {
+    // Use formatDateInTimezone but extract just the date part (YYYY-MM-DD)
+    const dateTimeStr = formatDateInTimezone(timezone)
+    createdAt = dateTimeStr.split('T')[0] // Extract YYYY-MM-DD from YYYY-MM-DDTHH:mm:ss
+  } else {
+    // UTC fallback - just get the date part
+    const now = new Date()
+    createdAt = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`
+  }
 
   try {
     // Step 1: Create a record in Airtable with the image prompt
