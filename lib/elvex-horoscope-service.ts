@@ -404,7 +404,7 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
     console.log(`   Prompt preview: ${prompt.substring(0, 100)}...`)
     
     // Airtable API requires records array format
-    const requestBody = {
+    const requestBody: any = {
       records: [
         {
           fields: {
@@ -415,6 +415,15 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
         }
       ]
     }
+    
+    // Add user identifier fields if provided
+    if (userId) {
+      requestBody.records[0].fields['User ID'] = userId
+    }
+    if (userEmail) {
+      requestBody.records[0].fields['User Email'] = userEmail
+    }
+    
     console.log('📤 Request body being sent to Airtable:')
     console.log('   Full request body:', JSON.stringify(requestBody, null, 2))
     console.log('   Prompt in request body:', requestBody.records[0].fields['Image Prompt'])
