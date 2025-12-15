@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
         event_name,
         target_date,
         text_format,
+        custom_format,
+        sticker_url,
         start_date,
         end_date,
         active,
@@ -91,6 +93,8 @@ export async function POST(request: NextRequest) {
       event_name,
       target_date,
       text_format,
+      custom_format,
+      sticker_url,
       start_date,
       end_date,
       active
@@ -118,6 +122,8 @@ export async function POST(request: NextRequest) {
         event_name: mode === 'countdown' ? event_name : null,
         target_date: mode === 'countdown' ? target_date : null,
         text_format: mode === 'countdown' ? (text_format || 'days_until') : null,
+        custom_format: mode === 'countdown' && text_format === 'custom' ? custom_format : null,
+        sticker_url: sticker_url || null,
         start_date: start_date || new Date().toISOString().split('T')[0],
         end_date: end_date || null,
         active: active !== undefined ? active : true,
@@ -165,6 +171,8 @@ export async function PUT(request: NextRequest) {
       event_name,
       target_date,
       text_format,
+      custom_format,
+      sticker_url,
       start_date,
       end_date,
       active
@@ -186,6 +194,8 @@ export async function PUT(request: NextRequest) {
     if (event_name !== undefined) updateData.event_name = event_name
     if (target_date !== undefined) updateData.target_date = target_date
     if (text_format !== undefined) updateData.text_format = text_format
+    if (custom_format !== undefined) updateData.custom_format = custom_format
+    if (sticker_url !== undefined) updateData.sticker_url = sticker_url
     if (start_date !== undefined) updateData.start_date = start_date
     if (end_date !== undefined) updateData.end_date = end_date
     if (active !== undefined) updateData.active = active

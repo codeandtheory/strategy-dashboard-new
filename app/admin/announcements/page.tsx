@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useMode } from '@/contexts/mode-context'
 import { useAuth } from '@/contexts/auth-context'
-import { Plus, Edit, Trash2, X } from 'lucide-react'
+import { Plus, Edit, Trash2, X, Upload } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface Announcement {
   id: string
@@ -16,7 +17,9 @@ interface Announcement {
   mode: 'text' | 'countdown'
   event_name: string | null
   target_date: string | null
-  text_format: 'days_until' | 'happens_in' | null
+  text_format: 'days_until' | 'happens_in' | 'custom' | null
+  custom_format: string | null
+  sticker_url: string | null
   start_date: string
   end_date: string | null
   active: boolean
@@ -48,11 +51,16 @@ export default function AnnouncementsPage() {
     mode: 'text' as 'text' | 'countdown',
     event_name: '',
     target_date: '',
-    text_format: 'days_until' as 'days_until' | 'happens_in',
+    text_format: 'days_until' as 'days_until' | 'happens_in' | 'custom',
+    custom_format: '',
+    sticker_url: '',
     start_date: getTodayDate(),
     end_date: '',
     active: true,
   })
+  const [stickerPreview, setStickerPreview] = useState<string | null>(null)
+  const [uploadingSticker, setUploadingSticker] = useState(false)
+  const stickerUploadRef = useRef<HTMLInputElement>(null)
 
   const getBgClass = () => {
     switch (mode) {
@@ -137,6 +145,8 @@ export default function AnnouncementsPage() {
           event_name: formData.mode === 'countdown' ? formData.event_name : null,
           target_date: formData.mode === 'countdown' && formData.target_date ? new Date(formData.target_date).toISOString() : null,
           text_format: formData.mode === 'countdown' ? formData.text_format : null,
+          custom_format: formData.mode === 'countdown' && formData.text_format === 'custom' ? formData.custom_format : null,
+          sticker_url: formData.sticker_url || null,
           start_date: formData.start_date,
           end_date: formData.end_date || null,
           active: formData.active,
@@ -173,10 +183,13 @@ export default function AnnouncementsPage() {
       event_name: item.event_name || '',
       target_date: targetDateLocal,
       text_format: item.text_format || 'days_until',
+      custom_format: item.custom_format || '',
+      sticker_url: item.sticker_url || '',
       start_date: item.start_date,
       end_date: item.end_date || '',
       active: item.active,
     })
+    setStickerPreview(item.sticker_url || null)
     setIsEditDialogOpen(true)
   }
 
@@ -244,10 +257,75 @@ export default function AnnouncementsPage() {
       event_name: '',
       target_date: '',
       text_format: 'days_until',
+      custom_format: '',
+      sticker_url: '',
       start_date: getTodayDate(),
       end_date: '',
       active: true,
     })
+    setStickerPreview(null)
+  }
+
+  // Handle sticker upload
+  const handleStickerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+
+    // Allow images and GIFs
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image or GIF file')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File must be less than 5MB')
+      return
+    }
+
+    setUploadingSticker(true)
+
+    try {
+      const supabase = createClient()
+      const fileExt = file.name.split('.').pop()
+      const fileName = `announcement-sticker-${Date.now()}.${fileExt}`
+      const filePath = `${user.id}/${fileName}`
+
+      // Preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setStickerPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+
+      // Upload to Supabase storage (using work-sample-thumbnails bucket)
+      const { error: uploadError } = await supabase.storage
+        .from('work-sample-thumbnails')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (uploadError) {
+        throw uploadError
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('work-sample-thumbnails')
+        .getPublicUrl(filePath)
+
+      setFormData({ ...formData, sticker_url: publicUrl })
+      
+      // Reset file input
+      if (stickerUploadRef.current) {
+        stickerUploadRef.current.value = ''
+      }
+    } catch (err: any) {
+      console.error('Error uploading sticker:', err)
+      alert(err.message || 'Failed to upload sticker')
+    } finally {
+      setUploadingSticker(false)
+    }
   }
 
   const cardStyle = getCardStyle()
@@ -295,14 +373,62 @@ export default function AnnouncementsPage() {
                     <option value="countdown">Countdown (Event countdown)</option>
                   </select>
                 </div>
+                {formData.mode === 'text' && (
+                  <div>
+                    <Label className={cardStyle.text}>Headline *</Label>
+                    <Input
+                      value={formData.headline}
+                      onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
+                      className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
+                      placeholder="Enter announcement headline"
+                    />
+                  </div>
+                )}
                 <div>
-                  <Label className={cardStyle.text}>Headline *</Label>
-                  <Input
-                    value={formData.headline}
-                    onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
-                    className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
-                    placeholder="Enter announcement headline"
-                  />
+                  <Label className={cardStyle.text}>Sticker/GIF (Breaker between text) (optional)</Label>
+                  <div className="space-y-2">
+                    {stickerPreview && (
+                      <div className="relative">
+                        <img 
+                          src={stickerPreview} 
+                          alt="Sticker preview" 
+                          className="max-w-full h-24 object-contain rounded-md"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setStickerPreview(null)
+                            setFormData({ ...formData, sticker_url: '' })
+                            if (stickerUploadRef.current) {
+                              stickerUploadRef.current.value = ''
+                            }
+                          }}
+                          className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={stickerUploadRef}
+                        type="file"
+                        accept="image/*,.gif"
+                        onChange={handleStickerUpload}
+                        className="hidden"
+                        id="sticker-upload-add"
+                      />
+                      <Label
+                        htmlFor="sticker-upload-add"
+                        className={`flex items-center gap-2 px-4 py-2 ${cardStyle.border} border ${cardStyle.text} cursor-pointer ${getRoundedClass('rounded-md')} hover:opacity-80`}
+                      >
+                        <Upload className="w-4 h-4" />
+                        {uploadingSticker ? 'Uploading...' : stickerPreview ? 'Change Sticker' : 'Upload Sticker/GIF'}
+                      </Label>
+                    </div>
+                  </div>
                 </div>
                 {formData.mode === 'countdown' && (
                   <>
@@ -335,12 +461,12 @@ export default function AnnouncementsPage() {
                             name="text_format"
                             value="days_until"
                             checked={formData.text_format === 'days_until'}
-                            onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' })}
+                            onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' | 'custom' })}
                             className="mt-1"
                           />
                           <div className="flex-1">
                             <div className={`font-semibold ${cardStyle.text} mb-1`}>
-                              "X days until [Event]"
+                              "{days} days until {event}"
                             </div>
                             <div className={`text-sm ${cardStyle.text}/70`}>
                               Example: "5 days until Team Meeting"
@@ -355,16 +481,44 @@ export default function AnnouncementsPage() {
                             name="text_format"
                             value="happens_in"
                             checked={formData.text_format === 'happens_in'}
-                            onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' })}
+                            onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' | 'custom' })}
                             className="mt-1"
                           />
                           <div className="flex-1">
                             <div className={`font-semibold ${cardStyle.text} mb-1`}>
-                              "[Event] happens in X days"
+                              "{event} happens in {days} days"
                             </div>
                             <div className={`text-sm ${cardStyle.text}/70`}>
                               Example: "Product Launch happens in 10 days"
                             </div>
+                          </div>
+                        </label>
+                        <label className={`flex items-start gap-3 p-3 ${cardStyle.border} border rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${
+                          formData.text_format === 'custom' ? `${cardStyle.border} border-2` : ''
+                        }`}>
+                          <input
+                            type="radio"
+                            name="text_format"
+                            value="custom"
+                            checked={formData.text_format === 'custom'}
+                            onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' | 'custom' })}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className={`font-semibold ${cardStyle.text} mb-1`}>
+                              Custom (Free text with variables)
+                            </div>
+                            <div className={`text-sm ${cardStyle.text}/70 mb-2`}>
+                              Use {"{days}"} for days remaining and {"{event}"} for event name
+                            </div>
+                            {formData.text_format === 'custom' && (
+                              <Input
+                                value={formData.custom_format}
+                                onChange={(e) => setFormData({ ...formData, custom_format: e.target.value })}
+                                className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} mt-2`}
+                                placeholder='e.g., "Only {days} more days until {event}!"'
+                              />
+                            )}
                           </div>
                         </label>
                       </div>
@@ -411,7 +565,7 @@ export default function AnnouncementsPage() {
                   </Button>
                   <Button
                     onClick={handleAdd}
-                    disabled={!formData.headline || (formData.mode === 'countdown' && (!formData.event_name || !formData.target_date))}
+                    disabled={(formData.mode === 'text' && !formData.headline) || (formData.mode === 'countdown' && (!formData.event_name || !formData.target_date || (formData.text_format === 'custom' && !formData.custom_format)))}
                     className={`${getRoundedClass('rounded-lg')} ${
                       mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
                       mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
@@ -500,13 +654,61 @@ export default function AnnouncementsPage() {
                   <option value="countdown">Countdown (Event countdown)</option>
                 </select>
               </div>
+              {formData.mode === 'text' && (
+                <div>
+                  <Label className={cardStyle.text}>Headline *</Label>
+                  <Input
+                    value={formData.headline}
+                    onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
+                    className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
+                  />
+                </div>
+              )}
               <div>
-                <Label className={cardStyle.text}>Headline *</Label>
-                <Input
-                  value={formData.headline}
-                  onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
-                  className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
-                />
+                <Label className={cardStyle.text}>Sticker/GIF (Breaker between text) (optional)</Label>
+                <div className="space-y-2">
+                  {stickerPreview && (
+                    <div className="relative">
+                      <img 
+                        src={stickerPreview} 
+                        alt="Sticker preview" 
+                        className="max-w-full h-24 object-contain rounded-md"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setStickerPreview(null)
+                          setFormData({ ...formData, sticker_url: '' })
+                          if (stickerUploadRef.current) {
+                            stickerUploadRef.current.value = ''
+                          }
+                        }}
+                        className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={stickerUploadRef}
+                      type="file"
+                      accept="image/*,.gif"
+                      onChange={handleStickerUpload}
+                      className="hidden"
+                      id="sticker-upload-edit"
+                    />
+                    <Label
+                      htmlFor="sticker-upload-edit"
+                      className={`flex items-center gap-2 px-4 py-2 ${cardStyle.border} border ${cardStyle.text} cursor-pointer ${getRoundedClass('rounded-md')} hover:opacity-80`}
+                    >
+                      <Upload className="w-4 h-4" />
+                      {uploadingSticker ? 'Uploading...' : stickerPreview ? 'Change Sticker' : 'Upload Sticker/GIF'}
+                    </Label>
+                  </div>
+                </div>
               </div>
               {formData.mode === 'countdown' && (
                 <>
@@ -538,12 +740,12 @@ export default function AnnouncementsPage() {
                           name="text_format_edit"
                           value="days_until"
                           checked={formData.text_format === 'days_until'}
-                          onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' })}
+                          onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' | 'custom' })}
                           className="mt-1"
                         />
                         <div className="flex-1">
                           <div className={`font-semibold ${cardStyle.text} mb-1`}>
-                            "X days until [Event]"
+                            "{days} days until {event}"
                           </div>
                           <div className={`text-sm ${cardStyle.text}/70`}>
                             Example: "5 days until Team Meeting"
@@ -558,16 +760,44 @@ export default function AnnouncementsPage() {
                           name="text_format_edit"
                           value="happens_in"
                           checked={formData.text_format === 'happens_in'}
-                          onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' })}
+                          onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' | 'custom' })}
                           className="mt-1"
                         />
                         <div className="flex-1">
                           <div className={`font-semibold ${cardStyle.text} mb-1`}>
-                            "[Event] happens in X days"
+                            "{event} happens in {days} days"
                           </div>
                           <div className={`text-sm ${cardStyle.text}/70`}>
                             Example: "Product Launch happens in 10 days"
                           </div>
+                        </div>
+                      </label>
+                      <label className={`flex items-start gap-3 p-3 ${cardStyle.border} border rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${
+                        formData.text_format === 'custom' ? `${cardStyle.border} border-2` : ''
+                      }`}>
+                        <input
+                          type="radio"
+                          name="text_format_edit"
+                          value="custom"
+                          checked={formData.text_format === 'custom'}
+                          onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' | 'custom' })}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className={`font-semibold ${cardStyle.text} mb-1`}>
+                            Custom (Free text with variables)
+                          </div>
+                          <div className={`text-sm ${cardStyle.text}/70 mb-2`}>
+                            Use {"{days}"} for days remaining and {"{event}"} for event name
+                          </div>
+                          {formData.text_format === 'custom' && (
+                            <Input
+                              value={formData.custom_format}
+                              onChange={(e) => setFormData({ ...formData, custom_format: e.target.value })}
+                              className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text} mt-2`}
+                              placeholder='e.g., "Only {days} more days until {event}!"'
+                            />
+                          )}
                         </div>
                       </label>
                     </div>
@@ -614,7 +844,7 @@ export default function AnnouncementsPage() {
                 </Button>
                 <Button
                   onClick={handleUpdate}
-                  disabled={!formData.headline || (formData.mode === 'countdown' && (!formData.event_name || !formData.target_date))}
+                  disabled={(formData.mode === 'text' && !formData.headline) || (formData.mode === 'countdown' && (!formData.event_name || !formData.target_date || (formData.text_format === 'custom' && !formData.custom_format)))}
                   className={`${getRoundedClass('rounded-lg')} ${
                     mode === 'chaos' ? 'bg-[#C4F500] text-black hover:bg-[#C4F500]/80' :
                     mode === 'chill' ? 'bg-[#FFC043] text-[#4A1818] hover:bg-[#FFC043]/80' :
