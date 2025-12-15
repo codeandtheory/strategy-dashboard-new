@@ -705,6 +705,9 @@ export async function generateHoroscopeViaElvex(
     console.log('   imagePrompt type:', typeof imagePrompt)
     console.log('   imagePrompt length:', imagePrompt?.length || 0)
     console.log('   imagePrompt value:', imagePrompt ? imagePrompt.substring(0, 100) + '...' : 'null/undefined')
+    console.log('   imagePrompt.trim() result:', imagePrompt ? imagePrompt.trim() : 'N/A')
+    console.log('   imagePrompt.trim() length:', imagePrompt ? imagePrompt.trim().length : 0)
+    console.log('   Condition check (imagePrompt && imagePrompt.trim() !== ""):', !!(imagePrompt && imagePrompt.trim() !== ''))
     
     if (imagePrompt && imagePrompt.trim() !== '') {
       console.log('🚀 ========== STARTING AIRTABLE IMAGE GENERATION ==========')
