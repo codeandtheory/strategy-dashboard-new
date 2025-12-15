@@ -96,6 +96,7 @@ export default function TeamDashboard() {
   const [horoscopeImageSlots, setHoroscopeImageSlots] = useState<any>(null)
   const [horoscopeImageSlotsLabels, setHoroscopeImageSlotsLabels] = useState<any>(null)
   const [horoscopeImageSlotsReasoning, setHoroscopeImageSlotsReasoning] = useState<any>(null)
+  const [horoscopeImageCaption, setHoroscopeImageCaption] = useState<string | null>(null)
   const [horoscopeLoading, setHoroscopeLoading] = useState(true)
   const [horoscopeImageLoading, setHoroscopeImageLoading] = useState(true)
   const [horoscopeError, setHoroscopeError] = useState<string | null>(null)
@@ -124,6 +125,39 @@ export default function TeamDashboard() {
   // Check if horoscope is enabled (default to true if not set)
   const horoscopeEnabled = appSettings.horoscope_enabled !== 'false'
   const horoscopeAvatarEnabled = appSettings.horoscope_avatar_enabled !== 'false'
+  
+  // Fetch image caption when image is loaded
+  useEffect(() => {
+    async function fetchImageCaption() {
+      if (!horoscopeImage || !horoscopeAvatarEnabled) {
+        setHoroscopeImageCaption(null)
+        return
+      }
+
+      try {
+        const response = await fetch('/api/horoscope/image-caption', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ imageUrl: horoscopeImage }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setHoroscopeImageCaption(data.caption || null)
+        } else {
+          console.error('Failed to fetch image caption:', response.statusText)
+          setHoroscopeImageCaption(null)
+        }
+      } catch (error) {
+        console.error('Error fetching image caption:', error)
+        setHoroscopeImageCaption(null)
+      }
+    }
+
+    fetchImageCaption()
+  }, [horoscopeImage, horoscopeAvatarEnabled])
   
   // Rotating loading messages
   const horoscopeLoadingMessages = [
@@ -2342,9 +2376,9 @@ export default function TeamDashboard() {
                         }
                       </p>
                     )}
-                    {characterName && (
+                    {horoscopeImageCaption && horoscopeImage && (
                       <p className={`text-[clamp(0.875rem,2vw+0.5rem,1.25rem)] font-semibold max-w-2xl leading-[1.2] tracking-tight mt-1 ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
-                        {characterName}
+                        {horoscopeImageCaption}
                       </p>
                     )}
                   </div>

@@ -466,7 +466,7 @@ export default function AnnouncementsPage() {
                           />
                           <div className="flex-1">
                             <div className={`font-semibold ${cardStyle.text} mb-1`}>
-                              "{days} days until {event}"
+                              {"{days}"} days until {"{event}"}
                             </div>
                             <div className={`text-sm ${cardStyle.text}/70`}>
                               Example: "5 days until Team Meeting"
@@ -486,7 +486,7 @@ export default function AnnouncementsPage() {
                           />
                           <div className="flex-1">
                             <div className={`font-semibold ${cardStyle.text} mb-1`}>
-                              "{event} happens in {days} days"
+                              {"{event}"} happens in {"{days}"} days
                             </div>
                             <div className={`text-sm ${cardStyle.text}/70`}>
                               Example: "Product Launch happens in 10 days"
@@ -745,7 +745,7 @@ export default function AnnouncementsPage() {
                         />
                         <div className="flex-1">
                           <div className={`font-semibold ${cardStyle.text} mb-1`}>
-                            "{days} days until {event}"
+                            {"{days}"} days until {"{event}"}
                           </div>
                           <div className={`text-sm ${cardStyle.text}/70`}>
                             Example: "5 days until Team Meeting"
@@ -765,7 +765,7 @@ export default function AnnouncementsPage() {
                         />
                         <div className="flex-1">
                           <div className={`font-semibold ${cardStyle.text} mb-1`}>
-                            "{event} happens in {days} days"
+                            {"{event}"} happens in {"{days}"} days
                           </div>
                           <div className={`text-sm ${cardStyle.text}/70`}>
                             Example: "Product Launch happens in 10 days"
