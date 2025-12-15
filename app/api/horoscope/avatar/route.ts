@@ -488,12 +488,12 @@ export async function GET(request: NextRequest) {
         console.log('   Timezone:', profile.timezone || 'UTC')
         console.log('   ⚠️ NOTE: Image generation happens in background - returning immediately')
         
-        // Start image generation - return Airtable URL immediately, upload to Supabase in background
+        // Start image generation in background (don't await - return immediately)
         // User is authenticated via Supabase OAuth, so userId and userEmail come from Supabase auth
-        const imageGenerationPromise = generateImageViaAirtable(cachedHoroscope.image_prompt, profile.timezone || undefined, userId, userEmail)
+        generateImageViaAirtable(cachedHoroscope.image_prompt, profile.timezone || undefined, userId, userEmail)
           .then(async (imageResult) => {
             if (imageResult.imageUrl) {
-              console.log('✅ Image generation completed successfully')
+              console.log('✅ Background image generation completed successfully')
               console.log('   Airtable image URL:', imageResult.imageUrl.substring(0, 100) + '...')
               console.log('   Caption:', imageResult.caption || 'none')
               
@@ -583,31 +583,26 @@ export async function GET(request: NextRequest) {
                   // Don't throw - image is already visible from Airtable URL
                 }
               })()
-              
-              return imageResult
             }
           })
-        
-        // Wait for image generation to complete, then return immediately with Airtable URL
-        // Supabase upload happens in background
-        const imageResult = await imageGenerationPromise
-        
-        if (imageResult && imageResult.imageUrl) {
-          // Return immediately with Airtable URL - user sees image right away
-          // Supabase upload is happening in background
-          const slots = cachedHoroscope.prompt_slots_json || {}
-          
-          return NextResponse.json({
-            image_url: imageResult.imageUrl, // Airtable URL - user sees this immediately
-            image_prompt: cachedHoroscope.image_prompt,
-            prompt_slots: slots,
-            prompt_slots_labels: null,
-            prompt_slots_reasoning: slots?.reasoning || null,
-            character_name: imageResult.caption || null,
-            cached: false,
-            uploading_to_supabase: true, // Indicates Supabase upload is in progress
+          .catch((imageError: any) => {
+            console.error('❌ Background image generation failed:', imageError)
+            console.error('   Error message:', imageError.message)
+            // Don't throw - this is background, user can retry later
           })
-        }
+        
+        // Return immediately - image is generating in background
+        // Frontend can poll this endpoint again to check if image is ready
+        const slots = cachedHoroscope.prompt_slots_json || {}
+        return NextResponse.json({
+          image_url: null,
+          image_prompt: cachedHoroscope.image_prompt,
+          prompt_slots: slots,
+          prompt_slots_labels: null,
+          prompt_slots_reasoning: slots?.reasoning || null,
+          generating: true, // Indicates image is being generated in background
+          message: 'Image generation started in background. Please check again in a few moments.',
+        })
           .catch((imageError: any) => {
             console.error('❌ Background image generation failed:', imageError)
             console.error('   Error message:', imageError.message)
