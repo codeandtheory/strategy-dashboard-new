@@ -450,19 +450,90 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
             }
             
             // If we found records but none are completed, check if any are still pending
-            const pendingRecord = queryData.records.find((r: any) => r.fields?.Status === 'Pending')
+            const pendingRecord = queryData.records.find((r: any) => r.fields?.Status === 'Pending' || r.fields?.Status === 'Processing')
             if (pendingRecord) {
-              console.log('   Found pending record - will poll for completion instead of creating new one')
+              console.log('✅ Found existing pending/processing record - will poll for completion instead of creating new one')
+              console.log('   Record ID:', pendingRecord.id)
+              console.log('   Status:', pendingRecord.fields?.Status)
               // Use the existing pending record ID and poll for completion
               const recordId = pendingRecord.id
               console.log('   Using existing pending record ID:', recordId)
               
-              // Skip to polling step (will be handled below)
-              // We'll poll this existing record instead of creating a new one
-              // But first, let's continue with the normal flow to create a new record if needed
-              // Actually, let's poll the existing one
+              // Skip creating a new record - go directly to polling the existing one
+              // This prevents duplicate record creation
               console.log('   Polling existing pending record for completion...')
               // Continue to polling logic below with this recordId
+              // Set a flag to skip record creation
+              let skipRecordCreation = true
+              
+              // Poll the existing record
+              const maxPollAttempts = 60 // Poll for up to 5 minutes (60 * 5 seconds)
+              let pollAttempts = 0
+              
+              while (pollAttempts < maxPollAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 5000)) // Wait 5 seconds between polls
+                pollAttempts++
+                
+                console.log(`   Polling attempt ${pollAttempts}/${maxPollAttempts}...`)
+                const pollResponse = await fetch(`${url}/${recordId}`, {
+                  headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                  },
+                })
+                
+                if (pollResponse.ok) {
+                  const pollData = await pollResponse.json()
+                  const status = pollData.fields?.Status
+                  const imageField = pollData.fields?.Image
+                  const imageUrl = pollData.fields?.['Image URL']
+                  
+                  console.log(`   Record status: ${status}, hasImage: ${!!imageField}, hasImageUrl: ${!!imageUrl}`)
+                  
+                  if (status === 'Completed' && (imageField || imageUrl)) {
+                    console.log('✅ Existing pending record completed!')
+                    let finalImageUrl = imageUrl
+                    if (!finalImageUrl && imageField && Array.isArray(imageField) && imageField.length > 0) {
+                      finalImageUrl = imageField[0].url
+                    }
+                    
+                    if (finalImageUrl) {
+                      console.log('   Using completed image URL:', finalImageUrl.substring(0, 100) + '...')
+                      return {
+                        imageUrl: finalImageUrl,
+                        caption: pollData.fields?.['Character Name'] || pollData.fields?.['Caption'] || null,
+                      }
+                    }
+                  } else if (status === 'Failed' || status === 'Error') {
+                    console.log('   Record failed - will create new one')
+                    skipRecordCreation = false
+                    break
+                  }
+                  // If still pending/processing, continue polling
+                } else {
+                  console.log(`   Poll failed: ${pollResponse.status}, will create new record`)
+                  skipRecordCreation = false
+                  break
+                }
+              }
+              
+              if (skipRecordCreation && pollAttempts >= maxPollAttempts) {
+                console.log('   Polling timeout - returning null to indicate image is still generating')
+                return {
+                  imageUrl: '', // Empty string indicates still generating
+                  caption: null,
+                }
+              }
+              
+              // If we get here and skipRecordCreation is still true, we found the image
+              // Otherwise, continue to create a new record
+              if (skipRecordCreation) {
+                // We should have returned above, but just in case
+                return {
+                  imageUrl: '',
+                  caption: null,
+                }
+              }
             }
           }
         } else {
@@ -475,6 +546,7 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
     }
     
     // Step 1: Create a record in Airtable with the image prompt
+    // Only create if we didn't find an existing pending record to poll
     console.log('🚀 ========== ABOUT TO CREATE AIRTABLE RECORD ==========')
     console.log('📝 Creating image generation request in Airtable...')
     console.log(`   URL: ${url}`)
