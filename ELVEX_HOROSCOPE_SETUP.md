@@ -85,6 +85,41 @@ Rubber Hose Cartoon. Marker Illustration. Top Down View of Karen Piper, a co-hea
 }
 ```
 
+## Critical: API Key Permissions
+
+**Important:** API keys must be granted access to **each assistant separately**. If deck talk is working, your API key is valid, but it may not have access to the horoscope assistant yet.
+
+### Why This Matters
+
+- The same API key can work for one assistant (deck talk) but not another (horoscope)
+- Each assistant has its own Security and Permissions settings
+- You must grant the API key access to each assistant you want to use
+
+### Step-by-Step Process:
+
+1. **Find your API key name** (if you don't know it):
+   - Go to Elvex dashboard > Settings > API Keys
+   - Find the API key that matches your `ELVEX_API_KEY` value
+   - Note the **key name** (this is what appears in assistant permissions)
+
+2. **Grant API key access to horoscope assistant**:
+   - Navigate to your horoscope assistant in Elvex dashboard (ID: `36rfVVxRbLqTq5uODWAXQZttj9V`)
+   - Go to **Security and Permissions** section
+   - Search for the API key **name** (the same one used for deck talk)
+   - Add it as an **Editor** (if not already listed)
+   - Click **Save & Publish** (this is critical - the assistant must be republished after adding API key access)
+
+3. **Verify access**:
+   - The API key should now appear in the horoscope assistant's permissions list
+   - The assistant should show as "Published" with the correct version
+
+**Important:** If you're getting 404 errors for horoscope but deck talk works:
+- The API key is valid (deck talk proves this)
+- You need to grant the same API key access to the horoscope assistant
+- Check: Is the API key name added to the horoscope assistant's permissions?
+- Did you click "Save & Publish" after adding the API key?
+- Is the horoscope assistant showing as "Published" in the dashboard?
+
 ## Setup Required
 
 ### 1. Elvex API Key
@@ -197,6 +232,26 @@ You can configure the assistant in Elvex dashboard to optimize for this use case
 - Verify image generation provider is configured in Elvex (Settings > Apps)
 - Check that your Elvex account has image generation enabled
 - Verify the API key has proper permissions
+
+### Error: "App or app version not found" (404)
+
+This error typically means:
+1. **API key doesn't have access to the assistant** (most common):
+   - Go to assistant settings > Security and Permissions
+   - Verify the API key name is listed as an Editor
+   - If not, add it and click "Save & Publish"
+   - Wait a few minutes for changes to propagate
+
+2. **Assistant not published**:
+   - Ensure the assistant is in "Published" state
+   - Check that you clicked "Save & Publish" after any changes
+
+3. **Version doesn't exist**:
+   - Verify the version number in the assistant settings
+   - Try creating/publishing a new version if needed
+
+4. **Assistant ID incorrect**:
+   - Double-check the assistant ID matches exactly (case-sensitive)
 
 ### Error: "Invalid response format from Elvex"
 - Check server logs for the actual response

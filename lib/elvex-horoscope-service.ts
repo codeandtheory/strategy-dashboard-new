@@ -191,9 +191,9 @@ ${prompt}`
               assistantId: config.assistantId,
               triedVersions: versionsToTry,
               url: elvexUrl,
-              suggestion: 'Check Elvex dashboard to verify: 1) Assistant ID is correct, 2) Version exists and is published, 3) Assistant is active'
+              suggestion: 'Check: 1) API key has permission to access this assistant, 2) Assistant is published, 3) Version exists'
             })
-            throw new Error(`${lastError.message}\n\nTroubleshooting:\n- Verify assistant ID "${config.assistantId}" exists in Elvex dashboard\n- Check that one of these versions exists and is published: ${versionsToTry.join(', ')}\n- Ensure the assistant is active/published`)
+            throw new Error(`${lastError.message}\n\nTroubleshooting:\n- **Most common:** Verify the API key has been granted access to assistant "${config.assistantId}" in Elvex dashboard:\n  → Go to assistant Settings > Security and Permissions\n  → Add the API key name as an Editor\n  → Click "Save & Publish"\n- Verify assistant ID "${config.assistantId}" exists and is correct\n- Check that one of these versions exists and is published: ${versionsToTry.join(', ')}\n- Ensure the assistant is active/published after granting API key access`)
           }
           throw lastError
         }
@@ -222,49 +222,112 @@ ${prompt}`
  */
 
 /**
- * Generate image using Elvex API
+ * Generate image using Elvex Assistant API
+ * 
+ * Elvex supports image generation through the assistant API. The assistant must have
+ * "Image Generation" action enabled in its settings.
+ * 
+ * We send a prompt asking the assistant to generate an image, and it returns the image URL.
  */
 async function generateImageWithElvex(prompt: string): Promise<string> {
-  console.log('🖼️ Generating image using Elvex API...')
+  console.log('🖼️ Generating image using Elvex Assistant API...')
   
   const config = getElvexConfig()
 
   try {
-    // Try Elvex images endpoint (similar to OpenAI structure)
-    const response = await fetch(`${config.baseUrl}/v1/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'dall-e-3', // Elvex may use different model names
-        prompt: prompt,
-        size: '1024x1024',
-        quality: 'standard',
-        n: 1,
-      }),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Elvex image generation failed: ${response.status} ${errorText}`)
-    }
-
-    const result = await response.json()
+    // Use the same assistant API endpoint, but with an image generation prompt
+    // Try the configured version first, then try version 2 as fallback
+    const versionsToTry = [config.version, '2'].filter((v, i, arr) => arr.indexOf(v) === i)
     
-    // Handle different possible response formats
-    const imageUrl = result.data?.[0]?.url || 
-                     result.url || 
-                     result.image_url ||
-                     result.imageUrl
+    let lastError: Error | null = null
+    
+    for (const version of versionsToTry) {
+      const elvexUrl = `${config.baseUrl}/v0/apps/${config.assistantId}/versions/${version}/text/generate`
+      
+      console.log('🔍 Calling Elvex Assistant API for image generation:', {
+        url: elvexUrl,
+        assistantId: config.assistantId,
+        version: version,
+        promptLength: prompt.length,
+        attempt: versionsToTry.indexOf(version) + 1,
+        totalAttempts: versionsToTry.length
+      })
+      
+      // Build prompt asking assistant to generate an image
+      // Elvex assistants with image generation enabled will process this
+      const imagePrompt = `Generate an image with the following description. Return only the image URL, nothing else.
 
-    if (!imageUrl) {
-      throw new Error('Failed to generate image - empty response from Elvex')
+${prompt}
+
+using DALL-E 3`
+
+      const response = await fetch(elvexUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.apiKey}`,
+        },
+        body: JSON.stringify({
+          prompt: imagePrompt,
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        
+        // Elvex Assistant API returns: { data: { response: "..." } }
+        const content = result.data?.response || result.response || result.text || result.content
+
+        if (!content) {
+          throw new Error('Empty response from Elvex for image generation')
+        }
+
+        // Try to extract image URL from the response
+        // The assistant might return just the URL, or a JSON object, or text with the URL
+        let imageUrl: string | null = null
+        
+        // Check if it's already a URL
+        if (typeof content === 'string' && (content.startsWith('http://') || content.startsWith('https://'))) {
+          imageUrl = content.trim()
+        } else {
+          // Try to parse as JSON
+          try {
+            const parsed = typeof content === 'string' ? JSON.parse(content) : content
+            imageUrl = parsed.url || parsed.imageUrl || parsed.image_url || parsed.data?.url
+          } catch {
+            // Not JSON, try to extract URL from text
+            const urlMatch = content.match(/https?:\/\/[^\s\)]+/i)
+            if (urlMatch) {
+              imageUrl = urlMatch[0]
+            }
+          }
+        }
+
+        if (imageUrl) {
+          console.log(`✅ Successfully generated image with Elvex Assistant API (version ${version})`)
+          return imageUrl
+        } else {
+          console.log(`⚠️ Elvex returned response but no image URL found, trying next version...`)
+          lastError = new Error('Elvex assistant returned response but no image URL found')
+        }
+      } else {
+        // Not successful, try next version
+        const errorText = await response.text()
+        lastError = new Error(`Elvex image generation failed with version ${version}: ${response.status} ${errorText}`)
+        console.log(`⚠️ Version ${version} failed for image generation, trying next...`)
+        
+        // If this was the last version to try, throw the error
+        if (version === versionsToTry[versionsToTry.length - 1]) {
+          if (response.status === 404) {
+            throw new Error(`${lastError.message}\n\nTroubleshooting:\n- Verify the assistant has "Image Generation" action enabled in Elvex dashboard (Assistant Settings > Actions > Image Generation)\n- Check that image generation provider is configured in Elvex (Settings > Apps > Image generation provider)\n- Ensure the assistant is published after enabling image generation`)
+          }
+          throw lastError
+        }
+      }
     }
-
-    console.log('✅ Successfully generated image with Elvex')
-    return imageUrl
+    
+    // Should never reach here, but just in case
+    throw lastError || new Error('Failed to generate image with Elvex Assistant API')
   } catch (error: any) {
     console.error('❌ Error generating image with Elvex:', error)
     throw new Error(`Failed to generate image with Elvex: ${error.message || 'Unknown error'}`)
