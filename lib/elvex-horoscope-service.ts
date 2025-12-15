@@ -386,12 +386,17 @@ async function generateImageViaAirtable(prompt: string, timezone?: string): Prom
     console.log(`   Prompt length: ${prompt.length}`)
     console.log(`   Prompt preview: ${prompt.substring(0, 100)}...`)
     
+    // Airtable API requires records array format
     const requestBody = {
-      fields: {
-        'Image Prompt': prompt,
-        'Status': 'Pending',
-        'Created At': createdAt,
-      }
+      records: [
+        {
+          fields: {
+            'Image Prompt': prompt,
+            'Status': 'Pending',
+            'Created At': createdAt,
+          }
+        }
+      ]
     }
     console.log('📤 Request body:', JSON.stringify(requestBody, null, 2))
     
@@ -466,17 +471,25 @@ To fix:
     }
     console.log('📥 Airtable API response data:', JSON.stringify(createData, null, 2))
     
-    if (!createData.id) {
+    // Airtable returns { records: [{ id: "...", fields: {...} }] }
+    if (!createData.records || !Array.isArray(createData.records) || createData.records.length === 0) {
+      console.error('❌ CRITICAL: Airtable response missing records array!')
+      console.error('   Response:', JSON.stringify(createData, null, 2))
+      throw new Error('Airtable API returned success but no records in response')
+    }
+    
+    const createdRecord = createData.records[0]
+    if (!createdRecord || !createdRecord.id) {
       console.error('❌ CRITICAL: Airtable response missing record ID!')
       console.error('   Response:', JSON.stringify(createData, null, 2))
       throw new Error('Airtable API returned success but no record ID in response')
     }
     
-    const recordId = createData.id
+    const recordId = createdRecord.id
     console.log('✅ Image generation request created in Airtable')
     console.log('   Record ID:', recordId)
-    console.log('   Record fields:', JSON.stringify(createData.fields, null, 2))
-    console.log('   Full record data:', JSON.stringify(createData, null, 2))
+    console.log('   Record fields:', JSON.stringify(createdRecord.fields, null, 2))
+    console.log('   Full record data:', JSON.stringify(createdRecord, null, 2))
     
     // Verify the record was actually created by fetching it back
     console.log('🔍 Verifying record was created in Airtable...')
