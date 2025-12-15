@@ -25,20 +25,31 @@ export async function fetchCafeAstrologyHoroscope(starSign: string): Promise<str
   console.log('Fetching horoscope from Cafe Astrology:', url)
   
   try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-      },
-      cache: 'no-store', // Don't cache in API routes
-    })
+    // Add timeout to prevent hanging (10 seconds for Cafe Astrology fetch)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => {
+      controller.abort()
+      console.log('⏱️ Cafe Astrology fetch timeout after 10 seconds')
+    }, 10000)
     
-    if (!response.ok) {
-      throw new Error(`Failed to fetch horoscope: ${response.status} ${response.statusText}`)
-    }
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+        },
+        cache: 'no-store', // Don't cache in API routes
+        signal: controller.signal,
+      })
+      
+      clearTimeout(timeoutId)
     
-    const html = await response.text()
+      if (!response.ok) {
+        throw new Error(`Failed to fetch horoscope: ${response.status} ${response.statusText}`)
+      }
+      
+      const html = await response.text()
     
     // Parse the HTML to extract the daily horoscope text
     // The horoscope is typically in a paragraph after "Today's {Sign} Horoscope from Cafe Astrology"
