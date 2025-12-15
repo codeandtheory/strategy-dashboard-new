@@ -41,23 +41,20 @@ export function NewsCard() {
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
         const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0]
 
-        // Fetch pinned news from past 7 days first
-        const response = await fetch(`/api/news?pinned=true&limit=1&sortBy=published_date&sortOrder=desc&publishedAfter=${sevenDaysAgoStr}`, {
+        // Fetch up to 2 news items from past 7 days (prioritize pinned)
+        const response = await fetch(`/api/news?limit=2&sortBy=published_date&sortOrder=desc&publishedAfter=${sevenDaysAgoStr}`, {
           cache: 'no-store'
         })
         const result = await response.json()
         
         if (response.ok && result.data && result.data.length > 0) {
-          setNews(result.data)
-        } else {
-          // If no pinned news, fetch most recent from past 7 days
-          const recentResponse = await fetch(`/api/news?limit=1&sortBy=published_date&sortOrder=desc&publishedAfter=${sevenDaysAgoStr}`, {
-            cache: 'no-store'
+          // Sort to show pinned first, then by date
+          const sorted = result.data.sort((a: NewsItem, b: NewsItem) => {
+            if (a.pinned && !b.pinned) return -1
+            if (!a.pinned && b.pinned) return 1
+            return 0
           })
-          const recentResult = await recentResponse.json()
-          if (recentResponse.ok && recentResult.data && recentResult.data.length > 0) {
-            setNews(recentResult.data)
-          }
+          setNews(sorted.slice(0, 2)) // Take up to 2
         }
       } catch (error) {
         console.error('Error fetching news:', error)
@@ -73,38 +70,9 @@ export function NewsCard() {
     return null
   }
 
-  const latestNews = news[0]
-
-  const getCardStyle = () => {
-    if (mode === 'chaos') {
-      return {
-        bg: 'bg-[#C4F500]',
-        border: 'border-4 border-[#C4F500]',
-        text: 'text-black',
-        accent: '#C4F500',
-        newsTitleBg: 'bg-black',
-        newsTitleText: 'text-[#C4F500]'
-      }
-    } else if (mode === 'chill') {
-      return {
-        bg: 'bg-[#FFC043]',
-        border: 'border-4 border-[#FFC043]',
-        text: 'text-[#4A1818]',
-        accent: '#FFC043',
-        newsTitleBg: 'bg-[#4A1818]',
-        newsTitleText: 'text-[#FFC043]'
-      }
-    } else {
-      return {
-        bg: 'bg-[#FFFFFF]',
-        border: 'border-4 border-[#FFFFFF]',
-        text: 'text-[#000000]',
-        accent: '#FFFFFF',
-        newsTitleBg: 'bg-black',
-        newsTitleText: 'text-white'
-      }
-    }
-  }
+  // Get the first news item with an image/GIF for the left side
+  const newsWithImage = news.find(item => item.image_url) || news[0]
+  const otherNews = news.filter(item => item.id !== newsWithImage.id).slice(0, 1) // Get up to 1 more
 
   const getRoundedClass = () => {
     if (mode === 'chaos') return 'rounded-[1.5rem]'
@@ -137,7 +105,6 @@ export function NewsCard() {
     }
   }
 
-  const style = getCardStyle()
   const dialogStyle = getDialogStyle()
   
   const formatDate = (dateString: string | null | undefined) => {
@@ -146,148 +113,78 @@ export function NewsCard() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  const handleCardClick = () => {
-    setSelectedNews(latestNews)
+  const handleCardClick = (newsItem: NewsItem) => {
+    setSelectedNews(newsItem)
     setDialogOpen(true)
   }
 
-  const hasMoreInfo = latestNews.content && latestNews.content.length > 150
-
-  // Headline-only display with oversized scrolling text
-  if (latestNews.headline_only) {
-    return (
-      <>
-        <div className="mb-6 cursor-pointer" onClick={handleCardClick}>
-          <Card className={`${style.bg} ${style.border} p-0 ${getRoundedClass()} w-full overflow-hidden transition-all hover:scale-[1.01] hover:shadow-2xl`}
-                style={{ boxShadow: `0 0 40px ${style.accent}40` }}
-          >
-            <div className="relative h-32 md:h-40 overflow-hidden">
-              {/* Scrolling text container */}
-              <div className="absolute inset-0 flex items-center">
-                <div className="animate-scroll-text whitespace-nowrap">
-                  <span className={`${style.text} text-[clamp(4rem,12vw,10rem)] font-black uppercase leading-none tracking-tighter inline-block ${mode === 'code' ? 'font-mono' : ''}`}>
-                    {latestNews.title} • {latestNews.title} • {latestNews.title} • 
-                  </span>
-                </div>
-              </div>
-              {/* Gradient overlays for fade effect */}
-              <div className={`absolute left-0 top-0 bottom-0 w-20 ${style.bg} opacity-100 z-10`} style={{
-                background: `linear-gradient(to right, ${mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF'}, transparent)`
-              }}></div>
-              <div className={`absolute right-0 top-0 bottom-0 w-20 ${style.bg} opacity-100 z-10`} style={{
-                background: `linear-gradient(to left, ${mode === 'chaos' ? '#C4F500' : mode === 'chill' ? '#FFC043' : '#FFFFFF'}, transparent)`
-              }}></div>
-            </div>
-          </Card>
-        </div>
-      </>
-    )
-  }
+  // Light grey background - no borders, compact design
+  const bgColor = mode === 'chaos' ? 'bg-[#2A2A2A]' : mode === 'chill' ? 'bg-[#E8DCC8]' : 'bg-[#1A1A1A]'
+  const textColor = mode === 'chaos' ? 'text-white' : mode === 'chill' ? 'text-[#4A1818]' : 'text-white'
 
   return (
     <>
-      <div className="mb-6 cursor-pointer" onClick={handleCardClick}>
-        <Card className={`${style.bg} ${style.border} p-0 ${getRoundedClass()} w-full overflow-hidden transition-all hover:scale-[1.01] hover:shadow-2xl`}
-              style={{ boxShadow: `0 0 40px ${style.accent}40` }}
-        >
-          <div className="flex flex-col md:flex-row">
-            {/* Left Side - NEWS Title with optional GIF/Image */}
-            <div className={`${style.newsTitleBg} px-8 py-6 md:py-12 flex items-center justify-center md:justify-start min-w-[200px] md:min-w-[280px] relative overflow-hidden`}>
-              {latestNews.image_url ? (
-                <>
-                  {/* Background Image/GIF with rounded corners */}
-                  <div className={`absolute inset-0 ${getRoundedClass()} overflow-hidden`}>
-                    {latestNews.image_url.endsWith('.gif') ? (
-                      <img
-                        src={latestNews.image_url}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Image
-                        src={latestNews.image_url}
-                        alt=""
-                        fill
-                        className="object-cover"
-                      />
-                    )}
-                  </div>
-                  {/* Overlay for text readability */}
-                  <div className={`absolute inset-0 ${style.newsTitleBg} opacity-80 ${getRoundedClass()}`}></div>
-                  {/* NEWS Title Overlay */}
-                  <h2 className={`${style.newsTitleText} text-[clamp(3rem,8vw,6rem)] font-black uppercase leading-none tracking-tighter relative z-10 ${mode === 'code' ? 'font-mono' : ''}`}>
-                    NEWS
-                  </h2>
-                </>
-              ) : (
-                <h2 className={`${style.newsTitleText} text-[clamp(3rem,8vw,6rem)] font-black uppercase leading-none tracking-tighter ${mode === 'code' ? 'font-mono' : ''}`}>
-                  NEWS
-                </h2>
-              )}
-            </div>
-
-            {/* Right Side - Content */}
-            <div className="flex-1 p-6 md:p-8 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-3 mb-4 flex-wrap">
-                  {latestNews.pinned && (
-                    <Badge 
-                      className="text-xs font-black uppercase px-3 py-1"
-                      style={{ 
-                        backgroundColor: style.newsTitleBg,
-                        color: style.newsTitleText
-                      }}
-                    >
-                      Pinned
-                    </Badge>
-                  )}
-                  {latestNews.category && (
-                    <Badge 
-                      variant="outline"
-                      className={`text-xs font-semibold border-2 ${style.text} border-current/50`}
-                    >
-                      {latestNews.category}
-                    </Badge>
-                  )}
-                </div>
-
-                <h3 className={`text-3xl md:text-4xl font-black mb-4 ${style.text} leading-tight`}>
-                  {latestNews.title}
-                </h3>
-
-                {latestNews.content && (
-                  <p className={`text-base md:text-lg mb-4 line-clamp-2 ${style.text}/90 font-medium`}>
-                    {latestNews.content}
-                  </p>
-                )}
-
-                <div className="flex items-center gap-4 text-sm flex-wrap">
-                  {latestNews.published_date && (
-                    <div className={`flex items-center gap-2 ${style.text}/80 font-semibold`}>
-                      <Calendar className="w-4 h-4" />
-                      <span>{formatDate(latestNews.published_date)}</span>
-                    </div>
-                  )}
-                  {latestNews.submitted_by_profile?.full_name && (
-                    <div className={`flex items-center gap-2 ${style.text}/80 font-semibold`}>
-                      <User className="w-4 h-4" />
-                      <span>{latestNews.submitted_by_profile.full_name}</span>
-                    </div>
+      <div className="mb-6">
+        <div className={`${bgColor} p-4 ${getRoundedClass()} w-full`}>
+          <div className="flex gap-4 h-32 md:h-36">
+            {/* Left Side - GIF/Image */}
+            {newsWithImage.image_url && (
+              <div className="flex-shrink-0 w-32 md:w-40 h-full">
+                <div className={`relative w-full h-full ${getRoundedClass()} overflow-hidden`}>
+                  {newsWithImage.image_url.endsWith('.gif') ? (
+                    <img
+                      src={newsWithImage.image_url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Image
+                      src={newsWithImage.image_url}
+                      alt=""
+                      fill
+                      className="object-cover"
+                    />
                   )}
                 </div>
               </div>
+            )}
 
-              {hasMoreInfo && (
-                <div className="mt-6 flex items-center gap-2">
-                  <span className={`text-sm font-black uppercase tracking-wider ${style.text}`}>
-                    Read More
-                  </span>
-                  <ArrowRight className={`w-5 h-5 ${style.text}`} />
+            {/* Right Side - News Cards */}
+            <div className="flex-1 flex gap-3 overflow-hidden">
+              {/* First news card */}
+              <div 
+                className={`flex-1 ${bgColor} ${getRoundedClass()} p-3 cursor-pointer hover:opacity-80 transition-opacity`}
+                onClick={() => handleCardClick(newsWithImage)}
+              >
+                <h3 className={`text-sm md:text-base font-bold ${textColor} line-clamp-2 mb-1`}>
+                  {newsWithImage.title}
+                </h3>
+                {newsWithImage.published_date && (
+                  <p className={`text-xs ${textColor}/60`}>
+                    {formatDate(newsWithImage.published_date)}
+                  </p>
+                )}
+              </div>
+
+              {/* Second news card (if available) */}
+              {otherNews.length > 0 && (
+                <div 
+                  className={`flex-1 ${bgColor} ${getRoundedClass()} p-3 cursor-pointer hover:opacity-80 transition-opacity`}
+                  onClick={() => handleCardClick(otherNews[0])}
+                >
+                  <h3 className={`text-sm md:text-base font-bold ${textColor} line-clamp-2 mb-1`}>
+                    {otherNews[0].title}
+                  </h3>
+                  {otherNews[0].published_date && (
+                    <p className={`text-xs ${textColor}/60`}>
+                      {formatDate(otherNews[0].published_date)}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* News Dialog */}

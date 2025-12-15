@@ -2199,9 +2199,6 @@ export default function TeamDashboard() {
         {/* Announcement Banner - Above Hero */}
         <AnnouncementBanner />
 
-        {/* News Card - Full Width (only shows if news from past 7 days) */}
-        <NewsCard />
-
         {/* Hero Section and Quick Links - Side by Side */}
         <section className="mb-12 relative">
           <div className="flex items-stretch gap-4 w-full">
@@ -2590,6 +2587,9 @@ export default function TeamDashboard() {
             )
           })()}
         </section>
+
+        {/* News Block - Under Time Zones */}
+        <NewsCard />
 
         <p className={`text-xs uppercase tracking-widest font-black mb-6 flex items-center gap-2 ${mode === 'chaos' ? 'text-[#666666]' : mode === 'chill' ? 'text-[#8B4444]' : mode === 'code' ? 'text-[#808080] font-mono' : 'text-[#808080]'}`}>
           {mode === 'code' ? (

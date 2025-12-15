@@ -11,6 +11,7 @@ interface Announcement {
   mode: 'text' | 'countdown'
   event_name: string | null
   target_date: string | null
+  text_format: 'days_until' | 'happens_in' | null
   start_date: string
   end_date: string | null
   active: boolean
@@ -20,12 +21,7 @@ export function AnnouncementBanner() {
   const { mode } = useMode()
   const [announcement, setAnnouncement] = useState<Announcement | null>(null)
   const [loading, setLoading] = useState(true)
-  const [timeRemaining, setTimeRemaining] = useState<{
-    days: number
-    hours: number
-    minutes: number
-    seconds: number
-  } | null>(null)
+  const [daysRemaining, setDaysRemaining] = useState<number | null>(null)
 
   useEffect(() => {
     async function fetchAnnouncement() {
@@ -48,33 +44,31 @@ export function AnnouncementBanner() {
     fetchAnnouncement()
   }, [])
 
-  // Calculate countdown
+  // Calculate days remaining
   useEffect(() => {
     if (!announcement || announcement.mode !== 'countdown' || !announcement.target_date) {
-      setTimeRemaining(null)
+      setDaysRemaining(null)
       return
     }
 
     const updateCountdown = () => {
-      const now = new Date().getTime()
-      const target = new Date(announcement.target_date!).getTime()
-      const difference = target - now
+      const now = new Date()
+      const target = new Date(announcement.target_date!)
+      const difference = target.getTime() - now.getTime()
 
       if (difference <= 0) {
-        setTimeRemaining(null)
+        setDaysRemaining(null)
         return
       }
 
-      const days = Math.floor(difference / (1000 * 60 * 60 * 24))
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60))
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000)
-
-      setTimeRemaining({ days, hours, minutes, seconds })
+      // Calculate days (round up to include partial days, minimum 0)
+      const days = Math.max(0, Math.ceil(difference / (1000 * 60 * 60 * 24)))
+      setDaysRemaining(days)
     }
 
     updateCountdown()
-    const interval = setInterval(updateCountdown, 1000)
+    // Update once per day instead of every second
+    const interval = setInterval(updateCountdown, 60 * 60 * 1000) // Every hour
 
     return () => clearInterval(interval)
   }, [announcement])
@@ -91,10 +85,18 @@ export function AnnouncementBanner() {
 
   // Countdown mode
   if (announcement.mode === 'countdown' && announcement.event_name) {
-    const isExpired = timeRemaining === null
-    const displayText = isExpired 
-      ? `${announcement.event_name} has passed`
-      : `${announcement.event_name} in ${timeRemaining.days}d ${timeRemaining.hours}h ${timeRemaining.minutes}m ${timeRemaining.seconds}s`
+    const isExpired = daysRemaining === null || daysRemaining <= 0
+    const format = announcement.text_format || 'days_until'
+    
+    let displayText = ''
+    if (isExpired) {
+      displayText = `${announcement.event_name} has passed`
+    } else if (format === 'happens_in') {
+      displayText = `${announcement.event_name} happens in ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'}`
+    } else {
+      // Default: 'days_until'
+      displayText = `${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} until ${announcement.event_name}`
+    }
 
     return (
       <div className="mb-6">

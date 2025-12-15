@@ -16,6 +16,7 @@ interface Announcement {
   mode: 'text' | 'countdown'
   event_name: string | null
   target_date: string | null
+  text_format: 'days_until' | 'happens_in' | null
   start_date: string
   end_date: string | null
   active: boolean
@@ -47,6 +48,7 @@ export default function AnnouncementsPage() {
     mode: 'text' as 'text' | 'countdown',
     event_name: '',
     target_date: '',
+    text_format: 'days_until' as 'days_until' | 'happens_in',
     start_date: getTodayDate(),
     end_date: '',
     active: true,
@@ -134,6 +136,7 @@ export default function AnnouncementsPage() {
           mode: formData.mode,
           event_name: formData.mode === 'countdown' ? formData.event_name : null,
           target_date: formData.mode === 'countdown' && formData.target_date ? new Date(formData.target_date).toISOString() : null,
+          text_format: formData.mode === 'countdown' ? formData.text_format : null,
           start_date: formData.start_date,
           end_date: formData.end_date || null,
           active: formData.active,
@@ -169,6 +172,7 @@ export default function AnnouncementsPage() {
       mode: item.mode,
       event_name: item.event_name || '',
       target_date: targetDateLocal,
+      text_format: item.text_format || 'days_until',
       start_date: item.start_date,
       end_date: item.end_date || '',
       active: item.active,
@@ -188,7 +192,8 @@ export default function AnnouncementsPage() {
           headline: formData.headline,
           mode: formData.mode,
           event_name: formData.mode === 'countdown' ? formData.event_name : null,
-          target_date: formData.mode === 'countdown' ? formData.target_date : null,
+          target_date: formData.mode === 'countdown' && formData.target_date ? new Date(formData.target_date).toISOString() : null,
+          text_format: formData.mode === 'countdown' ? formData.text_format : null,
           start_date: formData.start_date,
           end_date: formData.end_date || null,
           active: formData.active,
@@ -238,6 +243,7 @@ export default function AnnouncementsPage() {
       mode: 'text',
       event_name: '',
       target_date: '',
+      text_format: 'days_until',
       start_date: getTodayDate(),
       end_date: '',
       active: true,
@@ -317,6 +323,51 @@ export default function AnnouncementsPage() {
                         onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
                         className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
                       />
+                    </div>
+                    <div>
+                      <Label className={cardStyle.text}>Text Format</Label>
+                      <div className="space-y-2 mt-2">
+                        <label className={`flex items-start gap-3 p-3 ${cardStyle.border} border rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${
+                          formData.text_format === 'days_until' ? `${cardStyle.border} border-2` : ''
+                        }`}>
+                          <input
+                            type="radio"
+                            name="text_format"
+                            value="days_until"
+                            checked={formData.text_format === 'days_until'}
+                            onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' })}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className={`font-semibold ${cardStyle.text} mb-1`}>
+                              "X days until [Event]"
+                            </div>
+                            <div className={`text-sm ${cardStyle.text}/70`}>
+                              Example: "5 days until Team Meeting"
+                            </div>
+                          </div>
+                        </label>
+                        <label className={`flex items-start gap-3 p-3 ${cardStyle.border} border rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${
+                          formData.text_format === 'happens_in' ? `${cardStyle.border} border-2` : ''
+                        }`}>
+                          <input
+                            type="radio"
+                            name="text_format"
+                            value="happens_in"
+                            checked={formData.text_format === 'happens_in'}
+                            onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' })}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className={`font-semibold ${cardStyle.text} mb-1`}>
+                              "[Event] happens in X days"
+                            </div>
+                            <div className={`text-sm ${cardStyle.text}/70`}>
+                              Example: "Product Launch happens in 10 days"
+                            </div>
+                          </div>
+                        </label>
+                      </div>
                     </div>
                   </>
                 )}
@@ -468,13 +519,58 @@ export default function AnnouncementsPage() {
                     />
                   </div>
                   <div>
-                    <Label className={cardStyle.text}>Target Date *</Label>
+                    <Label className={cardStyle.text}>Target Date & Time *</Label>
                     <Input
                       type="datetime-local"
                       value={formData.target_date}
                       onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
                       className={`${cardStyle.bg} ${cardStyle.border} border ${cardStyle.text}`}
                     />
+                  </div>
+                  <div>
+                    <Label className={cardStyle.text}>Text Format</Label>
+                    <div className="space-y-2 mt-2">
+                      <label className={`flex items-start gap-3 p-3 ${cardStyle.border} border rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${
+                        formData.text_format === 'days_until' ? `${cardStyle.border} border-2` : ''
+                      }`}>
+                        <input
+                          type="radio"
+                          name="text_format_edit"
+                          value="days_until"
+                          checked={formData.text_format === 'days_until'}
+                          onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' })}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className={`font-semibold ${cardStyle.text} mb-1`}>
+                            "X days until [Event]"
+                          </div>
+                          <div className={`text-sm ${cardStyle.text}/70`}>
+                            Example: "5 days until Team Meeting"
+                          </div>
+                        </div>
+                      </label>
+                      <label className={`flex items-start gap-3 p-3 ${cardStyle.border} border rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${
+                        formData.text_format === 'happens_in' ? `${cardStyle.border} border-2` : ''
+                      }`}>
+                        <input
+                          type="radio"
+                          name="text_format_edit"
+                          value="happens_in"
+                          checked={formData.text_format === 'happens_in'}
+                          onChange={(e) => setFormData({ ...formData, text_format: e.target.value as 'days_until' | 'happens_in' })}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className={`font-semibold ${cardStyle.text} mb-1`}>
+                            "[Event] happens in X days"
+                          </div>
+                          <div className={`text-sm ${cardStyle.text}/70`}>
+                            Example: "Product Launch happens in 10 days"
+                          </div>
+                        </div>
+                      </label>
+                    </div>
                   </div>
                 </>
               )}
