@@ -535,32 +535,47 @@ To fix:
       // Check if generation is complete
       if (fields.Status === 'Completed' || fields.Status === 'Complete') {
         // Extract the image URL from attachment field
-        // Airtable "Generate image with AI" saves to an attachment field
+        // Airtable "Generate image with AI" saves to the "Image" attachment field (fld19AGdPdfiu3IYV)
         // Attachment fields are arrays: [{ url: "...", filename: "...", size: ... }]
         let imageUrl: string | null = null
         
-        // Try different possible field names for the attachment
-        const attachmentField = fields['Image'] || 
-                               fields['Image Attachment'] || 
-                               fields['Generated Image'] ||
-                               fields['Image File']
+        console.log('🔍 Checking for image in completed record...')
+        console.log('   Available fields:', Object.keys(fields))
+        console.log('   Status:', fields.Status)
+        console.log('   Has Image field:', !!fields['Image'])
+        console.log('   Has Image URL field:', !!fields['Image URL'])
+        console.log('   Image field type:', typeof fields['Image'])
+        console.log('   Image field value:', fields['Image'] ? JSON.stringify(fields['Image']).substring(0, 200) : 'null/undefined')
+        
+        // Try the "Image" attachment field first (fld19AGdPdfiu3IYV)
+        // This is where Airtable "Generate image with AI" saves the image
+        const attachmentField = fields['Image'] || fields['fld19AGdPdfiu3IYV']
         
         if (attachmentField && Array.isArray(attachmentField) && attachmentField.length > 0) {
           // Airtable attachment field format: [{ url: "...", filename: "...", ... }]
+          console.log('   Found Image attachment field with', attachmentField.length, 'attachment(s)')
           imageUrl = attachmentField[0].url
+          console.log('   Extracted image URL from attachment:', imageUrl ? imageUrl.substring(0, 100) + '...' : 'null')
         } else if (typeof attachmentField === 'object' && attachmentField !== null && attachmentField.url) {
           // Single attachment object (not array)
+          console.log('   Found Image as single attachment object')
           imageUrl = attachmentField.url
-        } else if (fields['Image URL']) {
-          // Fallback: if stored as URL field instead of attachment
-          imageUrl = fields['Image URL']
+        } else if (fields['Image URL'] || fields['fldL8wx5cWDXDwUjJ']) {
+          // Fallback: if stored in "Image URL" field (fldL8wx5cWDXDwUjJ)
+          const urlField = fields['Image URL'] || fields['fldL8wx5cWDXDwUjJ']
+          console.log('   Found Image URL field (fallback)')
+          imageUrl = urlField
         }
 
         if (imageUrl) {
           console.log('✅ Image generated successfully via Airtable')
+          console.log('   Image URL length:', imageUrl.length)
           return imageUrl
         } else {
-          throw new Error('Airtable image generation completed but no image URL found in attachment field')
+          console.error('❌ No image URL found in any field')
+          console.error('   Fields available:', Object.keys(fields))
+          console.error('   Full fields object:', JSON.stringify(fields, null, 2))
+          throw new Error('Airtable image generation completed but no image URL found in Image attachment field or Image URL field')
         }
       }
 
