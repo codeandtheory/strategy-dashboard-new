@@ -407,8 +407,13 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
     if (userId) {
       try {
         // Query Airtable for existing records with this User ID and Created At date
-        const queryUrl = `${url}?filterByFormula=${encodeURIComponent(`AND({User ID} = "${userId}", {Created At} = "${createdAt}")`)}`
-        console.log('   Querying Airtable for existing records:', queryUrl.substring(0, 150) + '...')
+        const filterFormula = `AND({User ID} = "${userId}", {Created At} = "${createdAt}")`
+        const queryUrl = `${url}?filterByFormula=${encodeURIComponent(filterFormula)}`
+        console.log('🔍 ========== CHECKING FOR EXISTING AIRTABLE RECORDS ==========')
+        console.log('   User ID:', userId)
+        console.log('   Created At:', createdAt)
+        console.log('   Filter formula:', filterFormula)
+        console.log('   Query URL:', queryUrl.substring(0, 200) + '...')
         
         const queryResponse = await fetch(queryUrl, {
           method: 'GET',
@@ -418,9 +423,25 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
           },
         })
         
+        console.log('   Query response status:', queryResponse.status, queryResponse.statusText)
+        
         if (queryResponse.ok) {
           const queryData = await queryResponse.json()
-          console.log(`   Found ${queryData.records?.length || 0} existing records`)
+          console.log(`   ✅ Query successful - Found ${queryData.records?.length || 0} existing records`)
+          
+          if (queryData.records && queryData.records.length > 0) {
+            console.log('   📋 Records found:')
+            queryData.records.forEach((record: any, index: number) => {
+              console.log(`      Record ${index + 1}:`)
+              console.log(`         ID: ${record.id}`)
+              console.log(`         User ID: ${record.fields?.['User ID']}`)
+              console.log(`         Created At: ${record.fields?.['Created At']}`)
+              console.log(`         Has Image field: ${!!record.fields?.Image}`)
+              console.log(`         Has Image URL field: ${!!record.fields?.['Image URL']}`)
+            })
+          } else {
+            console.log('   ⚠️ No records found - will create new record')
+          }
           
           // Check if any existing record has an image (no Status field anymore)
           if (queryData.records && queryData.records.length > 0) {
@@ -523,12 +544,19 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
             }
           }
         } else {
-          console.log('   Query failed, will create new record:', queryResponse.status)
+          const errorText = await queryResponse.text().catch(() => 'Unknown error')
+          console.error('   ❌ Query failed:', queryResponse.status, queryResponse.statusText)
+          console.error('   Error response:', errorText.substring(0, 500))
+          console.log('   ⚠️ Will create new record due to query failure')
         }
       } catch (queryError: any) {
-        console.log('   Error querying existing records, will create new record:', queryError.message)
+        console.error('   ❌ Error querying existing records:', queryError.message)
+        console.error('   Error stack:', queryError.stack?.substring(0, 500))
+        console.log('   ⚠️ Will create new record due to query error')
         // Continue to create new record
       }
+    } else {
+      console.log('   ⚠️ No userId provided - cannot check for existing records')
     }
     
     // Step 1: Create a record in Airtable with the image prompt
