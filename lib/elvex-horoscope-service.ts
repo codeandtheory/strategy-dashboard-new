@@ -569,9 +569,11 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
       }
     }
     
-    // Step 1: Create a record in Airtable with the image prompt
-    // Only create if we didn't find an existing pending record to poll
-    console.log('🚀 ========== ABOUT TO CREATE AIRTABLE RECORD ==========')
+    console.log('🚀 ========== CREATING NEW AIRTABLE RECORD ==========')
+    console.log('   ⚠️ No existing records found - creating new one')
+    console.log('   User ID:', userId)
+    console.log('   Created At:', createdAt)
+    console.log('   Prompt length:', prompt.length)
     console.log('📝 Creating image generation request in Airtable...')
     console.log(`   URL: ${url}`)
     console.log(`   Timezone: ${timezone || 'UTC (not provided)'}`)
