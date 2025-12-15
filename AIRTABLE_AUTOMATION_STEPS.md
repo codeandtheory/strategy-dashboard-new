@@ -215,7 +215,10 @@ Since Airtable requires a Record ID and Attachment Field, you need a table to st
 
 ## Step 6a: Create Record for Image Storage
 
-1. Click **"Add action"** (after "Build Image Prompt" or "Parse Horoscope Text")
+**⚠️ IMPORTANT:** You need to add this step BEFORE "Generate Image" because Record ID is required.
+
+1. Click **"Add action"** (after "Generate Horoscope Text" and BEFORE "Generate Image")
+   - Or click the **"+ Add advanced logic or action"** button below your actions
 2. Select **"Create record"**
 3. Configure the action:
 
@@ -230,7 +233,10 @@ Since Airtable requires a Record ID and Attachment Field, you need a table to st
 
 4. Click **"Save"**
 
-**Important:** After saving, note the action name/number (e.g., "Action 2" or "Create Image Record"). You'll need this in the next step.
+**Important:** 
+- After saving, note the action name/number (e.g., "Action 3" or "Create Image Record")
+- You'll need this Record ID in the "Generate Image" step
+- Make sure this action comes BEFORE "Generate Image" in your workflow
 
 ---
 
@@ -467,19 +473,30 @@ Content-Type: application/json
 ```
 Webhook Trigger
     ↓
-Build Image Prompt (AI)
+Build Image Prompt (Generate text with AI)
     ↓
-    ├─→ Generate Horoscope Text (AI - Structured Data)
+    ├─→ Generate Horoscope Text (Generate structured data with AI)
     │       ↓
     │   (Parse if needed)
     │       ↓
     │
-    └─→ Generate Image (AI)
+    └─→ Create Image Record (Create record)
             ↓
-    Combine Results (Script)
+        Generate Image (Generate image with AI)
+            ↓
+    Combine Results (Run a script)
             ↓
     Send Webhook to App
 ```
+
+**Your Current Workflow (from screenshot):**
+1. ✅ When webhook received (TRIGGER)
+2. ✅ Generate text - "Build Image Prompt"
+3. ✅ Generate structured data - "Generate Horoscope Text"
+4. ⚠️ **MISSING:** Create Image Record (needed before Generate Image)
+5. ⚠️ Generate image - "Generate Horoscope Image" (needs Record ID)
+6. ⚠️ **MISSING:** Combine Results (Run a script)
+7. ⚠️ **MISSING:** Send Webhook to App
 
 ---
 
