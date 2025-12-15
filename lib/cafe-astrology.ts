@@ -149,9 +149,19 @@ export async function fetchCafeAstrologyHoroscope(starSign: string): Promise<str
     }
     
     console.log('Successfully fetched horoscope from Cafe Astrology')
-    return horoscopeText
+      return horoscopeText
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId)
+      if (fetchError.name === 'AbortError') {
+        throw new Error('Cafe Astrology fetch timeout: Request took longer than 10 seconds')
+      }
+      throw fetchError
+    }
   } catch (error: any) {
     console.error('Error fetching from Cafe Astrology:', error)
+    if (error.message?.includes('timeout')) {
+      throw error
+    }
     throw new Error(`Failed to fetch horoscope from Cafe Astrology: ${error.message}`)
   }
 }
