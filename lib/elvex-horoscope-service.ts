@@ -131,71 +131,94 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
 
 ${prompt}`
 
-      const response = await fetch(elvexUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.apiKey}`,
-        },
-        body: JSON.stringify({
-          prompt: fullPrompt,
-        }),
-      })
+      // Add timeout to prevent hanging (60 seconds for text generation)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => {
+        controller.abort()
+        console.log(`⏱️ Request timeout after 60 seconds for version ${version}`)
+      }, 60000)
 
-      if (response.ok) {
-        // Success! Use this version
-        console.log(`✅ Successfully connected with version ${version}`)
-        const result = await response.json()
+      try {
+        const response = await fetch(elvexUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${config.apiKey}`,
+          },
+          body: JSON.stringify({
+            prompt: fullPrompt,
+          }),
+          signal: controller.signal,
+        })
         
-        // Elvex Assistant API returns: { data: { response: "..." } }
-        const content = result.data?.response || result.response || result.text || result.content
+        clearTimeout(timeoutId)
 
-        if (!content) {
-          throw new Error('Empty response from Elvex')
-        }
+        if (response.ok) {
+          // Success! Use this version
+          console.log(`✅ Successfully connected with version ${version}`)
+          const result = await response.json()
+          
+          // Elvex Assistant API returns: { data: { response: "..." } }
+          const content = result.data?.response || result.response || result.text || result.content
 
-        // Parse JSON response (might be wrapped in text or already be JSON)
-        let parsed
-        try {
-          parsed = typeof content === 'string' ? JSON.parse(content) : content
-        } catch (e) {
-          // If not JSON, try to extract JSON from the response
-          const jsonMatch = content.match(/\{[\s\S]*\}/)
-          if (jsonMatch) {
-            parsed = JSON.parse(jsonMatch[0])
-          } else {
-            throw new Error('Could not parse JSON from Elvex response')
+          if (!content) {
+            throw new Error('Empty response from Elvex')
+          }
+
+          // Parse JSON response (might be wrapped in text or already be JSON)
+          let parsed
+          try {
+            parsed = typeof content === 'string' ? JSON.parse(content) : content
+          } catch (e) {
+            // If not JSON, try to extract JSON from the response
+            const jsonMatch = content.match(/\{[\s\S]*\}/)
+            if (jsonMatch) {
+              parsed = JSON.parse(jsonMatch[0])
+            } else {
+              throw new Error('Could not parse JSON from Elvex response')
+            }
+          }
+          
+          if (!parsed.horoscope || !Array.isArray(parsed.dos) || !Array.isArray(parsed.donts)) {
+            throw new Error('Invalid response format from Elvex')
+          }
+
+          console.log('✅ Successfully transformed horoscope with Elvex')
+          return {
+            horoscope: parsed.horoscope,
+            dos: parsed.dos,
+            donts: parsed.donts,
+          }
+        } else {
+          // Not successful, try next version
+          const errorText = await response.text()
+          lastError = new Error(`Elvex API call failed with version ${version}: ${response.status} ${errorText}`)
+          console.log(`⚠️ Version ${version} failed, trying next...`)
+          
+          // If this was the last version to try, throw the error
+          if (version === versionsToTry[versionsToTry.length - 1]) {
+            if (response.status === 404) {
+              console.error('❌ 404 Error Details:', {
+                assistantId: config.assistantId,
+                triedVersions: versionsToTry,
+                url: elvexUrl,
+                suggestion: 'Check: 1) API key has permission to access this assistant, 2) Assistant is published, 3) Version exists'
+              })
+              throw new Error(`${lastError.message}\n\nTroubleshooting:\n- **Most common:** Verify the API key has been granted access to assistant "${config.assistantId}" in Elvex dashboard:\n  → Go to assistant Settings > Security and Permissions\n  → Add the API key name as an Editor\n  → Click "Save & Publish"\n- Verify assistant ID "${config.assistantId}" exists and is correct\n- Check that one of these versions exists and is published: ${versionsToTry.join(', ')}\n- Ensure the assistant is active/published after granting API key access`)
+            }
+            throw lastError
           }
         }
-        
-        if (!parsed.horoscope || !Array.isArray(parsed.dos) || !Array.isArray(parsed.donts)) {
-          throw new Error('Invalid response format from Elvex')
-        }
-
-        console.log('✅ Successfully transformed horoscope with Elvex')
-        return {
-          horoscope: parsed.horoscope,
-          dos: parsed.dos,
-          donts: parsed.donts,
-        }
-      } else {
-        // Not successful, try next version
-        const errorText = await response.text()
-        lastError = new Error(`Elvex API call failed with version ${version}: ${response.status} ${errorText}`)
-        console.log(`⚠️ Version ${version} failed, trying next...`)
-        
-        // If this was the last version to try, throw the error
-        if (version === versionsToTry[versionsToTry.length - 1]) {
-          if (response.status === 404) {
-            console.error('❌ 404 Error Details:', {
-              assistantId: config.assistantId,
-              triedVersions: versionsToTry,
-              url: elvexUrl,
-              suggestion: 'Check: 1) API key has permission to access this assistant, 2) Assistant is published, 3) Version exists'
-            })
-            throw new Error(`${lastError.message}\n\nTroubleshooting:\n- **Most common:** Verify the API key has been granted access to assistant "${config.assistantId}" in Elvex dashboard:\n  → Go to assistant Settings > Security and Permissions\n  → Add the API key name as an Editor\n  → Click "Save & Publish"\n- Verify assistant ID "${config.assistantId}" exists and is correct\n- Check that one of these versions exists and is published: ${versionsToTry.join(', ')}\n- Ensure the assistant is active/published after granting API key access`)
+      } catch (error: any) {
+        clearTimeout(timeoutId)
+        if (error.name === 'AbortError') {
+          lastError = new Error(`Request timeout: Elvex API call took longer than 60 seconds for version ${version}`)
+          console.log(`⏱️ Version ${version} timed out, trying next...`)
+          if (version === versionsToTry[versionsToTry.length - 1]) {
+            throw lastError
           }
-          throw lastError
+        } else {
+          throw error
         }
       }
     }
