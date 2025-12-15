@@ -655,16 +655,6 @@ export async function GET(request: NextRequest) {
     
     // If we get here, we should have an image (or the code above returned early)
     // Continue with returning the existing image
-          { 
-            error: 'Image generation failed. The horoscope was generated but no image prompt is available.',
-            details: 'Image prompt is required to generate images. Please regenerate the horoscope.',
-            hasHoroscope: true,
-            imageUrl: null
-          },
-          { status: 404 }
-        )
-      }
-    }
     
     // Return the existing image URL and related data
     // Image is already stored in Supabase storage by the main route
