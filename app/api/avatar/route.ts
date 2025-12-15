@@ -272,7 +272,40 @@ export async function GET(request: NextRequest) {
       console.log('   Date:', cachedHoroscope.date)
       console.log('   Generated at:', cachedHoroscope.generated_at)
       console.log('   Has prompt slots:', !!cachedHoroscope.prompt_slots_json)
+      console.log('   Character name in DB:', cachedHoroscope.character_name || 'null/empty')
       console.log('   ⚠️ NOT regenerating - image already exists for today')
+      
+      // If character_name is missing, check Airtable for it
+      let characterName = cachedHoroscope.character_name
+      if (!characterName && cachedHoroscope.image_prompt) {
+        console.log('   ⚠️ Character name missing in database - checking Airtable...')
+        try {
+          const { generateImageViaAirtable } = await import('@/lib/elvex-horoscope-service')
+          const airtableResult = await generateImageViaAirtable(
+            cachedHoroscope.image_prompt,
+            profile.timezone || undefined,
+            userId,
+            userEmail
+          )
+          
+          if (airtableResult.caption) {
+            console.log('   ✅ Found character name in Airtable:', airtableResult.caption)
+            characterName = airtableResult.caption
+            // Update database with character name
+            await supabaseAdmin
+              .from('horoscopes')
+              .update({ character_name: characterName })
+              .eq('user_id', userId)
+              .eq('date', todayDate)
+            console.log('   ✅ Updated database with character name from Airtable')
+          } else {
+            console.log('   ⚠️ No character name found in Airtable either')
+          }
+        } catch (error: any) {
+          console.error('   ❌ Error checking Airtable for character name:', error.message)
+          // Continue without character name - don't fail the request
+        }
+      }
       
       // Resolve slot IDs to labels for display (only if prompt_slots_json exists)
       const slots = cachedHoroscope.prompt_slots_json
