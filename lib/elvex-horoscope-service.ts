@@ -37,7 +37,7 @@ interface HoroscopeGenerationResponse {
   dos: string[]
   donts: string[]
   imageUrl: string | null // Can be null if image generation fails
-  imageCaption?: string | null // Caption from Airtable, null if not available
+  // Note: imageCaption is handled separately by the avatar endpoint, not returned here
   character_name?: string | null
   prompt: string
   slots: any
@@ -750,7 +750,7 @@ export async function generateHoroscopeViaElvex(
       dos: textResult.dos,
       donts: textResult.donts,
       imageUrl, // null if image generation failed
-      imageCaption, // caption from Airtable, null if not available
+      // Note: imageCaption is handled separately by the avatar endpoint, not returned here
       character_name: null,
       prompt: imagePrompt,
       slots: request.slots || {},
