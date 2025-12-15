@@ -585,7 +585,7 @@ export async function GET(request: NextRequest) {
     let horoscopeText: string
     let horoscopeDos: string[]
     let horoscopeDonts: string[]
-    let imageUrl: string
+    let imageUrl: string | null = null
     let imagePrompt: string
     let promptSlots: any
     let promptReasoning: any
@@ -811,14 +811,15 @@ export async function GET(request: NextRequest) {
           throw new Error('Invalid direct API result: missing horoscope text, dos, or donts')
         }
 
+        // Image URL is optional - horoscope text can be returned without image
         if (!directResult.imageUrl) {
-          throw new Error('Invalid direct API result: missing imageUrl')
+          console.log('⚠️ No image URL in result - horoscope text will be returned without image')
         }
 
         horoscopeText = directResult.horoscope
         horoscopeDos = directResult.dos
         horoscopeDonts = directResult.donts
-        imageUrl = directResult.imageUrl
+        imageUrl = directResult.imageUrl || null // Allow null image URL
         
         // Character name is not generated in direct mode (was previously from n8n image analysis)
         // Set to null for now - can be added later if needed
@@ -835,7 +836,7 @@ export async function GET(request: NextRequest) {
           horoscopeText: horoscopeText?.substring(0, 100) + '...',
           dosCount: horoscopeDos?.length || 0,
           dontsCount: horoscopeDonts?.length || 0,
-          imageUrl: imageUrl.substring(0, 100) + '...'
+          imageUrl: imageUrl ? imageUrl.substring(0, 100) + '...' : 'null (no image)'
         })
       }
       
@@ -845,18 +846,21 @@ export async function GET(request: NextRequest) {
       if (!hasValidBirthday) {
         // Image already in Supabase from direct generation, skip upload
         console.log('✅ Image already in Supabase storage (generated directly), skipping upload')
+      } else if (!imageUrl) {
+        // No image URL available, skip upload
+        console.log('⚠️ No image URL available, skipping image upload')
       } else {
         console.log('⚡ Starting parallel operations: image upload + avatar state update...')
         
         const [permanentImageUrl] = await Promise.all([
         // Download and upload image to Supabase storage
         (async () => {
-          console.log('📥 Downloading image from OpenAI and uploading to Supabase storage...')
+          console.log('📥 Downloading image and uploading to Supabase storage...')
           console.log('   Source image URL:', imageUrl.substring(0, 100) + '...')
           
           try {
             // Download the image
-            console.log('   Fetching image from OpenAI...')
+            console.log('   Fetching image...')
             const imageResponse = await fetch(imageUrl)
             if (!imageResponse.ok) {
               throw new Error(`Failed to download image: ${imageResponse.statusText} (${imageResponse.status})`)
@@ -1435,7 +1439,7 @@ export async function GET(request: NextRequest) {
       text_preview: horoscopeText?.substring(0, 100) || 'MISSING',
       dos_count: horoscopeDos?.length || 0,
       donts_count: horoscopeDonts?.length || 0,
-      image_url: imageUrl || 'MISSING',
+      image_url: imageUrl || null,
       image_url_length: imageUrl?.length || 0,
       character_name: characterName
     })
