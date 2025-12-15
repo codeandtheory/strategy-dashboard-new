@@ -256,12 +256,16 @@ ${prompt}`
 /**
  * Format a date in a specific timezone as ISO string
  * @param timezone - IANA timezone identifier (e.g., "America/New_York")
- * @returns ISO string with timezone offset (e.g., "2024-01-15T14:30:00-05:00")
+ * @returns ISO string formatted in the specified timezone
+ * 
+ * Note: This formats the current time in the user's timezone.
+ * Airtable date fields should be configured with the same timezone
+ * to ensure correct interpretation.
  */
 function formatDateInTimezone(timezone: string): string {
   const now = new Date()
   
-  // Create a formatter for the specific timezone
+  // Format date parts in the specified timezone
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
     year: 'numeric',
@@ -273,7 +277,7 @@ function formatDateInTimezone(timezone: string): string {
     hour12: false
   })
   
-  // Format the date parts in the timezone
+  // Get the date/time parts in the timezone
   const parts = formatter.formatToParts(now)
   const year = parts.find(p => p.type === 'year')?.value || ''
   const month = parts.find(p => p.type === 'month')?.value || ''
@@ -282,19 +286,9 @@ function formatDateInTimezone(timezone: string): string {
   const minute = parts.find(p => p.type === 'minute')?.value || ''
   const second = parts.find(p => p.type === 'second')?.value || ''
   
-  // Get timezone offset for the specific timezone
-  // Create a date string in the timezone and parse it to get offset
-  const dateInTz = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`)
-  const utcDate = new Date(dateInTz.toLocaleString('en-US', { timeZone: 'UTC' }))
-  const tzDate = new Date(dateInTz.toLocaleString('en-US', { timeZone: timezone }))
-  const offsetMs = tzDate.getTime() - utcDate.getTime()
-  const offsetHours = Math.floor(offsetMs / (1000 * 60 * 60))
-  const offsetMinutes = Math.abs(Math.floor((offsetMs % (1000 * 60 * 60)) / (1000 * 60)))
-  const offsetSign = offsetHours >= 0 ? '+' : '-'
-  const offsetStr = `${offsetSign}${String(Math.abs(offsetHours)).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`
-  
-  // Return ISO string with timezone offset
-  return `${year}-${month}-${day}T${hour}:${minute}:${second}${offsetStr}`
+  // Return ISO-like format (YYYY-MM-DDTHH:mm:ss)
+  // Airtable will interpret this based on the field's timezone setting
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}`
 }
 
 async function generateImageViaAirtable(prompt: string, timezone?: string): Promise<string> {
