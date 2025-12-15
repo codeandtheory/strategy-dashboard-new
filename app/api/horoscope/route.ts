@@ -1170,7 +1170,7 @@ export async function GET(request: NextRequest) {
       character_name: characterName,
       date: todayDate, // Explicitly set date to ensure consistency
       generated_at: new Date().toISOString(),
-      image_url: imageUrl, // CRITICAL: Set image URL from Supabase storage (after upload)
+      image_url: imageUrl || null, // Allow null - image is optional
       prompt_slots_json: promptSlots, // Set prompt slots from prompt building
       image_prompt: imagePrompt, // Set image prompt
     }
@@ -1270,7 +1270,17 @@ export async function GET(request: NextRequest) {
         code: upsertError.code
       })
       console.error('   This means we generated text but failed to save it - API call was wasted!')
-      console.error('   Data that failed to save:', upsertData)
+      console.error('   Data that failed to save:', JSON.stringify(upsertData, null, 2))
+      console.error('   Upsert data keys:', Object.keys(upsertData))
+      console.error('   Upsert data types:', {
+        user_id: typeof upsertData.user_id,
+        date: typeof upsertData.date,
+        horoscope_text: typeof upsertData.horoscope_text,
+        image_url: typeof upsertData.image_url,
+        image_url_value: upsertData.image_url,
+        image_url_is_null: upsertData.image_url === null,
+        image_url_is_undefined: upsertData.image_url === undefined,
+      })
       
       // Try to verify if record exists despite error
       const { data: verifyRecord } = await supabaseAdmin
