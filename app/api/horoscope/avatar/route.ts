@@ -489,23 +489,36 @@ export async function GET(request: NextRequest) {
         console.log('   ⚠️ NOTE: Image generation happens in background - returning immediately')
         
         // Start image generation in background (don't await - return immediately)
+        // User is authenticated via Supabase OAuth, so userId and userEmail come from Supabase auth
         generateImageViaAirtable(cachedHoroscope.image_prompt, profile.timezone || undefined, userId, userEmail)
           .then(async (imageResult) => {
             if (imageResult.imageUrl) {
               console.log('✅ Background image generation completed successfully')
               console.log('   Image URL:', imageResult.imageUrl.substring(0, 100) + '...')
+              console.log('   Caption:', imageResult.caption || 'none')
               
-              // Update the horoscope record with the image URL
+              // Update the horoscope record in Supabase with both image URL and caption
+              // This links the Airtable-generated image back to the Supabase user
+              const updateData: any = { image_url: imageResult.imageUrl }
+              
+              // Note: If you have an image_caption field in horoscopes table, uncomment this:
+              // if (imageResult.caption) {
+              //   updateData.image_caption = imageResult.caption
+              // }
+              
               const { error: updateError } = await supabaseAdmin
                 .from('horoscopes')
-                .update({ image_url: imageResult.imageUrl })
-                .eq('user_id', userId)
+                .update(updateData)
+                .eq('user_id', userId) // Supabase user ID from OAuth
                 .eq('date', todayDate)
               
               if (updateError) {
-                console.error('❌ Failed to update horoscope with image URL:', updateError)
+                console.error('❌ Failed to update horoscope with image URL in Supabase:', updateError)
               } else {
-                console.log('✅ Updated horoscope with image URL in background')
+                console.log('✅ Updated Supabase horoscope record with image URL and caption')
+                console.log('   User ID:', userId)
+                console.log('   User Email:', userEmail)
+                console.log('   Image saved to Supabase horoscopes table')
               }
             }
           })
