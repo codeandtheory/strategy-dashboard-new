@@ -1610,24 +1610,13 @@ export default function TeamDashboard() {
                     setHoroscopeImageSlots(pollData.prompt_slots || null)
                     setHoroscopeImageSlotsLabels(pollData.prompt_slots_labels || null)
                     setHoroscopeImageSlotsReasoning(pollData.prompt_slots_reasoning || null)
-                    // Ensure character_name is a string, not an object
+                    // Set character name from poll response
                     const pollCaption = pollData.character_name
-                    let finalPollCaption: string | null = null
-                    if (typeof pollCaption === 'string') {
-                      finalPollCaption = pollCaption
-                    } else if (pollCaption && typeof pollCaption === 'object') {
-                      // Handle React Query/SWR state objects
-                      if ('value' in pollCaption && typeof pollCaption.value === 'string') {
-                        finalPollCaption = pollCaption.value
-                      } else if ('data' in pollCaption && typeof pollCaption.data === 'string') {
-                        finalPollCaption = pollCaption.data
-                      } else {
-                        finalPollCaption = null
-                      }
+                    if (typeof pollCaption === 'string' && pollCaption.length > 0) {
+                      setHoroscopeImageCaption(pollCaption)
                     } else {
-                      finalPollCaption = null
+                      setHoroscopeImageCaption(null)
                     }
-                    setHoroscopeImageCaption(finalPollCaption)
                     setHoroscopeImageLoading(false)
                     setHoroscopeImageError(null)
                     hasFetchedRef.current = true
