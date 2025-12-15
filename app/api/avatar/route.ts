@@ -303,30 +303,64 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      // If character_name is missing, check Airtable for it
+      // If character_name is missing, check Airtable for it (read-only, don't create new records)
       if (!characterName && cachedHoroscope.image_prompt) {
-        console.log('   ⚠️ Character name missing in database - checking Airtable...')
+        console.log('   ⚠️ Character name missing in database - checking Airtable (read-only)...')
         try {
-          const { generateImageViaAirtable } = await import('@/lib/elvex-horoscope-service')
-          const airtableResult = await generateImageViaAirtable(
-            cachedHoroscope.image_prompt,
-            profile.timezone || undefined,
-            userId,
-            userEmail
-          )
+          // Direct Airtable query to check for existing records without creating new ones
+          const baseId = process.env.AIRTABLE_IMAGE_BASE_ID
+          const tableName = process.env.AIRTABLE_IMAGE_TABLE_NAME || 'Image Generation'
+          const apiKey = process.env.AIRTABLE_API_KEY
           
-          if (airtableResult.caption && typeof airtableResult.caption === 'string' && airtableResult.caption.length > 0) {
-            console.log('   ✅ Found character name in Airtable:', airtableResult.caption)
-            characterName = airtableResult.caption
-            // Update database with character name
-            await supabaseAdmin
-              .from('horoscopes')
-              .update({ character_name: characterName })
-              .eq('user_id', userId)
-              .eq('date', todayDate)
-            console.log('   ✅ Updated database with character name from Airtable')
+          if (!baseId || !apiKey) {
+            console.log('   ⚠️ Airtable credentials not configured - skipping character name check')
           } else {
-            console.log('   ⚠️ No character name found in Airtable either')
+            const tableIdentifier = tableName.includes(' ') ? encodeURIComponent(tableName) : tableName
+            const url = `https://api.airtable.com/v0/${baseId}/${tableIdentifier}`
+            
+            // Get today's date in user's timezone for query
+            const userTimezone = profile.timezone || 'America/New_York'
+            const todayDateForQuery = getTodayDateInTimezone(userTimezone, now)
+            const createdAt = todayDateForQuery // Format: YYYY-MM-DD
+            
+            // Query Airtable for existing records (read-only)
+            const filterFormula = `AND({User ID} = "${userId}", {Created At} = "${createdAt}")`
+            const queryUrl = `${url}?filterByFormula=${encodeURIComponent(filterFormula)}`
+            
+            const queryResponse = await fetch(queryUrl, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+              },
+            })
+            
+            if (queryResponse.ok) {
+              const queryData = await queryResponse.json()
+              if (queryData.records && queryData.records.length > 0) {
+                // Check first record for character name
+                const record = queryData.records[0]
+                const foundCaption = record.fields?.['Character Name'] || record.fields?.['Caption']
+                
+                if (foundCaption && typeof foundCaption === 'string' && foundCaption.length > 0) {
+                  console.log('   ✅ Found character name in Airtable:', foundCaption)
+                  characterName = foundCaption
+                  // Update database with character name
+                  await supabaseAdmin
+                    .from('horoscopes')
+                    .update({ character_name: characterName })
+                    .eq('user_id', userId)
+                    .eq('date', todayDate)
+                  console.log('   ✅ Updated database with character name from Airtable')
+                } else {
+                  console.log('   ⚠️ No character name found in Airtable record')
+                }
+              } else {
+                console.log('   ⚠️ No Airtable records found for today')
+              }
+            } else {
+              console.log('   ⚠️ Airtable query failed:', queryResponse.status)
+            }
           }
         } catch (error: any) {
           console.error('   ❌ Error checking Airtable for character name:', error.message)
