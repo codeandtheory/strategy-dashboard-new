@@ -480,57 +480,52 @@ export async function GET(request: NextRequest) {
       console.log('   Image prompt length:', cachedHoroscope.image_prompt?.length || 0)
       
       // Try to generate image via Airtable if we have a prompt
+      // IMPORTANT: This is completely independent from horoscope text generation
+      // We return immediately and generate in the background to avoid blocking
       if (cachedHoroscope.image_prompt && cachedHoroscope.image_prompt.trim() !== '') {
-        try {
-          console.log('🚀 ========== GENERATING IMAGE VIA AIRTABLE FROM AVATAR ENDPOINT ==========')
-          console.log('   Prompt:', cachedHoroscope.image_prompt.substring(0, 200) + '...')
-          console.log('   Timezone:', profile.timezone || 'UTC')
-          console.log('   ⚠️ NOTE: This may take up to 4 minutes while polling Airtable for image generation...')
-          
-          const imageResult = await generateImageViaAirtable(cachedHoroscope.image_prompt, profile.timezone || undefined)
-          
-          if (imageResult.imageUrl) {
-            console.log('✅ Image generated successfully via Airtable')
-            console.log('   Image URL:', imageResult.imageUrl.substring(0, 100) + '...')
-            
-            // Update the horoscope record with the image URL
-            const { error: updateError } = await supabaseAdmin
-              .from('horoscopes')
-              .update({ image_url: imageResult.imageUrl })
-              .eq('user_id', userId)
-              .eq('date', todayDate)
-            
-            if (updateError) {
-              console.error('❌ Failed to update horoscope with image URL:', updateError)
-            } else {
-              console.log('✅ Updated horoscope with image URL')
+        console.log('🚀 ========== STARTING BACKGROUND IMAGE GENERATION VIA AIRTABLE ==========')
+        console.log('   Prompt:', cachedHoroscope.image_prompt.substring(0, 200) + '...')
+        console.log('   Timezone:', profile.timezone || 'UTC')
+        console.log('   ⚠️ NOTE: Image generation happens in background - returning immediately')
+        
+        // Start image generation in background (don't await - return immediately)
+        generateImageViaAirtable(cachedHoroscope.image_prompt, profile.timezone || undefined)
+          .then(async (imageResult) => {
+            if (imageResult.imageUrl) {
+              console.log('✅ Background image generation completed successfully')
+              console.log('   Image URL:', imageResult.imageUrl.substring(0, 100) + '...')
+              
+              // Update the horoscope record with the image URL
+              const { error: updateError } = await supabaseAdmin
+                .from('horoscopes')
+                .update({ image_url: imageResult.imageUrl })
+                .eq('user_id', userId)
+                .eq('date', todayDate)
+              
+              if (updateError) {
+                console.error('❌ Failed to update horoscope with image URL:', updateError)
+              } else {
+                console.log('✅ Updated horoscope with image URL in background')
+              }
             }
-            
-            // Return the image URL and related data (simplified for now)
-            return NextResponse.json({
-              image_url: imageResult.imageUrl,
-              image_prompt: cachedHoroscope.image_prompt,
-              prompt_slots: cachedHoroscope.prompt_slots_json || null,
-              prompt_slots_labels: null,
-              prompt_slots_reasoning: cachedHoroscope.prompt_slots_json?.reasoning || null,
-              cached: false, // Just generated
-            })
-          } else {
-            throw new Error('Airtable returned no image URL')
-          }
-        } catch (imageError: any) {
-          console.error('❌ Failed to generate image via Airtable:', imageError)
-          console.error('   Error message:', imageError.message)
-          return NextResponse.json(
-            { 
-              error: 'Image generation failed. The horoscope was generated but image generation via Airtable failed. Please check Airtable configuration and try regenerating.',
-              details: `Airtable error: ${imageError.message}`,
-              hasHoroscope: true,
-              imageUrl: null
-            },
-            { status: 404 }
-          )
-        }
+          })
+          .catch((imageError: any) => {
+            console.error('❌ Background image generation failed:', imageError)
+            console.error('   Error message:', imageError.message)
+            // Don't throw - this is background, user can retry later
+          })
+        
+        // Return immediately - image is generating in background
+        // Frontend can poll this endpoint again to check if image is ready
+        return NextResponse.json({
+          image_url: null,
+          image_prompt: cachedHoroscope.image_prompt,
+          prompt_slots: cachedHoroscope.prompt_slots_json || null,
+          prompt_slots_labels: null,
+          prompt_slots_reasoning: cachedHoroscope.prompt_slots_json?.reasoning || null,
+          generating: true, // Indicates image is being generated in background
+          message: 'Image generation started in background. Please check again in a few moments.',
+        })
       } else {
         console.log('⚠️ No image prompt available - cannot generate image')
         return NextResponse.json(
