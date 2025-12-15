@@ -469,9 +469,21 @@ Some Airtable extensions (like "Data Fetcher" or "HTTP Request") might be availa
 1. **Turn on the automation** (toggle switch at the top of the automation editor)
 2. Click **"Save"** if prompted
 
-### Step 10b: Send a Test Webhook Request
+### Step 10b: How the Webhook Works
 
-The webhook URL needs to receive a request to trigger the automation. Here's how to test it:
+**Important:** The webhook doesn't trigger when you load the Airtable page. It triggers when:
+1. A user visits your dashboard app
+2. The app calls `/api/horoscope` endpoint
+3. The app sends a webhook request to Airtable (your webhook URL)
+4. Airtable receives it and starts the automation
+
+**To test, you need to:**
+- Either send a test request manually (see below), OR
+- Visit your dashboard app and trigger a horoscope generation
+
+### Step 10c: Send a Test Webhook Request (Manual Testing)
+
+The webhook URL needs to receive a request to trigger the automation. Here's how to test it manually:
 
 **Option 1: Use curl (Terminal/Command Line)**
 
@@ -544,11 +556,25 @@ curl -X POST https://hooks.airtable.com/workflows/v1/YOUR_WEBHOOK_ID \
    - ❌ Red X = Error (click to see error details)
    - ⏳ In progress = Still running
 
-### Step 10d: Verify Results
+### Step 10d: Test from Your App (Real Flow)
+
+Once everything is set up:
+
+1. **Make sure `AIRTABLE_WEBHOOK_URL` is set in Vercel** (Step 11)
+2. **Visit your dashboard app** (the actual Next.js app)
+3. **The app will automatically:**
+   - Call `/api/horoscope` when the page loads
+   - Check if `AIRTABLE_WEBHOOK_URL` is set
+   - Send a webhook to Airtable with the horoscope request
+   - Airtable automation will trigger and generate the horoscope
+4. **Check Airtable** - You should see the automation running
+
+### Step 10e: Verify Results
 
 1. **Check your "Horoscope Images" table** - Should have a new record with the generated image
 2. **Check your "Horoscope Results" table** (if you created one) - Should have the completed results
 3. **Check Airtable logs** - Each action should show its output
+4. **Check your app** - The horoscope should appear on the dashboard
 
 ### Troubleshooting
 
