@@ -330,31 +330,44 @@ async function generateImageViaAirtable(prompt: string, timezone?: string): Prom
   try {
     // Step 1: Create a record in Airtable with the image prompt
     console.log('📝 Creating image generation request in Airtable...')
+    console.log(`   URL: ${url}`)
     console.log(`   Timezone: ${timezone || 'UTC (not provided)'}`)
     console.log(`   Created At: ${createdAt}`)
+    console.log(`   Prompt length: ${prompt.length}`)
+    console.log(`   Prompt preview: ${prompt.substring(0, 100)}...`)
+    
+    const requestBody = {
+      fields: {
+        'Image Prompt': prompt,
+        'Status': 'Pending',
+        'Created At': createdAt,
+      }
+    }
+    console.log('📤 Request body:', JSON.stringify(requestBody, null, 2))
+    
     const createResponse = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        fields: {
-          'Image Prompt': prompt,
-          'Status': 'Pending',
-          'Created At': createdAt,
-        }
-      })
+      body: JSON.stringify(requestBody)
     })
+
+    console.log('📥 Airtable API response status:', createResponse.status, createResponse.statusText)
+    console.log('📥 Airtable API response headers:', Object.fromEntries(createResponse.headers.entries()))
 
     if (!createResponse.ok) {
       const errorText = await createResponse.text()
+      console.error('❌ Airtable API error response:', errorText)
       throw new Error(`Failed to create Airtable record: ${errorText}`)
     }
 
     const createData = await createResponse.json()
+    console.log('📥 Airtable API response data:', JSON.stringify(createData, null, 2))
     const recordId = createData.id
     console.log('✅ Image generation request created in Airtable, record ID:', recordId)
+    console.log('✅ Full record data:', JSON.stringify(createData, null, 2))
 
     // Step 2: Poll Airtable for the generated image
     // Airtable Automation/Script should generate the image and update the record
