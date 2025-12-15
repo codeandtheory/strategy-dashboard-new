@@ -205,6 +205,23 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // First, fetch the existing announcement to check current values
+    const { data: existingAnnouncement, error: fetchError } = await supabase
+      .from('announcements')
+      .select('text_format, custom_format, sticker_url')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching existing announcement:', fetchError)
+      return NextResponse.json(
+        { error: 'Failed to fetch existing announcement', details: fetchError.message },
+        { status: 500 }
+      )
+    }
+
+    const currentTextFormat = text_format !== undefined ? text_format : existingAnnouncement?.text_format
+
     const updateData: any = {
       updated_at: new Date().toISOString(),
     }
@@ -213,6 +230,7 @@ export async function PUT(request: NextRequest) {
     if (mode !== undefined) updateData.mode = mode
     if (event_name !== undefined) updateData.event_name = event_name
     if (target_date !== undefined) updateData.target_date = target_date
+    
     if (text_format !== undefined) {
       updateData.text_format = text_format
       // If switching away from custom format, clear custom_format
@@ -220,24 +238,26 @@ export async function PUT(request: NextRequest) {
         updateData.custom_format = null
       }
     }
+    
     if (custom_format !== undefined) {
-      // Only set custom_format if text_format is 'custom'
-      // If text_format is also being updated, use that; otherwise we need to check existing value
-      if (text_format === 'custom') {
-        updateData.custom_format = custom_format || null
-      } else if (text_format === undefined) {
-        // If text_format isn't being updated, we need to fetch the existing value
-        // For now, allow custom_format to be set if provided (will be validated by text_format check)
+      // Only set custom_format if text_format is 'custom' (current or being set)
+      if (currentTextFormat === 'custom') {
         updateData.custom_format = custom_format || null
       } else {
-        // text_format is being set to something other than 'custom', so clear custom_format
+        // Not a custom format, so clear custom_format
         updateData.custom_format = null
       }
     }
-    if (sticker_url !== undefined) updateData.sticker_url = sticker_url
+    
+    if (sticker_url !== undefined) {
+      updateData.sticker_url = sticker_url || null
+    }
+    
     if (start_date !== undefined) updateData.start_date = start_date
     if (end_date !== undefined) updateData.end_date = end_date
     if (active !== undefined) updateData.active = active
+
+    console.log('Updating announcement:', { id, updateData, currentTextFormat })
 
     const { data, error } = await supabase
       .from('announcements')

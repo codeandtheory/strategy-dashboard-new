@@ -241,11 +241,14 @@ export default function AnnouncementsPage() {
       const result = await response.json()
       
       if (response.ok) {
+        console.log('Update successful:', result)
         setIsEditDialogOpen(false)
         setEditingItem(null)
         resetForm()
         fetchAnnouncements()
+        alert('Announcement updated successfully!')
       } else {
+        console.error('Update error:', result)
         alert(result.error || 'Failed to update announcement')
       }
     } catch (error) {
