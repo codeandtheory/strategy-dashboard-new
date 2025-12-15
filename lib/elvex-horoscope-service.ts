@@ -27,6 +27,7 @@ interface HoroscopeGenerationRequest {
   imagePrompt: string // Required - built by route using buildHoroscopePrompt()
   userId: string
   date: string
+  timezone?: string // User's timezone for Airtable Created At field
   slots?: any
   reasoning?: any
 }
@@ -252,7 +253,41 @@ ${prompt}`
  * Creates a record in Airtable with the image prompt, which triggers an Airtable
  * Automation/Script that generates the image using Airtable AI, then polls for the result.
  */
-async function generateImageViaAirtable(prompt: string): Promise<string> {
+/**
+ * Format a date in a specific timezone as ISO string
+ * @param timezone - IANA timezone identifier (e.g., "America/New_York")
+ * @returns ISO string formatted in the specified timezone
+ */
+function formatDateInTimezone(timezone: string): string {
+  const now = new Date()
+  // Format date in the specified timezone
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  })
+  
+  // Get parts in the timezone
+  const parts = formatter.formatToParts(now)
+  const year = parts.find(p => p.type === 'year')?.value
+  const month = parts.find(p => p.type === 'month')?.value
+  const day = parts.find(p => p.type === 'day')?.value
+  const hour = parts.find(p => p.type === 'hour')?.value
+  const minute = parts.find(p => p.type === 'minute')?.value
+  const second = parts.find(p => p.type === 'second')?.value
+  
+  // Create ISO string in the specified timezone
+  // Note: This creates a local time string, not a true ISO with timezone offset
+  // But Airtable will interpret it correctly if the field is set to the right timezone
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}`
+}
+
+async function generateImageViaAirtable(prompt: string, timezone?: string): Promise<string> {
   console.log('🖼️ Generating image via Airtable...')
   
   // Get Airtable configuration
@@ -266,9 +301,16 @@ async function generateImageViaAirtable(prompt: string): Promise<string> {
 
   const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`
 
+  // Format Created At in user's timezone, or UTC if not provided
+  const createdAt = timezone 
+    ? formatDateInTimezone(timezone)
+    : new Date().toISOString()
+
   try {
     // Step 1: Create a record in Airtable with the image prompt
     console.log('📝 Creating image generation request in Airtable...')
+    console.log(`   Timezone: ${timezone || 'UTC (not provided)'}`)
+    console.log(`   Created At: ${createdAt}`)
     const createResponse = await fetch(url, {
       method: 'POST',
       headers: {
@@ -279,7 +321,7 @@ async function generateImageViaAirtable(prompt: string): Promise<string> {
         fields: {
           'Image Prompt': prompt,
           'Status': 'Pending',
-          'Created At': new Date().toISOString(),
+          'Created At': createdAt,
         }
       })
     })
@@ -423,7 +465,8 @@ export async function generateHoroscopeViaElvex(
     if (imagePrompt) {
       try {
         console.log('🖼️ Generating image via Airtable...')
-        imageUrl = await generateImageViaAirtable(imagePrompt)
+        // Pass timezone from request if available
+        imageUrl = await generateImageViaAirtable(imagePrompt, request.timezone)
         console.log('✅ Image generated successfully via Airtable')
       } catch (imageError: any) {
         // Image generation failed, but we still have the text

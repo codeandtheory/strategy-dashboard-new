@@ -60,3 +60,4 @@ CREATE TRIGGER app_settings_updated_at_trigger
   FOR EACH ROW
   EXECUTE FUNCTION update_app_settings_updated_at();
 
+

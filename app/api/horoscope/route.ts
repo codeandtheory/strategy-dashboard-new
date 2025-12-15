@@ -777,6 +777,7 @@ export async function GET(request: NextRequest) {
             imagePrompt: imagePrompt, // Built by buildHoroscopePrompt() with slot-based logic
             slots: promptSlots,
             reasoning: promptReasoning,
+            timezone: userTimezone, // Pass timezone for Airtable Created At field
           })
           
           const elvexElapsed = Date.now() - elvexStartTime

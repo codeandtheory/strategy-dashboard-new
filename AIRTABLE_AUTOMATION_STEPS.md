@@ -2,6 +2,8 @@
 
 This guide walks you through creating an Airtable Automation that generates horoscope text and images using Airtable AI.
 
+> **Note:** If you prefer to use Elvex API instead of Airtable AI, see [ELVEX_HOROSCOPE_SETUP.md](./ELVEX_HOROSCOPE_SETUP.md) for instructions. Elvex is simpler to set up and doesn't require Airtable automation configuration.
+
 ## Prerequisites
 
 - An Airtable base

@@ -10,3 +10,4 @@ CREATE INDEX IF NOT EXISTS idx_profiles_is_guest ON public.profiles(is_guest);
 -- Add comment for documentation
 COMMENT ON COLUMN public.profiles.is_guest IS 'If true, user is a guest (not a team member). Guests can see the dashboard but are excluded from birthdays, anniversaries, curator rotation, etc.';
 
+

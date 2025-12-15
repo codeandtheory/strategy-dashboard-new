@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/auth-context'
 import { PermissionsProvider } from '@/contexts/permissions-context'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AnalyticsProvider } from '@/components/analytics-provider'
+import { SnowAnimation } from '@/components/snow-animation'
 import './globals.css'
 
 const raleway = Raleway({ 
@@ -88,6 +89,7 @@ export default function RootLayout({
             </PermissionsProvider>
           </AuthProvider>
         </ThemeProvider>
+        <SnowAnimation />
         <Analytics />
       </body>
     </html>

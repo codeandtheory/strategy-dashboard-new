@@ -142,3 +142,4 @@ These cards still need visibility checks added:
 - Verify user has `base_role = 'admin'` in profiles table
 - Check server logs for detailed error messages
 
+
