@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateHoroscopeDirect } from '@/lib/horoscope-direct-service'
 import { generateHoroscopeViaAirtable } from '@/lib/airtable-ai-service'
-import { generateHoroscopeViaElvex, generateImageViaAirtable } from '@/lib/elvex-horoscope-service'
+import { generateHoroscopeViaElvex } from '@/lib/elvex-horoscope-service'
 import { fetchCafeAstrologyHoroscope } from '@/lib/cafe-astrology'
 import {
   buildUserProfile,
@@ -224,16 +224,16 @@ export async function GET(request: NextRequest) {
       const dateMatches = cachedDateStr === todayDateStr
       
       if (dateMatches) {
-        isFromToday = true
+            isFromToday = true
         console.log('✅ Cached horoscope is valid for today:', {
           cachedDate: cachedHoroscope.date,
           cachedDateNormalized: cachedDateStr,
           todayDate,
           todayDateNormalized: todayDateStr,
           userTimezone,
-          generatedAt: cachedHoroscope.generated_at
-        })
-      } else {
+              generatedAt: cachedHoroscope.generated_at
+            })
+          } else {
         console.log('⚠️ Cached horoscope date does not match today (past midnight in user timezone):', {
           cachedDate: cachedHoroscope.date,
           cachedDateNormalized: cachedDateStr,
@@ -417,92 +417,12 @@ export async function GET(request: NextRequest) {
         console.log('   Dates match (string):', String(cachedHoroscope.date) === todayDate)
         console.log('   Generated at:', cachedHoroscope.generated_at)
         console.log('   Text length:', cachedHoroscope.horoscope_text.length)
-        console.log('   Has image URL:', !!cachedHoroscope.image_url)
-        
-        // CRITICAL: If horoscope exists but no image, check Airtable for existing images
-        // This handles the case where image was generated in Airtable but not uploaded to Supabase
-        if (!cachedHoroscope.image_url && cachedHoroscope.image_prompt) {
-          console.log('🔍 Horoscope exists but no image - checking Airtable for existing images...')
-          try {
-            const { generateImageViaAirtable } = await import('@/lib/elvex-horoscope-service')
-            const airtableImageResult = await generateImageViaAirtable(
-              cachedHoroscope.image_prompt,
-              userTimezone,
-              userId,
-              user.email || undefined
-            )
-            
-            if (airtableImageResult.imageUrl) {
-              console.log('✅ Found existing image in Airtable! Uploading to Supabase...')
-              const isAirtableUrl = !airtableImageResult.imageUrl.includes('supabase.co')
-              
-              if (isAirtableUrl) {
-                // Download and upload to Supabase
-                const imageResponse = await fetch(airtableImageResult.imageUrl)
-                if (imageResponse.ok) {
-                  const imageBlob = await imageResponse.blob()
-                  const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
-                  
-                  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-                  const fileName = `horoscope-${userId}-${todayDate}-${timestamp}.png`
-                  const filePath = `${userId}/${fileName}`
-                  const bucketName = 'horoscope-avatars'
-                  
-                  const { error: uploadError } = await supabaseAdmin.storage
-                    .from(bucketName)
-                    .upload(filePath, imageBuffer, {
-                      contentType: 'image/png',
-                      upsert: false,
-                    })
-                  
-                  if (!uploadError) {
-                    const { data: urlData } = supabaseAdmin.storage
-                      .from(bucketName)
-                      .getPublicUrl(filePath)
-                    
-                    // Update the horoscope record with the image URL
-                    const { error: updateError } = await supabaseAdmin
-                      .from('horoscopes')
-                      .update({ 
-                        image_url: urlData.publicUrl,
-                        character_name: airtableImageResult.caption || null
-                      })
-                      .eq('user_id', userId)
-                      .eq('date', todayDate)
-                    
-                    if (updateError) {
-                      console.error('❌ Failed to update database with image URL:', updateError)
-                    } else {
-                      console.log('✅ Uploaded existing Airtable image to Supabase and updated database')
-                    }
-                    
-                    // Return the horoscope with the newly uploaded image URL
-                    return NextResponse.json({
-                      star_sign: cachedHoroscope.star_sign,
-                      horoscope_text: cachedHoroscope.horoscope_text,
-                      horoscope_dos: cachedHoroscope.horoscope_dos || [],
-                      horoscope_donts: cachedHoroscope.horoscope_donts || [],
-                      image_url: urlData.publicUrl, // Return the Supabase URL
-                      character_name: airtableImageResult.caption || null,
-                      cached: true,
-                    })
-                  }
-                }
-              }
-            }
-          } catch (airtableCheckError: any) {
-            console.warn('⚠️ Could not check Airtable for existing images:', airtableCheckError.message)
-            // Continue with returning cached horoscope without image
-          }
-        }
-        
+        // Return cached horoscope text only - images are handled by avatar endpoint
         return NextResponse.json({
           star_sign: cachedHoroscope.star_sign,
           horoscope_text: cachedHoroscope.horoscope_text,
           horoscope_dos: cachedHoroscope.horoscope_dos || [],
           horoscope_donts: cachedHoroscope.horoscope_donts || [],
-          image_url: cachedHoroscope.image_url || null,
-          character_name: cachedHoroscope.character_name || null,
           cached: true,
         })
       } else {
@@ -694,15 +614,11 @@ export async function GET(request: NextRequest) {
     const { userProfile, resolvedChoices, starSign } = config
     console.log('Resolved choices:', resolvedChoices)
     
-    // Character name will come from n8n (generated from image analysis)
-    let characterName: string | null = null
-    
-    // Fetch from Cafe Astrology and generate via n8n
+    // Fetch from Cafe Astrology and generate via Elvex
     console.log('Generating horoscope for:', { starSign, profile: userProfile })
     let horoscopeText: string
     let horoscopeDos: string[]
     let horoscopeDonts: string[]
-    let imageUrl: string | null = null
     let imagePrompt: string
     let promptSlots: any
     let promptReasoning: any
@@ -726,109 +642,12 @@ export async function GET(request: NextRequest) {
         hates_clowns: profile.hates_clowns || false,
       }
       
-      // If no birthday, generate image only (skip text generation)
+      // Birthday is required for text generation
       if (!hasValidBirthday) {
-        console.log('⚠️ No birthday - generating image only (text requires birthday for Cafe Astrology)')
-        
-        // Build image prompt
-        const promptResult = await buildHoroscopePrompt(
-          supabaseAdmin,
-          userId,
-          todayDate,
-          promptUserProfile,
-          userProfile.weekday,
-          userProfile.season
+        return NextResponse.json(
+          { error: 'Birthday is required to generate horoscope text. Please complete your profile.' },
+          { status: 400 }
         )
-        
-        imagePrompt = promptResult.prompt
-        promptSlots = promptResult.slots
-        promptReasoning = promptResult.reasoning
-        
-        // Generate image directly (without n8n, since we don't have text)
-        console.log('🚀 Generating image directly (no birthday, skipping text generation)...')
-        const imageResult = await generateHoroscopeImage(
-          supabaseAdmin,
-          userId,
-          todayDate,
-          {
-            name: profile.full_name || 'User',
-            role: profile.role || null,
-            hobbies: profile.hobbies || null,
-            starSign: starSign || undefined,
-            element: userProfile.element || undefined,
-            likes_fantasy: profile.likes_fantasy || false,
-            likes_scifi: profile.likes_scifi || false,
-            likes_cute: profile.likes_cute || false,
-            likes_minimal: profile.likes_minimal || false,
-            hates_clowns: profile.hates_clowns || false,
-          },
-          userProfile.weekday,
-          userProfile.season
-        )
-        
-        imageUrl = imageResult.imageUrl
-        imagePrompt = imageResult.prompt
-        promptSlots = imageResult.slots
-        promptReasoning = imageResult.reasoning
-        
-        // No text when no birthday
-        horoscopeText = null as any
-        horoscopeDos = []
-        horoscopeDonts = []
-        characterName = null
-        
-        console.log('✅ Image generated successfully (without text)')
-        console.log('   Image URL:', imageUrl.substring(0, 100) + '...')
-        console.log('   Image is already in Supabase storage, no download/upload needed')
-        
-        // Update user avatar state (image is already in Supabase, no upload needed)
-        const { data: styleReference } = await supabaseAdmin
-          .from('prompt_slot_catalogs')
-          .select('style_group_id')
-          .eq('id', promptSlots.style_reference_id)
-          .single()
-        
-        const selectedStyleGroupId = styleReference?.style_group_id
-        
-        const { data: avatarState } = await supabaseAdmin
-          .from('user_avatar_state')
-          .select('*')
-          .eq('user_id', userId)
-          .single()
-        
-        const recentStyleGroupIds = avatarState?.recent_style_group_ids || []
-        const recentStyleReferenceIds = avatarState?.recent_style_reference_ids || []
-        const recentSubjectRoleIds = avatarState?.recent_subject_role_ids || []
-        const recentSettingPlaceIds = avatarState?.recent_setting_place_ids || []
-        
-        const updatedStyleGroupIds = selectedStyleGroupId
-          ? [...recentStyleGroupIds.filter((id) => id !== selectedStyleGroupId), selectedStyleGroupId].slice(-7)
-          : recentStyleGroupIds
-        
-        const updatedStyleReferenceIds = [
-          ...recentStyleReferenceIds.filter((id) => id !== promptSlots.style_reference_id),
-          promptSlots.style_reference_id,
-        ].slice(-7)
-        
-        const updatedSubjectRoleIds = [
-          ...recentSubjectRoleIds.filter((id) => id !== promptSlots.subject_role_id),
-          promptSlots.subject_role_id,
-        ].slice(-7)
-        
-        const updatedSettingPlaceIds = [
-          ...recentSettingPlaceIds.filter((id) => id !== promptSlots.setting_place_id),
-          promptSlots.setting_place_id,
-        ].slice(-7)
-        
-        await updateUserAvatarState(supabaseAdmin, userId, {
-          last_generated_date: todayDate,
-          recent_style_group_ids: updatedStyleGroupIds,
-          recent_style_reference_ids: updatedStyleReferenceIds,
-          recent_subject_role_ids: updatedSubjectRoleIds,
-          recent_setting_place_ids: updatedSettingPlaceIds,
-        })
-        
-        console.log('✅ Updated user avatar state')
       } else {
         // Normal flow: has birthday, generate both text and image via n8n
         console.log('⚡ Running Cafe Astrology fetch and prompt building in parallel...')
@@ -930,203 +749,14 @@ export async function GET(request: NextRequest) {
           throw new Error('Invalid direct API result: missing horoscope text, dos, or donts')
         }
 
-        // Elvex returns horoscope text - now generate image via Airtable
+        // Elvex returns horoscope text - images are handled separately by avatar endpoint
         horoscopeText = directResult.horoscope
         horoscopeDos = directResult.dos
         horoscopeDonts = directResult.donts
         
-        // CRITICAL: Check if image was just created by another request (race condition prevention)
-        // First check Supabase, then Airtable (via generateImageViaAirtable which checks for existing records)
-        console.log('🔒 RACE CONDITION CHECK: Checking for image before generation...')
-        const { data: imageCheckHoroscope } = await supabaseAdmin
-          .from('horoscopes')
-          .select('image_url, character_name, date')
-          .eq('user_id', userId)
-          .eq('date', todayDate)
-          .maybeSingle()
-        
-        if (imageCheckHoroscope && imageCheckHoroscope.image_url && imageCheckHoroscope.image_url.trim() !== '') {
-          const imageCheckDateStr = String(imageCheckHoroscope.date).split('T')[0]
-          const todayDateStr = String(todayDate).split('T')[0]
-          if (imageCheckDateStr === todayDateStr) {
-            console.log('✅ RACE CONDITION PREVENTED: Image already exists in Supabase, using existing image')
-            imageUrl = imageCheckHoroscope.image_url
-            characterName = imageCheckHoroscope.character_name || null
-            console.log('   Using existing image URL:', imageUrl.substring(0, 100) + '...')
-            console.log('   Using existing character name:', characterName || 'none')
-          } else {
-            // Date doesn't match, proceed with generation
-            console.log('⚠️ Image exists but for different date, will check Airtable for existing image')
-            imageUrl = null
-            characterName = null
-          }
-        } else {
-          // No image in Supabase, but might exist in Airtable
-          // generateImageViaAirtable will check Airtable for existing images
-          console.log('📝 No existing image in Supabase, will check Airtable for existing image')
-          imageUrl = null
-          characterName = null
-        }
-        
-        // Generate image via Airtable (together with text generation) - only if we don't have one in Supabase
-        // generateImageViaAirtable will check Airtable for existing images and return them if found
-        if (!imageUrl) {
-          console.log('🚀 ========== GENERATING IMAGE VIA AIRTABLE ==========')
-          console.log('   Image prompt length:', imagePrompt.length)
-          console.log('   User ID:', userId)
-          console.log('   User email:', user.email || 'not available')
-          
-          try {
-            const imageResult = await generateImageViaAirtable(
-              imagePrompt,
-              userTimezone,
-              userId,
-              user.email || undefined
-            )
-          
-          if (imageResult.imageUrl) {
-            console.log('✅ Image found/generated via Airtable successfully')
-            console.log('   Airtable image URL:', imageResult.imageUrl.substring(0, 100) + '...')
-            console.log('   Caption:', imageResult.caption || 'none')
-            
-            // Check if image is already in Supabase storage (by checking if URL contains supabase.co)
-            const isAirtableUrl = !imageResult.imageUrl.includes('supabase.co')
-            
-            if (isAirtableUrl) {
-              // Image is from Airtable, need to download and upload to Supabase storage
-              console.log('📥 Image is from Airtable - downloading and uploading to Supabase storage...')
-              const imageResponse = await fetch(imageResult.imageUrl)
-              if (!imageResponse.ok) {
-                throw new Error(`Failed to download image from Airtable: ${imageResponse.statusText}`)
-              }
-              
-              const imageBlob = await imageResponse.blob()
-              const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
-              console.log('✅ Image downloaded, size:', imageBuffer.length, 'bytes')
-              
-              // Upload to Supabase storage
-              const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-              const fileName = `horoscope-${userId}-${todayDate}-${timestamp}.png`
-              const filePath = `${userId}/${fileName}`
-              const bucketName = 'horoscope-avatars'
-              
-              console.log('📤 Uploading image to Supabase storage...')
-              const { error: uploadError } = await supabaseAdmin.storage
-                .from(bucketName)
-                .upload(filePath, imageBuffer, {
-                  contentType: 'image/png',
-                  upsert: false,
-                })
-              
-              if (uploadError) {
-                console.error('❌ Failed to upload image to Supabase storage:', uploadError)
-                throw new Error(`Failed to upload image to Supabase storage: ${uploadError.message}`)
-              }
-              
-              // Get the public URL for the uploaded image
-              const { data: urlData } = supabaseAdmin.storage
-                .from(bucketName)
-                .getPublicUrl(filePath)
-              
-              imageUrl = urlData.publicUrl
-              characterName = imageResult.caption || null
-              
-              console.log('✅ Image uploaded to Supabase storage successfully')
-              console.log('   Supabase storage URL:', imageUrl.substring(0, 100) + '...')
-              console.log('   Character name:', characterName || 'none')
-            } else {
-              // Image is already in Supabase storage
-              console.log('✅ Image is already in Supabase storage')
-              imageUrl = imageResult.imageUrl
-              characterName = imageResult.caption || null
-              console.log('   Using existing Supabase storage URL:', imageUrl.substring(0, 100) + '...')
-              console.log('   Character name:', characterName || 'none')
-            }
-          } else {
-            console.warn('⚠️ Image generation returned no image URL')
-            imageUrl = null
-            characterName = null
-          }
-        } catch (imageError: any) {
-            console.error('❌ Failed to generate image via Airtable:', imageError)
-            console.error('   Error message:', imageError.message)
-            
-            // CRITICAL: Even if generation failed/timed out, check if image exists in Airtable
-            // The image might have been generated by a previous request or is still processing
-            console.log('🔍 Checking Airtable for existing completed images (even after error)...')
-            try {
-              // Try one more time to check for existing images - use a shorter timeout
-              // This handles the case where image was generated but polling timed out
-              const fallbackImageResult = await generateImageViaAirtable(
-                imagePrompt,
-                userTimezone,
-                userId,
-                user.email || undefined
-              )
-              
-              if (fallbackImageResult.imageUrl) {
-                console.log('✅ Found existing image in Airtable on retry!')
-                console.log('   Airtable image URL:', fallbackImageResult.imageUrl.substring(0, 100) + '...')
-                
-                // Download and upload to Supabase
-                const isAirtableUrl = !fallbackImageResult.imageUrl.includes('supabase.co')
-                if (isAirtableUrl) {
-                  console.log('📥 Downloading existing Airtable image and uploading to Supabase...')
-                  const imageResponse = await fetch(fallbackImageResult.imageUrl)
-                  if (imageResponse.ok) {
-                    const imageBlob = await imageResponse.blob()
-                    const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
-                    
-                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-                    const fileName = `horoscope-${userId}-${todayDate}-${timestamp}.png`
-                    const filePath = `${userId}/${fileName}`
-                    const bucketName = 'horoscope-avatars'
-                    
-                    const { error: uploadError } = await supabaseAdmin.storage
-                      .from(bucketName)
-                      .upload(filePath, imageBuffer, {
-                        contentType: 'image/png',
-                        upsert: false,
-                      })
-                    
-                    if (!uploadError) {
-                      const { data: urlData } = supabaseAdmin.storage
-                        .from(bucketName)
-                        .getPublicUrl(filePath)
-                      
-                      imageUrl = urlData.publicUrl
-                      characterName = fallbackImageResult.caption || null
-                      console.log('✅ Successfully uploaded existing Airtable image to Supabase')
-                    } else {
-                      console.error('❌ Failed to upload existing image:', uploadError)
-                      imageUrl = null
-                      characterName = null
-                    }
-                  } else {
-                    console.error('❌ Failed to download existing image from Airtable')
-                    imageUrl = null
-                    characterName = null
-                  }
-                } else {
-                  // Already in Supabase
-                  imageUrl = fallbackImageResult.imageUrl
-                  characterName = fallbackImageResult.caption || null
-                }
-              } else {
-                console.log('⚠️ No existing image found in Airtable on retry')
-                imageUrl = null
-                characterName = null
-              }
-            } catch (retryError: any) {
-              console.error('❌ Retry check also failed:', retryError.message)
-              // Don't fail the entire request if image generation fails - text is still valid
-              imageUrl = null
-              characterName = null
-            }
-          }
-        } else {
-          console.log('✅ Skipping image generation - using existing image from race condition check')
-        }
+        console.log('✅ Horoscope text generated via Elvex')
+        console.log('   Text length:', horoscopeText.length)
+        console.log('   ⚠️ NOTE: Image generation is handled separately by /api/horoscope/avatar endpoint')
       }
 
       // Update user avatar state (if we have prompt slots)
@@ -1143,7 +773,7 @@ export async function GET(request: NextRequest) {
           const { data: avatarState } = await supabaseAdmin
             .from('user_avatar_state')
             .select('*')
-            .eq('user_id', userId)
+        .eq('user_id', userId)
             .single()
           
           const recentStyleGroupIds = avatarState?.recent_style_group_ids || []
@@ -1185,26 +815,15 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      if (hasValidBirthday) {
-        console.log('✅ Generation complete:', {
-          horoscopeText: horoscopeText?.substring(0, 100) + '...',
-          dosCount: horoscopeDos?.length || 0,
-          dontsCount: horoscopeDonts?.length || 0,
-          imageUrl: imageUrl ? imageUrl.substring(0, 100) + '...' : 'null (no image)',
-          characterName: characterName || 'none'
-        })
-      }
-      
       const elapsedTime = Date.now() - startTime
-      console.log(`✅ Horoscope generation completed in ${elapsedTime}ms`)
+      console.log(`✅ Horoscope text generation completed in ${elapsedTime}ms`)
       
-      console.log('Horoscope generated successfully:', { 
-        horoscopeText: horoscopeText ? horoscopeText.substring(0, 50) + '...' : 'N/A (no birthday)',
+      console.log('Horoscope text generated successfully:', { 
+        horoscopeText: horoscopeText ? horoscopeText.substring(0, 50) + '...' : 'MISSING',
         dosCount: horoscopeDos?.length || 0,
         dontsCount: horoscopeDonts?.length || 0,
-        hasImageUrl: !!imageUrl,
-        imageUrl: imageUrl?.substring(0, 100) + '...' || 'MISSING',
-        imageUrlLength: imageUrl?.length || 0
+        hasImagePrompt: !!imagePrompt,
+        imagePromptLength: imagePrompt?.length || 0
       })
       console.log('🔍 DEBUG: Generation complete, ready to save:', {
         hasText: !!horoscopeText,
@@ -1213,18 +832,10 @@ export async function GET(request: NextRequest) {
         dosCount: horoscopeDos?.length || 0,
         hasDonts: !!horoscopeDonts,
         dontsCount: horoscopeDonts?.length || 0,
-        hasImageUrl: !!imageUrl,
-        imageUrlLength: imageUrl?.length || 0,
+        hasImagePrompt: !!imagePrompt,
         todayDate,
         dateType: typeof todayDate
       })
-      
-      // CRITICAL: Verify imageUrl is set before saving
-      if (!imageUrl || imageUrl.trim() === '') {
-        console.error('❌ CRITICAL ERROR: imageUrl is empty before saving to database!')
-        // Image URL is optional - horoscope can be saved without image
-        console.log('⚠️ No image URL to save - horoscope will be saved without image')
-      }
     } catch (error: any) {
       console.error('❌ Error generating horoscope:', error)
       console.error('   Error name:', error.name)
@@ -1354,28 +965,21 @@ export async function GET(request: NextRequest) {
       .eq('date', todayDate)
       .maybeSingle()
     
-    // Image URL is optional - horoscope can be saved without image
-    if (!imageUrl || imageUrl.trim() === '') {
-      console.log('⚠️ No image URL to save - horoscope will be saved without image')
-    }
-    
     const upsertData: any = {
       user_id: userId,
       star_sign: starSign,
       horoscope_text: horoscopeText,
       horoscope_dos: horoscopeDos,
       horoscope_donts: horoscopeDonts,
-      character_name: characterName,
       date: todayDate, // Explicitly set date to ensure consistency
       generated_at: new Date().toISOString(),
-      image_url: imageUrl || null, // Allow null - image is optional
-      // Note: image_caption is handled separately by the avatar endpoint, not stored with horoscope
+      // Note: image_url and character_name are handled separately by the avatar endpoint
       prompt_slots_json: promptSlots, // Set prompt slots from prompt building
-      image_prompt: imagePrompt, // Set image prompt
+      image_prompt: imagePrompt, // Set image prompt (used by avatar endpoint)
     }
     
     // CRITICAL: Log the exact data being saved
-    console.log('💾 Preparing to save horoscope with image URL:', {
+    console.log('💾 Preparing to save horoscope text:', {
       user_id: upsertData.user_id,
       date: upsertData.date,
       dateType: typeof upsertData.date,
@@ -1383,12 +987,10 @@ export async function GET(request: NextRequest) {
       dateLength: String(upsertData.date).length,
       todayDateCalculated: todayDate,
       datesMatch: upsertData.date === todayDate,
-      has_image_url: !!upsertData.image_url,
-      image_url_length: upsertData.image_url?.length || 0,
-      image_url_preview: upsertData.image_url?.substring(0, 100) || 'MISSING',
-      is_supabase_url: upsertData.image_url?.includes('supabase.co') || false,
-      character_name: upsertData.character_name || 'MISSING',
-      has_character_name: !!upsertData.character_name
+      has_text: !!upsertData.horoscope_text,
+      text_length: upsertData.horoscope_text?.length || 0,
+      has_image_prompt: !!upsertData.image_prompt,
+      image_prompt_length: upsertData.image_prompt?.length || 0
     })
     console.log('🔍 DEBUG: Date being saved to database:', {
       value: upsertData.date,
@@ -1409,32 +1011,20 @@ export async function GET(request: NextRequest) {
       dos_count: upsertData.horoscope_dos?.length || 0,
       has_donts: !!upsertData.horoscope_donts?.length,
       donts_count: upsertData.horoscope_donts?.length || 0,
-      character_name: upsertData.character_name,
-      image_url: upsertData.image_url || 'MISSING',
-      image_url_length: upsertData.image_url?.length || 0,
-      image_url_preview: upsertData.image_url?.substring(0, 100) || 'MISSING'
+      has_image_prompt: !!upsertData.image_prompt,
+      image_prompt_length: upsertData.image_prompt?.length || 0
     })
     
-    // Image URL is optional - horoscope can be saved without image
-    if (!upsertData.image_url || upsertData.image_url.trim() === '') {
-      console.log('⚠️ No image URL in upsert data - horoscope will be saved without image')
-      console.log('   horoscopeText exists:', !!upsertData.horoscope_text)
-      console.log('   imageUrl variable:', imageUrl)
-      // Set to null explicitly to ensure database accepts it
-      upsertData.image_url = null
-    }
-    
     console.log('💾 Executing database upsert...')
-    console.log('   Upsert data image_url:', upsertData.image_url ? upsertData.image_url.substring(0, 150) + '...' : 'null (no image)')
     console.log('🔍 DEBUG: Upsert operation details:', {
       table: 'horoscopes',
       conflictColumns: 'user_id,date',
       dateBeingSaved: upsertData.date,
       dateType: typeof upsertData.date,
       dateString: String(upsertData.date),
-      hasImageUrl: !!upsertData.image_url,
       hasText: !!upsertData.horoscope_text,
-      textLength: upsertData.horoscope_text?.length || 0
+      textLength: upsertData.horoscope_text?.length || 0,
+      hasImagePrompt: !!upsertData.image_prompt
     })
     
     const { data: upsertResult, error: upsertError } = await supabaseAdmin
@@ -1577,18 +1167,6 @@ export async function GET(request: NextRequest) {
         console.log('   Record date:', verifyRecord.date)
         console.log('   Generated at:', verifyRecord.generated_at)
         console.log('   Text length:', verifyRecord.horoscope_text?.length || 0)
-        console.log('   Image URL:', verifyRecord.image_url || 'MISSING')
-        console.log('   Image URL length:', verifyRecord.image_url?.length || 0)
-        console.log('   Image URL matches saved:', verifyRecord.image_url === imageUrl)
-        
-        // Image URL is optional - verify it was saved if provided
-        if (!verifyRecord.image_url || verifyRecord.image_url.trim() === '') {
-          console.log('   ⚠️ No image URL in database after save (this is OK - image is optional)')
-        } else if (verifyRecord.image_url !== imageUrl && imageUrl) {
-          console.warn('   ⚠️ WARNING: Image URL in database does not match what we tried to save!')
-          console.warn('   Expected:', imageUrl)
-          console.warn('   Actual:', verifyRecord.image_url)
-        }
         
         // CRITICAL: Second verification with a fresh query to ensure data is actually persisted
         // Wait a bit longer and query again to ensure transaction committed
@@ -1596,7 +1174,7 @@ export async function GET(request: NextRequest) {
         
         const { data: verifyRecord2, error: verifyError2 } = await supabaseAdmin
           .from('horoscopes')
-          .select('id, horoscope_text, image_url, date')
+          .select('id, horoscope_text, date')
           .eq('user_id', userId)
           .eq('date', todayDate)
           .maybeSingle()
@@ -1622,8 +1200,7 @@ export async function GET(request: NextRequest) {
         console.error('   Attempted to save:', {
           user_id: upsertData.user_id,
           date: upsertData.date,
-          text_length: upsertData.horoscope_text?.length || 0,
-          image_url: upsertData.image_url || 'MISSING'
+          text_length: upsertData.horoscope_text?.length || 0
         })
         
         // CRITICAL: Don't return success if we can't verify the save
@@ -1640,15 +1217,13 @@ export async function GET(request: NextRequest) {
     
     // CRITICAL: Only return response AFTER database save is verified
     // Log what we're returning to verify it matches what was saved
-    console.log('📤 Returning horoscope response (AFTER database save verified):', {
+    console.log('📤 Returning horoscope text response (AFTER database save verified):', {
       star_sign: starSign,
       text_length: horoscopeText?.length || 0,
       text_preview: horoscopeText?.substring(0, 100) || 'MISSING',
       dos_count: horoscopeDos?.length || 0,
       donts_count: horoscopeDonts?.length || 0,
-      image_url: imageUrl || null,
-      image_url_length: imageUrl?.length || 0,
-      character_name: characterName
+      note: 'Images are handled separately by /api/horoscope/avatar endpoint'
     })
     
     return NextResponse.json({
@@ -1656,9 +1231,6 @@ export async function GET(request: NextRequest) {
       horoscope_text: horoscopeText,
       horoscope_dos: horoscopeDos,
       horoscope_donts: horoscopeDonts,
-      image_url: imageUrl,
-      // Note: image_caption is handled separately by the avatar endpoint
-      character_name: characterName,
       cached: false,
     })
   } catch (error: any) {

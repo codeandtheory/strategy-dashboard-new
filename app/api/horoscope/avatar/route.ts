@@ -578,14 +578,103 @@ export async function GET(request: NextRequest) {
               })
             }
           } else {
-            console.log('⚠️ No image found in Airtable yet')
+            console.log('⚠️ No image found in Airtable yet - will generate new image')
+            
+            // Generate new image via Airtable (this is the avatar endpoint's responsibility)
+            console.log('🚀 ========== GENERATING NEW IMAGE VIA AIRTABLE ==========')
+            console.log('   Image prompt length:', cachedHoroscope.image_prompt.length)
+            console.log('   User ID:', userId)
+            console.log('   User email:', userEmail || 'not available')
+            console.log('   ⚠️ NOTE: Image generation happens in background - returning immediately')
+            
+            // Start image generation in background (don't await - return immediately)
+            // The frontend will poll this endpoint to check for the image
+            generateImageViaAirtable(
+              cachedHoroscope.image_prompt,
+              profile.timezone || undefined,
+              userId,
+              userEmail
+            )
+            .then(async (imageResult) => {
+              if (imageResult.imageUrl) {
+                console.log('✅ Background image generation completed successfully')
+                console.log('   Airtable image URL:', imageResult.imageUrl.substring(0, 100) + '...')
+                console.log('   Caption:', imageResult.caption || 'none')
+                
+                // Check if image is already in Supabase storage
+                const isAirtableUrl = !imageResult.imageUrl.includes('supabase.co')
+                
+                if (isAirtableUrl) {
+                  // Download and upload to Supabase storage
+                  try {
+                    console.log('📥 Downloading image from Airtable and uploading to Supabase storage...')
+                    const imageResponse = await fetch(imageResult.imageUrl)
+                    if (imageResponse.ok) {
+                      const imageBlob = await imageResponse.blob()
+                      const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
+                      
+                      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+                      const fileName = `horoscope-${userId}-${todayDate}-${timestamp}.png`
+                      const filePath = `${userId}/${fileName}`
+                      const bucketName = 'horoscope-avatars'
+                      
+                      const { error: uploadError } = await supabaseAdmin.storage
+                        .from(bucketName)
+                        .upload(filePath, imageBuffer, {
+                          contentType: 'image/png',
+                          upsert: false,
+                        })
+                      
+                      if (!uploadError) {
+                        const { data: urlData } = supabaseAdmin.storage
+                          .from(bucketName)
+                          .getPublicUrl(filePath)
+                        
+                        // Update the database with the Supabase URL
+                        await supabaseAdmin
+                          .from('horoscopes')
+                          .update({ 
+                            image_url: urlData.publicUrl,
+                            character_name: imageResult.caption || null
+                          })
+                          .eq('user_id', userId)
+                          .eq('date', todayDate)
+                        
+                        console.log('✅ Background image uploaded to Supabase and database updated')
+                      } else {
+                        console.error('❌ Failed to upload image to Supabase:', uploadError)
+                      }
+                    }
+                  } catch (uploadError: any) {
+                    console.error('❌ Error uploading image to Supabase:', uploadError)
+                  }
+                } else {
+                  // Already in Supabase, just update database
+                  await supabaseAdmin
+                    .from('horoscopes')
+                    .update({ 
+                      image_url: imageResult.imageUrl,
+                      character_name: imageResult.caption || null
+                    })
+                    .eq('user_id', userId)
+                    .eq('date', todayDate)
+                  
+                  console.log('✅ Background image URL saved to database')
+                }
+              }
+            })
+            .catch((imageError: any) => {
+              console.error('❌ Background image generation failed:', imageError)
+              console.error('   Error message:', imageError.message)
+              // Don't throw - this is background, frontend can poll for image
+            })
           }
         } catch (airtableCheckError: any) {
-          console.warn('⚠️ Could not check Airtable for existing images:', airtableCheckError.message)
+          console.warn('⚠️ Could not check/generate image in Airtable:', airtableCheckError.message)
         }
       }
       
-      // No image found in Airtable yet - return generating status so frontend can poll again
+      // No image found/generated yet - return generating status so frontend can poll again
       const slots = cachedHoroscope.prompt_slots_json || {}
       return NextResponse.json({
         image_url: null,
@@ -594,7 +683,7 @@ export async function GET(request: NextRequest) {
         prompt_slots_labels: null,
         prompt_slots_reasoning: slots?.reasoning || null,
         character_name: cachedHoroscope.character_name || null,
-        generating: true, // Indicates image might still be generating in Airtable
+        generating: true, // Indicates image is being generated in Airtable
         message: 'Image is being generated in Airtable. Please check again in a few moments.',
       })
     }

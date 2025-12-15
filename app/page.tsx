@@ -1433,15 +1433,15 @@ export default function TeamDashboard() {
           throw new Error(`Failed to parse horoscope response: ${jsonError.message}`)
         }
         
-        // Only fetch avatar endpoint if we don't have image_url from main endpoint
-        // This prevents race conditions where avatar endpoint returns old cached data
+        // Always fetch avatar endpoint independently (images are handled separately from text)
+        // Horoscope endpoint only returns text, avatar endpoint handles all images
         let imageResponse = null
         let imageData = null
         let isImageResponseOk = false
         
-        if (!textData.image_url && isTextResponseOk && horoscopeAvatarEnabled) {
-          // No image URL in main response, try avatar endpoint (only if avatar is enabled)
-          console.log('No image_url in main response, fetching from avatar endpoint...')
+        if (isTextResponseOk && horoscopeAvatarEnabled) {
+          // Fetch avatar endpoint independently (only if avatar is enabled)
+          console.log('Fetching image from avatar endpoint (independent from horoscope text)...')
           imageResponse = await fetch('/api/horoscope/avatar')
           // Check response status before reading body
           isImageResponseOk = imageResponse.ok
@@ -1452,31 +1452,6 @@ export default function TeamDashboard() {
             console.error('❌ Failed to parse image response as JSON:', jsonError)
             console.error('   Response text:', errorText.substring(0, 500))
             imageData = { error: `Failed to parse image response: ${jsonError.message}` }
-          }
-        } else if (textData.image_url && horoscopeAvatarEnabled) {
-          // We have image URL from main endpoint, use it directly
-          console.log('✅ Using image_url from main horoscope endpoint:', textData.image_url.substring(0, 50) + '...')
-          // Create a mock response object for consistency
-          imageData = {
-            image_url: textData.image_url,
-            image_prompt: null, // Will be fetched from avatar endpoint if needed
-            prompt_slots: null,
-            prompt_slots_labels: null,
-            prompt_slots_reasoning: null,
-          }
-          // Still fetch avatar endpoint for metadata (slots, reasoning) but don't wait for it (only if avatar is enabled)
-          if (horoscopeAvatarEnabled) {
-            fetch('/api/horoscope/avatar').then(async (response) => {
-              if (response.ok) {
-                const metadata = await response.json()
-                setHoroscopeImagePrompt(metadata.image_prompt || null)
-                setHoroscopeImageSlots(metadata.prompt_slots || null)
-                setHoroscopeImageSlotsLabels(metadata.prompt_slots_labels || null)
-                setHoroscopeImageSlotsReasoning(metadata.prompt_slots_reasoning || null)
-              }
-            }).catch(err => {
-              console.warn('Failed to fetch avatar metadata:', err)
-            })
           }
         }
         
@@ -1533,34 +1508,8 @@ export default function TeamDashboard() {
             setHoroscopeError(null)
             hasFetchedRef.current = true // Mark as fetched
             
-            // If image_url is in the text response, use it immediately (from n8n) - only if avatar is enabled
-            if (textData.image_url && horoscopeAvatarEnabled) {
-              console.log('✅ Using image URL from horoscope text response:', textData.image_url)
-              console.log('   Image URL length:', textData.image_url.length)
-              console.log('   Image URL type:', typeof textData.image_url)
-              setHoroscopeImage(textData.image_url)
-              setHoroscopeImageLoading(false)
-              setHoroscopeImageError(null)
-              // Set caption if available from Airtable (check both character_name and image_caption for compatibility)
-              if (textData.character_name) {
-                setHoroscopeImageCaption(textData.character_name)
-                setCharacterName(textData.character_name)
-              } else if (textData.image_caption) {
-                setHoroscopeImageCaption(textData.image_caption)
-              }
-            } else if (!horoscopeAvatarEnabled) {
-              // Avatar is disabled, clear image state
-              setHoroscopeImage(null)
-              setHoroscopeImageCaption(null)
-              setHoroscopeImageLoading(false)
-              setHoroscopeImageError(null)
-            } else {
-              console.warn('⚠️ No image_url in text response:', {
-                hasImageUrl: !!textData.image_url,
-                imageUrl: textData.image_url,
-                responseKeys: Object.keys(textData)
-              })
-            }
+            // Horoscope endpoint no longer returns image_url - images come from avatar endpoint
+            // Image will be processed from imageData below
           }
         }
         
@@ -1586,15 +1535,10 @@ export default function TeamDashboard() {
           console.log('   Image URL length:', imageData.image_url?.length || 0)
           console.log('Reasoning received:', imageData.prompt_slots_reasoning)
           // Only set today's image - historical images remain in database
-          // Only overwrite if we don't already have an image from text response
           // Only set image if avatar is enabled
           if (isMounted && horoscopeAvatarEnabled) {
-            if (!horoscopeImage || !textData.image_url) {
-              console.log('   Setting image from avatar endpoint')
-              setHoroscopeImage(imageData.image_url)
-            } else {
-              console.log('   Keeping image from text response, not overwriting with avatar endpoint')
-            }
+            console.log('   Setting image from avatar endpoint')
+            setHoroscopeImage(imageData.image_url)
             setHoroscopeImagePrompt(imageData.image_prompt || null)
             setHoroscopeImageSlots(imageData.prompt_slots || null)
             setHoroscopeImageSlotsLabels(imageData.prompt_slots_labels || null)
@@ -1653,17 +1597,8 @@ export default function TeamDashboard() {
               }
             }
           }, 5000)
-        } else if (textData.image_url) {
-          // Image URL was already set from text response above
-          console.log('✅ Image URL already set from text response:', textData.image_url)
-          // Make sure loading is cleared
-          if (isMounted && horoscopeImageLoading) {
-            setHoroscopeImageLoading(false)
-            hasFetchedRef.current = true // Mark as fetched
-          }
         } else {
-          console.warn('⚠️ No image URL found in either text or avatar response')
-          console.warn('   Text response keys:', Object.keys(textData))
+          console.warn('⚠️ No image URL found in avatar response')
           console.warn('   Image data:', imageData)
           // Still clear loading even if no image
           setHoroscopeImageLoading(false)
