@@ -870,83 +870,100 @@ export async function GET(request: NextRequest) {
                       imageUrl: finalImageUrl,
                       caption: todayRecord.fields?.['Caption'] || todayRecord.fields?.['Character Name'] || null
                     }
-          
-          if (airtableImageResult.imageUrl) {
-            console.log('✅ Found existing image in Airtable!')
-            console.log('   Airtable image URL:', airtableImageResult.imageUrl.substring(0, 100) + '...')
-            
-            // Check if it's an Airtable URL (needs to be uploaded to Supabase)
-            const isAirtableUrl = !airtableImageResult.imageUrl.includes('supabase.co')
-            
-            if (isAirtableUrl) {
-              // Download and upload to Supabase
-              console.log('📥 Downloading image from Airtable and uploading to Supabase...')
-              const imageResponse = await fetch(airtableImageResult.imageUrl)
-              if (imageResponse.ok) {
-                const imageBlob = await imageResponse.blob()
-                const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
-                
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-                const fileName = `horoscope-${userId}-${todayDate}-${timestamp}.png`
-                const filePath = `${userId}/${fileName}`
-                const bucketName = 'horoscope-avatars'
-                
-                const { error: uploadError } = await supabaseAdmin.storage
-                  .from(bucketName)
-                  .upload(filePath, imageBuffer, {
-                    contentType: 'image/png',
-                    upsert: false,
-                  })
-                
-                if (!uploadError) {
-                  const { data: urlData } = supabaseAdmin.storage
-                    .from(bucketName)
-                    .getPublicUrl(filePath)
-                  
-                  // Update the database
-                  await supabaseAdmin
-                    .from('horoscopes')
-                    .update({ 
-                      image_url: urlData.publicUrl,
-                      character_name: airtableImageResult.caption || null
+                    
+                    console.log('✅ Found existing image in Airtable!')
+                    console.log('   Airtable image URL:', airtableImageResult.imageUrl.substring(0, 100) + '...')
+                    
+                    // Check if it's an Airtable URL (needs to be uploaded to Supabase)
+                    const isAirtableUrl = !airtableImageResult.imageUrl.includes('supabase.co')
+                    
+                    if (isAirtableUrl) {
+                      // Download and upload to Supabase
+                      console.log('📥 Downloading image from Airtable and uploading to Supabase...')
+                      const imageResponse = await fetch(airtableImageResult.imageUrl)
+                      if (imageResponse.ok) {
+                        const imageBlob = await imageResponse.blob()
+                        const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
+                        
+                        const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+                        const fileName = `horoscope-${userId}-${todayDate}-${timestamp}.png`
+                        const filePath = `${userId}/${fileName}`
+                        const bucketName = 'horoscope-avatars'
+                        
+                        const { error: uploadError } = await supabaseAdmin.storage
+                          .from(bucketName)
+                          .upload(filePath, imageBuffer, {
+                            contentType: 'image/png',
+                            upsert: false,
+                          })
+                        
+                        if (!uploadError) {
+                          const { data: urlData } = supabaseAdmin.storage
+                            .from(bucketName)
+                            .getPublicUrl(filePath)
+                          
+                          // Update the database
+                          await supabaseAdmin
+                            .from('horoscopes')
+                            .update({ 
+                              image_url: urlData.publicUrl,
+                              character_name: airtableImageResult.caption || null
+                            })
+                            .eq('user_id', userId)
+                            .eq('date', todayDate)
+                          
+                          console.log('✅ Uploaded image to Supabase and updated database')
+                          
+                          // Return the Supabase URL
+                          const slots = cachedHoroscope.prompt_slots_json || {}
+                          return NextResponse.json({
+                            image_url: urlData.publicUrl,
+                            image_prompt: cachedHoroscope.image_prompt,
+                            prompt_slots: slots,
+                            prompt_slots_labels: null,
+                            prompt_slots_reasoning: slots?.reasoning || null,
+                            character_name: airtableImageResult.caption || null,
+                            cached: true,
+                          })
+                        }
+                      }
+                    } else {
+                      // Already in Supabase, just return it
+                      const slots = cachedHoroscope.prompt_slots_json || {}
+                      return NextResponse.json({
+                        image_url: airtableImageResult.imageUrl,
+                        image_prompt: cachedHoroscope.image_prompt,
+                        prompt_slots: slots,
+                        prompt_slots_labels: null,
+                        prompt_slots_reasoning: slots?.reasoning || null,
+                        character_name: airtableImageResult.caption || null,
+                        cached: true,
+                      })
+                    }
+                  } else {
+                    console.log('⚠️ No image found in Airtable for today')
+                    console.log('   ⚠️ NOT generating new image - avatar endpoint is read-only')
+                    console.log('   Image generation should be handled by /api/horoscope endpoint')
+                    
+                    // Return generating status - don't actually generate here
+                    const slots = cachedHoroscope.prompt_slots_json || {}
+                    return NextResponse.json({
+                      image_url: null,
+                      image_prompt: cachedHoroscope.image_prompt,
+                      prompt_slots: slots,
+                      prompt_slots_labels: null,
+                      prompt_slots_reasoning: slots?.reasoning || null,
+                      character_name: null,
+                      generating: true,
+                      message: 'Image is being generated. Please check again in a few moments.',
                     })
-                    .eq('user_id', userId)
-                    .eq('date', todayDate)
-                  
-                  console.log('✅ Uploaded image to Supabase and updated database')
-                  
-                  // Return the Supabase URL
-                  const slots = cachedHoroscope.prompt_slots_json || {}
-                  return NextResponse.json({
-                    image_url: urlData.publicUrl,
-                    image_prompt: cachedHoroscope.image_prompt,
-                    prompt_slots: slots,
-                    prompt_slots_labels: null,
-                    prompt_slots_reasoning: slots?.reasoning || null,
-                    character_name: airtableImageResult.caption || null,
-                    cached: true,
-                  })
+                  }
                 }
               }
-            } else {
-              // Already in Supabase, just return it
-              const slots = cachedHoroscope.prompt_slots_json || {}
-              return NextResponse.json({
-                image_url: airtableImageResult.imageUrl,
-                image_prompt: cachedHoroscope.image_prompt,
-                prompt_slots: slots,
-                prompt_slots_labels: null,
-                prompt_slots_reasoning: slots?.reasoning || null,
-                character_name: airtableImageResult.caption || null,
-                cached: true,
-              })
             }
-          } else {
-            console.log('⚠️ No image found in Airtable for today')
-            console.log('   ⚠️ NOT generating new image - avatar endpoint is read-only')
-            console.log('   Image generation should be handled by /api/horoscope endpoint')
-            
-            // Return generating status - don't actually generate here
+          } catch (error: any) {
+            console.error('   ❌ Error checking Airtable for existing image:', error.message)
+            // Return generating status on error
             const slots = cachedHoroscope.prompt_slots_json || {}
             return NextResponse.json({
               image_url: null,
@@ -956,24 +973,9 @@ export async function GET(request: NextRequest) {
               prompt_slots_reasoning: slots?.reasoning || null,
               character_name: null,
               generating: true,
-              message: 'Image is being generated. Please check again in a few moments.',
+              message: 'Error checking for image. Please try again later.',
             })
           }
-        } catch (error: any) {
-          console.error('   ❌ Error checking Airtable for existing image:', error.message)
-          // Return generating status on error
-          const slots = cachedHoroscope.prompt_slots_json || {}
-          return NextResponse.json({
-            image_url: null,
-            image_prompt: cachedHoroscope.image_prompt,
-            prompt_slots: slots,
-            prompt_slots_labels: null,
-            prompt_slots_reasoning: slots?.reasoning || null,
-            character_name: null,
-            generating: true,
-            message: 'Error checking for image. Please try again later.',
-          })
-        }
       }
       
       // If we reach here, no image was found
