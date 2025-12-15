@@ -357,13 +357,23 @@ async function generateImageViaAirtable(prompt: string, timezone?: string): Prom
     console.log('📥 Airtable API response status:', createResponse.status, createResponse.statusText)
     console.log('📥 Airtable API response headers:', Object.fromEntries(createResponse.headers.entries()))
 
+    // Read response body once - check if it's an error first
+    const responseText = await createResponse.text()
+    
     if (!createResponse.ok) {
-      const errorText = await createResponse.text()
-      console.error('❌ Airtable API error response:', errorText)
-      throw new Error(`Failed to create Airtable record: ${errorText}`)
+      console.error('❌ Airtable API error response:', responseText)
+      throw new Error(`Failed to create Airtable record: ${responseText}`)
     }
 
-    const createData = await createResponse.json()
+    // Parse the response text as JSON
+    let createData
+    try {
+      createData = JSON.parse(responseText)
+    } catch (parseError: any) {
+      console.error('❌ Failed to parse Airtable response as JSON:', parseError)
+      console.error('   Response text:', responseText.substring(0, 500))
+      throw new Error(`Airtable API returned invalid JSON: ${parseError.message}`)
+    }
     console.log('📥 Airtable API response data:', JSON.stringify(createData, null, 2))
     
     if (!createData.id) {
@@ -416,10 +426,20 @@ async function generateImageViaAirtable(prompt: string, timezone?: string): Prom
       })
 
       if (!getResponse.ok) {
-        throw new Error(`Failed to fetch Airtable record: ${getResponse.statusText}`)
+        const errorText = await getResponse.text()
+        throw new Error(`Failed to fetch Airtable record: ${getResponse.statusText} - ${errorText}`)
       }
 
-      const recordData = await getResponse.json()
+      // Read response body once
+      const responseText = await getResponse.text()
+      let recordData
+      try {
+        recordData = JSON.parse(responseText)
+      } catch (parseError: any) {
+        console.error('❌ Failed to parse Airtable polling response as JSON:', parseError)
+        console.error('   Response text:', responseText.substring(0, 500))
+        throw new Error(`Airtable API returned invalid JSON: ${parseError.message}`)
+      }
       const fields = recordData.fields
 
       // Check if generation is complete
