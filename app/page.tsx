@@ -2402,10 +2402,11 @@ export default function TeamDashboard() {
                         displayCaption = horoscopeImageCaption
                       } else if (horoscopeImageCaption && typeof horoscopeImageCaption === 'object') {
                         // Handle React Query/SWR state objects
-                        if ('value' in horoscopeImageCaption && typeof horoscopeImageCaption.value === 'string') {
-                          displayCaption = horoscopeImageCaption.value
-                        } else if ('data' in horoscopeImageCaption && typeof horoscopeImageCaption.data === 'string') {
-                          displayCaption = horoscopeImageCaption.data
+                        const captionObj = horoscopeImageCaption as any
+                        if ('value' in captionObj && typeof captionObj.value === 'string') {
+                          displayCaption = captionObj.value
+                        } else if ('data' in captionObj && typeof captionObj.data === 'string') {
+                          displayCaption = captionObj.data
                         }
                       }
                       
