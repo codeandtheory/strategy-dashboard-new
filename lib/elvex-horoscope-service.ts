@@ -74,6 +74,12 @@ async function transformHoroscopeWithElvex(
   console.log('🔄 Transforming horoscope to Co-Star style using Elvex API...')
   
   const config = getElvexConfig()
+  console.log('🔍 Elvex config:', {
+    assistantId: config.assistantId,
+    version: config.version,
+    baseUrl: config.baseUrl,
+    apiKeyPrefix: config.apiKey ? `${config.apiKey.substring(0, 8)}...` : 'not set'
+  })
 
   const prompt = `Transform this horoscope from Cafe Astrology into the irreverent, silly style of Co-Star. Make it witty, slightly sarcastic, and fun. Keep the core meaning but make it more casual and entertaining.
 
@@ -92,6 +98,12 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
   try {
     // Use Elvex Assistant API (same as deck talk)
     const elvexUrl = `${config.baseUrl}/v0/apps/${config.assistantId}/versions/${config.version}/text/generate`
+    
+    console.log('🔍 Calling Elvex Assistant API:', {
+      url: elvexUrl,
+      assistantId: config.assistantId,
+      version: config.version
+    })
     
     // Build the full prompt with system instructions
     const fullPrompt = `You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON.
