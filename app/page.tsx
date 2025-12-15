@@ -1442,7 +1442,7 @@ export default function TeamDashboard() {
         if (isTextResponseOk && horoscopeAvatarEnabled) {
           // Fetch avatar endpoint independently (only if avatar is enabled)
           console.log('Fetching image from avatar endpoint (independent from horoscope text)...')
-          imageResponse = await fetch('/api/horoscope/avatar')
+          imageResponse = await fetch('/api/avatar')
           // Check response status before reading body
           isImageResponseOk = imageResponse.ok
           try {
@@ -1562,7 +1562,7 @@ export default function TeamDashboard() {
           setTimeout(async () => {
             if (isMounted && horoscopeAvatarEnabled) {
               try {
-                const pollResponse = await fetch('/api/horoscope/avatar')
+                const pollResponse = await fetch('/api/avatar')
                 if (pollResponse.ok) {
                   const pollData = await pollResponse.json()
                   if (pollData.image_url) {
@@ -2095,7 +2095,7 @@ export default function TeamDashboard() {
                 // Force regenerate by calling with force=true
                 const [textResponse, imageResponse] = await Promise.all([
                   fetch('/api/horoscope?force=true'),
-                  fetch('/api/horoscope/avatar')
+                  fetch('/api/avatar')
                 ])
                 
                 const textData = await textResponse.json()
@@ -2150,7 +2150,7 @@ export default function TeamDashboard() {
           onClick={async () => {
             try {
               // Use our API proxy to avoid CORS issues
-              const downloadUrl = `/api/horoscope/avatar/download?url=${encodeURIComponent(horoscopeImage)}`
+              const downloadUrl = `/api/avatar/download?url=${encodeURIComponent(horoscopeImage)}`
               const a = document.createElement('a')
               a.href = downloadUrl
               a.download = `horoscope-${horoscope?.star_sign || 'daily'}-${new Date().toISOString().split('T')[0]}.png`

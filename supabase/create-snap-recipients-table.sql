@@ -41,3 +41,4 @@ CREATE POLICY "Service role can manage all snap recipients"
   USING (auth.role() = 'service_role');
 
 
+

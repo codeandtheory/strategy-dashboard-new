@@ -7,3 +7,4 @@ UPDATE public.announcements
 SET text_format = 'days_until' 
 WHERE mode = 'countdown' AND text_format IS NULL;
 
+

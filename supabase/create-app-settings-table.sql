@@ -61,3 +61,4 @@ CREATE TRIGGER app_settings_updated_at_trigger
   EXECUTE FUNCTION update_app_settings_updated_at();
 
 
+

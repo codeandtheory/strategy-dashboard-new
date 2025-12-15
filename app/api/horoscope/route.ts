@@ -756,7 +756,7 @@ export async function GET(request: NextRequest) {
         
         console.log('✅ Horoscope text generated via Elvex')
         console.log('   Text length:', horoscopeText.length)
-        console.log('   ⚠️ NOTE: Image generation is handled separately by /api/horoscope/avatar endpoint')
+        console.log('   ⚠️ NOTE: Image generation is handled separately by /api/avatar endpoint')
       }
 
       // Update user avatar state (if we have prompt slots)
@@ -1223,7 +1223,7 @@ export async function GET(request: NextRequest) {
       text_preview: horoscopeText?.substring(0, 100) || 'MISSING',
       dos_count: horoscopeDos?.length || 0,
       donts_count: horoscopeDonts?.length || 0,
-      note: 'Images are handled separately by /api/horoscope/avatar endpoint'
+      note: 'Images are handled separately by /api/avatar endpoint'
     })
     
     return NextResponse.json({

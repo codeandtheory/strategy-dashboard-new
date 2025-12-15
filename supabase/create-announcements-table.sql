@@ -81,3 +81,4 @@ CREATE TRIGGER announcements_updated_at_trigger
   FOR EACH ROW
   EXECUTE FUNCTION update_announcements_updated_at();
 
+

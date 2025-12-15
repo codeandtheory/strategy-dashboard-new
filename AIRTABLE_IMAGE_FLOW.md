@@ -141,3 +141,4 @@ AIRTABLE_IMAGE_TABLE_NAME=Image Generation  # Optional, defaults to this
 
 The `Created At` field should use the user's local timezone, not UTC. Currently it uses `new Date().toISOString()` which is UTC. This needs to be fixed to use the user's timezone from their profile.
 
+

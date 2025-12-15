@@ -2,3 +2,4 @@
 ALTER TABLE public.announcements 
 ADD COLUMN IF NOT EXISTS sticker_url TEXT;
 
+
