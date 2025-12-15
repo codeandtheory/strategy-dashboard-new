@@ -159,31 +159,72 @@ ${prompt}`
         if (response.ok) {
           // Success! Use this version
           console.log(`✅ Successfully connected with version ${version}`)
-          const result = await response.json()
+          
+          // Read response body once
+          const responseText = await response.text()
+          console.log('📥 Elvex API response (first 500 chars):', responseText.substring(0, 500))
+          
+          let result
+          try {
+            result = JSON.parse(responseText)
+          } catch (parseError: any) {
+            console.error('❌ Failed to parse Elvex response as JSON:', parseError)
+            console.error('   Response text:', responseText.substring(0, 1000))
+            throw new Error(`Elvex API returned invalid JSON: ${parseError.message}`)
+          }
+          
+          console.log('📥 Elvex API parsed result keys:', Object.keys(result))
+          console.log('📥 Elvex API result structure:', {
+            hasData: !!result.data,
+            hasResponse: !!result.response,
+            hasText: !!result.text,
+            hasContent: !!result.content,
+            dataKeys: result.data ? Object.keys(result.data) : null,
+          })
           
           // Elvex Assistant API returns: { data: { response: "..." } }
           const content = result.data?.response || result.response || result.text || result.content
 
           if (!content) {
+            console.error('❌ Empty content from Elvex response')
+            console.error('   Full result:', JSON.stringify(result, null, 2))
             throw new Error('Empty response from Elvex')
           }
+
+          console.log('📥 Elvex content type:', typeof content)
+          console.log('📥 Elvex content (first 500 chars):', typeof content === 'string' ? content.substring(0, 500) : JSON.stringify(content).substring(0, 500))
 
           // Parse JSON response (might be wrapped in text or already be JSON)
           let parsed
           try {
             parsed = typeof content === 'string' ? JSON.parse(content) : content
-          } catch (e) {
+          } catch (e: any) {
+            console.error('❌ Failed to parse content as JSON:', e.message)
+            console.error('   Content type:', typeof content)
+            console.error('   Content (first 1000 chars):', typeof content === 'string' ? content.substring(0, 1000) : JSON.stringify(content).substring(0, 1000))
             // If not JSON, try to extract JSON from the response
-            const jsonMatch = content.match(/\{[\s\S]*\}/)
+            const jsonMatch = typeof content === 'string' ? content.match(/\{[\s\S]*\}/) : null
             if (jsonMatch) {
+              console.log('   Attempting to extract JSON from content...')
               parsed = JSON.parse(jsonMatch[0])
             } else {
-              throw new Error('Could not parse JSON from Elvex response')
+              throw new Error(`Could not parse JSON from Elvex response: ${e.message}`)
             }
           }
           
+          console.log('📥 Parsed result keys:', Object.keys(parsed))
+          console.log('📥 Parsed result structure:', {
+            hasHoroscope: !!parsed.horoscope,
+            hasDos: Array.isArray(parsed.dos),
+            hasDonts: Array.isArray(parsed.donts),
+            dosCount: Array.isArray(parsed.dos) ? parsed.dos.length : 0,
+            dontsCount: Array.isArray(parsed.donts) ? parsed.donts.length : 0,
+          })
+          
           if (!parsed.horoscope || !Array.isArray(parsed.dos) || !Array.isArray(parsed.donts)) {
-            throw new Error('Invalid response format from Elvex')
+            console.error('❌ Invalid response format from Elvex')
+            console.error('   Parsed result:', JSON.stringify(parsed, null, 2))
+            throw new Error(`Invalid response format from Elvex. Expected horoscope (string), dos (array), donts (array). Got: ${JSON.stringify(Object.keys(parsed))}`)
           }
 
           console.log('✅ Successfully transformed horoscope with Elvex')
