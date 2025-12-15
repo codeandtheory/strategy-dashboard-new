@@ -275,8 +275,29 @@ export async function GET(request: NextRequest) {
       console.log('   Character name in DB:', cachedHoroscope.character_name || 'null/empty')
       console.log('   ⚠️ NOT regenerating - image already exists for today')
       
-      // If character_name is missing, check Airtable for it
+      // If character_name is missing or is a JSON string, check Airtable for it
       let characterName = cachedHoroscope.character_name
+      // Check if characterName is a JSON stringified object and clean it
+      if (characterName && typeof characterName === 'string' && (characterName.startsWith('{') || characterName.startsWith('['))) {
+        try {
+          const parsed = JSON.parse(characterName)
+          if (parsed && typeof parsed === 'object' && 'value' in parsed && typeof parsed.value === 'string' && parsed.value.length > 0) {
+            characterName = parsed.value
+            console.log('   ✅ Cleaned JSON stringified character name:', characterName)
+            // Update database with cleaned value
+            await supabaseAdmin
+              .from('horoscopes')
+              .update({ character_name: characterName })
+              .eq('user_id', userId)
+              .eq('date', todayDate)
+          } else {
+            characterName = null // Invalid format, treat as missing
+          }
+        } catch (e) {
+          // Not valid JSON, might be a regular string starting with {, use as-is
+        }
+      }
+      
       if (!characterName && cachedHoroscope.image_prompt) {
         console.log('   ⚠️ Character name missing in database - checking Airtable...')
         try {
@@ -290,14 +311,38 @@ export async function GET(request: NextRequest) {
           
           if (airtableResult.caption) {
             console.log('   ✅ Found character name in Airtable:', airtableResult.caption)
-            characterName = airtableResult.caption
-            // Update database with character name
-            await supabaseAdmin
-              .from('horoscopes')
-              .update({ character_name: characterName })
-              .eq('user_id', userId)
-              .eq('date', todayDate)
-            console.log('   ✅ Updated database with character name from Airtable')
+            // Ensure caption is a string, not an object or JSON string
+            let cleanCaption: string | null = null
+            if (typeof airtableResult.caption === 'string') {
+              // Check if it's a JSON stringified object
+              if (airtableResult.caption.startsWith('{') || airtableResult.caption.startsWith('[')) {
+                try {
+                  const parsed = JSON.parse(airtableResult.caption)
+                  if (parsed && typeof parsed === 'object' && 'value' in parsed && typeof parsed.value === 'string') {
+                    cleanCaption = parsed.value
+                  } else {
+                    cleanCaption = airtableResult.caption // Use as-is if can't extract value
+                  }
+                } catch (e) {
+                  cleanCaption = airtableResult.caption // Not valid JSON, use as-is
+                }
+              } else {
+                cleanCaption = airtableResult.caption
+              }
+            }
+            
+            if (cleanCaption && cleanCaption.length > 0) {
+              characterName = cleanCaption
+              // Update database with character name (ensuring it's a clean string)
+              await supabaseAdmin
+                .from('horoscopes')
+                .update({ character_name: characterName })
+                .eq('user_id', userId)
+                .eq('date', todayDate)
+              console.log('   ✅ Updated database with character name from Airtable:', characterName)
+            } else {
+              console.log('   ⚠️ Character name from Airtable is not a valid string')
+            }
           } else {
             console.log('   ⚠️ No character name found in Airtable either')
           }
