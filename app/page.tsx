@@ -1434,7 +1434,16 @@ export default function TeamDashboard() {
           // No image URL in main response, try avatar endpoint (only if avatar is enabled)
           console.log('No image_url in main response, fetching from avatar endpoint...')
           imageResponse = await fetch('/api/horoscope/avatar')
-          imageData = await imageResponse.json()
+          // Check response status before reading body
+          const isImageResponseOk = imageResponse.ok
+          try {
+            imageData = await imageResponse.json()
+          } catch (jsonError: any) {
+            const errorText = await imageResponse.text().catch(() => 'Unknown error')
+            console.error('❌ Failed to parse image response as JSON:', jsonError)
+            console.error('   Response text:', errorText.substring(0, 500))
+            imageData = { error: `Failed to parse image response: ${jsonError.message}` }
+          }
         } else if (textData.image_url && horoscopeAvatarEnabled) {
           // We have image URL from main endpoint, use it directly
           console.log('✅ Using image_url from main horoscope endpoint:', textData.image_url.substring(0, 50) + '...')
@@ -1538,12 +1547,10 @@ export default function TeamDashboard() {
           }
         }
         
-        // Process image response (if we fetched it)
-        if (imageResponse) {
-          imageData = await imageResponse.json()
-        }
+        // Process image response (already parsed above if fetched)
+        // imageData is already set above if imageResponse exists
         
-        if (imageResponse && !imageResponse.ok) {
+        if (imageResponse && !isImageResponseOk) {
           console.error('Horoscope image API error:', imageResponse.status, imageData)
           if (imageResponse.status === 401) {
             setHoroscopeImageError('Please log in to view your horoscope image')
