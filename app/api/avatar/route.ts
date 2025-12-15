@@ -363,7 +363,7 @@ export async function GET(request: NextRequest) {
         prompt_slots: cachedHoroscope.prompt_slots_json || null,
         prompt_slots_labels: Object.keys(slotLabels).length > 0 ? slotLabels : null,
         prompt_slots_reasoning: cachedReasoning,
-        character_name: cachedHoroscope.character_name || null,
+        character_name: characterName || null,
         cached: true,
       })
     }
