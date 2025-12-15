@@ -199,7 +199,6 @@ export default function TeamDashboard() {
   const [calendarLoading, setCalendarLoading] = useState(true)
   const [calendarError, setCalendarError] = useState<string | null>(null)
   const [eventsExpanded, setEventsExpanded] = useState(false)
-  const [serviceAccountEmail, setServiceAccountEmail] = useState<string | null>(null)
   const [pipelineData, setPipelineData] = useState<Array<{
     id: string
     name: string
