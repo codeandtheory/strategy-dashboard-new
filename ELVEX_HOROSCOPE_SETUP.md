@@ -4,41 +4,28 @@ This guide explains how horoscope generation works with Elvex API and what needs
 
 ## Overview
 
-The system uses Elvex API for both horoscope text and image generation. It makes direct API calls to Elvex's OpenAI-compatible endpoints - **no assistant configuration is required**.
+The system uses Elvex API for both horoscope text and image generation. It uses the Elvex Assistant API (same as deck talk) for text transformation and Elvex images API for image generation.
 
 ## How It Works
 
 The system makes **2 API calls to Elvex** (the image prompt is built locally using the slot-based system):
 
-### 1. Text Transformation (Chat Completions)
-**Endpoint:** `POST /v1/chat/completions`
+### 1. Text Transformation (Assistant API)
+**Endpoint:** `POST /v0/apps/{assistantId}/versions/{version}/text/generate`
 
 **What's sent:**
 ```json
 {
-  "model": "gpt-4o-mini",
-  "messages": [
-    {
-      "role": "system",
-      "content": "You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON."
-    },
-    {
-      "role": "user",
-      "content": "Transform this horoscope from Cafe Astrology into the irreverent, silly style of Co-Star. Make it witty, slightly sarcastic, and fun. Keep the core meaning but make it more casual and entertaining.\n\nOriginal horoscope for [STAR_SIGN]:\n[CAFE_ASTROLOGY_TEXT]\n\nReturn a JSON object with this exact structure:\n{\n  \"horoscope\": \"An irreverent, expanded version of the horoscope in Co-Star's style. Make it approximately 150 words. Keep it witty, casual, and entertaining while expanding on the themes from the original. Break it into multiple paragraphs for readability.\",\n  \"dos\": [\"Do thing 1\", \"Do thing 2\", \"Do thing 3\"],\n  \"donts\": [\"Don't thing 1\", \"Don't thing 2\", \"Don't thing 3\"]\n}\n\nMake the do's and don'ts silly, specific, and related to the horoscope content. They should be funny and slightly absurd but still relevant."
-    }
-  ],
-  "response_format": { "type": "json_object" },
-  "temperature": 0.9,
-  "max_tokens": 600
+  "prompt": "You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON.\n\nTransform this horoscope from Cafe Astrology into the irreverent, silly style of Co-Star. Make it witty, slightly sarcastic, and fun. Keep the core meaning but make it more casual and entertaining.\n\nOriginal horoscope for [STAR_SIGN]:\n[CAFE_ASTROLOGY_TEXT]\n\nReturn a JSON object with this exact structure:\n{\n  \"horoscope\": \"An irreverent, expanded version of the horoscope in Co-Star's style. Make it approximately 150 words. Keep it witty, casual, and entertaining while expanding on the themes from the original. Break it into multiple paragraphs for readability.\",\n  \"dos\": [\"Do thing 1\", \"Do thing 2\", \"Do thing 3\"],\n  \"donts\": [\"Don't thing 1\", \"Don't thing 2\", \"Don't thing 3\"]\n}\n\nMake the do's and don'ts silly, specific, and related to the horoscope content. They should be funny and slightly absurd but still relevant."
 }
 ```
 
 **What's returned:**
 ```json
 {
-  "horoscope": "The transformed horoscope text...",
-  "dos": ["Do thing 1", "Do thing 2", "Do thing 3"],
-  "donts": ["Don't thing 1", "Don't thing 2", "Don't thing 3"]
+  "data": {
+    "response": "{\"horoscope\": \"The transformed horoscope text...\", \"dos\": [\"Do thing 1\", \"Do thing 2\", \"Do thing 3\"], \"donts\": [\"Don't thing 1\", \"Don't thing 2\", \"Don't thing 3\"]}"
+  }
 }
 ```
 
@@ -108,7 +95,29 @@ You already have this set up for deck talk! The same `ELVEX_API_KEY` is used.
 ELVEX_API_KEY=your-elvex-api-key
 ```
 
-### 2. Elvex Image Generation Provider
+### 2. Elvex Assistant for Horoscope Text Transformation
+
+You need an Elvex Assistant configured to transform horoscope text. You can either:
+
+**Option A: Reuse Deck Talk Assistant** (if it's flexible enough)
+- Use the same `ELVEX_ASSISTANT_ID` and `ELVEX_VERSION` as deck talk
+- The assistant will receive the horoscope transformation prompt
+
+**Option B: Create a New Assistant** (recommended for better control)
+1. In Elvex dashboard, create a new assistant
+2. Configure it to:
+   - Transform text in Co-Star style
+   - Return structured JSON with `horoscope`, `dos`, and `donts` fields
+3. Publish the assistant and note the Assistant ID and Version
+4. Set environment variables:
+   ```bash
+   ELVEX_HOROSCOPE_ASSISTANT_ID=your-horoscope-assistant-id
+   ELVEX_HOROSCOPE_VERSION=your-assistant-version
+   ```
+
+**Note:** If `ELVEX_HOROSCOPE_ASSISTANT_ID` is not set, it will fall back to `ELVEX_ASSISTANT_ID` (deck talk assistant).
+
+### 3. Elvex Image Generation Provider
 Configure image generation in Elvex dashboard:
 
 1. Go to **Settings > Apps** in Elvex
@@ -117,20 +126,25 @@ Configure image generation in Elvex dashboard:
 
 **Note:** This is a global setting in your Elvex account, not per-assistant.
 
-### 3. Optional: Custom Base URL
+### 4. Optional: Custom Base URL
 If you're using a custom Elvex instance:
 
 ```bash
 ELVEX_BASE_URL=https://api.elvex.ai  # Optional, defaults to this
 ```
 
-## No Assistant Configuration Needed
+## Assistant Configuration
 
-Unlike deck processing (which uses `/v1/assistants/{id}/process`), horoscope generation uses:
-- `/v1/chat/completions` - Direct OpenAI-compatible chat API
-- `/v1/images/generations` - Direct OpenAI-compatible images API
+Horoscope generation uses the Elvex Assistant API (same pattern as deck talk):
+- `/v0/apps/{assistantId}/versions/{version}/text/generate` - Assistant API for text transformation
+- `/v1/images/generations` - Images API for image generation
 
-These are **direct API calls** that don't require creating or configuring an assistant in Elvex. The prompts are built dynamically in the code based on user profile data.
+The assistant receives a prompt that includes:
+- System instructions (transform to Co-Star style, return JSON)
+- The horoscope transformation request with Cafe Astrology text
+- JSON structure requirements
+
+You can configure the assistant in Elvex dashboard to optimize for this use case, or use the same assistant as deck talk if it's flexible enough.
 
 ## What Gets Sent (Summary)
 
@@ -183,10 +197,10 @@ These are **direct API calls** that don't require creating or configuring an ass
 
 | Feature | Deck Talk | Horoscope Generation |
 |---------|-----------|---------------------|
-| API Endpoint | `/v0/apps/{id}/versions/{version}/text/generate` | `/v1/chat/completions` |
-| Requires Assistant | ✅ Yes | ❌ No |
-| Requires Assistant ID | ✅ Yes | ❌ No |
-| Requires Version | ✅ Yes | ❌ No |
+| API Endpoint | `/v0/apps/{id}/versions/{version}/text/generate` | `/v0/apps/{id}/versions/{version}/text/generate` |
+| Requires Assistant | ✅ Yes | ✅ Yes (can reuse same assistant) |
+| Requires Assistant ID | ✅ Yes | ✅ Yes (or use ELVEX_ASSISTANT_ID) |
+| Requires Version | ✅ Yes | ✅ Yes (or use ELVEX_VERSION) |
 | Uses Same API Key | ✅ Yes | ✅ Yes |
 
-**Key Point:** Horoscope generation uses the **OpenAI-compatible API** directly, while deck talk uses the **Elvex Assistant API**. They're different endpoints but use the same API key.
+**Key Point:** Both use the **Elvex Assistant API**. You can use the same assistant for both, or create a separate one optimized for horoscope transformation.

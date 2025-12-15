@@ -4,15 +4,18 @@
  * Uses Elvex API to generate horoscope text and images.
  * 
  * Workflow:
- * 1. Transform horoscope text using Elvex chat completions API
+ * 1. Transform horoscope text using Elvex Assistant API
  * 2. Use image prompt built by route (via buildHoroscopePrompt with slot-based logic)
  * 3. Generate image using Elvex images API
  * 
  * Setup required:
  * 1. Elvex account and API key
- * 2. Elvex image generation provider configured (Settings > Apps > Image generation provider)
- * 3. Environment variables:
+ * 2. Elvex Assistant for horoscope text transformation (or reuse deck talk assistant)
+ * 3. Elvex image generation provider configured (Settings > Apps > Image generation provider)
+ * 4. Environment variables:
  *    - ELVEX_API_KEY: Your Elvex API key
+ *    - ELVEX_HOROSCOPE_ASSISTANT_ID: Assistant ID (or use ELVEX_ASSISTANT_ID)
+ *    - ELVEX_HOROSCOPE_VERSION: Assistant version (or use ELVEX_VERSION)
  *    - ELVEX_BASE_URL: Elvex API base URL (optional, defaults to https://api.elvex.ai)
  */
 
@@ -42,13 +45,23 @@ interface HoroscopeGenerationResponse {
  */
 function getElvexConfig() {
   const apiKey = process.env.ELVEX_API_KEY
+  const assistantId = process.env.ELVEX_HOROSCOPE_ASSISTANT_ID || process.env.ELVEX_ASSISTANT_ID
+  const version = process.env.ELVEX_HOROSCOPE_VERSION || process.env.ELVEX_VERSION
   const baseUrl = process.env.ELVEX_BASE_URL || 'https://api.elvex.ai'
 
   if (!apiKey) {
     throw new Error('ELVEX_API_KEY is not set. Please set it in environment variables.')
   }
 
-  return { apiKey, baseUrl }
+  if (!assistantId) {
+    throw new Error('ELVEX_HOROSCOPE_ASSISTANT_ID or ELVEX_ASSISTANT_ID is not set. Please set it in environment variables.')
+  }
+
+  if (!version) {
+    throw new Error('ELVEX_HOROSCOPE_VERSION or ELVEX_VERSION is not set. Please set it in environment variables.')
+  }
+
+  return { apiKey, assistantId, version, baseUrl }
 }
 
 /**
@@ -77,27 +90,22 @@ Return a JSON object with this exact structure:
 Make the do's and don'ts silly, specific, and related to the horoscope content. They should be funny and slightly absurd but still relevant.`
 
   try {
-    const response = await fetch(`${config.baseUrl}/v1/chat/completions`, {
+    // Use Elvex Assistant API (same as deck talk)
+    const elvexUrl = `${config.baseUrl}/v0/apps/${config.assistantId}/versions/${config.version}/text/generate`
+    
+    // Build the full prompt with system instructions
+    const fullPrompt = `You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON.
+
+${prompt}`
+
+    const response = await fetch(elvexUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${config.apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini', // Elvex may use different model names
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a witty horoscope transformer. You take traditional horoscopes and make them irreverent and fun in the style of Co-Star. You always return valid JSON.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.9,
-        max_tokens: 600,
+        prompt: fullPrompt,
       }),
     })
 
@@ -107,14 +115,27 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
     }
 
     const result = await response.json()
-    const content = result.choices?.[0]?.message?.content
+    
+    // Elvex Assistant API returns: { data: { response: "..." } }
+    const content = result.data?.response || result.response || result.text || result.content
 
     if (!content) {
       throw new Error('Empty response from Elvex')
     }
 
-    // Parse JSON response
-    const parsed = JSON.parse(content)
+    // Parse JSON response (might be wrapped in text or already be JSON)
+    let parsed
+    try {
+      parsed = typeof content === 'string' ? JSON.parse(content) : content
+    } catch (e) {
+      // If not JSON, try to extract JSON from the response
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[0])
+      } else {
+        throw new Error('Could not parse JSON from Elvex response')
+      }
+    }
     
     if (!parsed.horoscope || !Array.isArray(parsed.dos) || !Array.isArray(parsed.donts)) {
       throw new Error('Invalid response format from Elvex')
@@ -199,7 +220,7 @@ async function generateImageWithElvex(prompt: string): Promise<string> {
  * Generate horoscope using Elvex API
  * 
  * This function:
- * 1. Transforms horoscope text using Elvex chat completions
+ * 1. Transforms horoscope text using Elvex Assistant API
  * 2. Uses image prompt provided by route (built with slot-based logic via buildHoroscopePrompt)
  * 3. Generates image using Elvex images API
  * 
