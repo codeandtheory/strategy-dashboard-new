@@ -133,12 +133,12 @@ Make the do's and don'ts silly, specific, and related to the horoscope content. 
 
 ${prompt}`
 
-      // Add timeout to prevent hanging (60 seconds for text generation)
+      // Add timeout to prevent hanging (30 seconds for text generation - reduced from 60)
       const controller = new AbortController()
       const timeoutId = setTimeout(() => {
         controller.abort()
-        console.log(`⏱️ Request timeout after 60 seconds for version ${version}`)
-      }, 60000)
+        console.log(`⏱️ Request timeout after 30 seconds for version ${version}`)
+      }, 30000)
 
       try {
         const response = await fetch(elvexUrl, {
@@ -255,13 +255,18 @@ ${prompt}`
       } catch (error: any) {
         clearTimeout(timeoutId)
         if (error.name === 'AbortError') {
-          lastError = new Error(`Request timeout: Elvex API call took longer than 60 seconds for version ${version}`)
+          lastError = new Error(`Request timeout: Elvex API call took longer than 30 seconds for version ${version}`)
           console.log(`⏱️ Version ${version} timed out, trying next...`)
           if (version === versionsToTry[versionsToTry.length - 1]) {
             throw lastError
           }
         } else {
-          throw error
+          // Log other errors but continue to next version
+          console.error(`❌ Error calling Elvex API version ${version}:`, error.message)
+          lastError = error
+          if (version === versionsToTry[versionsToTry.length - 1]) {
+            throw error
+          }
         }
       }
     }
