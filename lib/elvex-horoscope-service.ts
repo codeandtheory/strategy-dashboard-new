@@ -1,18 +1,17 @@
 /**
  * Elvex Horoscope Service
  * 
- * Uses Elvex API to generate horoscope text and images.
+ * Uses Elvex API to generate horoscope text.
  * 
  * Workflow:
  * 1. Transform horoscope text using Elvex Assistant API
- * 2. Use image prompt built by route (via buildHoroscopePrompt with slot-based logic)
- * 3. Generate image using Elvex images API
+ * 
+ * Note: Image generation is NOT available via Elvex API and will be handled separately.
  * 
  * Setup required:
  * 1. Elvex account and API key
  * 2. Elvex Assistant for horoscope text transformation (or reuse deck talk assistant)
- * 3. Elvex image generation provider configured (Settings > Apps > Image generation provider)
- * 4. Environment variables:
+ * 3. Environment variables:
  *    - ELVEX_API_KEY: Your Elvex API key
  *    - ELVEX_HOROSCOPE_ASSISTANT_ID: Assistant ID (or use ELVEX_ASSISTANT_ID)
  *    - ELVEX_HOROSCOPE_VERSION: Assistant version (or use ELVEX_VERSION)
@@ -358,12 +357,13 @@ using DALL-E 3`
 }
 
 /**
- * Generate horoscope using Elvex API
+ * Generate horoscope text using Elvex API
  * 
  * This function:
  * 1. Transforms horoscope text using Elvex Assistant API
- * 2. Uses image prompt provided by route (built with slot-based logic via buildHoroscopePrompt)
- * 3. Generates image using Elvex images API
+ * 
+ * Note: Image generation is NOT available via Elvex API. The image prompt is still
+ * accepted and stored, but image generation will need to be handled separately.
  * 
  * The image prompt is built by the route using buildHoroscopePrompt() with slot-based logic.
  * The prompt format matches the n8n workflow (e.g., "Rubber Hose Cartoon. Marker Illustration. 
@@ -397,38 +397,28 @@ export async function generateHoroscopeViaElvex(
   }
 
   try {
-    // Step 1: Transform horoscope text using Elvex (independent operation)
-    console.log('📝 Step 1: Generating horoscope text...')
+    // Generate horoscope text using Elvex
+    console.log('📝 Generating horoscope text with Elvex...')
     const textResult = await transformHoroscopeWithElvex(
       request.cafeAstrologyText,
       request.starSign
     )
-    console.log('✅ Step 1 complete: Horoscope text generated')
+    console.log('✅ Horoscope text generated successfully')
 
-    // Step 2: Generate image separately (independent operation)
-    // If image generation fails, we still return the text
+    // Note: Image generation is not available via Elvex API
+    // Image will be handled separately/elsewhere
     const imagePrompt = request.imagePrompt
-    let imageUrl: string | null = null
-    
-    try {
-      console.log('🖼️ Step 2: Generating horoscope image (separate operation)...')
-      imageUrl = await generateImageWithElvex(imagePrompt)
-      console.log('✅ Step 2 complete: Image generated')
-    } catch (imageError: any) {
-      // Image generation failed, but we still have the text
-      console.error('⚠️ Image generation failed, but horoscope text is available:', imageError.message)
-      console.log('📝 Continuing with text-only horoscope (image will be null)')
-      // Don't throw - we want to return the text even if image fails
-    }
+    const imageUrl: string | null = null
 
     const elapsed = Date.now() - startTime
-    console.log(`✅ Horoscope generation completed in ${elapsed}ms (text: ✅, image: ${imageUrl ? '✅' : '❌'})`)
+    console.log(`✅ Horoscope text generation completed in ${elapsed}ms`)
+    console.log('ℹ️ Image generation not available via Elvex API - will be handled separately')
 
     return {
       horoscope: textResult.horoscope,
       dos: textResult.dos,
       donts: textResult.donts,
-      imageUrl, // Can be null if image generation failed
+      imageUrl, // null - image generation not available via Elvex API
       character_name: null,
       prompt: imagePrompt,
       slots: request.slots || {},
