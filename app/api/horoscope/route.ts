@@ -292,11 +292,11 @@ export async function GET(request: NextRequest) {
     // If we can't query the database properly, we should NOT generate
     if (cacheError) {
       console.error('❌ DATABASE ERROR: Cannot verify cache - DO NOT GENERATE')
-      console.error('   Cache error:', cacheError?.message)
+      console.error('   Cache error:', cacheError.message)
       return NextResponse.json(
         { 
           error: 'Database connection error. Cannot verify if horoscope already exists. Please try again or contact support.',
-          details: cacheError?.message
+          details: cacheError.message
         },
         { status: 500 }
       )
@@ -387,7 +387,8 @@ export async function GET(request: NextRequest) {
     // If we can't find records and can't verify the database is accessible, don't generate
     // NOTE: Commented out to allow generation when database is empty (e.g., first-time users)
     /*
-    if (!cachedHoroscope && (!allUserRecords || allUserRecords.length === 0)) {
+    // Removed: allUserRecords check - not needed for optimization
+    if (false) {
       // Check if this is the first time ever (no records at all) vs database issue
       // Try a simple test query to verify database connectivity
       const { data: testQuery, error: testError } = await supabaseAdmin
@@ -473,14 +474,7 @@ export async function GET(request: NextRequest) {
       todayDate,
       datesMatch: cachedHoroscope?.date ? cachedHoroscope.date === todayDate : false,
       hasText: !!cachedHoroscope?.horoscope_text,
-      hasImage: !!cachedHoroscope?.image_url,
-      anyRecordsForUser: !!allUserRecords && allUserRecords.length > 0,
-      recentHoroscopesCount: recentHoroscopes?.length || 0,
-      recentHoroscopesDates: recentHoroscopes?.map(h => ({
-        date: h.date,
-        dateString: String(h.date),
-        matchesToday: String(h.date) === todayDate
-      })) || []
+      hasImage: !!cachedHoroscope?.image_url
     })
     console.log('   ⚠️ PROCEEDING TO GENERATE NEW HOROSCOPE (this will call OpenAI API)')
     console.log('   ⚠️ THIS IS THE ONLY GENERATION FOR TODAY - NO MORE WILL BE GENERATED')
