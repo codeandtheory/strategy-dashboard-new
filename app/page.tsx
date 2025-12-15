@@ -1534,6 +1534,13 @@ export default function TeamDashboard() {
         imageData = avatarResult.data
         isImageResponseOk = avatarResult.isOk
         console.log('⏱️ Avatar endpoint response received at:', new Date().toISOString())
+        console.log('⏱️ Avatar data type:', typeof imageData)
+        console.log('⏱️ Avatar data:', JSON.stringify(imageData).substring(0, 500))
+        if (imageData && typeof imageData === 'object' && 'character_name' in imageData) {
+          console.log('⏱️ Character name in response:', imageData.character_name)
+          console.log('⏱️ Character name type:', typeof imageData.character_name)
+          console.log('⏱️ Character name stringified:', JSON.stringify(imageData.character_name))
+        }
         
         // Process image response (already parsed above if fetched)
         // imageData is already set above if imageResponse exists
