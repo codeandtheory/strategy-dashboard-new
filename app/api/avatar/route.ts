@@ -312,42 +312,109 @@ export async function GET(request: NextRequest) {
         console.log('   User ID:', userId)
         console.log('   Image prompt exists:', !!cachedHoroscope.image_prompt)
         try {
-          // Use generateImageViaAirtable to get the caption - it already knows how to find records!
-          // This function successfully finds the image, so it should find the caption too
-          const { generateImageViaAirtable } = await import('@/lib/elvex-horoscope-service')
-          const airtableResult = await generateImageViaAirtable(
-            cachedHoroscope.image_prompt,
-            profile.timezone || undefined,
-            userId,
-            userEmail
-          )
+          // Read-only Airtable query - use same table identifier as generateImageViaAirtable
+          // This ensures we use the same table ID/name that successfully finds images
+          const apiKey = process.env.AIRTABLE_API_KEY
+          const baseId = process.env.AIRTABLE_IMAGE_BASE_ID || process.env.AIRTABLE_AI_BASE_ID || process.env.AIRTABLE_BASE_ID
+          const tableId = process.env.AIRTABLE_IMAGE_TABLE_ID || 'tblKPuAESzyVMrK5M'
+          const tableName = process.env.AIRTABLE_IMAGE_TABLE_NAME || 'Image Generation'
+          // Use table ID (same as generateImageViaAirtable) - more reliable than table name
+          const tableIdentifier = tableId
           
-          console.log('   📋 generateImageViaAirtable result:', {
-            hasImageUrl: !!airtableResult.imageUrl,
-            hasCaption: !!airtableResult.caption,
-            captionValue: airtableResult.caption,
-            captionType: typeof airtableResult.caption
-          })
-          
-          if (airtableResult.caption && typeof airtableResult.caption === 'string' && airtableResult.caption.length > 0) {
-            console.log('   ✅ Found character name via generateImageViaAirtable:', airtableResult.caption)
-            characterName = airtableResult.caption
-            // Update database with character name
-            const { error: updateError, data: updateData } = await supabaseAdmin
-              .from('horoscopes')
-              .update({ character_name: characterName })
-              .eq('user_id', userId)
-              .eq('date', todayDate)
-              .select('character_name')
-            
-            if (updateError) {
-              console.error('   ❌ Error updating database with character name:', updateError)
-            } else {
-              console.log('   ✅ Updated database with character_name from Airtable:', characterName)
-              console.log('   📊 Database update result:', updateData)
-            }
+          if (!apiKey || !baseId) {
+            console.log('   ⚠️ Airtable credentials not configured - skipping character name check')
           } else {
-            console.log('   ⚠️ generateImageViaAirtable found image but no caption')
+            const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableIdentifier)}`
+            
+            // Get today's date in user's timezone (same format as generateImageViaAirtable)
+            const userTimezone = profile.timezone || 'America/New_York'
+            let createdAt: string
+            if (userTimezone) {
+              const dateTimeStr = getTodayDateInTimezone(userTimezone, now)
+              createdAt = dateTimeStr.split('T')[0] // Extract YYYY-MM-DD
+            } else {
+              const nowUtc = new Date()
+              createdAt = `${nowUtc.getUTCFullYear()}-${String(nowUtc.getUTCMonth() + 1).padStart(2, '0')}-${String(nowUtc.getUTCDate()).padStart(2, '0')}`
+            }
+            
+            console.log('   🔍 Airtable query parameters (read-only):', {
+              userId,
+              userTimezone,
+              createdAt,
+              baseId,
+              tableId,
+              tableIdentifier
+            })
+            
+            // Query by User ID only (no date filter) to find any records for this user
+            // This is more reliable than date matching
+            const filterFormula = `{User ID} = "${userId}"`
+            const queryUrl = `${url}?filterByFormula=${encodeURIComponent(filterFormula)}&sort[0][field]=Created At&sort[0][direction]=desc&maxRecords=10`
+            
+            console.log('   🔍 Querying Airtable (read-only):', queryUrl.substring(0, 200) + '...')
+            
+            const queryResponse = await fetch(queryUrl, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+              },
+            })
+            
+            if (queryResponse.ok) {
+              const queryData = await queryResponse.json()
+              console.log('   📋 Airtable query response:', {
+                recordCount: queryData.records?.length || 0,
+                hasRecords: !!(queryData.records && queryData.records.length > 0)
+              })
+              
+              if (queryData.records && queryData.records.length > 0) {
+                // Check all records for caption (prioritize Caption field)
+                for (const record of queryData.records) {
+                  const captionField = record.fields?.['Caption']
+                  const characterNameField = record.fields?.['Character Name']
+                  const foundCaption = captionField || characterNameField
+                  
+                  console.log('   🔍 Checking record:', {
+                    id: record.id,
+                    createdAt: record.fields?.['Created At'],
+                    hasCaption: !!captionField,
+                    hasCharacterName: !!characterNameField,
+                    captionValue: captionField,
+                    allFields: Object.keys(record.fields || {})
+                  })
+                  
+                  if (foundCaption && typeof foundCaption === 'string' && foundCaption.length > 0) {
+                    console.log('   ✅ Found character name in Airtable (from Caption field):', foundCaption)
+                    characterName = foundCaption
+                    // Update database with character name
+                    const { error: updateError, data: updateData } = await supabaseAdmin
+                      .from('horoscopes')
+                      .update({ character_name: characterName })
+                      .eq('user_id', userId)
+                      .eq('date', todayDate)
+                      .select('character_name')
+                    
+                    if (updateError) {
+                      console.error('   ❌ Error updating database with character name:', updateError)
+                    } else {
+                      console.log('   ✅ Updated database with character_name from Airtable:', characterName)
+                      console.log('   📊 Database update result:', updateData)
+                    }
+                    break // Found it, stop looking
+                  }
+                }
+                
+                if (!characterName) {
+                  console.log('   ⚠️ No character name found in any Airtable record')
+                }
+              } else {
+                console.log('   ⚠️ No Airtable records found for user')
+              }
+            } else {
+              const errorText = await queryResponse.text().catch(() => 'Unknown error')
+              console.log('   ⚠️ Airtable query failed:', queryResponse.status, errorText.substring(0, 200))
+            }
           }
         } catch (error: any) {
           console.error('   ❌ Error checking Airtable for character name:', error.message)
