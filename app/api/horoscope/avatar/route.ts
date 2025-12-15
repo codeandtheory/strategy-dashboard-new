@@ -486,9 +486,36 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // Only generate if image_url is truly empty/null AND it's from today
-    // This prevents regenerating when image already exists
-    // CRITICAL: Also check isFromToday to prevent generating for old horoscopes
+    // CRITICAL: Image generation is now handled by the main horoscope endpoint
+    // This avatar endpoint should ONLY return existing images, never generate new ones
+    // This prevents duplicate image generation when both endpoints are called
+    if ((!cachedHoroscope.image_url || cachedHoroscope.image_url.trim() === '') && isFromToday) {
+      console.log('⚠️ Horoscope exists but image_url is null or empty')
+      console.log('   Horoscope date:', cachedHoroscope.date)
+      console.log('   Has text:', !!cachedHoroscope.horoscope_text)
+      console.log('   Has image prompt:', !!cachedHoroscope.image_prompt)
+      console.log('   ⚠️ NOTE: Image generation is now handled by /api/horoscope endpoint')
+      console.log('   ⚠️ This endpoint will NOT generate images - only return existing ones')
+      console.log('   ⚠️ If image is missing, call /api/horoscope endpoint to generate both text and image')
+      
+      // Return null image_url - don't generate here
+      // The main horoscope endpoint will generate the image when text is generated
+      const slots = cachedHoroscope.prompt_slots_json || {}
+      return NextResponse.json({
+        image_url: null,
+        image_prompt: cachedHoroscope.image_prompt,
+        prompt_slots: slots,
+        prompt_slots_labels: null,
+        prompt_slots_reasoning: slots?.reasoning || null,
+        character_name: cachedHoroscope.character_name || null,
+        generating: false, // Not generating - image should be generated via main endpoint
+        message: 'Image generation is handled by /api/horoscope endpoint. Please call that endpoint to generate both text and image together.'
+      })
+    }
+    
+    // OLD CODE - DISABLED: Image generation moved to main horoscope endpoint
+    // This prevents duplicate image generation
+    /*
     if ((!cachedHoroscope.image_url || cachedHoroscope.image_url.trim() === '') && isFromToday) {
       console.log('⚠️ Horoscope exists but image_url is null or empty')
       console.log('   Horoscope date:', cachedHoroscope.date)
@@ -622,9 +649,12 @@ export async function GET(request: NextRequest) {
           generating: true, // Indicates image is being generated in background
           message: 'Image generation started in background. Please check again in a few moments.',
         })
-      } else {
-        console.log('⚠️ No image prompt available - cannot generate image')
-        return NextResponse.json(
+      }
+    }
+    */
+    
+    // If we get here, we should have an image (or the code above returned early)
+    // Continue with returning the existing image
           { 
             error: 'Image generation failed. The horoscope was generated but no image prompt is available.',
             details: 'Image prompt is required to generate images. Please regenerate the horoscope.',

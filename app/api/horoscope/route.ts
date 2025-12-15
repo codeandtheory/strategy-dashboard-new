@@ -504,6 +504,40 @@ export async function GET(request: NextRequest) {
     }
     */
     
+    // CRITICAL RACE CONDITION CHECK: Double-check database right before generation
+    // This prevents multiple simultaneous requests from all generating
+    // If another request just created a horoscope, we'll find it here and return it instead
+    console.log('🔒 RACE CONDITION CHECK: Double-checking database before generation...')
+    const { data: raceCheckHoroscope, error: raceCheckError } = await supabaseAdmin
+      .from('horoscopes')
+      .select('star_sign, horoscope_text, horoscope_dos, horoscope_donts, image_url, date, generated_at, character_name, prompt_slots_json')
+      .eq('user_id', userId)
+      .eq('date', todayDate)
+      .maybeSingle()
+    
+    if (raceCheckError) {
+      console.error('❌ Error in race condition check:', raceCheckError)
+    }
+    
+    // Check if race check found a horoscope that was just created
+    if (raceCheckHoroscope && raceCheckHoroscope.horoscope_text) {
+      const raceCheckDateStr = String(raceCheckHoroscope.date).split('T')[0]
+      const todayDateStr = String(todayDate).split('T')[0]
+      if (raceCheckDateStr === todayDateStr) {
+        console.log('✅ RACE CONDITION PREVENTED: Another request just created this horoscope')
+        console.log('   Returning existing horoscope instead of generating a new one')
+        return NextResponse.json({
+          star_sign: raceCheckHoroscope.star_sign,
+          horoscope_text: raceCheckHoroscope.horoscope_text,
+          horoscope_dos: raceCheckHoroscope.horoscope_dos || [],
+          horoscope_donts: raceCheckHoroscope.horoscope_donts || [],
+          image_url: raceCheckHoroscope.image_url || null,
+          character_name: raceCheckHoroscope.character_name || null,
+          cached: true,
+        })
+      }
+    }
+    
     // Only generate new horoscope if there's NO cached text at all OR it's from a previous day
     // Generation is now enabled even when database is empty
     // BUT: We should have already found it in the checks above
@@ -824,19 +858,51 @@ export async function GET(request: NextRequest) {
         horoscopeDos = directResult.dos
         horoscopeDonts = directResult.donts
         
-        // Generate image via Airtable (together with text generation)
-        console.log('🚀 ========== GENERATING IMAGE VIA AIRTABLE ==========')
-        console.log('   Image prompt length:', imagePrompt.length)
-        console.log('   User ID:', userId)
-        console.log('   User email:', user.email || 'not available')
+        // CRITICAL: Check if image was just created by another request (race condition prevention)
+        console.log('🔒 RACE CONDITION CHECK: Checking for image before generation...')
+        const { data: imageCheckHoroscope } = await supabaseAdmin
+          .from('horoscopes')
+          .select('image_url, character_name, date')
+          .eq('user_id', userId)
+          .eq('date', todayDate)
+          .maybeSingle()
         
-        try {
-          const imageResult = await generateImageViaAirtable(
-            imagePrompt,
-            userTimezone,
-            userId,
-            user.email || undefined
-          )
+        if (imageCheckHoroscope && imageCheckHoroscope.image_url && imageCheckHoroscope.image_url.trim() !== '') {
+          const imageCheckDateStr = String(imageCheckHoroscope.date).split('T')[0]
+          const todayDateStr = String(todayDate).split('T')[0]
+          if (imageCheckDateStr === todayDateStr) {
+            console.log('✅ RACE CONDITION PREVENTED: Image already exists, using existing image')
+            imageUrl = imageCheckHoroscope.image_url
+            characterName = imageCheckHoroscope.character_name || null
+            console.log('   Using existing image URL:', imageUrl.substring(0, 100) + '...')
+            console.log('   Using existing character name:', characterName || 'none')
+          } else {
+            // Date doesn't match, proceed with generation
+            console.log('⚠️ Image exists but for different date, will generate new image')
+            imageUrl = null
+            characterName = null
+          }
+        } else {
+          // No image exists, proceed with generation
+          console.log('📝 No existing image found, proceeding with generation')
+          imageUrl = null
+          characterName = null
+        }
+        
+        // Generate image via Airtable (together with text generation) - only if we don't have one
+        if (!imageUrl) {
+          console.log('🚀 ========== GENERATING IMAGE VIA AIRTABLE ==========')
+          console.log('   Image prompt length:', imagePrompt.length)
+          console.log('   User ID:', userId)
+          console.log('   User email:', user.email || 'not available')
+          
+          try {
+            const imageResult = await generateImageViaAirtable(
+              imagePrompt,
+              userTimezone,
+              userId,
+              user.email || undefined
+            )
           
           if (imageResult.imageUrl) {
             console.log('✅ Image generated via Airtable successfully')
@@ -890,11 +956,14 @@ export async function GET(request: NextRequest) {
             characterName = null
           }
         } catch (imageError: any) {
-          console.error('❌ Failed to generate image via Airtable:', imageError)
-          console.error('   Error message:', imageError.message)
-          // Don't fail the entire request if image generation fails - text is still valid
-          imageUrl = null
-          characterName = null
+            console.error('❌ Failed to generate image via Airtable:', imageError)
+            console.error('   Error message:', imageError.message)
+            // Don't fail the entire request if image generation fails - text is still valid
+            imageUrl = null
+            characterName = null
+          }
+        } else {
+          console.log('✅ Skipping image generation - using existing image from race condition check')
         }
       }
 
