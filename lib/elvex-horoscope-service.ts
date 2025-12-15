@@ -336,6 +336,10 @@ function formatDateInTimezone(timezone: string): string {
 async function generateImageViaAirtable(prompt: string, timezone?: string): Promise<{ imageUrl: string; caption?: string | null }> {
   console.log('🚀 ========== STARTING AIRTABLE IMAGE GENERATION ==========')
   console.log('🖼️ Generating image via Airtable...')
+  console.log('📥 FUNCTION CALLED - generateImageViaAirtable() invoked')
+  console.log('   Prompt parameter received:', prompt ? 'YES' : 'NO')
+  console.log('   Prompt type:', typeof prompt)
+  console.log('   Prompt length:', prompt?.length || 0)
   console.log('📝 PROMPT RECEIVED:')
   console.log('   Prompt length:', prompt.length)
   console.log('   Prompt preview (first 200 chars):', prompt.substring(0, 200))
