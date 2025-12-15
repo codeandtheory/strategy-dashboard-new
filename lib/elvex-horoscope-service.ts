@@ -402,6 +402,8 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
     // Step 0: Check if an existing record with completed image already exists
     // This prevents creating duplicate records if image was already generated
     console.log('🔍 Checking for existing Airtable records...')
+    let shouldCreateNewRecord = true // Flag to track if we should create a new record
+    
     if (userId) {
       try {
         // Query Airtable for existing records with this User ID and Created At date
@@ -459,12 +461,8 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
               const recordId = pendingRecord.id
               console.log('   Using existing pending record ID:', recordId)
               
-              // Skip creating a new record - go directly to polling the existing one
-              // This prevents duplicate record creation
-              console.log('   Polling existing pending record for completion...')
-              // Continue to polling logic below with this recordId
-              // Set a flag to skip record creation
-              let skipRecordCreation = true
+              // Don't create a new record - poll the existing one
+              shouldCreateNewRecord = false
               
               // Poll the existing record
               const maxPollAttempts = 60 // Poll for up to 5 minutes (60 * 5 seconds)
@@ -506,31 +504,21 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
                     }
                   } else if (status === 'Failed' || status === 'Error') {
                     console.log('   Record failed - will create new one')
-                    skipRecordCreation = false
+                    shouldCreateNewRecord = true
                     break
                   }
                   // If still pending/processing, continue polling
                 } else {
                   console.log(`   Poll failed: ${pollResponse.status}, will create new record`)
-                  skipRecordCreation = false
+                  shouldCreateNewRecord = true
                   break
                 }
               }
               
-              if (skipRecordCreation && pollAttempts >= maxPollAttempts) {
-                console.log('   Polling timeout - returning null to indicate image is still generating')
+              if (!shouldCreateNewRecord && pollAttempts >= maxPollAttempts) {
+                console.log('   Polling timeout - returning empty to indicate image is still generating')
                 return {
                   imageUrl: '', // Empty string indicates still generating
-                  caption: null,
-                }
-              }
-              
-              // If we get here and skipRecordCreation is still true, we found the image
-              // Otherwise, continue to create a new record
-              if (skipRecordCreation) {
-                // We should have returned above, but just in case
-                return {
-                  imageUrl: '',
                   caption: null,
                 }
               }
@@ -542,6 +530,16 @@ export async function generateImageViaAirtable(prompt: string, timezone?: string
       } catch (queryError: any) {
         console.log('   Error querying existing records, will create new record:', queryError.message)
         // Continue to create new record
+      }
+    }
+    
+    // Step 1: Create a record in Airtable with the image prompt
+    // Only create if we didn't find an existing pending record to poll
+    if (!shouldCreateNewRecord) {
+      console.log('⏭️ Skipping record creation - using existing pending record')
+      return {
+        imageUrl: '', // Still generating
+        caption: null,
       }
     }
     
