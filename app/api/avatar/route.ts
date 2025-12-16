@@ -97,12 +97,19 @@ async function checkAirtableForImage(userId: string, date: string, timezone: str
           // If not found, search for any field containing "caption" or "character" (case insensitive)
           if (!caption && record.fields) {
             const fieldKeys = Object.keys(record.fields)
-            const captionField = fieldKeys.find(key => 
-              key.toLowerCase().includes('caption') || 
-              key.toLowerCase().includes('character')
-            )
+            console.log(`[Avatar API] Searching for caption in fields:`, fieldKeys)
+            const captionField = fieldKeys.find(key => {
+              const lowerKey = key.toLowerCase()
+              return lowerKey.includes('caption') || 
+                     lowerKey.includes('character') ||
+                     lowerKey === 'name' ||
+                     lowerKey.includes('name')
+            })
             if (captionField) {
               caption = record.fields[captionField]
+              console.log(`[Avatar API] Found caption in field "${captionField}":`, caption)
+            } else {
+              console.log(`[Avatar API] No caption field found. All fields:`, fieldKeys)
             }
           }
           
@@ -303,16 +310,26 @@ export async function GET(request: NextRequest) {
       if (!characterName) {
         console.log(`[Avatar API] Character name missing from cache, checking Airtable...`)
         const airtableResult = await checkAirtableForImage(userId, todayDate, userTimezone)
-        if (airtableResult && 'imageUrl' in airtableResult && airtableResult.caption && airtableResult.caption.trim()) {
-          characterName = airtableResult.caption.trim()
-          console.log(`[Avatar API] Found character_name in Airtable:`, characterName)
-          // Update database with character_name
-          await supabaseAdmin
-            .from('horoscopes')
-            .update({ character_name: characterName })
-            .eq('user_id', userId)
-            .eq('date', todayDate)
-          console.log(`[Avatar API] Updated database with character_name`)
+        console.log(`[Avatar API] Airtable result:`, airtableResult)
+        console.log(`[Avatar API] Airtable result type:`, airtableResult ? (airtableResult.hasOwnProperty('imageUrl') ? 'has imageUrl' : 'generating or null') : 'null')
+        
+        if (airtableResult && 'imageUrl' in airtableResult) {
+          console.log(`[Avatar API] Airtable caption value:`, airtableResult.caption, 'Type:', typeof airtableResult.caption)
+          if (airtableResult.caption && typeof airtableResult.caption === 'string' && airtableResult.caption.trim()) {
+            characterName = airtableResult.caption.trim()
+            console.log(`[Avatar API] Found character_name in Airtable:`, characterName)
+            // Update database with character_name
+            await supabaseAdmin
+              .from('horoscopes')
+              .update({ character_name: characterName })
+              .eq('user_id', userId)
+              .eq('date', todayDate)
+            console.log(`[Avatar API] Updated database with character_name`)
+          } else {
+            console.log(`[Avatar API] Airtable caption is empty or invalid:`, airtableResult.caption)
+          }
+        } else {
+          console.log(`[Avatar API] No Airtable result or image not found`)
         }
       }
       
