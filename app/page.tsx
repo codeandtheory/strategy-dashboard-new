@@ -1326,13 +1326,30 @@ export default function TeamDashboard() {
               setHoroscopeImageSlotsLabels(avatarData.prompt_slots_labels || null)
               setHoroscopeImageSlotsReasoning(avatarData.prompt_slots_reasoning || null)
               const caption = avatarData.character_name
-              console.log('[Avatar] Character name from API:', caption, 'Type:', typeof caption, 'Length:', caption?.length)
-              if (caption && typeof caption === 'string' && caption.trim().length > 0) {
-                const trimmedCaption = caption.trim()
-                console.log('[Avatar] Setting caption:', trimmedCaption)
-                setHoroscopeImageCaption(trimmedCaption)
+              console.log('[Avatar] Character name from API:', caption, 'Type:', typeof caption, 'Is object:', typeof caption === 'object')
+              
+              // Handle case where character_name might be an object
+              let captionValue: string | null = null
+              if (caption) {
+                if (typeof caption === 'string') {
+                  captionValue = caption.trim() || null
+                } else if (typeof caption === 'object' && caption !== null) {
+                  // If it's an object, try to extract a string value
+                  const obj = caption as any
+                  if (obj.value && typeof obj.value === 'string') {
+                    captionValue = obj.value.trim() || null
+                  } else {
+                    // Don't use object as string
+                    captionValue = null
+                  }
+                }
+              }
+              
+              if (captionValue && captionValue.length > 0) {
+                console.log('[Avatar] Setting caption:', captionValue)
+                setHoroscopeImageCaption(captionValue)
               } else {
-                console.log('[Avatar] No valid caption, clearing. Value was:', caption)
+                console.log('[Avatar] No valid caption, clearing. Value was:', caption, 'Processed:', captionValue)
                 setHoroscopeImageCaption(null)
               }
               setHoroscopeImageLoading(false)
@@ -1361,13 +1378,30 @@ export default function TeamDashboard() {
                       setHoroscopeImageSlotsLabels(pollData.prompt_slots_labels || null)
                       setHoroscopeImageSlotsReasoning(pollData.prompt_slots_reasoning || null)
                       const pollCaption = pollData.character_name
-                      console.log('[Avatar Poll] Character name:', pollCaption, 'Type:', typeof pollCaption, 'Length:', pollCaption?.length)
-                      if (pollCaption && typeof pollCaption === 'string' && pollCaption.trim().length > 0) {
-                        const trimmedCaption = pollCaption.trim()
-                        console.log('[Avatar Poll] Setting caption:', trimmedCaption)
-                        setHoroscopeImageCaption(trimmedCaption)
+                      console.log('[Avatar Poll] Character name:', pollCaption, 'Type:', typeof pollCaption, 'Is object:', typeof pollCaption === 'object')
+                      
+                      // Handle case where character_name might be an object
+                      let pollCaptionValue: string | null = null
+                      if (pollCaption) {
+                        if (typeof pollCaption === 'string') {
+                          pollCaptionValue = pollCaption.trim() || null
+                        } else if (typeof pollCaption === 'object' && pollCaption !== null) {
+                          // If it's an object, try to extract a string value
+                          const obj = pollCaption as any
+                          if (obj.value && typeof obj.value === 'string') {
+                            pollCaptionValue = obj.value.trim() || null
+                          } else {
+                            // Don't use object as string
+                            pollCaptionValue = null
+                          }
+                        }
+                      }
+                      
+                      if (pollCaptionValue && pollCaptionValue.length > 0) {
+                        console.log('[Avatar Poll] Setting caption:', pollCaptionValue)
+                        setHoroscopeImageCaption(pollCaptionValue)
                       } else {
-                        console.log('[Avatar Poll] No valid caption, clearing. Value was:', pollCaption)
+                        console.log('[Avatar Poll] No valid caption, clearing. Value was:', pollCaption, 'Processed:', pollCaptionValue)
                         setHoroscopeImageCaption(null)
                       }
                       setHoroscopeImageLoading(false)

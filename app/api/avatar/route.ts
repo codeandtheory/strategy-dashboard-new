@@ -273,9 +273,30 @@ export async function GET(request: NextRequest) {
       console.log(`[Avatar API] Cached character_name:`, cachedHoroscope.character_name, 'Type:', typeof cachedHoroscope.character_name)
       
       // If character_name is missing, try to get it from Airtable
-      let characterName = cachedHoroscope.character_name && typeof cachedHoroscope.character_name === 'string' && cachedHoroscope.character_name.trim()
-        ? cachedHoroscope.character_name.trim()
-        : null
+      // Handle case where character_name might be an object (should be string)
+      let characterName: string | null = null
+      if (cachedHoroscope.character_name) {
+        if (typeof cachedHoroscope.character_name === 'string') {
+          characterName = cachedHoroscope.character_name.trim() || null
+        } else if (typeof cachedHoroscope.character_name === 'object') {
+          // If it's an object, try to extract a string value or convert to string
+          const obj = cachedHoroscope.character_name as any
+          if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+            // Check if it has a value property or is an empty object
+            if (obj.value && typeof obj.value === 'string') {
+              characterName = obj.value.trim() || null
+            } else if (Object.keys(obj).length === 0) {
+              characterName = null
+            } else {
+              // Try to stringify and see if it makes sense
+              const str = JSON.stringify(obj)
+              if (str && str !== '{}' && str !== 'null') {
+                characterName = null // Don't use JSON stringified object
+              }
+            }
+          }
+        }
+      }
       
       if (!characterName) {
         console.log(`[Avatar API] Character name missing from cache, checking Airtable...`)
