@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
           horoscope_text: cachedHoroscope.horoscope_text,
           horoscope_dos: cachedHoroscope.horoscope_dos || [],
           horoscope_donts: cachedHoroscope.horoscope_donts || [],
+          date: cachedHoroscope.date,
           cached: true,
         })
     }
@@ -340,6 +341,7 @@ export async function GET(request: NextRequest) {
       horoscope_text: horoscopeText,
       horoscope_dos: horoscopeDos,
       horoscope_donts: horoscopeDonts,
+      date: todayDate,
       cached: false,
     })
   } catch (error: any) {

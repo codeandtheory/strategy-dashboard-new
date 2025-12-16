@@ -13,7 +13,6 @@ import { usePermissions } from "@/contexts/permissions-context"
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
-import { getStarSignEmoji } from '@/lib/horoscope-utils'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { generateSillyCharacterName } from '@/lib/silly-names'
@@ -24,13 +23,13 @@ import { ProfileSetupModal } from '@/components/profile-setup-modal'
 import { createClient } from '@/lib/supabase/client'
 import { AddSnapDialog } from '@/components/add-snap-dialog'
 import { Chatbot } from '@/components/chatbot'
-import { useGoogleCalendarToken } from '@/hooks/useGoogleCalendarToken'
 import { TeamPulseCard } from '@/components/team-pulse-card'
 import { Footer } from '@/components/footer'
 import { BeastBabeCard } from '@/components/beast-babe-card'
 import { VideoEmbed } from '@/components/video-embed'
 import { NewsCard } from '@/components/news-card'
 import { AnnouncementBanner } from '@/components/announcement-banner'
+import { useGoogleCalendarToken } from '@/hooks/useGoogleCalendarToken'
 import Image from 'next/image'
 
 // Force dynamic rendering to avoid SSR issues with context
@@ -141,6 +140,7 @@ export default function TeamDashboard() {
     horoscope_dos?: string[]
     horoscope_donts?: string[]
     character_name?: string | null
+    date?: string
   } | null>(null)
   const [workSamples, setWorkSamples] = useState<Array<{
     id: string
@@ -444,39 +444,8 @@ export default function TeamDashboard() {
         newUrl.searchParams.delete('error')
         window.history.replaceState({}, '', newUrl.toString())
       }
-      
-      // Check if we just authenticated and need to get calendar refresh token
-      const needsRefreshToken = params.get('needs_calendar_refresh_token')
-      const justAuthenticated = params.get('just_authenticated')
-      
-      if (justAuthenticated === 'true') {
-        // Set flag in sessionStorage so useGoogleCalendarToken can detect it
-        sessionStorage.setItem('just_authenticated', 'true')
-        sessionStorage.setItem('auth_timestamp', Date.now().toString())
-        // Remove the query parameter from URL without reload
-        const newUrl = new URL(window.location.href)
-        newUrl.searchParams.delete('just_authenticated')
-        window.history.replaceState({}, '', newUrl.toString())
-      }
-      
-      // If we need a refresh token and don't have one, automatically trigger calendar OAuth
-      if (needsRefreshToken === 'true' && !googleCalendarToken && !tokenLoading && needsAuth && initiateAuth) {
-        console.log('🔄 Just authenticated with Google, automatically requesting calendar refresh token...')
-        // Clear the URL parameter
-        const newUrl = new URL(window.location.href)
-        newUrl.searchParams.delete('needs_calendar_refresh_token')
-        window.history.replaceState({}, '', newUrl.toString())
-        
-        // Wait a bit for the session to be fully established, then trigger calendar OAuth
-        setTimeout(() => {
-          if (initiateAuth) {
-            console.log('🚀 Initiating calendar OAuth to get refresh token...')
-            initiateAuth()
-          }
-        }, 2000) // Wait 2 seconds for session to be ready
-      }
     }
-  }, [refreshCalendarToken, googleCalendarToken, tokenLoading, needsAuth, initiateAuth])
+  }, [refreshCalendarToken])
 
   // Format today's date in user's timezone
   useEffect(() => {
@@ -1094,86 +1063,7 @@ export default function TeamDashboard() {
     fetchProfiles()
   }, [])
 
-  // Fetch user's calendars dynamically (if token is available)
-  useEffect(() => {
-    async function fetchUserCalendars() {
-      if (!googleCalendarToken || tokenLoading) return
-      
-      try {
-        console.log('🔄 Fetching user calendars with token...')
-        const response = await fetch(
-          `/api/calendars/list?accessToken=${encodeURIComponent(googleCalendarToken)}`
-        )
-        
-        if (response.ok) {
-          const result = await response.json()
-          if (result.calendars && Array.isArray(result.calendars)) {
-            console.log(`✅ Successfully fetched ${result.calendars.length} calendars`)
-            setUserCalendars(result.calendars)
-            
-            // Filter calendars - you can customize this filter
-            const filteredCalendars = result.calendars
-              .filter((cal: any) => {
-                // By default, include all calendars that are selected/enabled
-                // You can customize this filter to only include specific calendars
-                const summary = cal.summary?.toLowerCase() || ''
-                
-                // Example filters (uncomment to use):
-                // - Only include calendars with specific keywords:
-                // return summary.includes('office') || summary.includes('holiday') || summary.includes('team')
-                // - Only include calendars the user owns:
-                // return cal.accessRole === 'owner'
-                // - Exclude specific calendars:
-                // return !summary.includes('birthday') && !summary.includes('contacts')
-                
-                // Default: include all selected calendars
-                return cal.selected !== false
-              })
-              .map((cal: any) => cal.id)
-            
-            // Automatically use dynamic calendars if available and enabled
-            // Set useDynamicCalendars to true to enable this feature
-            if (useDynamicCalendars && filteredCalendars.length > 0) {
-              setCalendarIds(filteredCalendars)
-              console.log(`✅ Using ${filteredCalendars.length} dynamically fetched calendars:`, filteredCalendars)
-            } else if (filteredCalendars.length > 0) {
-              console.log(`ℹ️ Found ${filteredCalendars.length} accessible calendars (not using - enable useDynamicCalendars to use them)`)
-            } else {
-              console.warn('⚠️ No calendars found after filtering')
-            }
-          } else {
-            console.warn('⚠️ Unexpected response format:', result)
-          }
-        } else {
-          // Handle error response
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-          console.error('❌ Failed to fetch calendars:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData.error,
-            details: errorData.details
-          })
-          
-          if (response.status === 401 || response.status === 403) {
-            console.error('🔐 Authentication issue - token may be invalid or missing calendar scopes')
-            // Check if token expired and needs refresh
-            if (response.status === 401 && errorData.tokenExpired) {
-              console.log('ℹ️  401 error in calendars list - token expired, will refresh')
-              // Token refresh will be handled by the hook or calendar events endpoint
-            } else if (response.status === 401) {
-              console.log('ℹ️  401 error in calendars list - calendar events endpoint will handle token refresh if needed')
-            } else {
-              console.error('💡 Try re-authenticating with Google and granting calendar permissions')
-            }
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error fetching user calendars:', error)
-      }
-    }
-    
-    fetchUserCalendars()
-  }, [googleCalendarToken, tokenLoading, useDynamicCalendars])
+  // Calendar fetching now uses hardcoded calendar IDs - no OAuth needed
 
   // Track token refresh attempts to prevent infinite loops
   const tokenRefreshAttemptsRef = useRef(0)
@@ -1195,20 +1085,19 @@ export default function TeamDashboard() {
         return
       }
       
-      // Prevent duplicate fetches: only fetch if user changed, token changed, or if not already in progress
+      // Prevent duplicate fetches: only fetch if user changed or if not already in progress
       const userChanged = lastCalendarFetchUserRef.current !== user.id
-      const tokenChanged = lastCalendarFetchTokenRef.current !== googleCalendarToken
       const timeSinceLastFetch = Date.now() - lastSuccessfulFetchRef.current
       const MIN_FETCH_INTERVAL = 5000 // Don't fetch more than once every 5 seconds
       
-      // Skip if already fetching (unless user changed or token just became available)
-      if (calendarFetchInProgressRef.current && !userChanged && !tokenChanged) {
+      // Skip if already fetching (unless user changed)
+      if (calendarFetchInProgressRef.current && !userChanged) {
         console.log('⏸️  Calendar fetch skipped: already in progress')
         return
       }
       
-      // Skip if we just fetched recently (unless user/token changed or eventsExpanded changed)
-      if (!userChanged && !tokenChanged && timeSinceLastFetch < MIN_FETCH_INTERVAL) {
+      // Skip if we just fetched recently (unless user changed or eventsExpanded changed)
+      if (!userChanged && timeSinceLastFetch < MIN_FETCH_INTERVAL) {
         console.log(`⏸️  Calendar fetch skipped: fetched ${Math.round(timeSinceLastFetch / 1000)}s ago`)
         return
       }
@@ -1239,7 +1128,7 @@ export default function TeamDashboard() {
         // Encode calendar IDs for the API (they're already decoded in the array)
         const calendarIdsParam = calendarIds.map(id => encodeURIComponent(id)).join(',')
         
-        // Build API URL with access token (required)
+        // Build API URL with access token (required for OAuth)
         let apiUrl = `/api/calendar?calendarIds=${calendarIdsParam}&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&maxResults=50`
         if (googleCalendarToken) {
           apiUrl += `&accessToken=${encodeURIComponent(googleCalendarToken)}`
@@ -1269,12 +1158,11 @@ export default function TeamDashboard() {
           console.log(`✅ Calendar API response: ${result.count} events, ${result.successfulCalendars} successful, ${result.failedCalendars} failed`)
           
           // IMPORTANT: Set events FIRST before handling token refresh
-          // This ensures events are displayed even if token refresh is needed
           if (result.events && Array.isArray(result.events)) {
             console.log(`📅 Setting ${result.events.length} calendar events`)
             setCalendarEvents(result.events)
-            lastSuccessfulFetchRef.current = Date.now() // Track successful fetch
-            lastCalendarFetchTokenRef.current = googleCalendarToken || null // Track token used
+            lastSuccessfulFetchRef.current = Date.now()
+            lastCalendarFetchTokenRef.current = googleCalendarToken || null
           } else {
             setCalendarEvents([])
           }
@@ -1283,89 +1171,29 @@ export default function TeamDashboard() {
           if (result.failedCalendars > 0) {
             const failedDetails = result.failedCalendarDetails || []
             
-            const hasCodeAndTheoryCalendars = failedDetails.some((f: any) => 
-              f.id.includes('codeandtheory.com_')
-            )
-            
             if (result.count === 0 && result.successfulCalendars === 0) {
-              // Only show error if no events were loaded at all (all calendars failed)
               const failedCount = failedDetails.length
-              
-              // Create a user-friendly summary
-              let errorSummary = ''
-              if (hasCodeAndTheoryCalendars && failedCount <= 3) {
-                errorSummary = `${failedCount} Code and Theory calendar${failedCount > 1 ? 's' : ''}`
-              } else {
-                errorSummary = `${failedCount} calendar${failedCount > 1 ? 's' : ''}`
-              }
-              
-              let errorMessage = `Some calendars are not accessible. ${errorSummary}: Calendar not found or not accessible. Please ensure the OAuth2 account has access to these calendars.`
-              
+              let errorMessage = `Some calendars are not accessible. ${failedCount} calendar${failedCount > 1 ? 's' : ''} failed to load.`
               setCalendarError(errorMessage)
-              console.warn(`${result.failedCalendars} calendar(s) failed to load. Check server logs for details.`)
             } else {
-              // Some calendars worked, but some failed
-              if (hasCodeAndTheoryCalendars) {
-                const failedCodeAndTheory = failedDetails.filter((f: any) => f.id.includes('codeandtheory.com_')).length
-                if (failedCodeAndTheory > 0) {
-                  console.warn(`⚠️ ${failedCodeAndTheory} Code and Theory calendar(s) failed - OAuth2 account may not have access`)
-                  console.warn('💡 Ensure the OAuth2 account has access to these calendars')
-                  setCalendarError(`${failedCodeAndTheory} Code and Theory calendar(s) not accessible. Please ensure the OAuth2 account has access.`)
-                } else {
-                  setCalendarError(null)
-                }
-              } else {
-                // Some calendars worked, so clear any previous error
-                setCalendarError(null)
-              }
+              setCalendarError(null)
             }
           } else {
-            // No failed calendars, clear any previous error
             setCalendarError(null)
           }
           
-          // Check if token expired and refresh if needed (AFTER setting events)
-          // This way events are displayed even if token needs refresh
-          // NOTE: We refresh the token silently for future use, but don't re-fetch events
-          // to avoid infinite loops. The next natural fetch will use the refreshed token.
+          // Check if token expired and refresh if needed
           if (result.tokenExpired && googleCalendarToken && refreshCalendarToken) {
             const now = Date.now()
             const fiveMinutes = 5 * 60 * 1000
             
-            // Check cooldown: only allow refresh if last refresh was > 5 minutes ago
             if (lastTokenRefreshRef.current > 0 && (now - lastTokenRefreshRef.current) < fiveMinutes) {
-              const timeRemaining = Math.ceil((fiveMinutes - (now - lastTokenRefreshRef.current)) / 1000)
-              console.log(`⏸️  Token refresh cooldown active. Please wait ${timeRemaining} seconds. Using fallback authentication.`)
-              // Don't trigger refresh, just continue with fallback
-              // Reset counter and continue processing
-              tokenRefreshAttemptsRef.current = 0
+              console.log('⏸️  Token refresh cooldown active')
             } else {
-              // Clear any existing debounce timeout
-              if (refreshTimeoutRef.current) {
-                clearTimeout(refreshTimeoutRef.current)
-              }
-              
-              // Debounce: wait 1 second before triggering refresh to avoid multiple simultaneous calls
-              refreshTimeoutRef.current = setTimeout(() => {
-                // Prevent infinite retry loops
-                if (tokenRefreshAttemptsRef.current < 2) {
-                  tokenRefreshAttemptsRef.current += 1
-                  lastTokenRefreshRef.current = now
-                  console.log(`🔄 Token expired detected - refreshing token silently (attempt ${tokenRefreshAttemptsRef.current})...`)
-                  refreshCalendarToken()
-                  // Don't re-fetch events here - events are already set above
-                  // The next natural fetch (when user expands/collapses or component re-mounts) will use the refreshed token
-                } else {
-                  console.error('⚠️ Token refresh failed after multiple attempts - using fallback authentication')
-                  tokenRefreshAttemptsRef.current = 0 // Reset for next time
-                  // Continue processing with fallback auth
-                }
-              }, 1000) // 1 second debounce
-              // Don't return early - events are already set above
+              lastTokenRefreshRef.current = now
+              console.log('🔄 Token expired detected - refreshing token...')
+              refreshCalendarToken()
             }
-          } else {
-            // Reset counter on successful response
-            tokenRefreshAttemptsRef.current = 0
           }
         } else {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
@@ -1387,33 +1215,18 @@ export default function TeamDashboard() {
     }
 
     // Fetch events - wait a bit for token to load if it's still loading
-    // Access token is required for calendar access
     if (tokenLoading && !googleCalendarToken) {
-      // Wait a bit for token to load, then fetch
       const timeoutId = setTimeout(() => {
-        console.log('⏳ Token loading timeout - will retry when token is available')
         if (googleCalendarToken) {
-        fetchCalendarEvents()
+          fetchCalendarEvents()
         }
-      }, 2000) // Wait 2 seconds for token to load
-      
-      return () => {
-        clearTimeout(timeoutId)
-        if (refreshTimeoutRef.current) {
-          clearTimeout(refreshTimeoutRef.current)
-        }
-      }
-    } else {
-      fetchCalendarEvents()
+      }, 2000)
+      return () => clearTimeout(timeoutId)
     }
     
-    // Cleanup: clear timeout on unmount
-    return () => {
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current)
-      }
-    }
-  }, [user, eventsExpanded, googleCalendarToken, calendarIds, tokenLoading, needsAuth]) // Removed refreshCalendarToken to prevent infinite loops
+    // Fetch events when user, token, expanded state, or calendar IDs change
+    fetchCalendarEvents()
+  }, [user, eventsExpanded, googleCalendarToken, calendarIds, tokenLoading, needsAuth])
 
   const handleSnapAdded = async () => {
     // Refresh snaps list for the logged-in user
@@ -1484,6 +1297,7 @@ export default function TeamDashboard() {
               horoscope_text: textData.horoscope_text,
               horoscope_dos: textData.horoscope_dos || [],
               horoscope_donts: textData.horoscope_donts || [],
+              date: textData.date,
             })
             if (textData.star_sign) {
               setCharacterName(textData.character_name || generateSillyCharacterName(textData.star_sign))
@@ -2330,6 +2144,8 @@ export default function TeamDashboard() {
                           let handleClick: () => void
                           if (link.url === 'chatbot') {
                             handleClick = () => setShowChatbot(true)
+                          } else if (link.url === 'add-snap' || link.url === 'snap') {
+                            handleClick = () => setShowAddSnapDialog(true)
                           } else if (link.url === 'playlist-section') {
                             handleClick = () => {
                           const playlistSection = document.getElementById('playlist-section')
@@ -2584,9 +2400,16 @@ export default function TeamDashboard() {
                     <div className="space-y-6">
                       {/* Horoscope Text Container */}
                       <div className={`${mode === 'chaos' ? 'bg-black/40 backdrop-blur-sm' : mode === 'chill' ? 'bg-[#F5E6D3]/50' : 'bg-black/40'} ${getRoundedClass('rounded-2xl')} p-6 border-2`} style={{ borderColor: `${style.accent}40` }}>
-                        <p className="text-base font-black mb-3 flex items-center gap-2" style={{ color: style.accent }}>
-                          <span>{getStarSignEmoji(horoscope.star_sign)}</span>
-                          <span>{horoscope.star_sign.toUpperCase()}</span>
+                        <p className="text-xs font-medium mb-3" style={{ color: style.accent }}>
+                          {horoscope.date ? (() => {
+                            const date = new Date(horoscope.date)
+                            const formattedDate = date.toLocaleDateString('en-US', { 
+                              month: 'long', 
+                              day: 'numeric', 
+                              year: 'numeric' 
+                            })
+                            return `your horoscope for ${formattedDate}`
+                          })() : 'your horoscope'}
                         </p>
                         <div className={`text-base leading-relaxed ${style.text} space-y-3`}>
                           {horoscope.horoscope_text.split('\n\n').map((paragraph, idx) => (
@@ -3486,23 +3309,13 @@ export default function TeamDashboard() {
                           <div className={`${getRoundedClass('rounded-lg')} p-2 mt-2`} style={{ backgroundColor: `${mintColor}22` }}>
                             <p className="font-semibold mb-1 text-red-400">Token Error:</p>
                             <p className="text-[10px]">{tokenError}</p>
-                            {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
-                              <p className="text-[10px] mt-1">Make sure NEXT_PUBLIC_GOOGLE_CLIENT_ID is set in your environment variables.</p>
-                            )}
                           </div>
                         )}
                         {((!googleCalendarToken && !tokenLoading) || needsAuth) && (
                           <div className={`${getRoundedClass('rounded-lg')} p-2 mt-2`} style={{ backgroundColor: `${mintColor}22` }}>
                             <p className="font-semibold mb-1">Google Calendar Access Required</p>
                             {tokenError ? (
-                              <>
-                                <p className="text-[10px] mb-2 text-red-400">{tokenError}</p>
-                                {tokenError.includes('NEXT_PUBLIC_GOOGLE_CLIENT_ID') && (
-                                  <p className="text-[10px] mt-2 font-semibold text-yellow-400">
-                                    ⚠️ Add NEXT_PUBLIC_GOOGLE_CLIENT_ID to your .env.local file and restart the dev server.
-                                  </p>
-                                )}
-                              </>
+                              <p className="text-[10px] mb-2 text-red-400">{tokenError}</p>
                             ) : (
                               <p className="text-[10px] mb-2">The app needs permission to access your Google Calendar to show your events.</p>
                             )}
@@ -3522,24 +3335,10 @@ export default function TeamDashboard() {
                             <p className="text-[10px]">⏳ Loading Google Calendar access...</p>
                           </div>
                         )}
-                        {/* Debug info */}
-                        <div className={`${getRoundedClass('rounded-lg')} p-2 mt-2 text-[10px]`} style={{ backgroundColor: `${mintColor}11` }}>
-                          <p className="font-semibold mb-1">Debug Info:</p>
-                          <p>Token Status: {googleCalendarToken ? '✅ Available' : tokenLoading ? '⏳ Loading...' : '❌ Not available'}</p>
-                          <p>Token Error: {tokenError || 'None'}</p>
-                          {googleCalendarToken && (
-                            <p className="text-green-400">✅ Using OAuth token (should work with shared calendars)</p>
-                          )}
-                          {!googleCalendarToken && !tokenLoading && (
-                            <p className="text-yellow-400">⚠️ OAuth token required to view calendar events</p>
-                          )}
-                        </div>
-                        <p className="mt-2 font-semibold">To fix shared calendar access:</p>
-                        <ol className="list-decimal list-inside space-y-1 ml-2">
-                          <li>Make sure you're logged in with the Google account that has access to these calendars</li>
-                          <li>Grant calendar access when prompted (the consent dialog should appear automatically)</li>
-                          <li>If calendars still don't load, verify you can see them in your Google Calendar app</li>
-                        </ol>
+                      </div>
+                    ) : calendarError ? (
+                      <div className={`text-xs ${style.text}/80 space-y-2`}>
+                        <p>{calendarError}</p>
                       </div>
                     ) : (
                     <p className={`text-xs ${style.text}/80`}>{calendarError}</p>
