@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Calculate today's date in user's timezone (defaults to America/New_York)
-    const userTimezone = profile.timezone ? String(profile.timezone) : 'America/New_York'
+    const userTimezone = (profile.timezone ?? 'America/New_York') as string
     const todayDate = getTodayDateInTimezone(userTimezone)
     
     // Check database for cached horoscope
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
         role: profile.role || null,
         hobbies: profile.hobbies || null,
         starSign: starSign,
-        element: userProfile.element,
+        element: userProfile.element ?? undefined,
         likes_fantasy: profile.likes_fantasy || false,
         likes_scifi: profile.likes_scifi || false,
         likes_cute: profile.likes_cute || false,
