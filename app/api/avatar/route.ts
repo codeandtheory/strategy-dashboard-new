@@ -84,12 +84,14 @@ async function checkAirtableForImage(userId: string, date: string, timezone: str
         
         if (finalImageUrl) {
           // Try multiple possible field names (case variations)
-          let caption = record.fields?.['Caption'] 
-            || record.fields?.['caption'] 
-            || record.fields?.['Character Name'] 
+          // Check 'character_name' first since that's the current field name in Airtable
+          let caption = record.fields?.['character_name']
+            || record.fields?.['Character Name']
             || record.fields?.['character name']
             || record.fields?.['CharacterName']
             || record.fields?.['characterName']
+            || record.fields?.['Caption'] 
+            || record.fields?.['caption'] 
             || null
           
           // If not found, search for any field containing "caption" or "character" (case insensitive)

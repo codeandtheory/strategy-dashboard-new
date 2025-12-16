@@ -2076,14 +2076,9 @@ export default function TeamDashboard() {
                         : `It's ${todayDate || 'Loading...'}`
                       }
                     </p>
-                    {temperature && (
+                    {(temperature || weatherCondition) && (
                       <p className={`text-[clamp(0.875rem,2vw+0.5rem,1.25rem)] font-semibold max-w-2xl leading-[1.2] tracking-tight mt-1 ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
-                        {temperature}
-                      </p>
-                    )}
-                    {weatherCondition && (
-                      <p className={`text-[clamp(0.875rem,2vw+0.5rem,1.25rem)] font-semibold max-w-2xl leading-[1.2] tracking-tight mt-1 ${mode === 'code' ? 'font-mono text-[#FFFFFF]' : style.text}`}>
-                        {weatherCondition.charAt(0).toUpperCase() + weatherCondition.slice(1)}
+                        {temperature || ''}{temperature && weatherCondition ? ' and ' : ''}{weatherCondition ? weatherCondition.charAt(0).toUpperCase() + weatherCondition.slice(1) : ''}
                       </p>
                     )}
                     {horoscopeImageCaption && (
