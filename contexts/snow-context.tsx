@@ -33,10 +33,7 @@ export function SnowProvider({ children }: { children: ReactNode }) {
     setSnowEnabled(prev => !prev)
   }
 
-  if (!mounted) {
-    return <>{children}</>
-  }
-
+  // Always provide the context, even before mounted, to prevent runtime errors
   return (
     <SnowContext.Provider value={{ snowEnabled, toggleSnow }}>
       {children}

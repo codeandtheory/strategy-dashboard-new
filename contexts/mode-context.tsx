@@ -53,10 +53,7 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
     setModeState(MODE_ORDER[nextIndex])
   }
 
-  if (!mounted) {
-    return <>{children}</>
-  }
-
+  // Always provide the context, even before mounted, to prevent runtime errors
   return (
     <ModeContext.Provider value={{ mode, setMode, toggleMode, cycleMode }}>
       {children}
