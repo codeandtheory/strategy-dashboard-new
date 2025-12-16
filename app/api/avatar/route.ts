@@ -108,12 +108,20 @@ async function checkAirtableForImage(userId: string, date: string, timezone: str
           
           console.log(`[Avatar API] Found image for user ${userId}, date ${date}`)
           console.log(`[Avatar API] Available fields:`, Object.keys(record.fields || {}))
+          console.log(`[Avatar API] All field values:`, Object.entries(record.fields || {}).map(([key, val]) => `${key}: ${val}`))
           console.log(`[Avatar API] Caption value:`, caption)
           console.log(`[Avatar API] Caption type:`, typeof caption)
           
+          // Convert to string and trim, return null if empty
+          const captionValue = caption && typeof caption === 'string' 
+            ? (caption.trim() || null)
+            : (caption ? String(caption).trim() || null : null)
+          
+          console.log(`[Avatar API] Final caption value being returned:`, captionValue)
+          
           return {
             imageUrl: finalImageUrl,
-            caption: caption && typeof caption === 'string' ? caption : (caption ? String(caption) : '')
+            caption: captionValue || ''
           }
         }
       }
@@ -261,6 +269,9 @@ export async function GET(request: NextRequest) {
     
     // If image exists in database for today, return immediately
     if (cachedHoroscope && cachedHoroscope.image_url && cachedHoroscope.date === todayDate) {
+      console.log(`[Avatar API] Found cached horoscope in database`)
+      console.log(`[Avatar API] Cached character_name:`, cachedHoroscope.character_name, 'Type:', typeof cachedHoroscope.character_name)
+      
       const slots = cachedHoroscope.prompt_slots_json || {}
       
       // Resolve slot IDs to labels for display
@@ -303,13 +314,19 @@ export async function GET(request: NextRequest) {
           }
         }
       
+      const cachedCharacterName = cachedHoroscope.character_name && typeof cachedHoroscope.character_name === 'string' && cachedHoroscope.character_name.trim()
+        ? cachedHoroscope.character_name.trim()
+        : null
+      
+      console.log(`[Avatar API] Returning cached response with character_name:`, cachedCharacterName)
+      
       return NextResponse.json({
         image_url: cachedHoroscope.image_url,
         image_prompt: cachedHoroscope.image_prompt || null,
         prompt_slots: slots,
         prompt_slots_labels: Object.keys(slotLabels).length > 0 ? slotLabels : null,
         prompt_slots_reasoning: slots?.reasoning || null,
-        character_name: cachedHoroscope.character_name || null,
+        character_name: cachedCharacterName,
         cached: true,
       })
     }
@@ -354,13 +371,19 @@ export async function GET(request: NextRequest) {
         
         // Return image/caption
         const slots = cachedHoroscope?.prompt_slots_json || {}
+        const characterName = airtableResult.caption && airtableResult.caption.trim() 
+          ? airtableResult.caption.trim() 
+          : null
+        
+        console.log(`[Avatar API] Returning character_name from Airtable:`, characterName)
+        
         return NextResponse.json({
           image_url: supabaseImageUrl,
           image_prompt: cachedHoroscope?.image_prompt || null,
           prompt_slots: slots,
           prompt_slots_labels: null,
           prompt_slots_reasoning: slots?.reasoning || null,
-          character_name: airtableResult.caption || null,
+          character_name: characterName,
           cached: true,
         })
       } catch (error: any) {

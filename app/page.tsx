@@ -1309,18 +1309,20 @@ export default function TeamDashboard() {
             }
           } else if (avatarData.image_url) {
             if (isMounted && horoscopeAvatarEnabled) {
+              console.log('[Avatar] Full API response:', avatarData)
               setHoroscopeImage(avatarData.image_url)
               setHoroscopeImagePrompt(avatarData.image_prompt || null)
               setHoroscopeImageSlots(avatarData.prompt_slots || null)
               setHoroscopeImageSlotsLabels(avatarData.prompt_slots_labels || null)
               setHoroscopeImageSlotsReasoning(avatarData.prompt_slots_reasoning || null)
               const caption = avatarData.character_name
-              console.log('[Avatar] Character name from API:', caption, 'Type:', typeof caption)
-              if (typeof caption === 'string' && caption.length > 0) {
-                console.log('[Avatar] Setting caption:', caption)
-                setHoroscopeImageCaption(caption)
+              console.log('[Avatar] Character name from API:', caption, 'Type:', typeof caption, 'Length:', caption?.length)
+              if (caption && typeof caption === 'string' && caption.trim().length > 0) {
+                const trimmedCaption = caption.trim()
+                console.log('[Avatar] Setting caption:', trimmedCaption)
+                setHoroscopeImageCaption(trimmedCaption)
               } else {
-                console.log('[Avatar] No valid caption, clearing')
+                console.log('[Avatar] No valid caption, clearing. Value was:', caption)
                 setHoroscopeImageCaption(null)
               }
               setHoroscopeImageLoading(false)
@@ -1342,15 +1344,20 @@ export default function TeamDashboard() {
                   if (pollResponse.ok) {
                     const pollData = await pollResponse.json()
                     if (pollData.image_url) {
+                      console.log('[Avatar Poll] Full API response:', pollData)
                       setHoroscopeImage(pollData.image_url)
                       setHoroscopeImagePrompt(pollData.image_prompt || null)
                       setHoroscopeImageSlots(pollData.prompt_slots || null)
                       setHoroscopeImageSlotsLabels(pollData.prompt_slots_labels || null)
                       setHoroscopeImageSlotsReasoning(pollData.prompt_slots_reasoning || null)
                       const pollCaption = pollData.character_name
-                      if (typeof pollCaption === 'string' && pollCaption.length > 0) {
-                        setHoroscopeImageCaption(pollCaption)
+                      console.log('[Avatar Poll] Character name:', pollCaption, 'Type:', typeof pollCaption, 'Length:', pollCaption?.length)
+                      if (pollCaption && typeof pollCaption === 'string' && pollCaption.trim().length > 0) {
+                        const trimmedCaption = pollCaption.trim()
+                        console.log('[Avatar Poll] Setting caption:', trimmedCaption)
+                        setHoroscopeImageCaption(trimmedCaption)
                       } else {
+                        console.log('[Avatar Poll] No valid caption, clearing. Value was:', pollCaption)
                         setHoroscopeImageCaption(null)
                       }
                       setHoroscopeImageLoading(false)
