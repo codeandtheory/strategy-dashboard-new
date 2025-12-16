@@ -47,6 +47,14 @@ export function SnowProvider({ children }: { children: ReactNode }) {
 export function useSnow() {
   const context = useContext(SnowContext)
   if (context === undefined) {
+    // During SSR or if provider isn't available, return default values
+    // This prevents build errors while still allowing the component to render
+    if (typeof window === 'undefined') {
+      return {
+        snowEnabled: true,
+        toggleSnow: () => {},
+      }
+    }
     throw new Error('useSnow must be used within a SnowProvider')
   }
   return context
