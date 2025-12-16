@@ -150,6 +150,12 @@ async function createAirtableRecord(prompt: string, userId: string, userEmail: s
   
   const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableIdentifier)}`
   
+  // Log the prompt being sent to verify it's using the slot system
+  console.log('Creating Airtable record with prompt:')
+  console.log('  Prompt length:', prompt.length)
+  console.log('  Prompt preview:', prompt.substring(0, 200) + (prompt.length > 200 ? '...' : ''))
+  console.log('  Prompt format check - contains style/medium:', /\.\s*[A-Z]/.test(prompt))
+  
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -170,6 +176,8 @@ async function createAirtableRecord(prompt: string, userId: string, userEmail: s
     const errorText = await response.text().catch(() => 'Unknown error')
     throw new Error(`Failed to create Airtable record: ${errorText}`)
   }
+  
+  console.log('✅ Airtable record created successfully')
 }
 
 export async function GET(request: NextRequest) {
