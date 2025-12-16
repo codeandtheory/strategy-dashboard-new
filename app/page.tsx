@@ -36,6 +36,85 @@ import Image from 'next/image'
 // Force dynamic rendering to avoid SSR issues with context
 export const dynamic = 'force-dynamic'
 
+// Pixel rendering animation component
+function PixelRenderingAnimation() {
+  const [pixels, setPixels] = useState<Array<{ x: number; y: number; color: string; opacity: number }>>([])
+  const gridSize = 20 // 20x20 grid = 400 pixels
+  const containerRef = useRef<HTMLDivElement>(null)
+  
+  useEffect(() => {
+    if (!containerRef.current) return
+    
+    const colors = [
+      '#FFD700', '#FF8C42', '#FF4C4C', '#00A3E0', '#10B981', 
+      '#9333EA', '#9B59B6', '#FFB5D8', '#C8D961', '#4A9BFF'
+    ]
+    
+    const interval = setInterval(() => {
+      setPixels(prev => {
+        // Add a few new pixels each frame
+        const newPixels = [...prev]
+        const pixelsToAdd = Math.min(3, gridSize * gridSize - prev.length)
+        
+        for (let i = 0; i < pixelsToAdd; i++) {
+          const x = Math.floor(Math.random() * gridSize)
+          const y = Math.floor(Math.random() * gridSize)
+          const exists = prev.some(p => p.x === x && p.y === y)
+          
+          if (!exists) {
+            newPixels.push({
+              x,
+              y,
+              color: colors[Math.floor(Math.random() * colors.length)],
+              opacity: Math.random() * 0.5 + 0.5
+            })
+          }
+        }
+        
+        // Gradually increase opacity of existing pixels
+        return newPixels.map(p => ({
+          ...p,
+          opacity: Math.min(1, p.opacity + 0.05)
+        }))
+      })
+    }, 100) // Add pixels every 100ms
+    
+    return () => clearInterval(interval)
+  }, [])
+  
+  return (
+    <div ref={containerRef} className="w-full h-full relative bg-black/50">
+      <div className="absolute inset-0 grid" style={{ 
+        gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+        gridTemplateRows: `repeat(${gridSize}, 1fr)`,
+        gap: '1px'
+      }}>
+        {Array.from({ length: gridSize * gridSize }).map((_, i) => {
+          const x = i % gridSize
+          const y = Math.floor(i / gridSize)
+          const pixel = pixels.find(p => p.x === x && p.y === y)
+          
+          return (
+            <div
+              key={i}
+              className="transition-opacity duration-300"
+              style={{
+                backgroundColor: pixel?.color || 'transparent',
+                opacity: pixel?.opacity || 0,
+              }}
+            />
+          )
+        })}
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-white/60 text-xs font-medium text-center px-4">
+          Rendering your portrait...
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function TeamDashboard() {
   const { mode } = useMode()
   const { user, loading: authLoading, signOut } = useAuth()
@@ -1444,11 +1523,9 @@ export default function TeamDashboard() {
               hasFetchedRef.current = true
             }
           } else if (avatarData.generating) {
-            // Poll for image when ready
+            // Poll for image when ready - continue indefinitely until image is ready
             const pollForImage = async (attempt = 0) => {
-              if (attempt >= 10 || !isMounted) {
-                setHoroscopeImageLoading(false)
-                setHoroscopeImageError('Image generation is taking longer than expected. Please refresh the page.')
+              if (!isMounted) {
                 return
               }
               
@@ -1475,16 +1552,20 @@ export default function TeamDashboard() {
                       setHoroscopeImageError(null)
                       hasFetchedRef.current = true
                     } else if (pollData.generating) {
+                      // Continue polling - image is still generating
                       pollForImage(attempt + 1)
                     } else {
-                      setHoroscopeImageLoading(false)
-                      setHoroscopeImageError('Image generation is taking longer than expected. Please try again later.')
+                      // No generating flag and no image - continue polling anyway
+                      pollForImage(attempt + 1)
                     }
+                  } else {
+                    // Request failed - continue polling
+                    pollForImage(attempt + 1)
                   }
                 } catch (pollError) {
                   console.error('Error polling for image:', pollError)
-                  setHoroscopeImageLoading(false)
-                  setHoroscopeImageError('Failed to check image status. Please try again later.')
+                  // Continue polling even on error
+                  pollForImage(attempt + 1)
                 }
               }, 5000)
             }
@@ -2105,12 +2186,7 @@ export default function TeamDashboard() {
                 {mode === 'chaos' && (
                   <div className={`absolute top-1/2 right-0 -translate-y-1/2 w-[40%] aspect-[5/4] ${getBgClass()} ${getRoundedClass('rounded-[2.5rem]')} transform -translate-x-[100px] -rotate-12 overflow-hidden border-4 border-white shadow-2xl`} style={{ boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(255, 255, 255, 0.3)' }}>
                     {horoscopeImageLoading ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                        <Loader2 className="w-8 h-8 animate-spin text-white mb-3" />
-                        <p className="text-white text-xs text-center font-medium max-w-[120px]">
-                          {imageLoadingMessages[imageLoadingMessageIndex]}
-                        </p>
-                      </div>
+                      <PixelRenderingAnimation />
                     ) : horoscopeImageError ? (
                       <div className="w-full h-full flex items-center justify-center p-8">
                         <p className="text-white text-sm text-center">{horoscopeImageError}</p>
@@ -2147,12 +2223,7 @@ export default function TeamDashboard() {
                        }} 
                   >
                     {horoscopeImageLoading ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                        <Loader2 className="w-8 h-8 animate-spin text-white mb-3" />
-                        <p className="text-white text-xs text-center font-medium max-w-[120px]">
-                          {imageLoadingMessages[imageLoadingMessageIndex]}
-                        </p>
-                      </div>
+                      <PixelRenderingAnimation />
                     ) : horoscopeImageError ? (
                       <div className="w-full h-full flex items-center justify-center p-8">
                         <p className="text-white text-sm text-center">{horoscopeImageError}</p>
