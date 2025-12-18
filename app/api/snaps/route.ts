@@ -88,9 +88,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    console.log('Fetched snaps count:', data?.length || 0, 'Anonymous snaps:', data?.filter((s: any) => !s.submitted_by).length || 0)
+    
     const response = NextResponse.json({ data: data || [] })
-    // Add cache headers for client-side caching
-    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
+    // Add cache headers for client-side caching, but allow revalidation
+    // Use no-cache for admin pages to ensure fresh data
+    const isAdminRequest = !mentionedUserId && !submittedBy
+    if (isAdminRequest) {
+      response.headers.set('Cache-Control', 'no-cache, must-revalidate')
+    } else {
+      response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
+    }
     return response
   } catch (error: any) {
     console.error('Error in snaps API:', error)
@@ -210,6 +218,8 @@ export async function POST(request: NextRequest) {
       date: date || new Date().toISOString().split('T')[0], // Use provided date or today
     }
 
+    console.log('Creating snap with data:', { ...snapData, snap_content: snapData.snap_content.substring(0, 50) + '...' })
+    
     const { data: newSnap, error: insertError } = await supabase
       .from('snaps')
       .insert(snapData)
@@ -234,6 +244,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+    
+    console.log('Snap created successfully:', newSnap?.id, 'submitted_by:', newSnap?.submitted_by)
 
     // Create entries in snap_recipients junction table for all recipients
     if (recipientUserIds.length > 0 && newSnap) {

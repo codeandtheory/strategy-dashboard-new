@@ -116,13 +116,19 @@ export default function SnapsAdmin() {
       try {
         setLoading(true)
         setError(null)
-        const response = await fetch('/api/snaps')
+        const response = await fetch('/api/snaps', {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        })
         
         if (!response.ok) {
           throw new Error('Failed to fetch snaps')
         }
         
         const result = await response.json()
+        console.log('Fetched snaps:', result.data?.length || 0, 'snaps')
         setSnaps(result.data || [])
       } catch (err: any) {
         console.error('Error fetching snaps:', err)
@@ -136,13 +142,21 @@ export default function SnapsAdmin() {
   }, [isAdmin])
 
   const handleSnapAdded = () => {
-    // Refresh snaps list
+    // Refresh snaps list with cache busting
     async function refreshSnaps() {
       try {
-        const response = await fetch('/api/snaps')
+        const response = await fetch('/api/snaps', {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        })
         if (response.ok) {
           const result = await response.json()
+          console.log('Refreshed snaps:', result.data?.length || 0)
           setSnaps(result.data || [])
+        } else {
+          console.error('Failed to refresh snaps:', response.status)
         }
       } catch (err) {
         console.error('Error refreshing snaps:', err)
